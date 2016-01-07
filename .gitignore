@@ -8,4 +8,4 @@ tags
 .session.vim
 *.byobu
 
-data/**
+data/*/*/**

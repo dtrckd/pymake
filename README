@@ -1,0 +1,25 @@
+##################################################
+			Indian Buffet Process
+##################################################
+
+Collapsed Gibbs sampling:
+Uncollapsed Gibbs sampling:
+Variational Bayes:
+
+##################################################
+		Hierarchical Dirichlet Process 
+##################################################
+
+Collapsed Gibbs sampling:
+
+
+
+### Parametric Applications:
+It prooved that Nonparametric bayesian are the infinite limite of parametric ones. Hence, by fixing K we fall down on parametric models. it avoid kearning part for model dimension. So it could speed up inference and reduce memory complexity.
+
+#### Text
+LDA
+
+#### Networks
+MMSB
+
