@@ -1,0 +1,11 @@
+# Temporary Files
+*.sw[mnopl]
+*.py[co]
+*.[ao]
+tags
+*.out
+*~
+.session.vim
+*.byobu
+
+data/**
