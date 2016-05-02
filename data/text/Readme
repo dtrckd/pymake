@@ -1,8 +1,11 @@
 ### HDP experiment
 debug0: small n (10 and 100) fixed hyperprior
-debug1: bigger n and k, fixed hyperprior
-debug2: bigger n and k, auto hyperprior
+debug1: bigger n and k, fixed hyperprior (alpha_0=0.05, gamma=5 -> still converge ot low K (1, 1)( 5, O.05)
+debug2: bigger n and k, auto hyperprior; kind of bugged with K raising to fast for auto (M1 HDP...) and some test for fix giving same result than before
+debug3: prior more smooth new result to analyse !!! delta=0.5 (0.5, 0.05) same results :(
 
+debug5: working version (hyper extrem and init moyen)
+debug6: Correction of initialization (hyper)sampling andd hyper mean to avoid extrem value. to possibility for auto or autoN(normed?) and init k=1 or k=10
 
 
 ### LDA Expriment
