@@ -72,11 +72,11 @@
         
 ###### 20ngroups
         Building: 11.178 minutes
-        Documents: 11314
+        Documents: 11314 # 18846
         Nnz: (1094143,)
         Nnz mean: 96.7070001768
         Nnz var: 279517.722265
-        Vocabulary: 66661
+        Vocabulary: 66661  # 107211
         train: None
         test: None
         

@@ -1,0 +1,47 @@
+
+/**** 2016-04-01 17:00:21.769574 ****/
+
+###### Graph1
+        Building: 0.000 minutes
+        Nodes: 100
+        Links: (2100.0,)
+        Degree mean: 21.0
+        Degree var: 61.6
+        Diameter: None
+        Density: 0.222222222222
+        Communities: 4
+        Relations: 2.0
+        
+###### Graph2
+        Building: 0.000 minutes
+        Nodes: 100
+        Links: (2510.0,)
+        Degree mean: 25.1
+        Degree var: 11.71
+        Diameter: None
+        Density: 0.222222222222
+        Communities: 4
+        Relations: 2.0
+        
+###### Graph3
+        Building: 0.001 minutes
+        Nodes: 1000
+        Links: (6014.0,)
+        Degree mean: 6.014
+        Degree var: 68.183804
+        Diameter: None
+        Density: 0.222222222222
+        Communities: 4
+        Relations: 2.0
+        
+###### Graph4
+        Building: 0.005 minutes
+        Nodes: 1000
+        Links: (61000.0,)
+        Degree mean: 61.0
+        Degree var: 2490.456
+        Diameter: None
+        Density: 0.222222222222
+        Communities: 4
+        Relations: 2.0
+        
