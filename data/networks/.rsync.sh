@@ -9,7 +9,8 @@ SIMUL="-n"
 if [ "$1" == "-f" ]; then
     SIMUL=""; fi
 
-rsync $SIMUL  -av -u --modify-window=10 --stats -m $OPTS \
+#rsync $SIMUL  -av -u --modify-window=2 --stats -m $OPTS \
+rsync $SIMUL  -av --stats -m $OPTS \
     -e ssh  $SSH:$IN $OUT
 
 ###
