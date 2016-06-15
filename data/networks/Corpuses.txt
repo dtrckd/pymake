@@ -195,3 +195,322 @@
         Communities: 5
         Relations: 2.0
         
+/**** 2016-06-10 12:34:45.170290 ****/
+
+###### Graph1
+        Building: 0.000 minutes
+        Nodes: 100
+        Links: (2100.0,)
+        Degree mean: 21.0
+        Degree var: 61.6
+        Diameter: None
+        Clustering Coefficient: 0.882028559798
+        Density: 0.222222222222
+        Communities: 4
+        Relations: 2.0
+        
+###### Graph2
+        Building: 0.000 minutes
+        Nodes: 100
+        Links: (2510.0,)
+        Degree mean: 25.1
+        Degree var: 11.71
+        Diameter: 3
+        Clustering Coefficient: 0.814376081562
+        Density: 0.263636363636
+        Communities: 4
+        Relations: 2.0
+        
+###### Graph3
+        Building: 0.001 minutes
+        Nodes: 1000
+        Links: (6014.0,)
+        Degree mean: 6.014
+        Degree var: 68.183804
+        Diameter: 8
+        Clustering Coefficient: 0.0641057824548
+        Density: 0.00702102102102
+        Communities: 4
+        Relations: 2.0
+        
+###### Graph4
+        Building: 0.006 minutes
+        Nodes: 1000
+        Links: (61000.0,)
+        Degree mean: 61.0
+        Degree var: 2490.456
+        Diameter: 5
+        Clustering Coefficient: 0.61549924713
+        Density: 0.0620620620621
+        Communities: 4
+        Relations: 2.0
+        
+###### Graph5
+        Building: 0.005 minutes
+        Nodes: 1104
+        Links: (51730.0,)
+        Degree mean: 46.856884058
+        Degree var: 1716.78024246
+        Diameter: 6
+        Clustering Coefficient: 0.527592552495
+        Density: 0.0433879275231
+        Communities: 6
+        Relations: 2.0
+        
+###### Graph6
+        Building: 0.005 minutes
+        Nodes: 1044
+        Links: (52726.0,)
+        Degree mean: 50.5038314176
+        Degree var: 1590.38408494
+        Diameter: 5
+        Clustering Coefficient: 0.554668446168
+        Density: 0.0493804711578
+        Communities: 5
+        Relations: 2.0
+        
+/**** 2016-06-10 12:42:20.062531 ****/
+
+###### Graph1
+        Building: 0.001 minutes
+        Nodes: 100
+        Links: (2100.0,)
+        Degree mean: 21.0
+        Degree var: 61.6
+        Diameter: None
+        Clustering Coefficient: 0.882028559798
+        Density: 0.222222222222
+        Communities: 4
+        Relations: 2.0
+        
+###### Graph2
+        Building: 0.001 minutes
+        Nodes: 100
+        Links: (2510.0,)
+        Degree mean: 25.1
+        Degree var: 11.71
+        Diameter: 3
+        Clustering Coefficient: 0.814376081562
+        Density: 0.263636363636
+        Communities: 4
+        Relations: 2.0
+        
+###### Graph3
+        Building: 0.033 minutes
+        Nodes: 1000
+        Links: (6014.0,)
+        Degree mean: 6.014
+        Degree var: 68.183804
+        Diameter: 8
+        Clustering Coefficient: 0.0641057824548
+        Density: 0.00702102102102
+        Communities: 4
+        Relations: 2.0
+        
+###### Graph4
+        Building: 0.037 minutes
+        Nodes: 1000
+        Links: (61000.0,)
+        Degree mean: 61.0
+        Degree var: 2490.456
+        Diameter: 5
+        Clustering Coefficient: 0.61549924713
+        Density: 0.0620620620621
+        Communities: 4
+        Relations: 2.0
+        
+###### Graph5
+        Building: 0.043 minutes
+        Nodes: 1104
+        Links: (51730.0,)
+        Degree mean: 46.856884058
+        Degree var: 1716.78024246
+        Diameter: 6
+        Clustering Coefficient: 0.527592552495
+        Density: 0.0433879275231
+        Communities: 6
+        Relations: 2.0
+        
+###### Graph6
+        Building: 0.039 minutes
+        Nodes: 1044
+        Links: (52726.0,)
+        Degree mean: 50.5038314176
+        Degree var: 1590.38408494
+        Diameter: 5
+        Clustering Coefficient: 0.554668446168
+        Density: 0.0493804711578
+        Communities: 5
+        Relations: 2.0
+        
+/**** 2016-06-10 13:57:51.925688 ****/
+
+###### Graph1
+        Building: 0.001 minutes
+        Nodes: 100
+        Links: (2100.0,)
+        Degree mean: 21.0
+        Degree var: 61.6
+        Diameter: None
+        Clustering Coefficient: 0.882028559798
+        Density: 0.222222222222
+        Communities: 4
+        Relations: 2.0
+        
+###### Graph2
+        Building: 0.001 minutes
+        Nodes: 100
+        Links: (2510.0,)
+        Degree mean: 25.1
+        Degree var: 11.71
+        Diameter: 3
+        Clustering Coefficient: 0.814376081562
+        Density: 0.263636363636
+        Communities: 4
+        Relations: 2.0
+        
+###### Graph3
+        Building: 0.030 minutes
+        Nodes: 1000
+        Links: (6014.0,)
+        Degree mean: 6.014
+        Degree var: 68.183804
+        Diameter: 8
+        Clustering Coefficient: 0.0641057824548
+        Density: 0.00702102102102
+        Communities: 4
+        Relations: 2.0
+        
+###### Graph4
+        Building: 0.035 minutes
+        Nodes: 1000
+        Links: (61000.0,)
+        Degree mean: 61.0
+        Degree var: 2490.456
+        Diameter: 5
+        Clustering Coefficient: 0.61549924713
+        Density: 0.0620620620621
+        Communities: 4
+        Relations: 2.0
+        
+###### Graph5
+        Building: 0.041 minutes
+        Nodes: 1104
+        Links: (51730.0,)
+        Degree mean: 46.856884058
+        Degree var: 1716.78024246
+        Diameter: 6
+        Clustering Coefficient: 0.527592552495
+        Density: 0.0433879275231
+        Communities: 6
+        Relations: 2.0
+        
+###### Graph6
+        Building: 0.037 minutes
+        Nodes: 1044
+        Links: (52726.0,)
+        Degree mean: 50.5038314176
+        Degree var: 1590.38408494
+        Diameter: 5
+        Clustering Coefficient: 0.554668446168
+        Density: 0.0493804711578
+        Communities: 5
+        Relations: 2.0
+        
+/**** 2016-06-13 10:40:13.875457 ****/
+
+###### Graph4
+        Building: 0.037 minutes
+        Nodes: 1000
+        Links: (61000.0,)
+        Degree mean: 61.0
+        Degree var: 2490.456
+        Diameter: 5
+        Clustering Coefficient: 0.61549924713
+        Density: 0.0620620620621
+        Communities: 4
+        Relations: 2.0
+        Directed: False
+        
+###### Graph10
+        Building: 0.032 minutes
+        Nodes: 1000
+        Links: (11000.0,)
+        Degree mean: 11.0
+        Degree var: 99.62
+        Diameter: 8
+        Clustering Coefficient: 0.495707248204
+        Density: 0.012012012012
+        Communities: 4
+        Relations: 2.0
+        Directed: False
+        
+###### Graph12
+        Building: 0.032 minutes
+        Nodes: 1000
+        Links: (5000.0,)
+        Degree mean: 5.0
+        Degree var: 54.734
+        Diameter: 10
+        Clustering Coefficient: 0.0800805641164
+        Density: 0.00600600600601
+        Communities: 4
+        Relations: 2.0
+        Directed: False
+        
+###### Graph13
+        Building: 0.032 minutes
+        Nodes: 1000
+        Links: (5550.0,)
+        Degree mean: 5.55
+        Degree var: 45.3655
+        Diameter: None
+        Clustering Coefficient: 0.0957680161278
+        Density: 0.00655655655656
+        Communities: 4
+        Relations: 2.0
+        Directed: False
+        
+/**** 2016-06-13 10:41:04.475563 ****/
+
+###### fb_uc
+        Building: 0.117 minutes
+        Nodes: 1899
+        Links: (22195.0,)
+        Degree mean: 11.6877303844
+        Degree var: 478.191587213
+        Diameter: None
+        Clustering Coefficient: None
+        Density: 0.0061579190645
+        Communities: None
+        Relations: 2.0
+        Directed: True
+        
+###### manufacturing
+        Building: 0.007 minutes
+        Nodes: 167
+        Links: (5950.0,)
+        Degree mean: 35.628742515
+        Degree var: 986.916060095
+        Diameter: None
+        Clustering Coefficient: None
+        Density: 0.214630979006
+        Communities: None
+        Relations: 2.0
+        Directed: True
+        
+/**** 2016-06-13 23:08:54.068100 ****/
+
+###### Graph7
+        Building: 0.033 minutes
+        Nodes: 1000
+        Links: (6014.0,)
+        Degree mean: 6.014
+        Degree var: 68.183804
+        Diameter: 8
+        Clustering Coefficient: 0.0641057824548
+        Density: 0.00702102102102
+        Communities: 4
+        Relations: 2.0
+        Directed: False
+        
