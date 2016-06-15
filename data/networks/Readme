@@ -1,9 +1,9 @@
 ### Generator
-* Graph3: Samll density (0.05) 4 community, bursty, non homophily
-* Graph4: high density (0.1) 4 community, non bursty, non homophily
-* Graph5: Samll density (0.05) 5 community, bursty, homophily
-* Graph6: high density (0.1) 5 community, bursty?, non homophily
+* Graph3: Samll density (0.7) 4 community, bursty, non homophily
+* Graph4: high density (6) 4 community, non bursty, non homophily
+* Graph5: Samll density (4) 6 community, bursty, homophily
+* Graph6: high density (5) 5 community, bursty?, non homophily
 
 ### Run
 * debug5: random mask of 0.2% of network
-* debug5:  mask of 0.2% of the 1 plus same quantity of zeros
+* debug6:  mask of 0.2% of the 1 plus same quantity of zeros
