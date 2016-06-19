@@ -5,5 +5,5 @@
 * Graph6: high density (5) 5 community, bursty?, non homophily
 
 ### Run
-* debug5: random mask of 0.2% of network
-* debug6:  mask of 0.2% of the 1 plus same quantity of zeros
+* debug5/10: random mask of 0.2% of network
+* debug6/11:  mask of 0.2% of the 1 plus same quantity of zeros
