@@ -5,7 +5,7 @@
 tags
 *.out
 *~
-.session.vim
+*.session.vim
 *.byobu
 
 results/
