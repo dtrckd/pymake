@@ -1,0 +1,9 @@
+args
+numpy
+scipy
+networkx
+matplotlib
+#sympy
+#gensim
+#pystan
+#pymc

@@ -1,65 +1,101 @@
-# Graph 4
-non bursty
-homophily
 
-# Graph 10
-non bursty
-non homophily
+* Performance of immsb is better for bursty. (consistent with homophily un peu..to confirm)
+* Performance of ibp is better for non-bursty (consistent with homophily...to confirm)
 
-# Graph 12 / Graph11 en controle (pas mal aussi 
-bursty
-non-homophily
+Prediction task is conducted for models according two scheme
+* mask_sub1: where the testing set is randomly chosen with a proportional quantity for links versus non-links. 20% of the links is considered for the mask.
+* mask_all: where the testing set is choosed randomly on on 20 % of the size of the networks.
 
-# Graph 13(remove) Graph7
-bursty
-homophily
-
-==================
-
-generator11 0.00633833833834 burst 
-comm: 0.492712712713
-kleinberg pre/rap 0.738184546137 0.258188188188
-
-generator12 0.00600600600601 burst 
-comm: 0.499931931932
-kleinberg pre/rap 0.4292 0.251327327327
-
-generator13 0.00655655655656 burst
-comm: 0.510294294294
-kleinberg pre/rap 0.81981981982 0.250408408408
-
-generator14 0.00600600600601 burst 
-comm: 0.507811811812
-kleinberg pre/rap 0.744 0.250538538539
+The impact of homophilly/burstiness on predictive task is visible on  mask_sub1 for local precsion and on global precision for prediction mak over all the networks.
 
 
+Wich one is better than the other ? rappel ?
+
+* The differnece of two models according to the propertie reduce with the number of latent class ? dimensionality reduction advantage...
+
+* links between homophily/burstiness and the number of class.
 
 
-generator9 0.012012012012 non-burst
-comm: 0.514770770771
-kleinberg pre/rap 0.875454545455 0.252884884885
+generator4
+Similarity | Hobs | Hexp                        
+community   0.92393442623  0.262846846847                        
+euclide_old     0.745803278689  0.42441041041                        
+euclide_abs     0.660885245902  0.474674674675                        
+euclide_dist     0.300360655738  0.19429029029         
+generator10
+Similarity | Hobs | Hexp                        
+community   0.872181818182  0.252194194194                        
+euclide_old     0.416545454545  0.42441041041                        
+euclide_abs     0.439090909091  0.474674674675                        
+euclide_dist     0.178727272727  0.19429029029         
+generator12
+Similarity | Hobs | Hexp                        
+community   0.4292  0.251327327327                        
+euclide_old     0.4136  0.42441041041                        
+euclide_abs     0.4288  0.474674674675                        
+euclide_dist     0.198  0.19429029029         
+generator7
+Similarity | Hobs | Hexp                        
+community   0.66178915863  0.258144144144                        
+euclide_old     0.608912537413  0.42441041041                        
+euclide_abs     0.561024276688  0.474674674675                        
+euclide_dist     0.274027269704  0.19429029029 
 
-generator10 0.012012012012 non-burst
-comm: 0.516008008008
-kleinberg pre/rap 0.872181818182 0.252194194194
+###### Graph4                                                                                                                                                 [8/4
+        Building: None minutes
+        Nodes: 1000
+        Links: (61000.0,)
+        Degree mean: 61.0
+        Degree var: 2490.456
+        Diameter: 5
+        Clustering Coefficient: 0.61549924713
+        Density: 0.0620620620621
+        Communities: 4
+        Relations: 2.0
+        Directed: False
+        
 
+###### Graph10
+        Building: None minutes
+        Nodes: 1000
+        Links: (11000.0,)
+        Degree mean: 11.0
+        Degree var: 99.62
+        Diameter: 8
+        Clustering Coefficient: 0.495707248204
+        Density: 0.012012012012
+        Communities: 4
+        Relations: 2.0
+        Directed: False
+        
 
+###### Graph12
+        Building: None minutes
+        Nodes: 1000
+        Links: (5000.0,)
+        Degree mean: 5.0
+        Degree var: 54.734
+        Diameter: 10
+        Clustering Coefficient: 0.0800805641164
+        Density: 0.00600600600601
+        Communities: 4
+        Relations: 2.0
+        Directed: False
 
+        
 
-generator3 0.00702102102102 burst
-comm: 0.491611611612
-kleinberg pre/rap 0.66178915863 0.258144144144
+###### Graph7
+        Building: None minutes
+        Nodes: 1000
+        Links: (6014.0,)
+        Degree mean: 6.014
+        Degree var: 68.183804
+        Diameter: 8
+        Clustering Coefficient: 0.0641057824548
+        Density: 0.00702102102102
+        Communities: 4
+        Relations: 2.0
+        Directed: False
+        
 
-generator4 0.0620620620621 non-burst
-comm: 0.581853853854
-kleinberg pre/rap 0.92393442623 0.262846846847
-
-generator5 0.0433879275231 non-burst
-comm: 0.43137950517
-kleinberg pre/rap 0.907751788131 0.320767143627
-
-generator6 0.0493804711578 non-burt
-comm: 0.675857660815
-kleinberg pre/rap 0.911959943861 0.203884315433
-
-
+        
