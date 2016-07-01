@@ -1,9 +1,18 @@
+# General Purpose
 args
 numpy
 scipy
-networkx
 matplotlib
-#sympy
-#gensim
-#pystan
-#pymc
+
+# Networks Purpose
+networkx
+
+# Text Purpose
+gensim
+
+# Baysian Inference Purpose
+pystan ?
+pymc ?
+
+# Optional
+sympy
