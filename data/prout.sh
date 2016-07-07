@@ -10,7 +10,7 @@ if [ -z $hook ]; then
 fi
 
 #### Search Files !!!
-find $struct/$corpus*/$hook* -type f | xargs wc
+find $struct/$corpus*/$hook* -type f | grep -iEv "(.json|.pk)" |  xargs wc
 #find networks/generator/Graph3/debug4* -type f | xargs wc
 #find networks/generator/* -type f | grep -iEv "(.json|.pk)" | grep -iE "(debug5|debug6)" | xargs wc
 
