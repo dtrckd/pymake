@@ -11,4 +11,5 @@ tags
 results/
 data/*/*/**
 data/networks/*.zip
+data/networks/*.tgz
 data/text/*.zip
