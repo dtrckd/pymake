@@ -13,7 +13,7 @@ if [ "$1" == "-f" ]; then
     SIMUL=""; fi
 
 #rsync $SIMUL  -av -u --modify-window=2 --stats -m $OPTS \
-rsync $SIMUL $OPTS -vah --stats -m \
+rsync $SIMUL $OPTS -av --stats -m \
     -e ssh  ${SSH}:${IN}/$T/ ${OUT}/$T
 
 ###
