@@ -14,7 +14,7 @@ data/networks/*.zip
 data/networks/*.tgz
 data/text/*.zip
 
-src/utils/stirling.npy
-src/utils/stirling.pk
+stirling.npy
+stirling.pk
 TODO
 ID
