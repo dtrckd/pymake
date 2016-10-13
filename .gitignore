@@ -8,7 +8,8 @@ tags
 *.session.vim
 *.byobu
 
-results/
+results/**
+!results/
 data/*/*/**
 data/networks/*.zip
 data/networks/*.tgz
