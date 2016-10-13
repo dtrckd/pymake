@@ -8,14 +8,3 @@ tags
 *.session.vim
 *.byobu
 
-results/**
-!results/
-data/*/*/**
-data/networks/*.zip
-data/networks/*.tgz
-data/text/*.zip
-
-stirling.npy
-stirling.pk
-TODO
-ID
