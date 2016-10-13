@@ -62,7 +62,6 @@ LDA
 MMSB
 
 ### Parametric Applications:
-It prooved that Nonparametric bayesian are the infinite limite of parametric ones. Hence, by fixing K we fall down on parametric models. it avoid learning part for model dimension. So it could speed up inference and reduce memory complexity.
-
+It is prooved that Nonparametric bayesian can be view as the infinite limit of parametric ones. Hence, by fixing K we fall down on parametric models. it avoids learning part for model dimension. So it could speed up inference and reduce memory complexity.
 
 

@@ -9,4 +9,4 @@
 # Then running the code with the desired argument should run experiments and manage file
 
 # See the following file
-./src/.fit.py
+python ./src/demo/demo.py
