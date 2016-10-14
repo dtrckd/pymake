@@ -13,3 +13,5 @@ data/*/*/**
 data/networks/*.zip
 data/networks/*.tgz
 data/text/*.zip
+
+src/.seed.pk

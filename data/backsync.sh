@@ -2,7 +2,7 @@
 
 SSH='adulac@tiger'
 
-IN="/home/ama/adulac/workInProgress/networkofgraphs/process/PyNPB/data/"
+IN="/home/ama/adulac/workInProgress/networkofgraphs/process/pymake/data/"
 OUT="./"
 T="networks"
 
