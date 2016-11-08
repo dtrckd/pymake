@@ -19,6 +19,8 @@ pymc ?
 
 # Networks
 networkx
+python-louvain
+    pip install hg+https://bitbucket.org/taynaud/python-louvain
 
 # Text
 gensim ?
