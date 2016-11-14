@@ -18,7 +18,7 @@ pymc ?
 
 
 # Networks
-networkx
+networkx python-pygraphviz
 python-louvain
     pip install hg+https://bitbucket.org/taynaud/python-louvain
 
