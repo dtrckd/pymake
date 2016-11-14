@@ -1,17 +1,30 @@
-## Logic
+## It start with an example
+How to see what the 20 news group corpus looks like when it is a mixture of gaussian of the distribution of each documents ?
+arr nooo
 
-## Experimentation Settings:
-    EXPE_ID = dict(model = 'kmean++', 
-            K = 10, 
-            corpus = '20ngroups',
-            vsm = 'tfidf')
 
-    **or**
-    Expe_ID = dict(model = 'lda', 
-            K = 10, 
+    Expe_ID = dict(model = 'kmeans++', 
+            K = 1e6, 
             corpus = '20ngroups',
             vsm = 'tfidf',
             repeat = range(10))
+
+(to complete)
+
+
+
+## Mojo
+
+* Do not reinvent the wheel, re-use good free library like:
+    * nltk
+    * scikit-learn
+    * networkx
+    * pyspark (to complete)
+* Wrap things to add freedom of modelisation to existing library.
+
+Architecture inspiration: Django.
+
+## Logic
 
 ### Zymake
 Script to manage Input and output of an experimental plateforms:
