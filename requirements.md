@@ -1,18 +1,34 @@
 # General Purpose
+
+## System
 args
+
+## Computation
 numpy
 scipy
-matplotlib
 
-# Networks Purpose
-networkx
+# Optionnal Purpose
 
-# Text Purpose
-gensim
+# ML
+scikit-learn
 
-# Baysian Inference Purpose
+# Baysian Computation
 pystan ?
 pymc ?
 
-# Optional
+
+# Networks
+networkx python-pygraphviz
+python-louvain
+    pip install hg+https://bitbucket.org/taynaud/python-louvain
+
+# Text
+gensim ?
+
+
+# Plotting
+matplotlib
+plotly
+
+# Misc
 sympy
