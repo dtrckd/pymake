@@ -16,5 +16,6 @@ data/text/*.zip
 
 src/utils/stirling.pk
 src/utils/stirling.npy
+src/ID
 
 src/.seed.pk
