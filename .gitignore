@@ -8,3 +8,13 @@ tags
 *.session.vim
 *.byobu
 
+results/
+data/*/*/**
+data/networks/*.zip
+data/networks/*.tgz
+data/text/*.zip
+
+src/util/stirling.pk
+src/util/stirling.npy
+
+src/.seed.pk
