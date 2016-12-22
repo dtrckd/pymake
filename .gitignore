@@ -14,4 +14,7 @@ data/networks/*.zip
 data/networks/*.tgz
 data/text/*.zip
 
+src/utils/stirling.pk
+src/utils/stirling.npy
+
 src/.seed.pk
