@@ -7,3 +7,7 @@
 ### Run
 * debug5/10: random mask of 0.2% of network
 * debug6/11:  mask of 0.2% of the 1 plus same quantity of zeros
+
+### Todo / Temp
+* check networks: show goodness of fit
+* generate: write json with goodness of fit, auc, f1...
