@@ -1,28 +1,12 @@
-## It start with an example
-How to see what the 20 news group corpus looks like when it is a mixture of gaussian of the distribution of each documents ?
-arr nooo
 
+## Zen
 
-    Expe_ID = dict(model = 'kmeans++', 
-            K = 1e6, 
-            corpus = '20ngroups',
-            vsm = 'tfidf',
-            repeat = range(10))
-
-(to complete)
-
-
-
-## Mojo
-
-* Do not reinvent the wheel, re-use good free library like:
+* If a good library do the job, use it:
     * nltk
     * scikit-learn
     * networkx
     * pyspark (to complete)
 * Wrap things to add freedom of modelisation to existing library.
-
-Architecture inspiration: Django.
 
 ## Logic
 
@@ -74,7 +58,16 @@ LDA
 ##### Networks Application
 MMSB
 
-### Parametric Applications:
-It is prooved that Nonparametric bayesian can be view as the infinite limit of parametric ones. Hence, by fixing K we fall down on parametric models. it avoids learning part for model dimension. So it could speed up inference and reduce memory complexity.
+## Example
+
+Fit a Gaussian mixtures on a text corpus...
+
+    Expe_ID = dict(model = 'kmeans++', 
+            K = 1e6, 
+            corpus = '20ngroups',
+            vsm = 'tfidf',
+            repeat = range(10))
+
+(to complete)
 
 
