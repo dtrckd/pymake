@@ -1,4 +1,3 @@
-#!/usr/bin/python -u
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -139,7 +138,7 @@ def zipf(**kwargs):
     ### Iterate over all classes couple
     if frontend.is_symmetric():
         #k_perm = np.unique( map(list, map(set, itertools.product(np.unique(clusters) , repeat=2))))
-        k_perm =  np.unique(map(list, map(list, map(set, itertools.product(range(theta.shape[1]) , repeat=2)))))
+        k_perm =  np.unique(list(map(list, map(list, map(set, itertools.product(range(theta.shape[1]) , repeat=2))))))
     else:
         #k_perm = itertools.product(np.unique(clusters) , repeat=2)
         k_perm = itertools.product(range(theta.shape[1]) , repeat=2)
@@ -303,7 +302,7 @@ def pvalue(**kwargs):
         ### Iterate over all classes couple
         if frontend.is_symmetric():
             #k_perm = np.unique( map(list, map(set, itertools.product(np.unique(clusters) , repeat=2))))
-            k_perm =  np.unique(map(list, map(list, map(set, itertools.product(range(theta.shape[1]) , repeat=2)))))
+            k_perm =  np.unique(list(map(list, map(list, map(set, itertools.product(range(theta.shape[1]) , repeat=2))))))
         else:
             #k_perm = itertools.product(np.unique(clusters) , repeat=2)
             k_perm = itertools.product(range(theta.shape[1]) , repeat=2)
@@ -410,7 +409,7 @@ def homo(**kwargs):
         for it_dat, data in enumerate(Y):
 
             #homo_object = data
-            homo_object = model.link_expectation()
+            homo_object = model.likelihood()
 
             Table[corpus_pos, :,  it_dat] = sp.stats.pearsonr(homo_object.flatten(), sim.flatten())
 
@@ -426,7 +425,7 @@ def homo(**kwargs):
         for it_dat, data in enumerate(Y):
 
             #homo_object = data
-            homo_object = model.link_expectation()
+            homo_object = model.likelihood()
 
             Table[0, 0,  it_dat] = sim[data == 0].mean()
             Table[1, 0,  it_dat] = sim[data == 1].mean()
@@ -472,6 +471,7 @@ def debug(**kwargs):
 
 def roc_test(**kwargs):
     globals().update(kwargs)
+    mask = model.get_mask()
     y_true, probas = model.mask_probas(data)
     fpr, tpr, thresholds = roc_curve(y_true, probas)
     roc_auc = auc(fpr, tpr)

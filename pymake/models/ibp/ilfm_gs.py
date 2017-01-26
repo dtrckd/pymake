@@ -13,7 +13,7 @@ from scipy.sparse import lil_matrix
 sp_dot = csr_matrix.dot
 
 from .ibp import IBP
-from frontend.frontend import DataBase, ModelBase
+from models import ModelBase
 from utils.algo import *
 
 # We will be taking log(0) = -Inf, so turn off this warning
@@ -499,7 +499,7 @@ class IBPGibbsSampling(IBP, ModelBase):
             Y = Y[nodelist, :][:, nodelist]
             phi = phi[nodelist, :]
 
-        likelihood = self.link_expectation(theta, phi)
+        likelihood = self.likelihood(theta, phi)
         #likelihood[likelihood >= 0.5 ] = 1
         #likelihood[likelihood < 0.5 ] = 0
         #Y = likelihood
@@ -509,7 +509,7 @@ class IBPGibbsSampling(IBP, ModelBase):
         self.K = K
         return Y, theta, phi
 
-    def link_expectation(self, theta=None, phi=None):
+    def likelihood(self, theta=None, phi=None):
         if theta is None:
             theta = self.theta
         if phi is None:

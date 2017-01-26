@@ -281,4 +281,3 @@ except NameError:
 ### Blocking Figures
 if not config.get('write_to_file'):
     display(True)
-
