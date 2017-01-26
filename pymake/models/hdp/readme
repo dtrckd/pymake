@@ -1,0 +1,12 @@
+Convergence Remarque:
+
+### For poisson Iteration
+At the burnin it start to increase and make ~20 iteration to go below the starting point :o
+
+### Random
+
+### LDA
+Get some coordinate of simplex for geometric tracking of dirichlet distribution (nice :p)
+
+## Perplexity
+If init a only one topic, perplextiy very low. So how can  we use only this measure ???

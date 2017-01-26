@@ -1,0 +1,9 @@
+##### Evaluation TODO
+
+plot an exemple of camparison eta var and mean and pp for comparaison convergence,
+
+    * then the pp for different size of corpus (label the K)
+
+    * alpha optimization have no effect...
+
+    tab of the purity evaluation
