@@ -6,10 +6,12 @@ use arparser as standard parser !
 @purge: 
 * model/lda
 * clean and homogeneize, the communities analysis framework. There is redoncdancy, and non consistent call to modularity...
+* import models -> import pymake.models ?
 
 @todo: 
 * OBJECT ! change frontendNetwork to Graph(Object), it is clear ?! (implement morphism in Object for example. (issue42)
 * @frontend: better print the status of what's going on in the beginning of fit.
+* ilfm modelbase/gibsssampler integration
 
 
 @structure
@@ -29,9 +31,8 @@ use arparser as standard parser !
     * RESCAL -> prediction !?
     * logit rescal
     * m3F
-    * nonparam
-    * MMSB ! (infinite - dynamic...)
-    * IBP
+    * gradient descent
+    * neural networlk factorization
 
 How should be the backend to make big scale learning with database and search engine interface...
 * Spark/Hadoop interface... (hdfs = htable)

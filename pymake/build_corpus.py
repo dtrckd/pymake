@@ -1,5 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 from frontend.frontendtext import frontendText
 
@@ -31,8 +32,8 @@ if __name__ == '__main__':
     ############################################################
     ##### Simulation Output
     if confif.get('simul'):
-        print '''--- Simulation settings ---
-        Build Corpuses %s''' % (str(corpuses))
+        print ('''--- Simulation settings ---
+        Build Corpuses %s''' % (str(corpuses)))
         exit()
 
     ask_sure_exit('Sure to overwrite corpus / text ?')

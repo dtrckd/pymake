@@ -1,4 +1,4 @@
-#!/usr/bin/python -u
+#!/usr/bin/python3 -u
 # -*- coding: utf-8 -*-
 
 from frontend.manager import ModelManager, FrontendManager
@@ -25,7 +25,6 @@ config = defaultdict(lambda: False, dict(
     epoch         = 10 , #20
 ))
 config.update(argparser.generate(''))
-
 
 # Corpuses
 Corpuses = _spec.CORPUS_SYN_ICDM_1
@@ -60,7 +59,14 @@ for corpus_name in Corpuses:
         ###################################
         Model.update(corpus=corpus_name)
         model = ModelManager(config=config).load(Model)
-        Model['hyperparams'] = model.get_hyper()
+
+        # __future__ remove
+        try:
+            # this try due to mthod modification entry in init not in picke object..
+            Model['hyperparams'] = model.get_hyper()
+        except:
+            model._mean_w = 0
+            Model['hyperparams'] = 0
 
         if model is None:
             continue
@@ -83,7 +89,7 @@ for corpus_name in Corpuses:
     plt.xlabel('Iterations')
     plt.ylabel('Entropie')
     plt.legend(loc="upper right", prop={'size':10})
-    plt.title('Perplexity: %s' % corpus_[corpus_name][0])
+    plt.title('Perplexity: %s' % _spec.name(corpus_name))
 
     display(False)
 

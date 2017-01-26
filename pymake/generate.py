@@ -110,12 +110,15 @@ for corpus_pos, corpus_name in enumerate(Corpuses):
             Model.update(corpus=corpus_name)
             model = ModelManager(config=config).load(Model)
             #model = model.load(Model)
+
+            # __future__ remove
             try:
                 # this try due to mthod modification entry in init not in picke object..
                 Model['hyperparams'] = model.get_hyper()
             except:
                 model._mean_w = 0
                 Model['hyperparams'] = 0
+
             N = data.shape[0]
         elif config['generative'] == 'evidence':
             N = config['gen_size']
@@ -144,8 +147,8 @@ for corpus_pos, corpus_name in enumerate(Corpuses):
         Y = [y]
         for i in range(config.get('epoch',1)-1):
             ### Mean and var on the networks generated
-            pij = model.link_expectation(theta, phi)
-            pij = np.clip(model.link_expectation(theta, phi), 0, 1)
+            pij = model.likelihood(theta, phi)
+            pij = np.clip(model.likelihood(theta, phi), 0, 1)
             Y += [sp.stats.bernoulli.rvs(pij)]
             ### Mean and variance  on the model generated
             #y, theta, phi = model.generate(N, Model['K'], _type=config['generative'])

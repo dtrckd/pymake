@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
+try: from builtins import input
+except ImportError: input = raw_input
 
 import sys, os
 from os.path import dirname
@@ -121,8 +123,9 @@ def argParse(usage="Usage ?"):
     return argdict
 
 def ask_sure_exit(question):
+
     while True:
-        a = raw_input(question+' ').lower()
+        a = input(question+' ').lower()
         if a == 'yes':
             break
         elif a == 'no':

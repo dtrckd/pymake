@@ -2,38 +2,24 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import collections
-import warnings
-from datetime import datetime
 import logging
 lgg = logging.getLogger('root')
 
 import numpy as np
 import scipy as sp
 
-from scipy.special import gammaln, digamma
+from scipy.special import digamma
 from numpy.random import dirichlet, gamma, poisson, binomial, beta
-try:
-    import sympy as sym
-    from sympy.functions.combinatorial.numbers import stirling
-except:
-    pass
-#import sppy
 
-from frontend.frontend import DataBase, ModelBase
+from frontend.frontend import DataBase
+from models import GibbsSampler, MSampler, BetaSampler
 
-from utils.math import *
-from utils.algo import *
-try:
-    from utils.compute_stirling import load_stirling
-    _stirling_mat = load_stirling()
-except:
-    lgg.error('strling.npy file not found, passing...')
+from utils.math import lognormalize, categorical
 
-#import sys
-#sys.setrecursionlimit(10000)
 
 # Implementation of Teh et al. (2005) Gibbs sampler for the Hierarchical Dirichlet Process: Direct assignement.
 
+#import warnings
 #warnings.simplefilter('error', RuntimeWarning)
 
 """ @Todo
@@ -75,7 +61,7 @@ class Likelihood(object):
         assert(self.data_mat.shape[1] == self.nfeat)
         #self.data_mat = sppy.csarray(self.data_mat)
 
-    def __call__(self, j, i, k_ji):
+    def compute(self, j, i, k_ji):
         return self.loglikelihood(j, i, k_ji)
 
     def get_nfeat(self):
@@ -112,15 +98,7 @@ class Likelihood(object):
 
         return log_smooth_count_ji - np.log(self.total_w_k + self.w_delta)
 
-class GibbsSampler(object):
-
-    def __iter__(self):
-        return self
-
-    def sample(self):
-        return self()
-
-class ZSampler(GibbsSampler):
+class ZSampler(object):
     # Alternative is to keep the two count matrix and
     # The docment-word topic array to trace get x(-ij) topic assignment:
         # C(word-topic)[w, k] === n_dotkw
@@ -173,7 +151,7 @@ class ZSampler(GibbsSampler):
 
         return z
 
-    def __call__(self):
+    def sample(self):
         # Add pnew container
         self._update_log_alpha_beta()
         self.doc_topic_counts =  np.column_stack((self.doc_topic_counts, np.zeros(self.J, dtype=int)))
@@ -313,7 +291,7 @@ class ZSampler(GibbsSampler):
         else:
             alpha = np.exp(self.logalpha)
 
-        params = np.log(self.doc_topic_counts[j] + alpha) + self.likelihood(j, i, k_ji)
+        params = np.log(self.doc_topic_counts[j] + alpha) + self.likelihood.compute(j, i, k_ji)
         return lognormalize(params[:K])
 
     def get_log_alpha_beta(self, k):
@@ -411,7 +389,7 @@ class ZSamplerParametric(ZSampler):
         self.logalpha = np.log(alpha)
         super(ZSamplerParametric, self).__init__(alpha_0, likelihood, self.K, data_t=data_t)
 
-    def __call__(self):
+    def sample(self):
         print( 'Sample z...')
         lgg.debug( '#Doc \t #nnz\t #Topic')
         doc_order = np.random.permutation(self.J)
@@ -439,104 +417,7 @@ class ZSamplerParametric(ZSampler):
     def clean(self):
         pass
 
-
-class MSampler(GibbsSampler):
-
-    def __init__(self, zsampler):
-        self.stirling_mat = _stirling_mat
-        self.zsampler = zsampler
-        self.get_log_alpha_beta = zsampler.get_log_alpha_beta
-        self.count_k_by_j = zsampler.doc_topic_counts
-
-        # We don't know the preconfiguration of tables !
-        self.m = np.ones(self.count_k_by_j.shape, dtype=int)
-        self.m_dotk = self.m.sum(axis=0)
-
-    def __call__(self):
-        self._update_m()
-
-        indices = np.ndenumerate(self.count_k_by_j)
-
-        print( 'Sample m...')
-        for ind in indices:
-            j, k = ind[0]
-            count = ind[1]
-
-            if count > 0:
-                # Sample number of tables in j serving dishe k
-                params = self.prob_jk(j, k)
-                sample = categorical(params) + 1
-            else:
-                sample = 0
-
-            self.m[j, k] = sample
-
-        self.m_dotk = self.m.sum(0)
-        self.purge_empty_tables()
-
-        return self.m
-
-    def _update_m(self):
-        # Remove tables associated with purged topics
-        for k in sorted(self.zsampler.last_purged_topics, reverse=True):
-            self.m = np.delete(self.m, k, axis=1)
-
-        # Passed by reference, but why not...
-        self.count_k_by_j = self.zsampler.doc_topic_counts
-        K = self.count_k_by_j.shape[1]
-        # Add empty table for new fancy topics
-        new_k = K - self.m.shape[1]
-        if new_k > 0:
-            print( 'msampler: %d new topics' % (new_k))
-            J = self.m.shape[0]
-            self.m = np.hstack((self.m, np.zeros((J, new_k), dtype=int)))
-
-    # Removes empty table.
-    def purge_empty_tables(self):
-        # cant be.
-        pass
-
-    def prob_jk(self, j, k):
-        # -1 because table of current sample topic jk, is not conditioned on
-        njdotk = self.count_k_by_j[j, k]
-        if njdotk == 1:
-            return np.ones(1)
-
-        possible_ms = np.arange(1, njdotk) # +1-1
-        log_alpha_beta_k = self.get_log_alpha_beta(k)
-        alpha_beta_k = np.exp(log_alpha_beta_k)
-
-        normalizer = gammaln(alpha_beta_k) - gammaln(alpha_beta_k + njdotk)
-        log_stir = self.stirling_mat[njdotk, possible_ms]
-        #log_stir = sym.log(stirling(njdotk, m, kind=1)).evalf() # so long.
-
-        params = normalizer + log_stir + possible_ms*log_alpha_beta_k
-
-        return lognormalize(params)
-
-class BetaSampler(GibbsSampler):
-
-    def __init__(self, gmma, msampler):
-        self.gmma = gmma
-        self.msampler = msampler
-
-        # Initialize restaurant with just one table.
-        self.beta = dirichlet([1, gmma])
-
-    def __call__(self):
-        print( 'Sample Beta...')
-        self._update_dirichlet_params()
-        self.beta = dirichlet(self.dirichlet_params)
-
-        return self.beta
-
-    def _update_dirichlet_params(self):
-        m_dotk_augmented = np.append(self.msampler.m_dotk, self.gmma)
-        print( 'Beta Dirichlet Prior: %s' % (m_dotk_augmented))
-        self.dirichlet_params = m_dotk_augmented
-
-
-class NP_CGS(GibbsSampler):
+class NP_CGS(object):
 
     # Joint Sampler of topic Assignement, table configuration, and beta proportion.
     # ref to direct assignement Sampling in HDP (Teh 2006)
@@ -588,7 +469,7 @@ class NP_CGS(GibbsSampler):
         print( 'hyper sample: alpha_0: %s gamma: %s' % (new_alpha0, new_gmma))
         return
 
-    def __call__(self):
+    def sample(self):
             z = self.zsampler.sample()
             m = self.msampler.sample()
             beta = self.betasampler.sample()
@@ -601,12 +482,12 @@ class NP_CGS(GibbsSampler):
 
             return z, m, beta
 
-class CGS(GibbsSampler):
+class CGS(object):
 
     def __init__(self, zsampler):
         self.zsampler = zsampler
 
-    def __call__(self):
+    def sample(self):
 
         z = self.zsampler.sample()
 
@@ -615,10 +496,9 @@ class CGS(GibbsSampler):
 
         return z
 
-class GibbsRun(ModelBase):
+class GibbsRun(GibbsSampler):
 
     def __init__(self, sampler,  data_t=None, **kwargs):
-        self.s = sampler
 
         self.burnin = kwargs.get('burnin',  0.05) # Ratio of iteration
         self.thinning = kwargs.get('thinning',  1)
@@ -627,139 +507,11 @@ class GibbsRun(ModelBase):
         self.csv_typo = '# it it_time entropy_train entropy_test K alpha gamma alpha_mean delta_mean alpha_var delta_var'
         self.fmt = '%d %.4f %.8f %.8f %d %.8f %.8f %.4f %.4f %.4f %.4f'
         #self.fmt = '%s %s %s %s %s %s %s %s %s %s %s'
-        ModelBase.__init__(self, **kwargs)
+        GibbsSampler.__init__(self, sampler, **kwargs)
 
-    def measures(self):
-        pp =  np.log(self.evaluate_perplexity())
-        if self.data_t is not None:
-            pp_t =  np.log(self.s.zsampler.perplexity(data='test'))
-        else:
-            pp_t = np.nan
-        k = self.s.zsampler._K
-        alpha_0 = self.s.zsampler.alpha_0
-        try:
-            gmma = self.s.betasampler.gmma
-            alpha = np.exp(self.s.zsampler.log_alpha_beta)
-        except:
-            gmma = np.nan
-            alpha = np.exp(self.s.zsampler.logalpha)
-
-        alpha_mean = alpha.mean()
-        alpha_var = alpha.var()
-        delta_mean = self.s.zsampler.likelihood.delta.mean()
-        delta_var = self.s.zsampler.likelihood.delta.var()
-
-        measures = [pp, pp_t, k, alpha_0, gmma, alpha_mean, delta_mean, alpha_var, delta_var]
-        return measures
-
-    def fit(self):
-        time_it = 0
-        self.evaluate_perplexity()
-        for i in range(self.iterations):
-            ### Output / Measures
-            print('.', end='')
-            measures = self.measures()
-            sample = [i, time_it] + measures
-            k = self.s.zsampler._K
-            lgg.info('Iteration %d, K=%d Entropy: %s ' % (i, k, measures[0]))
-            if self.write:
-                self.write_some(sample)
-
-            begin = datetime.now()
-            ### Sampling
-            _sample = self.s.sample()
-            time_it = (datetime.now() - begin).total_seconds() / 60
-
-            if i >= self.iterations:
-                s.clean()
-                break
-            if i >= self.burnin:
-                if i % self.thinning == 0:
-                    self.samples.append([self.theta, self.phi])
-
-        print()
-        ### Clean Things
-        if not self.samples:
-            self.samples.append([self.theta, self.phi])
-        self.close()
-        return
-
-    # Nasty hack to make serialisation possible
-    def purge(self):
-        try:
-            self.s.mask = self.s.zsampler.likelihood.data_ma.mask
-        except:
-            pass
-
-        self.s.zsampler.betasampler = None
-        self.s.zsampler._nmap = None
-        self.s.msampler = None
-        self.s.betasampler = None
-        self.s.zsampler.likelihood = None
-
-    def evaluate_perplexity(self, data=None):
-        self._theta, self._phi = self.s.zsampler.estimate_latent_variables()
-        return self.s.zsampler.perplexity(data)
-
-    # keep only the most representative dimension (number of topics) in the samples
-    def reduce_latent(self):
-        theta, phi = list(map(list, zip(*self.samples)))
-        ks = [ mat.shape[1] for mat in theta]
-        bn = np.bincount(ks)
-        k_win = np.argmax(bn)
-        lgg.debug('K selected: %d' % k_win)
-
-        ind_rm = []
-        [ind_rm.append(i) for i, v in enumerate(theta) if v.shape[1] != k_win]
-        for i in sorted(ind_rm, reverse=True):
-            theta.pop(i)
-            phi.pop(i)
-
-        lgg.debug('Samples Selected: %d over %s' % (len(theta), len(theta)+len(ind_rm) ))
-
-        self.theta = np.mean(theta, 0)
-        self.phi = np.mean(phi, 0)
-        self.K = self.theta.shape[1]
-        return self.theta, self.phi
 
     def predict(self):
         lgg.error('todo')
         pass
-
-    def update_hyper(self, hyper):
-        if hyper is None:
-            return
-        elif isinstance(type(hyper), (tuple, list)):
-            alpha = hyper[0]
-            gmma = hyper[1]
-            delta = hyper[2]
-        else:
-            delta = hyper.get('delta')
-            alpha = hyper.get('alpha')
-            gmma = hyper.get('gmma')
-
-        if delta:
-            self._delta = delta
-        if alpha:
-            self._alpha = alpha
-        if gmma:
-            self._gmma = gmma
-
-    def get_hyper(self):
-        if not hasattr(self, '_alpha'):
-            try:
-                self._delta = self.s.zsampler.likelihood.delta
-                if type(self.s) is NP_CGS:
-                    self._alpha = self.s.zsampler.alpha_0
-                    self._gmma = self.s.betasampler.gmma
-                else:
-                    self._alpha = self.s.zsampler.alpha
-                    self._gmma = None
-            except:
-                lgg.error('Need to propagate hyperparameters to BaseModel class')
-                self._delta = None
-                self._alpha = None
-                self._gmma =  None
-        return self._alpha, self._gmma, self._delta
 
 

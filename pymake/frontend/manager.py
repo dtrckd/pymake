@@ -13,6 +13,9 @@ from .frontend_io import *
 # Model Manager Utilities
 import numpy as np
 import pickle, json # presence of this module here + in .frontend not zen
+
+
+# This is a mess, hormonize things with models
 from models.hdp import mmsb, lda
 from models.ibp.ilfm_gs import IBPGibbsSampling
 

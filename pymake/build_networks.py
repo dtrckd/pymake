@@ -1,5 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 from frontend.frontendnetwork import frontendNetwork
 
@@ -33,8 +34,8 @@ if __name__ == '__main__':
     ############################################################
     ##### Simulation Output
     if config.get('simul'):
-        print '''--- Simulation settings ---
-        Build Corpuses %s''' % (str(corpuses))
+        print ('''--- Simulation settings ---
+        Build Corpuses %s''' % (str(corpuses)))
         exit()
 
     ask_sure_exit('Sure to overwrite corpus / networks ?')
@@ -51,7 +52,7 @@ if __name__ == '__main__':
         prop = frontend.get_data_prop()
         prop.update(time='%0.3f' % (building_corpus_time.total_seconds()/60) )
         msg = frontend.template(prop)
-        print msg
+        print (msg)
         _f.write(msg)
         _f.flush()
 
