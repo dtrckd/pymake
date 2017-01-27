@@ -4,9 +4,10 @@ from collections import OrderedDict, defaultdict
 from pymake import basestring
 
 class _spec_(object):
-    #############################################################################
-    ### Corpuses
-    #############################################################################
+    """
+    =================
+    === Dictionary
+    ================= """
 
     _trans = dict((
         ('manufacturing'  , 'Manufacturing'),
@@ -20,7 +21,7 @@ class _spec_(object):
     ))
     """
     =================
-    === Networks
+    === Networks Corpus
     ================= """
 
     ### Bursty
@@ -35,16 +36,19 @@ class _spec_(object):
 
     CORPUS_ALL_3 = CORPUS_SYN_ICDM_1 + CORPUS_REAL_ICDM_1
 
+    CORPUS_REAL_V2 = ('blogs', 'emaileu', 'propro', 'euroroad')
+
     """
     =================
-    === Text
+    === Text Corpus
     ================= """
 
     CORPUS_TEXT_ALL = ['kos', 'nips12', 'nips', 'reuter50', '20ngroups'],
 
-    #############################################################################
-    ### Experimentation / Specification
-    #############################################################################
+    """
+    =================
+    === Expe Spec
+    ================= """
     EXPE_ICDM = OrderedDict((
         ('data_type', ('networks',)),
         ('debug'  , ('debug10', 'debug11')),
@@ -85,6 +89,7 @@ class _spec_(object):
         ('N'      , ('all',)),
         ('repeat'   , range(10)),
     ))
+
 
     MODEL_FOR_CLUSTER_IBP = dict ((
         ('data_type'    , 'networks'),
@@ -177,9 +182,33 @@ class _spec_(object):
         ('K'      , (5,)),
         ('N'      , ('all',)),
         ('hyper'  , ('auto')),
-        ('homo'   , (0)),
+        ('homo'   , (0,)),
         ('hyper_prior', ('1 2 3 4', '10 2')),
         ('repeat'   , (0, 1, 2, 4, 5)),
+    ))
+
+    EXPE_REAL_V2_IBP = OrderedDict((
+        ('data_type', ('networks',)),
+        ('corpus' , ( 'propro', 'blogs', 'euroroad', 'emaileu')),
+        ('debug'  , ('debug111111'),),
+        ('model'  , ( 'ibp')),
+        ('K'      , ( 10,)),
+        ('hyper'  , ('fix',)),
+        ('homo'   , (0,)),
+        ('N'      , ('all',)),
+        ('repeat'   , range(5)),
+    ))
+
+    EXPE_REAL_V2_IMMSB = OrderedDict((
+        ('data_type', ('networks',)),
+        ('corpus' , ( 'propro', 'blogs', 'euroroad', 'emaileu')),
+        ('debug'  , ('debug111111'),),
+        ('model'  , ( 'immsb')),
+        ('K'      , ( 10,)),
+        ('hyper'  , ('auto',)),
+        ('homo'   , (0,)),
+        ('N'      , ('all',)),
+        ('repeat'   , range(5)),
     ))
 
     def __init__(self):

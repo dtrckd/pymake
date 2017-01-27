@@ -49,7 +49,8 @@ Models = _spec.MODELS_GENERATE
 #))]
 
 for m in Models:
-    m['debug'] = 'debug11'
+    m['debug'] = 'debug111111'
+    m['repeat'] = 5
 
 if config.get('K'):
     for m in Models:
