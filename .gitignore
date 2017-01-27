@@ -9,15 +9,11 @@ tags
 *.byobu
 
 results/
-data/*/*/**
-data/networks/*.zip
-data/networks/*.tgz
-data/text/*.zip
 
-data/*.zip
-data/*.tgz
-data/*.gz
-data/*.zip
+data/*/*/**
+data/**/*.zip
+data/**/*.tgz
+data/**/*.gz
 
 pymake/utils/stirling.pk
 pymake/utils/stirling.npy

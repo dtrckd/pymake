@@ -187,8 +187,10 @@ class frontendNetwork(DataBase):
 
         return data
 
-    ### Redirect to correct path depending on the corpus_name
     def get_corpus(self, corpus_name):
+        """ @debug Be smarter, has some database strategy.
+            Redirect to correct path depending on the corpus_name
+        """
         self.make_output_path()
         N = self.cfg['N']
         try:
@@ -209,11 +211,14 @@ class frontendNetwork(DataBase):
         elif corpus_name.startswith('facebook'):
             fn = os.path.join(self.basedir, '0.edges')
             data = self.networkloader(fn)
-        elif corpus_name == 'manufacturing':
-            fn = os.path.join(self.basedir, 'manufacturing.csv')
+        elif corpus_name in ('manufacturing',):
+            fn = os.path.join(self.basedir, corpus_name + '.csv')
             data = self.networkloader(fn)
-        elif corpus_name == 'fb_uc':
-            fn = os.path.join(self.basedir, 'graph.tnet')
+        elif corpus_name in ('fb_uc', 'emaileu'):
+            fn = os.path.join(self.basedir, corpus_name + '.txt')
+            data = self.networkloader(fn)
+        elif corpus_name in ('blogs','propro', 'euroroad'):
+            fn = os.path.join(self.basedir, corpus_name + '.dat')
             data = self.networkloader(fn)
         else:
             raise ValueError('Which corpus to Load; %s ?' % corpus_name)
@@ -243,14 +248,16 @@ class frontendNetwork(DataBase):
         if data is None:
             ext = fn.split('.')[-1]
             if ext == 'graph':
-                data = self.parse_graph(fn)
+                data = self.parse_dancer(fn)
             elif ext == 'edges':
-                data = self.parse_edges(fn)
-            elif ext == 'tnet':
+                data = self.parse_edges(fn) # unknw ?
+            elif ext in ('txt'):
                 data = self.parse_tnet(fn)
             elif ext == 'csv':
-            #elif os.path.basename(fn) == 'manufacturing.csv':
+                #elif os.path.basename(fn) == 'manufacturing.csv':
                 data = self.parse_csv(fn)
+            elif ext == 'dat':
+                data = self.parse_dat(fn)
             else:
                 raise ValueError('extension of network data unknown')
 
@@ -289,7 +296,7 @@ class frontendNetwork(DataBase):
         g[tuple(edges.T)] = 1
         return g
 
-    def parse_graph(self, fn):
+    def parse_dancer(self, fn, sep=';'):
         """ Parse Network data depending on type/extension """
         lgg.debug('opening file: %s' % fn)
         f = open(fn, 'r')
@@ -304,10 +311,10 @@ class frontendNetwork(DataBase):
                     N = 0
                     continue
                 if line.startswith('#') or not line.strip() :
-                    inside['vertices'] = False
+                    inside['vertices'] = False # break
                 else:
                     # Parsing assignation
-                    elements = line.strip().split(';')
+                    elements = line.strip().split(sep)
                     clust = int(elements[-1])
                     feats = list(map(float, elements[-2].split('|')))
                     clusters.append(clust)
@@ -318,20 +325,21 @@ class frontendNetwork(DataBase):
                     inside['edges'] = True
                     continue
                 if line.startswith('#') or not line.strip() :
-                    inside['edges'] = False
+                    inside['edges'] = False # break
                 else:
                     # Parsing assignation
                     data.append( line.strip() )
         f.close()
 
-        edges = np.array([tuple(row.split(';')) for row in data]).astype(int)
+        edges = np.array([tuple(row.split(sep)) for row in data]).astype(int)
         g = np.zeros((N,N))
         g[[e[0] for e in edges], [e[1] for e in edges]] = 1
         g[[e[1] for e in edges], [e[0] for e in edges]] = 1
+        # ?! .T
 
         try:
             parameters = parse_file_conf(os.path.join(os.path.dirname(fn), 'parameters'))
-            parameters['devs'] = list(map(float, parameters['devs'].split(';')))
+            parameters['devs'] = list(map(float, parameters['devs'].split(sep)))
         except IOError:
             parameters = {}
         finally:
@@ -339,6 +347,56 @@ class frontendNetwork(DataBase):
 
         self.clusters = clusters
         self.features = np.array(features)
+        return g
+
+    def parse_dat(self, fn, sep=' '):
+        """ Parse Network data depending on type/extension """
+        lgg.debug('opening file: %s' % fn)
+        f = open(fn, 'r')
+        data = []
+        inside = {'vertices':False, 'edges':False }
+        clusters = []
+        features = []
+        for _line in f:
+            line = _line.strip()
+            if line.startswith('ROW LABELS:') or inside['vertices']:
+                if not inside['vertices']:
+                    inside['vertices'] = True
+                    continue
+                if line.startswith('#') or not line.strip():
+                    inside['vertices'] = False # break
+                elif line.startswith('DATA'):
+                    inside['vertices'] = False # break
+                    inside['edges'] = True
+                else:
+                    continue
+            elif line.startswith('DATA') or inside['edges']:
+                if not inside['edges']:
+                    inside['edges'] = True # break
+                    continue
+                if line.startswith('#') or not line.strip() or len(line.split(sep)) < 2 :
+                    inside['edges'] = False
+                else:
+                    # Parsing assignation
+                    data.append( line.strip() )
+        f.close()
+
+        row_size = len(data[0].split(sep))
+        edges = np.array([tuple(row.split(sep)) for row in data]).astype(int)-1
+        if row_size == 2:
+            # like .txt
+            pass
+        elif row_size == 3:
+            # has zeros...
+            # take edges if non zeros edges, and remove last column (edges]
+            edges = edges[ edges.T[-1] > -1 ][:, :-1] # -1, edges start from 1
+            edges = np.array([(e[0],e[1]) for e in edges]).astype(int)
+        else:
+            raise NotImplementedError
+
+        N = edges.max() +1
+        g = np.zeros((N,N))
+        g[tuple(edges.T)] = 1
         return g
 
     def _old_communities_analysis(self):

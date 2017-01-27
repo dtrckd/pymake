@@ -2,17 +2,18 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from frontend.frontendnetwork import frontendNetwork
-
 # @Issue43: Parser/config unification.
 from utils.utils import *
 from collections import defaultdict
 import os
-#
 
 import numpy as np
 import scipy as sp
 np.set_printoptions(threshold='nan')
+
+from frontend.frontendnetwork import frontendNetwork
+from expe.spec import _spec_; _spec = _spec_()
+
 
 _USAGE = '-s'
 
@@ -30,6 +31,8 @@ if __name__ == '__main__':
     corpuses = ('generator7',)
     corpuses = ( 'generator7', 'generator12', 'generator10', 'generator4')
     corpuses += ( 'fb_uc', 'manufacturing', )
+
+    corpuses = _spec.CORPUS_REAL_V2
 
     ############################################################
     ##### Simulation Output

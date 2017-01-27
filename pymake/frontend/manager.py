@@ -40,8 +40,28 @@ class FrontendManager(object):
     def get(config):
         """ Return: The frontend suited for the given configuration"""
         corpus = config.get('corpus_name') or config.get('corpus')
-        corpus_typo = {'network': ['facebook','generator', 'bench', 'clique', 'fb_uc', 'manufacturing'],
-                       'text': ['reuter50', 'nips12', 'nips', 'enron', 'kos', 'nytimes', 'pubmed', '20ngroups', 'odp', 'wikipedia', 'lucene']}
+        corpus_typo = {'network': ['facebook',
+                                   'generator',
+                                   'bench',
+                                   'clique',
+                                   'fb_uc',
+                                   'manufacturing'
+                                   'propro',
+                                   'blogs',
+                                   'euroroad',
+                                   'emaileu'
+                                  ],
+                       'text': ['reuter50',
+                                'nips12',
+                                'nips',
+                                'enron',
+                                'kos',
+                                'nytimes',
+                                'pubmed',
+                                '20ngroups',
+                                'odp',
+                                'wikipedia',
+                                'lucene']}
 
         frontend = None
         for key, cps in corpus_typo.items():
