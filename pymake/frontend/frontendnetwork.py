@@ -194,7 +194,7 @@ class frontendNetwork(DataBase):
         """
         self.make_output_path()
         N = self.cfg['N']
-        if N.isdigit():
+        if type(N) is int or N.isdigit():
             N = int(N)
         elif N.lower() == 'all':
             N = 'all'

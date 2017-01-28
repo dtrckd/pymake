@@ -18,6 +18,10 @@ class _spec_(object):
     ================= """
 
     _trans = dict((
+        ('propro'   , 'Protein')  ,
+        ('blogs'    , 'Blogs')    ,
+        ('euroroad' , 'Euroroad') ,
+        ('emaileu'  , 'Emeaileu') ,
         ('manufacturing'  , 'Manufacturing'),
         ('fb_uc'          , 'UC Irvine' ),
         ('generator7'     , 'Network 1' ),
