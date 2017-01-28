@@ -45,7 +45,7 @@ class FrontendManager(object):
                                    'bench',
                                    'clique',
                                    'fb_uc',
-                                   'manufacturing'
+                                   'manufacturing',
                                    'propro',
                                    'blogs',
                                    'euroroad',
