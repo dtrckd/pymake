@@ -193,13 +193,14 @@ def ext_status(filen, _type):
 
 from operator import mul
 from itertools import product
+import functools
 def make_forest_conf(dol_spec):
     """ Make a list of config/dict.
         Convert a dict of list to a list of dict.
     """
     check_spec(dol_spec)
     len_l = [len(l) for l in dol_spec.values()]
-    _len = reduce(mul, len_l )
+    _len = functools.reduce(mul, len_l )
     keys = sorted(dol_spec)
     lod = [dict(zip(keys, prod)) for prod in product(*(dol_spec[key] for key in keys))]
 
@@ -226,7 +227,7 @@ def make_forest_runcmd(spec):
     for expe in confs:
         if '' in expe:
             expe.pop('')
-        opt = [' '.join(map(str, (optkeys[i], j))) for i, j in expe.items() if optkeys[i] != 'null']
+        opt = [' '.join(list(map(str, (optkeys[i], j)))) for i, j in expe.items() if optkeys[i] != 'null']
         opt = ' '.join(opt)
         opts.append(opt)
     return opts

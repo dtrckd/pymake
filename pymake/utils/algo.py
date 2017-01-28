@@ -214,7 +214,7 @@ class Annealing(Algo, frontendNetwork):
         K = self.K
         C = len(pi)
 
-        size = np.asarray(map(len, pi))
+        size = np.asarray(list(map(len, pi)))
         clusters = self.get_clusters(state, true_order=False, )
 
         e_k_in_c = np.zeros((K, C))

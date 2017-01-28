@@ -132,7 +132,7 @@ class IBPGibbsSampling(IBP, ModelBase):
         likelihood_Y = self.log_likelihood_Y()
         lgg.info( 'Init Likelihood: %f' % likelihood_Y)
         for iter in range(iterations):
-            print('.'),
+            print('.', end='')
             begin_it = datetime.now()
 
             # Can't get why I need this !!!!!

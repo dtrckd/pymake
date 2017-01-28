@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys, os
@@ -60,7 +61,7 @@ class frontendNetwork(DataBase):
             else:
                 corpus_name = self.corpus_name
 
-            self.get_corpus(corpus_name)
+            self._get_corpus(corpus_name)
 
         np.fill_diagonal(self.data, 1)
         if randomize:
@@ -110,7 +111,7 @@ class frontendNetwork(DataBase):
 
         n = int(data.size * percent_hole)
         mask_index = np.unravel_index(np.random.permutation(data.size)[:n], data.shape)
-        mask = np.zeros(data.shape)
+        mask = np.zeros(data.shape, dtype=int)
         mask[mask_index] = 1
 
         if self.is_symmetric():
@@ -140,7 +141,7 @@ class frontendNetwork(DataBase):
         n_1 = _1[np.random.choice(len(_1), n, replace=False)]
         # Corresponding Mask
         mask_index = zip(*(np.concatenate((n_0, n_1))))
-        mask = np.zeros(data.shape)
+        mask = np.zeros(data.shape, dtype=int)
         mask[mask_index] = 1
 
         if self.is_symmetric():
@@ -171,7 +172,7 @@ class frontendNetwork(DataBase):
             data = nx.adjacency_matrix(nx.barabasi_albert_graph(N, m=13) ).A
         elif rnd ==  'alternate':
             #data = np.empty((N,N),int)
-            data = np.zeros((N,N),int)
+            data = np.zeros((N,N), int)
             type_rd = 2
             if type_rd == 1:
                 # degree alternating with frequency fr
@@ -187,18 +188,20 @@ class frontendNetwork(DataBase):
 
         return data
 
-    def get_corpus(self, corpus_name):
+    def _get_corpus(self, corpus_name):
         """ @debug Be smarter, has some database strategy.
             Redirect to correct path depending on the corpus_name
         """
         self.make_output_path()
         N = self.cfg['N']
-        try:
+        if N.isdigit():
             N = int(N)
-        except:
-            # Catch later or elsewhere
+        elif N.lower() == 'all':
             N = 'all'
-            pass
+        else:
+            # set the default value of parameter clearly somewhere
+            # N = 'all'
+            raise TypeError('Size of data no set (-n)')
 
         if corpus_name.startswith(('generator', 'Graph')):
             fn = os.path.join(self.basedir, 't0.graph')
@@ -277,7 +280,7 @@ class frontendNetwork(DataBase):
         N = edges.max() +1
         #N = max(list(itertools.chain(*edges))) + 1
 
-        g = np.zeros((N,N))
+        g = np.zeros((N,N), dtype=int)
         g[tuple(edges.T)] = 1
         return g
 
@@ -292,7 +295,7 @@ class frontendNetwork(DataBase):
         N = edges.max() +1
         #N = max(list(itertools.chain(*edges))) + 1
 
-        g = np.zeros((N,N))
+        g = np.zeros((N,N), dtype=int)
         g[tuple(edges.T)] = 1
         return g
 
@@ -332,7 +335,7 @@ class frontendNetwork(DataBase):
         f.close()
 
         edges = np.array([tuple(row.split(sep)) for row in data]).astype(int)
-        g = np.zeros((N,N))
+        g = np.zeros((N,N), dtype=int)
         g[[e[0] for e in edges], [e[1] for e in edges]] = 1
         g[[e[1] for e in edges], [e[0] for e in edges]] = 1
         # ?! .T
@@ -395,7 +398,7 @@ class frontendNetwork(DataBase):
             raise NotImplementedError
 
         N = edges.max() +1
-        g = np.zeros((N,N))
+        g = np.zeros((N,N), dtype=int)
         g[tuple(edges.T)] = 1
         return g
 
@@ -432,7 +435,7 @@ class frontendNetwork(DataBase):
 
         local_degree = {}
         if symmetric:
-            k_perm = np.unique( map(list, map(set, itertools.product(np.unique(clusters) , repeat=2))))
+            k_perm = np.unique(list( map(list, map(set, itertools.product(np.unique(clusters) , repeat=2)))))
         else:
             k_perm = itertools.product(np.unique(clusters) , repeat=2)
 
@@ -479,7 +482,7 @@ class frontendNetwork(DataBase):
         try:
             modul = pylouvain.modularity(part, g)
         except NameError:
-            lgg.error('pylouvain library is not installed \n \
+            lgg.error('python-louvain) library is not installed \n \
                       Modularity can\'t be computed ')
             modul = None
         return modul
