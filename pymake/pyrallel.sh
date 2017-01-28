@@ -2,7 +2,7 @@
 
 JOBS="3"
 
-COMMAND="python ./fit.py -nv -w -i 200"
+COMMAND="python3 fit.py -nv -w -i 2"
 
 SPEC="RUN_DD"
 if [ ! -z "$1" ]; then

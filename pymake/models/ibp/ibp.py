@@ -92,7 +92,7 @@ class IBP(object):
         # Debug case
         Z = []
         while len(Z) == 0 or Z.shape[1] == 0:
-            Z = np.ones((0, 0))
+            Z = np.ones((0, 0), dtype=int)
             for i in range(1, N + 1):
                 # sample existing features
                 # Z.sum(axis=0)/i: compute the popularity of every dish, computes the probability of sampling that dish
@@ -106,7 +106,6 @@ class IBP(object):
                 Z = np.vstack((Z, sample_dish))
 
         assert(Z.shape[0] == N)
-        Z = Z.astype(np.int)
         return Z
 
     def initialize_Z_debug(self, N=None, alpha=None, KK=9):
@@ -131,7 +130,6 @@ class IBP(object):
         #    Z = np.vstack((Z, sample_dish))
 
         assert(Z.shape[0] == N)
-        Z = Z.astype(np.int)
         return Z
 
     """

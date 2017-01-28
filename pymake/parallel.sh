@@ -4,7 +4,7 @@
 ### GNU Parallel parameters
 JOBS="3"
 
-COMMAND="python ./fit.py -nv -w -i 200 --refdir debug"
+COMMAND="python3 ./fit.py -nv -w -i 200 --refdir debug"
 
 #############
 ### parameters

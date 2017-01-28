@@ -52,16 +52,15 @@ def argParse(usage="Usage ?"):
         elif arg in ('-n', '--limit'):
             # no int() because could be all.
             _arg = sys.argv.pop(i+1)
-            argdict['N'] = int(_arg)
+            argdict['N'] = _arg
         elif arg in ('--alpha', '--hyper'):
             _arg = sys.argv.pop(i+1)
             argdict['hyper'] = _arg
         elif arg in ('--hyper_prior', ):
-            _arg1 = int(sys.argv.pop(i+1))
-            _arg2 = int(sys.argv.pop(i+1))
-            _arg3 = int(sys.argv.pop(i+1))
-            _arg4 = int(sys.argv.pop(i+1))
-            argdict['hyper_prior'] = (_arg1, _arg2, _arg3, _arg4)
+            _arg = []
+            while(sys.argv[i+1].isdigit()):
+                _arg.append(int(sys.argv.pop(i+1)))
+            argdict['hyper_prior'] = _arg
         elif arg in ('--refdir',):
             _arg = sys.argv.pop(i+1)
             argdict['refdir'] = _arg
