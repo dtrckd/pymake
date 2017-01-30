@@ -22,8 +22,8 @@ def getClique(N=100, K=4):
     from scipy.linalg import block_diag
     b = []
     for k in range(K):
-        n = N / K
-        b.append(np.ones((n,n)))
+        n = N // K
+        b.append(np.ones((n,n), int))
 
     C = block_diag(*b)
     return C
@@ -169,11 +169,15 @@ class frontendNetwork(DataBase):
         if rnd == 'uniform':
             data = np.random.randint(0, 2, (N, N))
             np.fill_diagonal(data, 1)
-        elif rnd == 'clique':
+        elif rnd.startswith('clique'):
+            try :
+                K = int(rnd[len('clique'):])
+            except ValueError:
+                K = 42
             data = getClique(N, K=K)
             G = nx.from_numpy_matrix(data, nx.Graph())
             data = nx.adjacency_matrix(G, np.random.permutation(range(N))).A
-        elif rnd == 'barabasi-albert':
+        elif rnd in ('BA', 'barabasi-albert'):
             data = nx.adjacency_matrix(nx.barabasi_albert_graph(N, m=13) ).A
         elif rnd ==  'alternate':
             #data = np.empty((N,N),int)

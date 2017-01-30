@@ -66,7 +66,8 @@ if __name__ == '__main__':
     ))
     ##### Experience Settings
     Expe = dict(
-        corpus_name = 'clique2',
+        random = 'clique2',
+        #corpus = "lucene"
         model_name  = 'immsb',
         hyper       = 'auto',
         K           = 3,
