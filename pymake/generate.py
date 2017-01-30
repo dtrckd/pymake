@@ -33,6 +33,7 @@ analysis in [clustering, zipf, (to complete)]
 ### Config
 #######################
 config = defaultdict(lambda: False, dict(
+    load_data = True,
     block_plot = False,
     write_to_file = False,
     do            = 'zipf',

@@ -21,7 +21,7 @@ class _spec_(object):
         ('propro'   , 'Protein')  ,
         ('blogs'    , 'Blogs')    ,
         ('euroroad' , 'Euroroad') ,
-        ('emaileu'  , 'Emeaileu') ,
+        ('emaileu'  , 'Emaileu') ,
         ('manufacturing'  , 'Manufacturing'),
         ('fb_uc'          , 'UC Irvine' ),
         ('generator7'     , 'Network 1' ),
@@ -49,6 +49,8 @@ class _spec_(object):
     CORPUS_ALL_3 = CORPUS_SYN_ICDM_1 + CORPUS_REAL_ICDM_1
 
     CORPUS_REAL_V2 = ('blogs', 'emaileu', 'propro', 'euroroad')
+
+    CORPUS_NET_ALL = ('manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad')
 
     """
     =================

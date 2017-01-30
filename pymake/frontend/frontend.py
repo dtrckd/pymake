@@ -206,7 +206,7 @@ class DataBase(object):
     def load(fn):
         fn = fn + '.pk'
         lgg.debug('opening file: %s' % fn)
-        with open(fn, 'r') as _f:
+        with open(fn, 'rb') as _f:
             return pickle.load(_f)
 
     @staticmethod

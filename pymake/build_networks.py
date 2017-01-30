@@ -32,7 +32,7 @@ if __name__ == '__main__':
     corpuses = ( 'generator7', 'generator12', 'generator10', 'generator4')
     corpuses += ( 'fb_uc', 'manufacturing', )
 
-    corpuses = _spec.CORPUS_REAL_V2
+    corpuses = _spec.CORPUS_NET_ALL
 
     ############################################################
     ##### Simulation Output

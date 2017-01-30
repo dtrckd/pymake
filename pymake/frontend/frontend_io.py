@@ -10,7 +10,7 @@ from expe.spec import _spec_
 lgg = logging.getLogger('root')
 
 LOCAL_BDIR = '../../data/' # Last slash(/) necessary.
-if not os.path.exists(os.path.dirname(__file__)+'/'+LOCAL_BDIR+'networks/generator/Graph7/t0.graph'):
+if not os.path.exists(os.path.dirname(__file__)+'/'+LOCAL_BDIR+'networks/generator/Graph7/t0.graph') and False:
     LOCAL_BDIR = '/media/dtrckd/TOSHIBA EXT/pymake/data/'
     if not os.path.exists(LOCAL_BDIR):
         print ('Error Data path: %s' % LOCAL_BDIR)
