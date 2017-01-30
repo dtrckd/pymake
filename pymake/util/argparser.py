@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import inspect
 from functools import wraps
 import args as clargs
@@ -99,16 +100,18 @@ class argparser(object):
         # Default request
         req = dict(
             OUT_TYPE = 'path',
-            SPEC = _spec.RUN_DD,
+            request = 'RUN_DD',
+            SPEC = _spec.RUN_DD, # gatattr(_spec, request)
             FTYPE = 'pk',
             STATUS = None )
 
         ontologies = dict(
             out_type = ('runcmd', 'path'),
-            spec = map(str.lower, vars(_spec).keys()),
+            spec = list(map(str.lower, _spec.repr())),
             ftype = ('json', 'pk', 'inf') )
 
         ### Making ontologie based argument attribution
+        ### Used the grouped argument whitout flags ['_']
         gargs = clargs.grouped['_'].all
         checksum = len(gargs)
         for v in gargs:
@@ -116,16 +119,21 @@ class argparser(object):
             for ont, words in ontologies.items():
                 if v in words:
                     if ont == 'spec':
+                        req['request'] = v
                         v = getattr(_spec, v.upper())
                     req[ont.upper()] = v
                     checksum -= 1
                     break
 
         if '-status' in clargs.grouped:
+            # debug status of filr (path)
             req['STATUS'] = clargs.grouped['-status'].get(0)
+        if '-l' in clargs.grouped or '--list' in clargs.grouped:
+            # debug show spec
+            req['OUT_TYPE'] = 'list'
 
         if checksum != 0:
-            raise ValueError('unknow argument: %s' % gargs)
+            raise ValueError('unknow argument: %s\n available SPEC: %s' % (gargs, _spec.repr()))
         return req
 
     @staticmethod

@@ -85,3 +85,352 @@
         Relations: 2.0
         Directed: True
         
+
+
+        
+/**** 2017-01-27 22:43:55.379307 ****/
+
+###### blogs
+        Building: 0.175 minutes
+        Nodes: 1490
+        Links: 20512.0
+        Degree mean: 13.766442953
+        Degree var: 429.458202784
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.262651775135839
+        Density: 0.01641117636718486
+        Communities: None
+        Relations: 2.0
+        Directed: True
+        
+###### emaileu
+        Building: 0.015 minutes
+        Nodes: 1004
+        Links: 25899.0
+        Degree mean: 25.7958167331
+        Degree var: 1099.72026138
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.40008409355214564
+        Density: 0.0338565975380631
+        Communities: None
+        Relations: 2.0
+        Directed: True
+        
+###### propro
+        Building: 0.002 minutes
+        Nodes: 2114
+        Links: 6520.0
+        Degree mean: 3.08420056764
+        Degree var: 9.19442398248
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.059415419900812734
+        Density: 0.001932891891928195
+        Communities: None
+        Relations: 2.0
+        Directed: False
+        
+/**** 2017-01-27 22:47:07.636197 ****/
+
+###### blogs
+        Building: 0.172 minutes
+        Nodes: 1490
+        Links: 20512.0
+        Degree mean: 13.766442953
+        Degree var: 429.458202784
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.262651775135839
+        Density: 0.01641117636718486
+        Communities: None
+        Relations: 2.0
+        Directed: True
+        
+###### emaileu
+        Building: 0.015 minutes
+        Nodes: 1004
+        Links: 25899.0
+        Degree mean: 25.7958167331
+        Degree var: 1099.72026138
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.40008409355214564
+        Density: 0.0338565975380631
+        Communities: None
+        Relations: 2.0
+        Directed: True
+        
+###### propro
+        Building: 0.002 minutes
+        Nodes: 2114
+        Links: 6520.0
+        Degree mean: 3.08420056764
+        Degree var: 9.19442398248
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.059415419900812734
+        Density: 0.001932891891928195
+        Communities: None
+        Relations: 2.0
+        Directed: False
+        
+###### euroroad
+        Building: 0.000 minutes
+        Nodes: 1177
+        Links: 2609.0
+        Degree mean: 2.21665250637
+        Degree var: 0.511260502018
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.01668891855807743
+        Density: 0.0037481432675024132
+        Communities: None
+        Relations: 2.0
+        Directed: True
+        
+/**** 2017-01-30 13:40:33.769890 ****/
+
+###### manufacturing
+        Building: 0.004 minutes
+        Nodes: 167
+        Links: 5784
+        Degree mean: 34.6347305389
+        Degree var: 986.567177023
+        Diameter: 5
+        Modularity: None
+        Clustering Coefficient: 0.591863208548695
+        Density: 0.23454296226823462
+        Communities: None
+        Relations: 2
+        Directed: True
+        
+###### fb_uc
+        Building: 0.004 minutes
+        Nodes: 1899
+        Links: 22195
+        Degree mean: 11.6877303844
+        Degree var: 478.191587213
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.10939892385364355
+        Density: 0.008732342628336914
+        Communities: None
+        Relations: 2
+        Directed: True
+        
+###### blogs
+        Building: 0.191 minutes
+        Nodes: 1490
+        Links: 19025
+        Degree mean: 12.7684563758
+        Degree var: 429.502763389
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.262651775135839
+        Density: 0.015070697418654022
+        Communities: None
+        Relations: 2
+        Directed: True
+        
+###### emaileu
+        Building: 0.015 minutes
+        Nodes: 1004
+        Links: 24896
+        Degree mean: 24.796812749
+        Degree var: 1099.85313725
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.40008409355214564
+        Density: 0.031864565665553145
+        Communities: None
+        Relations: 2
+        Directed: True
+        
+###### propro
+        Building: 0.002 minutes
+        Nodes: 2114
+        Links: 4480
+        Degree mean: 2.11920529801
+        Degree var: 9.2932640799
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.059415419900812734
+        Density: 0.0010195030896271717
+        Communities: None
+        Relations: 2
+        Directed: False
+        
+/**** 2017-01-30 13:42:30.602513 ****/
+
+###### manufacturing
+        Building: 0.004 minutes
+        Nodes: 167
+        Links: 5784
+        Degree mean: 34.6347305389
+        Degree var: 986.567177023
+        Diameter: 5
+        Modularity: None
+        Clustering Coefficient: 0.591863208548695
+        Density: 0.23454296226823462
+        Communities: None
+        Relations: 2
+        Directed: True
+        
+###### fb_uc
+        Building: 0.004 minutes
+        Nodes: 1899
+        Links: 22195
+        Degree mean: 11.6877303844
+        Degree var: 478.191587213
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.10939892385364355
+        Density: 0.008732342628336914
+        Communities: None
+        Relations: 2
+        Directed: True
+        
+###### blogs
+        Building: 0.189 minutes
+        Nodes: 1490
+        Links: 19025
+        Degree mean: 12.7684563758
+        Degree var: 429.502763389
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.262651775135839
+        Density: 0.015070697418654022
+        Communities: None
+        Relations: 2
+        Directed: True
+        
+###### emaileu
+        Building: 0.016 minutes
+        Nodes: 1004
+        Links: 24896
+        Degree mean: 24.796812749
+        Degree var: 1099.85313725
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.40008409355214564
+        Density: 0.031864565665553145
+        Communities: None
+        Relations: 2
+        Directed: True
+        
+###### propro
+        Building: 0.002 minutes
+        Nodes: 2114
+        Links: 4480
+        Degree mean: 2.11920529801
+        Degree var: 9.2932640799
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.059415419900812734
+        Density: 0.0010195030896271717
+        Communities: None
+        Relations: 2
+        Directed: False
+        
+###### euroroad
+        Building: 0.000 minutes
+        Nodes: 1177
+        Links: 1432
+        Degree mean: 1.21665250637
+        Degree var: 0.511260502018
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.01668891855807743
+        Density: 0.0020474629953935695
+        Communities: None
+        Relations: 2
+        Directed: True
+        
+/**** 2017-01-30 13:48:24.300267 ****/
+
+###### manufacturing
+        Building: 0.004 minutes
+        Nodes: 167
+        Links: 5784
+        Degree mean: 34.6347305389
+        Degree var: 986.567177023
+        Diameter: 5
+        Modularity: None
+        Clustering Coefficient: 0.591863208548695
+        Density: 0.23454296226823462
+        Communities: None
+        Relations: 2
+        Directed: True
+        
+###### fb_uc
+        Building: 0.004 minutes
+        Nodes: 1899
+        Links: 22195
+        Degree mean: 11.6877303844
+        Degree var: 478.191587213
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.10939892385364355
+        Density: 0.008732342628336914
+        Communities: None
+        Relations: 2
+        Directed: True
+        
+###### blogs
+        Building: 0.191 minutes
+        Nodes: 1490
+        Links: 19025
+        Degree mean: 12.7684563758
+        Degree var: 429.502763389
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.262651775135839
+        Density: 0.015070697418654022
+        Communities: None
+        Relations: 2
+        Directed: True
+        
+###### emaileu
+        Building: 0.016 minutes
+        Nodes: 1004
+        Links: 24896
+        Degree mean: 24.796812749
+        Degree var: 1099.85313725
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.40008409355214564
+        Density: 0.031864565665553145
+        Communities: None
+        Relations: 2
+        Directed: True
+        
+###### propro
+        Building: 0.002 minutes
+        Nodes: 2114
+        Links: 4480
+        Degree mean: 2.11920529801
+        Degree var: 9.2932640799
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.059415419900812734
+        Density: 0.0010195030896271717
+        Communities: None
+        Relations: 2
+        Directed: False
+        
+###### euroroad
+        Building: 0.004 minutes
+        Nodes: 1177
+        Links: 1432
+        Degree mean: 1.21665250637
+        Degree var: 0.511260502018
+        Diameter: None
+        Modularity: None
+        Clustering Coefficient: 0.01668891855807743
+        Density: 0.0020474629953935695
+        Communities: None
+        Relations: 2
+        Directed: True
+        

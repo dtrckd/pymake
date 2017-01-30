@@ -1,14 +1,27 @@
+# -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from collections import OrderedDict, defaultdict
 from pymake import basestring
 
 class _spec_(object):
-    #############################################################################
-    ### Corpuses
-    #############################################################################
+    """ Global Variable for experiments settgins.
+        * Keep in mind that orderedDict here, are important, for tensor result construction
+          in order to print table (tabulate) of results.
+
+    """
+
+
+    """
+    =================
+    === Mapping  Dictionary
+    ================= """
 
     _trans = dict((
+        ('propro'   , 'Protein')  ,
+        ('blogs'    , 'Blogs')    ,
+        ('euroroad' , 'Euroroad') ,
+        ('emaileu'  , 'Emaileu') ,
         ('manufacturing'  , 'Manufacturing'),
         ('fb_uc'          , 'UC Irvine' ),
         ('generator7'     , 'Network 1' ),
@@ -20,7 +33,7 @@ class _spec_(object):
     ))
     """
     =================
-    === Networks
+    === Networks Corpus
     ================= """
 
     ### Bursty
@@ -35,16 +48,21 @@ class _spec_(object):
 
     CORPUS_ALL_3 = CORPUS_SYN_ICDM_1 + CORPUS_REAL_ICDM_1
 
+    CORPUS_REAL_V2 = ('blogs', 'emaileu', 'propro', 'euroroad')
+
+    CORPUS_NET_ALL = ('manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad')
+
     """
     =================
-    === Text
+    === Text Corpus
     ================= """
 
     CORPUS_TEXT_ALL = ['kos', 'nips12', 'nips', 'reuter50', '20ngroups'],
 
-    #############################################################################
-    ### Experimentation / Specification
-    #############################################################################
+    """
+    =================
+    === Expe Spec
+    ================= """
     EXPE_ICDM = OrderedDict((
         ('data_type', ('networks',)),
         ('debug'  , ('debug10', 'debug11')),
@@ -57,8 +75,6 @@ class _spec_(object):
         ('homo'   , (0,)),
         #('repeat'   , (0, 1, 2,3, 4, 5)),
     ))
-    ICDM = EXPE_ICDM
-    EXPE_DD = ICDM
 
     EXPE_ICDM_R = OrderedDict((
         ('data_type', ('networks',)),
@@ -71,7 +87,7 @@ class _spec_(object):
         ('hyper'  , ('fix', 'auto')),
         ('homo'   , (0, 1, 2)),
         ('N'      , ('all',)),
-        ('repeat'   , range(10)),
+        ('repeat'   , list(range(10))),
     ))
 
     EXPE_ICDM_R_R = OrderedDict((
@@ -83,8 +99,9 @@ class _spec_(object):
         ('hyper'  , ('fix', 'auto')),
         ('homo'   , (0, 1, 2)),
         ('N'      , ('all',)),
-        ('repeat'   , range(10)),
+        ('repeat'   , list(range(10))),
     ))
+
 
     MODEL_FOR_CLUSTER_IBP = dict ((
         ('data_type'    , 'networks'),
@@ -148,7 +165,7 @@ class _spec_(object):
         ('data_type', ('networks',)),
         ('debug'  , ('debug111111', 'debug101010')),
         ('corpus' , CORPUS_ALL_3),
-        ('model'  , ('ibp')),
+        ('model'  , ('ibp',)),
         ('K'      , (5, 10, 15, 20)),
         ('N'      , ('all',)),
         ('hyper'  , ('fix',)),
@@ -159,7 +176,7 @@ class _spec_(object):
         ('data_type', ('networks',)),
         ('debug'  , ('debug111111', 'debug101010')),
         ('corpus' , CORPUS_ALL_3),
-        ('model'  , ('immsb')),
+        ('model'  , ('immsb',)),
         ('K'      , (5, 10, 15, 20)),
         ('N'      , ('all',)),
         ('hyper'  , ('auto',)),
@@ -172,18 +189,59 @@ class _spec_(object):
     RUN_DD = dict((
         ('data_type', ('networks',)),
         #('corpus' , ('fb_uc', 'manufacturing')),
-        ('corpus' , ('generator1')),
+        ('debug' , ('test_temp',)),
+        ('corpus' , ('generator1',)),
         ('model'  , ('immsb', 'ibp')),
         ('K'      , (5,)),
         ('N'      , ('all',)),
-        ('hyper'  , ('auto')),
-        ('homo'   , (0)),
-        ('hyper_prior', ('1 2 3 4', '10 2')),
+        ('hyper'  , ('auto',)),
+        ('homo'   , (0,)),
+        ('hyper_prior', ('1 2 3 4', '10 2 10 2')),
         ('repeat'   , (0, 1, 2, 4, 5)),
     ))
 
+    EXPE_REAL_V2_IBP = dict((
+        ('data_type', ('networks',)),
+        ('corpus' , ( 'propro', 'blogs', 'euroroad', 'emaileu')),
+        ('debug'  , ('debug111111'),),
+        ('model'  , ( 'ibp',)),
+        ('K'      , ( 10,)),
+        ('hyper'  , ('fix',)),
+        ('homo'   , (0,)),
+        ('N'      , ('all',)),
+        ('repeat'   , list(range(5))),
+    ))
+
+    EXPE_REAL_V2_IMMSB = dict((
+        ('data_type', ('networks',)),
+        ('corpus' , ( 'propro', 'blogs', 'euroroad', 'emaileu')),
+        ('debug'  , ('debug111111',),),
+        ('model'  , ( 'immsb',)),
+        ('K'      , ( 10,)),
+        ('hyper'  , ('auto',)),
+        ('homo'   , (0,)),
+        ('N'      , ('all',)),
+        ('repeat'   , list(range(5))),
+    ))
+
+    RAGNRK = dict(
+        data_type = ['networks'],
+        corpus = ['propro', 'blogs', 'euroroad', 'emaileu'],
+        debug  = ['ragnarok'],
+        model  = ['immsb'],
+        K      = [10],
+        hyper  = ['auto'],
+        homo   = [0],
+        N      = [10],
+        repeat = list(range(2)),
+    )
+
     def __init__(self):
         pass
+
+    def repr(self):
+        return [d for d in dir(self) if not d.startswith('__')]
+
 
     def name(self, l):
         if isinstance(l, (set, list, tuple)):

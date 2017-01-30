@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from random import choice
-from utils.utils import *
-from utils.vocabulary import Vocabulary, parse_corpus
+from util.utils import *
+from util.vocabulary import Vocabulary, parse_corpus
 from frontend.manager import ModelManager, FrontendManager
 
 import numpy as np

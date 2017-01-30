@@ -12,10 +12,10 @@ import scipy as sp
 from scipy.special import digamma
 from numpy.random import dirichlet, gamma, poisson, binomial, beta
 
-from models import GibbsSampler, MSampler, BetaSampler
+from model import GibbsSampler, MSampler, BetaSampler
 
-from utils.math import lognormalize, categorical, sorted_perm, adj_to_degree
-#from utils.algo import *
+from util.math import lognormalize, categorical, sorted_perm, adj_to_degree
+#from util.algo import *
 
 # Implementation Mixed Membership Sochastic Blockmodel Stochastic
 
@@ -104,7 +104,7 @@ class Likelihood(object):
 
     # @debug: symmetric matrix ?
     def make_word_topic_counts(self, z, K):
-        word_topic_counts = np.zeros((self.nfeat, K, K))
+        word_topic_counts = np.zeros((self.nfeat, K, K), dtype=int)
 
         for j, i in self.data_iter():
             z_ji = z[j,i,0]
@@ -113,7 +113,7 @@ class Likelihood(object):
             if self.symmetric:
                 word_topic_counts[self.data_ma[j, i], z_ij, z_ji] += 1
 
-        self.word_topic_counts = word_topic_counts.astype(int)
+        self.word_topic_counts = word_topic_counts
 
     # Interface to properly iterate over data
     def data_iter(self, randomize=True):
@@ -179,7 +179,7 @@ class ZSampler(object):
         self.data_dims = self.likelihood.data_dims
         self.J = len(self.data_dims)
         self.z = self._init_topics_assignement()
-        self.doc_topic_counts = self.make_doc_topic_counts().astype(int)
+        self.doc_topic_counts = self.make_doc_topic_counts()
         if not hasattr(self, 'K'):
             # Nonparametric Case
             self.purge_empty_topics()
@@ -276,7 +276,7 @@ class ZSampler(object):
     # @debug: symmetric matrix ?
     def make_doc_topic_counts(self):
         K = self.get_K()
-        counts = np.zeros((self.J, K))
+        counts = np.zeros((self.J, K), dtype=int)
 
         for j, i in self.likelihood.data_iter(randomize=False):
             k_j = self.z[j, i, 0]

@@ -13,8 +13,8 @@ from scipy.sparse import lil_matrix
 sp_dot = csr_matrix.dot
 
 from .ibp import IBP
-from models import ModelBase
-from utils.algo import *
+from model import ModelBase
+from util.algo import *
 
 # We will be taking log(0) = -Inf, so turn off this warning
 #np.seterr(divide='ignore')
@@ -132,7 +132,7 @@ class IBPGibbsSampling(IBP, ModelBase):
         likelihood_Y = self.log_likelihood_Y()
         lgg.info( 'Init Likelihood: %f' % likelihood_Y)
         for iter in range(iterations):
-            print('.'),
+            print('.', end='')
             begin_it = datetime.now()
 
             # Can't get why I need this !!!!!

@@ -3,7 +3,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from frontend.manager import ModelManager, FrontendManager
-from utils.utils import *
+from util.utils import *
 
 import numpy as np
 import scipy as sp
@@ -66,7 +66,8 @@ if __name__ == '__main__':
     ))
     ##### Experience Settings
     Expe = dict(
-        corpus_name = 'clique2',
+        random = 'clique2',
+        #corpus = "lucene"
         model_name  = 'immsb',
         hyper       = 'auto',
         K           = 3,

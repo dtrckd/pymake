@@ -1,18 +1,22 @@
 #!/usr/bin/env python
 import subprocess
 
+_py = 'python3'
+_py = 'python'
 
 tests = ('fit',
          'expe_meas',
          'expe_k',
-         'check_networks',
+         'check_networks homo',
+         'check_networks pvalue',
          'generate',
          'zymake'
         )
 
 for t in tests:
 
-    cmd = 'python ' + t + '.py'
+    cmdsplit = t.split()
+    cmd = _py + ' ' + cmdsplit[0] + '.py ' + ' '.join(cmdsplit[1:])
 
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
     out, err = p.communicate()

@@ -12,9 +12,9 @@ from scipy.special import digamma
 from numpy.random import dirichlet, gamma, poisson, binomial, beta
 
 from frontend.frontend import DataBase
-from models import GibbsSampler, MSampler, BetaSampler
+from model import GibbsSampler, MSampler, BetaSampler
 
-from utils.math import lognormalize, categorical
+from util.math import lognormalize, categorical
 
 
 # Implementation of Teh et al. (2005) Gibbs sampler for the Hierarchical Dirichlet Process: Direct assignement.
@@ -81,14 +81,14 @@ class Likelihood(object):
                 yield word
 
     def make_word_topic_counts(self, z, K):
-        word_topic_counts = np.zeros((self.nfeat, K))
+        word_topic_counts = np.zeros((self.nfeat, K), dtype=int)
 
         for k in range(K):
             where_k =  np.array([np.where(zj == k)[0] for zj in z])
             words_k_dict = collections.Counter(self.words_k(where_k))
             word_topic_counts[words_k_dict.keys(), k] = words_k_dict.values()
 
-        self.word_topic_counts = word_topic_counts.astype(int)
+        self.word_topic_counts = word_topic_counts
 
     def loglikelihood(self, j, i, k_ji):
         w_ji = self.data[j][i]
@@ -113,7 +113,7 @@ class ZSampler(object):
         self.data_dims = likelihood.data_dims
         self.J = len(self.data_dims)
         self.z = self._init_topics_assignement()
-        self.doc_topic_counts = self.make_doc_topic_counts().astype(int)
+        self.doc_topic_counts = self.make_doc_topic_counts()
         if not hasattr(self, 'K'):
             # Nonparametric Case
             self.purge_empty_topics()
@@ -124,7 +124,7 @@ class ZSampler(object):
             self.data_t = data_t
             self.data_t_w = DataBase.sparse2stream(data_t)
             self.z_t = self._init_topics_assignement(data_t)
-            self.doc_topic_counts_t = self.make_doc_topic_counts(self.data_t).astype(int)
+            self.doc_topic_counts_t = self.make_doc_topic_counts(self.data_t)
 
         # if a tracking of topics indexis pursuit,
         # pay attention to the topic added among those purged...(A topic cannot be added and purged in the same sample iteration !)
@@ -230,7 +230,7 @@ class ZSampler(object):
             J = data.shape[0]
             z = self.z_t
         K = self.get_K()
-        counts = np.zeros((J, K))
+        counts = np.zeros((J, K), dtype=int)
         for j, d in enumerate(z):
             counts[j] = np.bincount(d, minlength=K)
 

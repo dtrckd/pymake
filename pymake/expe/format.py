@@ -7,10 +7,10 @@ import os.path
 from random import choice
 import itertools
 
-import utils.algo as A
-from utils.algo import gofit
-from utils.utils import *
-from utils.math import *
+import util.algo as A
+from util.algo import gofit
+from util.utils import *
+from util.math import *
 from expe.spec import _spec_; _spec = _spec_()
 
 from plot import *
