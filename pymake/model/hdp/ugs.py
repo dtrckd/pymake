@@ -501,7 +501,7 @@ def print_topics(n_kv, term_mapping, top_words=10):
 run HDP on a synthetic corpus.
 """
 if __name__ == '__main__':
-    from utils.vocabulary import Vocabulary, parse_raw_text
+    from util.vocabulary import Vocabulary, parse_raw_text
 
     bdir = "../../data/nips12/"
     #data = import_monolingual_data(bdir + "doc.dat")

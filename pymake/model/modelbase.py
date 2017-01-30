@@ -9,7 +9,7 @@ import numpy as np
 from scipy.special import gammaln
 from numpy.random import dirichlet, gamma, poisson, binomial, beta
 
-from utils.math import lognormalize, categorical
+from util.math import lognormalize, categorical
 
 try:
     import sympy as sym
@@ -19,7 +19,7 @@ except:
 #import sppy
 
 try:
-    from utils.compute_stirling import load_stirling
+    from util.compute_stirling import load_stirling
     _stirling_mat = load_stirling()
 except:
     lgg.error('strling.npy file not found, passing...')

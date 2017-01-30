@@ -10,7 +10,7 @@ import os
 from multiprocessing import Process
 from itertools import cycle
 
-from utils.utils import *
+from util.utils import *
 
 def display(block=False):
     #p = Process(target=_display)

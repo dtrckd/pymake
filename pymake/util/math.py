@@ -2,7 +2,8 @@
 
 import numpy as np
 import scipy as sp
-from utils import *
+import networkx as nx
+from .utils import nxG
 
 import logging
 lgg = logging.getLogger('root')
@@ -132,8 +133,6 @@ def clusters_hist(clusters, labels=None, remove_empty=True):
 
     return hist, label
 
-from .utils import nxG
-import networkx as nx
 def adj_to_degree(y):
     # @debug: dont' call nxG or do a native integration !
 

@@ -12,9 +12,9 @@ from scipy.special import digamma
 from numpy.random import dirichlet, gamma, poisson, binomial, beta
 
 from frontend.frontend import DataBase
-from models import GibbsSampler, MSampler, BetaSampler
+from model import GibbsSampler, MSampler, BetaSampler
 
-from utils.math import lognormalize, categorical
+from util.math import lognormalize, categorical
 
 
 # Implementation of Teh et al. (2005) Gibbs sampler for the Hierarchical Dirichlet Process: Direct assignement.

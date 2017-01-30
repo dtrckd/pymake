@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from frontend.manager import ModelManager, FrontendManager
-from utils.utils import *
+from util.utils import *
 
 import numpy as np
 import scipy as sp

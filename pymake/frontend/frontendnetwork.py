@@ -14,8 +14,8 @@ except:
     pass
 
 from .frontend import DataBase
-from utils.utils import parse_file_conf
-from utils.math import *
+from util.utils import parse_file_conf
+from util.math import *
 
 
 def getClique(N=100, K=4):
@@ -432,7 +432,7 @@ class frontendNetwork(DataBase):
 
     # used by (obsolete) zipf.py
     def communities_analysis(self):
-        from utils.algo import adj_to_degree # Circular import bug inthetop
+        from util.algo import adj_to_degree # Circular import bug inthetop
         clusters = self.clusters
         if clusters is None:
             return None

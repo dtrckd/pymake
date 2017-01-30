@@ -16,6 +16,9 @@ if [ "$1" == "-f" ]; then
 rsync $SIMUL $OPTS -vah --stats -m \
     -e ssh  ${SSH}:${IN}/$T/ ${OUT}/$T
 
+echo
+echo "rsync $SIMUL $OPTS -vah --stats -m -e ssh  ${SSH}:${IN}/$T/ ${OUT}/$T"
+
 ###
 #rsync --dry-run  -av -u --modify-window=2  --stats --prune-empty-dirs  -e ssh --include '*/'  --include='debug/***' --exclude='*'  ./ dulac@pitmanyor:/home/dulac/ddebug
 #rsync --dry-run  -av -u --modify-window=2 --stats --prune-empty-dirs  -e ssh    adulac@racer:/home/ama/adulac/workInProgress/networkofgraphs/process/PyNPB/data/networks/ ./
