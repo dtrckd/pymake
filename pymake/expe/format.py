@@ -7,7 +7,7 @@ import os.path
 from random import choice
 import itertools
 
-import utils.algo as A
+import util.algo as A
 from util.algo import gofit
 from util.utils import *
 from util.math import *
