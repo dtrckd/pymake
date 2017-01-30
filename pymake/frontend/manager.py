@@ -16,11 +16,11 @@ import pickle, json # presence of this module here + in .frontend not zen
 
 
 # This is a mess, hormonize things with models
-from models.hdp import mmsb, lda
-from models.ibp.ilfm_gs import IBPGibbsSampling
+from model.hdp import mmsb, lda
+from model.ibp.ilfm_gs import IBPGibbsSampling
 
 #### @Debug/temp modules name changed in pickle model
-from models import hdp, ibp
+from model import hdp, ibp
 sys.modules['hdp'] = hdp
 sys.modules['ibp'] = ibp
 ###
@@ -39,9 +39,31 @@ class FrontendManager(object):
     @staticmethod
     def get(config):
         """ Return: The frontend suited for the given configuration"""
-        corpus = config.get('corpus_name') or config.get('corpus')
-        corpus_typo = {'network': ['facebook','generator', 'bench', 'clique', 'fb_uc', 'manufacturing'],
-                       'text': ['reuter50', 'nips12', 'nips', 'enron', 'kos', 'nytimes', 'pubmed', '20ngroups', 'odp', 'wikipedia', 'lucene']}
+        corpus = config.get('corpus_name') or config.get('corpus') or config.get('random')
+        corpus_typo = {
+            'network': [
+                'clique', 'alternate', 'BA', 'barabasi-albert', # random
+                'facebook',
+                'generator',
+                'bench',
+                'fb_uc',
+                'manufacturing',
+                'propro',
+                'blogs',
+                'euroroad',
+                'emaileu'
+            ],
+            'text': ['reuter50',
+                     'nips12',
+                     'nips',
+                     'enron',
+                     'kos',
+                     'nytimes',
+                     'pubmed',
+                     '20ngroups',
+                     'odp',
+                     'wikipedia',
+                     'lucene']}
 
         frontend = None
         for key, cps in corpus_typo.items():

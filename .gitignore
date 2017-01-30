@@ -9,18 +9,14 @@ tags
 *.byobu
 
 results/
+
 data/*/*/**
-data/networks/*.zip
-data/networks/*.tgz
-data/text/*.zip
+data/**/*.zip
+data/**/*.tgz
+data/**/*.gz
 
-data/*.zip
-data/*.tgz
-data/*.gz
-data/*.zip
-
-pymake/utils/stirling.pk
-pymake/utils/stirling.npy
+stirling.pk
+stirling.npy
 pymake/ID
 
-src/.seed.pk
+.seed.pk

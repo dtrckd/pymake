@@ -2,17 +2,18 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from frontend.frontendnetwork import frontendNetwork
-
 # @Issue43: Parser/config unification.
-from utils.utils import *
+from util.utils import *
 from collections import defaultdict
 import os
-#
 
 import numpy as np
 import scipy as sp
 np.set_printoptions(threshold='nan')
+
+from frontend.frontendnetwork import frontendNetwork
+from expe.spec import _spec_; _spec = _spec_()
+
 
 _USAGE = '-s'
 
@@ -31,6 +32,8 @@ if __name__ == '__main__':
     corpuses = ( 'generator7', 'generator12', 'generator10', 'generator4')
     corpuses += ( 'fb_uc', 'manufacturing', )
 
+    corpuses = _spec.CORPUS_NET_ALL
+
     ############################################################
     ##### Simulation Output
     if config.get('simul'):
@@ -38,7 +41,7 @@ if __name__ == '__main__':
         Build Corpuses %s''' % (str(corpuses)))
         exit()
 
-    ask_sure_exit('Sure to overwrite corpus / networks ?')
+    ask_sure_exit('Sure to overwrite Graph / networks ?')
 
     fn_corpus_build = os.path.join(config['bdir'], 'networks', 'Corpuses.txt')
     _f = open(fn_corpus_build, 'a')

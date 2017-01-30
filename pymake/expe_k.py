@@ -6,8 +6,8 @@ import logging
 from tabulate import tabulate
 from collections import OrderedDict
 from frontend.frontend_io import *
-from utils.utils import *
-from utils.argparser import argparser
+from util.utils import *
+from util.argparser import argparser
 from expe.spec import _spec_; _spec = _spec_()
 
 lgg = logging.getLogger('root')

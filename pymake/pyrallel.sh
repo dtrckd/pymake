@@ -1,8 +1,8 @@
 #!/bin/bash
 
-JOBS="3"
+JOBS="2"
 
-COMMAND="python ./fit.py -nv -w -i 200"
+COMMAND="python3 fit.py -nv -w -i 200"
 
 SPEC="RUN_DD"
 if [ ! -z "$1" ]; then

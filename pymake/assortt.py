@@ -1,7 +1,7 @@
 #!/usr/bin/python -u
 # -*- coding: utf-8 -*-
 
-from utils.utils import argParse
+from util.utils import argParse
 from frontend.manager import ModelManager, FrontendManager
 
 from numpy import ma

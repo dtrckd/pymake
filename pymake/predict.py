@@ -3,12 +3,12 @@
 
 from frontend.manager import ModelManager, FrontendManager
 from frontend.frontendnetwork import frontendNetwork
-from utils.utils import *
-from utils.math import *
+from util.utils import *
+from util.math import *
 from plot import *
 from expe.spec import _spec_; _spec = _spec_()
 from expe.format import *
-from utils.argparser import argparser
+from util.argparser import argparser
 
 from collections import Counter, defaultdict
 import itertools
@@ -19,6 +19,7 @@ import itertools
 ####################################################
 ### Config
 config = defaultdict(lambda: False, dict(
+    load_data = True
     write_to_file = False,
     gen_size      = 1000,
     epoch         = 10 , #20
@@ -49,7 +50,8 @@ Models = _spec.MODELS_GENERATE
 #))]
 
 for m in Models:
-    m['debug'] = 'debug11'
+    m['debug'] = 'debug111111'
+    m['repeat'] = 5
 
 if config.get('K'):
     for m in Models:

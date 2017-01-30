@@ -5,7 +5,7 @@ from frontend.manager import ModelManager, FrontendManager
 from frontend.frontendnetwork import frontendNetwork
 from frontend.frontend_io import *
 from expe.spec import _spec_; _spec = _spec_()
-from utils.argparser import argparser
+from util.argparser import argparser
 
 """ Parse models on disk, for checking
     or updating results
