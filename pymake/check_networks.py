@@ -22,6 +22,7 @@ from utils.math import reorder_mat
 
 ### Config
 config = defaultdict(lambda: False, dict(
+    load_data = True,
     block_plot = True,
     write_to_file = False,
     do           = 'homo', # homo/zipf
@@ -32,6 +33,8 @@ config.update(argparser.generate(''))
 ### Specification
 Corpuses = _spec.CORPUS_SYN_ICDM_1
 #Corpuses = _spec.CORPUS_REAL_ICDM_1
+
+Corpuses = _spec.CORPUS_NET_ALL
 
 #Model = _spec.MODEL_FOR_CLUSTER_IBP
 Model = _spec.MODEL_FOR_CLUSTER_IMMSB

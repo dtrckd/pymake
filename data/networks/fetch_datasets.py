@@ -63,24 +63,59 @@ class DataFetcher(object):
     ]
 
     def __init__(self):
-        pass
+        self.ua = 'Linux / Firefox 44: Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:44.0) Gecko/20100101 Firefox/44.0'
 
-    def getPath(self, repo):
-        p = repo['filename']
-        f = p + '/' + p + '.' + repo['ext']
-        return f
+    def getTargetFile(self, repo):
+        return  repo['filename'] + '/' + repo['url'].split('/')[-1]
 
-    def fetch(self):
-        for repo in self.REPO:
-            # exceture postprocessing // mkdir etc
-            self.wget(repo['url'], self.getPath(repo))
-            # exceture preprocessing // format processing / unzip
+    def getIdFile(self, repo):
+        return  repo['filename'] + '/' + repo['filename'] + '.' + repo['ext']
 
     def wget(self, url, out):
         call([ 'mkdir', '-p', path.dirname(out)])
-        call(['wget', url, '-O', out])
+        call(['wget', url, '-O', out, '--user-agent', self.ua])
+        return
+
+    def fetch(self, repo=None):
+        if repo is None:
+            REPO = self.REPO
+        else:
+            REPO = [self.REPO[i] for i, isin in enumerate((d['filename'] in repo for d in self.REPO)) if isin is True]
+            if len(REPO) == 0:
+                print('available repo: %s' % ([r['filename'] for r in self.REPO]))
+                exit()
+
+        for repo in REPO:
+            # exceture postprocessing // mkdir etc
+            self.wget(repo['url'], self.getTargetFile(repo))
+            self.postProcess(repo)
+
+        return
+
+    def postProcess(self, repo):
+        ''' Post processing :
+            * decompress
+            * rename
+        '''
+        target_file = self.getTargetFile(repo)
+        id_file = self.getIdFile(repo)
+
+        # Decompress
+        if target_file.endswith('.tar.gz'):
+            call(['tar', 'zxvf', target_file, '-C',  repo['filename'], '--strip-components', '1'])
+            # by chance only manufacturing for decmopress well in filenames...
+        elif target_file.endswith('.gz'):
+            call(['gzip', '-d', target_file])
+            call(['mv', target_file[:-len('.gz')], id_file])
+        else:
+            call(['mv', target_file, id_file])
+        return
 
 if __name__ == '__main__':
+    import sys
+    repo = sys.argv[1:] if len(sys.argv) > 1 else None
+    print(repo)
+
     df = DataFetcher()
-    df.fetch()
+    df.fetch(repo)
 

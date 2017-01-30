@@ -19,6 +19,7 @@ import itertools
 ####################################################
 ### Config
 config = defaultdict(lambda: False, dict(
+    load_data = True
     write_to_file = False,
     gen_size      = 1000,
     epoch         = 10 , #20

@@ -63,7 +63,7 @@ class frontendNetwork(DataBase):
 
             self._get_corpus(corpus_name)
 
-        np.fill_diagonal(self.data, 1)
+        #np.fill_diagonal(self.data, 1)
         if randomize:
             self.shuffle_node()
         return self.data
@@ -81,24 +81,29 @@ class frontendNetwork(DataBase):
         self.nodes_list = [self.nodes_list[0][nodes_l[0]], self.nodes_list[1][nodes_l[1]]]
 
     def sample(self, N=None, symmetric=False, randomize=False):
+        """ Write self ! """
         N = N or self.N
-        n = self.data.shape[0]
-        N_config = self.cfg['N']
-        if not N_config or N_config == 'all':
-            self.N = N
+        if N == 'all':
+            pass
         else:
             # Can't get why modification inside self.nodes_list is not propagated ?
-            N = int(N_config)
             if randomize is True:
                 nodes_list = [np.random.permutation(N), np.random.permutation(N)]
                 self.reorder_node(nodes_list)
             else:
                 self.data = self.data[:N, :N]
 
-            if hasattr(self, 'features') and self.features is not None:
-                self.features = self.features[:N]
-
+        self.update_data(self.data)
         return self.data
+
+    def update_data(self, data):
+        self.data = data
+        N, M = self.data.shape
+        self.N = N
+        self.nodes_list = [np.arange(N), np.arange(M)]
+
+        if hasattr(self, 'features') and self.features is not None:
+            self.features = self.features[:N]
 
     def get_masked(self, percent_hole, diag_off=1):
         """ Construct a random mask """
@@ -193,38 +198,33 @@ class frontendNetwork(DataBase):
             Redirect to correct path depending on the corpus_name
         """
         self.make_output_path()
-        N = self.cfg['N']
-        if type(N) is int or N.isdigit():
+        N = str(self.cfg['N'])
+        if N.isdigit():
             N = int(N)
-        elif N.lower() == 'all':
+        elif N.lower() in ('all', 'false', 'none'):
             N = 'all'
         else:
             # set the default value of parameter clearly somewhere
             # N = 'all'
             raise TypeError('Size of data no set (-n)')
 
+        # DB integration ?
         if corpus_name.startswith(('generator', 'Graph')):
-            fn = os.path.join(self.basedir, 't0.graph')
-            data = self.networkloader(fn)
+            format = 'graph'
         elif corpus_name in ('bench1'):
             raise NotImplementedError()
-        elif corpus_name.startswith('clique'):
-            K = int(corpus_name[len('clique'):])
-            data = getClique(N, K=K)
         elif corpus_name.startswith('facebook'):
-            fn = os.path.join(self.basedir, '0.edges')
-            data = self.networkloader(fn)
+            format = 'edges'
         elif corpus_name in ('manufacturing',):
-            fn = os.path.join(self.basedir, corpus_name + '.csv')
-            data = self.networkloader(fn)
+            format = 'csv'
         elif corpus_name in ('fb_uc', 'emaileu'):
-            fn = os.path.join(self.basedir, corpus_name + '.txt')
-            data = self.networkloader(fn)
+            format = 'txt'
         elif corpus_name in ('blogs','propro', 'euroroad'):
-            fn = os.path.join(self.basedir, corpus_name + '.dat')
-            data = self.networkloader(fn)
+            format = 'dat'
         else:
             raise ValueError('Which corpus to Load; %s ?' % corpus_name)
+
+        data = self.networkloader(corpus_name, format)
 
         for a in ('features', 'clusters'):
             if not hasattr(self, a):
@@ -239,21 +239,28 @@ class frontendNetwork(DataBase):
         self.N = N
         self.nodes_list = [np.arange(N), np.arange(M)]
 
-    def networkloader(self, fn):
-        """ Load pickle or parse data """
-
+    def networkloader(self, corpus_name, format):
+        """ Load pickle or parse data.
+            Format is understanding for parsing.
+            """
         data = None
+        fn = os.path.join(self.basedir, corpus_name)
         if self._load_data and os.path.isfile(fn+'.pk'):
             try:
                 data = self.load(fn)
-            except:
+            except Exception as e:
+                lgg.error('Error : %s on %s' % (e, fn+'.pk'))
                 data = None
         if data is None:
-            ext = fn.split('.')[-1]
+            ext = format
+            fn = os.path.join(self.basedir, corpus_name +'.'+ ext)
             if ext == 'graph':
+                fn = os.path.join(self.basedir, 't0.graph')
                 data = self.parse_dancer(fn)
             elif ext == 'edges':
-                data = self.parse_edges(fn) # unknw ?
+                fn = os.path.join(self.basedir, '0.edges')
+                data = self.parse_edges(fn)
+                # NotImplemented
             elif ext in ('txt'):
                 data = self.parse_tnet(fn)
             elif ext == 'csv':
@@ -265,7 +272,7 @@ class frontendNetwork(DataBase):
                 raise ValueError('extension of network data unknown')
 
         if self._save_data:
-            self.save(data, fn)
+            self.save(data, fn[:-len('.'+ext)])
 
         return data
 
@@ -287,7 +294,7 @@ class frontendNetwork(DataBase):
     def parse_csv(self, fn):
         sep = ';'
         lgg.debug('opening file: %s' % fn)
-        with open(fn) as f:
+        with open(fn, 'r') as f:
             content = f.read()
         lines = list(filter(None, content.split('\n')))[1:]
         edges = [l.strip().split(sep)[0:2] for l in lines]
@@ -355,25 +362,26 @@ class frontendNetwork(DataBase):
     def parse_dat(self, fn, sep=' '):
         """ Parse Network data depending on type/extension """
         lgg.debug('opening file: %s' % fn)
-        f = open(fn, 'r')
+        f = open(fn, 'rb')
         data = []
         inside = {'vertices':False, 'edges':False }
         clusters = []
         features = []
         for _line in f:
-            line = _line.strip()
-            if line.startswith('ROW LABELS:') or inside['vertices']:
+            line = _line.strip().decode('utf8') #python 2..
+            if line.startswith(('ROW LABELS:', '*vertices')) or inside['vertices']:
                 if not inside['vertices']:
                     inside['vertices'] = True
                     continue
                 if line.startswith('#') or not line.strip():
                     inside['vertices'] = False # break
-                elif line.startswith('DATA'):
+                elif line.startswith(('DATA','*edges' )):
                     inside['vertices'] = False # break
                     inside['edges'] = True
                 else:
+                    # todo if needed
                     continue
-            elif line.startswith('DATA') or inside['edges']:
+            elif line.startswith(('DATA','*edges' )) or inside['edges']:
                 if not inside['edges']:
                     inside['edges'] = True # break
                     continue
