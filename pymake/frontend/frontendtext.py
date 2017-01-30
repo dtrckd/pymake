@@ -4,10 +4,10 @@ import sys, os
 from itertools import chain
 from string import Template
 
-from utils.utils import make_path
+from util.utils import make_path
 
 from .frontend import DataBase
-from utils.vocabulary import Vocabulary, parse_corpus
+from util.vocabulary import Vocabulary, parse_corpus
 
 sys.path.insert(1, os.path.join(os.path.dirname(__file__),'../../../gensim'))
 

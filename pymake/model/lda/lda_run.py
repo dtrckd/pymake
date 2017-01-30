@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from utils.utils import argParse
-from utils.vocabulary import Vocabulary, parse_corpus
+from util.utils import argParse
+from util.vocabulary import Vocabulary, parse_corpus
 from frontend.frontend import frontEndBase
 
 from sklearn.svm import LinearSVC

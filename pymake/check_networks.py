@@ -4,11 +4,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from frontend.manager import ModelManager
 from frontend.frontendnetwork import frontendNetwork
-from utils.utils import *
+from util.utils import *
 from plot import *
 from expe.spec import _spec_; _spec = _spec_()
-from utils.argparser import argparser
-from utils.math import reorder_mat
+from util.argparser import argparser
+from util.math import reorder_mat
 
 """ Inspect data on disk, for checking
     or updating results
@@ -25,7 +25,7 @@ config = defaultdict(lambda: False, dict(
     load_data = True,
     block_plot = True,
     write_to_file = False,
-    do           = 'homo', # homo/zipf
+    do           = 'zipf', # homo/zipf/burstiness/pvalue
     clusters_org = 'source' # source/model
 ))
 config.update(argparser.generate(''))

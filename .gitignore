@@ -15,8 +15,8 @@ data/**/*.zip
 data/**/*.tgz
 data/**/*.gz
 
-pymake/utils/stirling.pk
-pymake/utils/stirling.npy
+stirling.pk
+stirling.npy
 pymake/ID
 
-src/.seed.pk
+.seed.pk

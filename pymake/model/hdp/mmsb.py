@@ -12,10 +12,10 @@ import scipy as sp
 from scipy.special import digamma
 from numpy.random import dirichlet, gamma, poisson, binomial, beta
 
-from models import GibbsSampler, MSampler, BetaSampler
+from model import GibbsSampler, MSampler, BetaSampler
 
-from utils.math import lognormalize, categorical, sorted_perm, adj_to_degree
-#from utils.algo import *
+from util.math import lognormalize, categorical, sorted_perm, adj_to_degree
+#from util.algo import *
 
 # Implementation Mixed Membership Sochastic Blockmodel Stochastic
 

@@ -308,7 +308,7 @@ def dict_list_2_dict_freqdist(corpus):
     return docs
 
 if __name__ == "__main__":
-    from utils.vocabulary import Vocabulary, parse_raw_text
+    from util.vocabulary import Vocabulary, parse_raw_text
 
     bdir = "../../data/nips12/"
     #data = import_monolingual_data(bdir + "doc.dat")

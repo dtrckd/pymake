@@ -16,11 +16,11 @@ import pickle, json # presence of this module here + in .frontend not zen
 
 
 # This is a mess, hormonize things with models
-from models.hdp import mmsb, lda
-from models.ibp.ilfm_gs import IBPGibbsSampling
+from model.hdp import mmsb, lda
+from model.ibp.ilfm_gs import IBPGibbsSampling
 
 #### @Debug/temp modules name changed in pickle model
-from models import hdp, ibp
+from model import hdp, ibp
 sys.modules['hdp'] = hdp
 sys.modules['ibp'] = ibp
 ###

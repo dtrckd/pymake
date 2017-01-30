@@ -4,14 +4,14 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from frontend.manager import ModelManager, FrontendManager
 from frontend.frontendnetwork import frontendNetwork
-from utils.utils import *
-from utils.math import *
-from utils.algo import Annealing
+from util.utils import *
+from util.math import *
+from util.algo import Annealing
 from plot import *
 from frontend.frontend_io import *
 from expe.spec import _spec_; _spec = _spec_()
 from expe import format
-from utils.argparser import argparser
+from util.argparser import argparser
 
 from collections import Counter, defaultdict
 

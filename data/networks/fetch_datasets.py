@@ -112,9 +112,9 @@ class DataFetcher(object):
         return
 
 if __name__ == '__main__':
+    # usage : ./$0 [*corpus]
     import sys
     repo = sys.argv[1:] if len(sys.argv) > 1 else None
-    print(repo)
 
     df = DataFetcher()
     df.fetch(repo)

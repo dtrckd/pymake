@@ -3,7 +3,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 # @Issue43: Parser/config unification.
-from utils.utils import *
+from util.utils import *
 from collections import defaultdict
 import os
 
@@ -41,7 +41,7 @@ if __name__ == '__main__':
         Build Corpuses %s''' % (str(corpuses)))
         exit()
 
-    ask_sure_exit('Sure to overwrite corpus / networks ?')
+    ask_sure_exit('Sure to overwrite Graph / networks ?')
 
     fn_corpus_build = os.path.join(config['bdir'], 'networks', 'Corpuses.txt')
     _f = open(fn_corpus_build, 'a')
