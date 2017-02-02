@@ -6,3 +6,6 @@ try:
 except NameError:
     #python3
     basestring = (str, bytes)
+
+
+#from zymake import Zymake

@@ -51,22 +51,70 @@ class frontendNetwork(DataBase):
             * Corpus from file dataset
         """
 
-        if self.cfg.get('random'):
-            corpus_name = self.update_spec(**{'corpus_name': self.cfg['random']})
-            self.update_data(self.random(corpus_name))
-            self.make_output_path()
-        else:
+
+        if self.corpus_name:
             if corpus_name is not None:
                 self.update_spec(**{'corpus_name': corpus_name})
             else:
                 corpus_name = self.corpus_name
+            self.make_output_path()
+            data = self._get_corpus(corpus_name)
+        elif self.cfg.get('random'):
+            corpus_name = self.update_spec(**{'corpus_name': self.cfg['random']})
+            data = self.random(corpus_name)
+            self.make_output_path()
 
-            self._get_corpus(corpus_name)
+        self.update_data(data)
 
         #np.fill_diagonal(self.data, 1)
         if randomize:
             self.shuffle_node()
         return self.data
+
+    def _get_corpus(self, corpus_name):
+        """ @debug Be smarter, has some database strategy.
+            Redirect to correct path depending on the corpus_name
+        """
+        N = self.getN()
+
+        # DB integration ?
+        if corpus_name.startswith(('generator', 'Graph')):
+            format = 'graph'
+        elif corpus_name in ('bench1'):
+            raise NotImplementedError()
+        elif corpus_name.startswith('facebook'):
+            format = 'edges'
+        elif corpus_name in ('manufacturing',):
+            format = 'csv'
+        elif corpus_name in ('fb_uc', 'emaileu'):
+            format = 'txt'
+        elif corpus_name in ('blogs','propro', 'euroroad'):
+            format = 'dat'
+        else:
+            raise ValueError('Which corpus to Load; %s ?' % corpus_name)
+
+        data = self.networkloader(corpus_name, format)
+
+        for a in ('features', 'clusters'):
+            if not hasattr(self, a):
+                setattr(self, a, None)
+
+        return data
+
+    def getN(self):
+        if hasattr(self, 'N'):
+            return self.N
+
+        N = str(self.cfg['N'])
+        if N.isdigit():
+            N = int(N)
+        elif N.lower() in ('all', 'false', 'none'):
+            N = 'all'
+        else:
+            raise TypeError('Size of data no set (-n)')
+
+        self.N = N
+        return self.N
 
     def shuffle_node(self):
         """ Shuffle rows and columns of data """
@@ -82,7 +130,8 @@ class frontendNetwork(DataBase):
 
     def sample(self, N=None, symmetric=False, randomize=False):
         """ Write self ! """
-        N = N or self.N
+        N = int(N) or self.getN()
+
         if N == 'all':
             pass
         else:
@@ -164,7 +213,7 @@ class frontendNetwork(DataBase):
         return self.symmetric
 
     def random(self, rnd):
-        N = self.N = self.cfg['N']
+        N = self.getN()
 
         if rnd == 'uniform':
             data = np.random.randint(0, 2, (N, N))
@@ -196,46 +245,6 @@ class frontendNetwork(DataBase):
             raise NotImplementedError()
 
         return data
-
-    def _get_corpus(self, corpus_name):
-        """ @debug Be smarter, has some database strategy.
-            Redirect to correct path depending on the corpus_name
-        """
-        self.make_output_path()
-        N = str(self.cfg['N'])
-        if N.isdigit():
-            N = int(N)
-        elif N.lower() in ('all', 'false', 'none'):
-            N = 'all'
-        else:
-            # set the default value of parameter clearly somewhere
-            # N = 'all'
-            raise TypeError('Size of data no set (-n)')
-
-        # DB integration ?
-        if corpus_name.startswith(('generator', 'Graph')):
-            format = 'graph'
-        elif corpus_name in ('bench1'):
-            raise NotImplementedError()
-        elif corpus_name.startswith('facebook'):
-            format = 'edges'
-        elif corpus_name in ('manufacturing',):
-            format = 'csv'
-        elif corpus_name in ('fb_uc', 'emaileu'):
-            format = 'txt'
-        elif corpus_name in ('blogs','propro', 'euroroad'):
-            format = 'dat'
-        else:
-            raise ValueError('Which corpus to Load; %s ?' % corpus_name)
-
-        data = self.networkloader(corpus_name, format)
-
-        for a in ('features', 'clusters'):
-            if not hasattr(self, a):
-                setattr(self, a, None)
-
-        self.update_data(data)
-        return True
 
     def update_data(self, data):
         self.data = data
