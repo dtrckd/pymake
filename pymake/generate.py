@@ -42,8 +42,8 @@ config = defaultdict(lambda: False, dict(
     gen_size      = 1000,
     epoch         = 20 , #20
     #### Path Spec
-    debug         = 'debug11'
-    #debug         = 'debug111111', repeat        = 5,
+    #debug         = 'debug11'
+    debug         = 'debug111111', repeat        = 0,
 ))
 config.update(argparser.generate(USAGE))
 
@@ -53,6 +53,7 @@ config.update(argparser.generate(USAGE))
 #Corpuses = _spec.CORPUS_SYN_ICDM_1
 #Corpuses = _spec.CORPUS_REAL_ICDM_1
 Corpuses = _spec.CORPUS_SYN_ICDM_1 + _spec.CORPUS_REAL_ICDM_1
+Corpuses = _spec.CORPUS_REAL_V2
 
 #Corpuses = ('generator7',)
 #Corpuses = ('fb_uc',)
