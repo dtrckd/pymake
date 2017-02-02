@@ -13,7 +13,7 @@ import logging
 
 USAGE = '''build_model [-vhswp] [-k [rvalue] [-n N] [-d basedir] [-lall] [-l type] [-m model] [-c corpus] [-i iterations]
 
-Default load corpus and run a model !!
+Default load corpus and run a model.
 
 ##### Argument Options
 --hyper|alpha  : hyperparameter optimization ( asymmetric | symmetric | auto)
@@ -111,7 +111,7 @@ if __name__ == '__main__':
 
     now = datetime.now()
     data = frontend.load_data(randomize=False)
-    data = frontend.sample()
+    data = frontend.sample(config['N'])
     last_d = ellapsed_time('Data Preprocessing Time', now)
 
     if 'Text' in str(type(frontend)):

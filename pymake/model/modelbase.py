@@ -241,6 +241,7 @@ class GibbsSampler(ModelBase):
 
         print()
         ### Clean Things
+        self.samples = self.samples
         if not self.samples:
             self.samples.append([self._theta, self._phi])
         self.close()
