@@ -19,11 +19,15 @@ import pickle, json # presence of this module here + in .frontend not zen
 from model.hdp import mmsb, lda
 from model.ibp.ilfm_gs import IBPGibbsSampling
 
+
+# __future__ **$ù*$ù$
 #### @Debug/temp modules name changed in pickle model
 from model import hdp, ibp
 sys.modules['hdp'] = hdp
 sys.modules['ibp'] = ibp
-###
+import model
+sys.modules['models'] = model
+
 
 try:
     sys.path.insert(1, '../../gensim')
@@ -276,7 +280,7 @@ class ModelManager(object):
         for k, v in self.model.__dict__.items():
             if hasattr(v, 'func_name') and v.func_name == '<lambda>':
                 to_remove.append(k)
-            if str(v).find('<lambda>'):
+            if str(v).find('<lambda>') >= 0:
                 # python3 hook, nothing better ?
                 to_remove.append(k)
             #elif type(k) is defaultdict:
