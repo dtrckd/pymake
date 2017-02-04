@@ -1,7 +1,6 @@
-Pymake, help making reproducible research by providing tools to create :
+Pymake helps making reproducible research by providing tools adapted for creating **complex and traceable design of experiments** and **Models for data analysis**.
 
-* complex and traceable design of experiments.
-* Models for data analysis.
+This code is in a living devellopment and yet unstable.
 
 ## Zen
 
