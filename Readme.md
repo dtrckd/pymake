@@ -1,6 +1,6 @@
 Pymake helps making reproducible research by providing tools adapted for creating **complex and traceable design of experiments** and **Models for data analysis**.
 
-This code is in a living devellopment and yet unstable.
+This code is in a living devellopment stage and yet unstable.
 
 ## Zen
 
@@ -14,14 +14,14 @@ If a good (scientific) library do the job, wrap it:
 
 ## Logic
 
-Once an experiments is designed, we deploy it using two script :
+Once an experiment is designed, we deploy it using two scripts :
 
 *  `zymake` to create the uniq experiment command for each of them.
 *  `pysinc` to parralelize the jobs.
 
 ### Usage
 ###### Zymake
-Script to create the path and command for a design of experiments:
+Script to create the path and command for a design of experiments :
 
 ###### Run experiments
     zymake runcmd EXPE_ID | parralle [opt]  # to make run a list of experience in parallel
