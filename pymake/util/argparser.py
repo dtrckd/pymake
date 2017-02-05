@@ -2,8 +2,8 @@
 import inspect
 from functools import wraps
 import args as clargs
-from frontend.frontend_io import *
-from expe.spec import _spec_; _spec = _spec_()
+from pymake.frontend.frontend_io import *
+from pymake.expe.spec import _spec_; _spec = _spec_()
 
 #########
 # @TODO:
@@ -90,13 +90,20 @@ class argparser(object):
     @staticmethod
     @askhelp
     @askverbose
-    def zymake(USAGE=''):
+    def zymake():
         """ Generates output (files or line arguments) according to the SPEC
             @return OUT_TYPE: runcmd or path
                     SPEC: expe spec
                     FTYPE: filetype targeted
                     STATUS: status of file required  on the filesystem
         """
+        USAGE = '''\
+                # Usage:
+            zymake path[default] SPEC Filetype(pk|json|inf)
+            zymake runcmd SPEC
+            zymake -l : show available spec
+            '''
+
         # Default request
         req = dict(
             OUT_TYPE = 'path',

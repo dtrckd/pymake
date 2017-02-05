@@ -11,10 +11,10 @@ import scipy as sp
 from scipy.special import digamma
 from numpy.random import dirichlet, gamma, poisson, binomial, beta
 
-from frontend.frontend import DataBase
-from model import GibbsSampler, MSampler, BetaSampler
+from pymake.frontend.frontend import DataBase
+from pymake.model import GibbsSampler, MSampler, BetaSampler
 
-from util.math import lognormalize, categorical
+from pymake.util.math import lognormalize, categorical
 
 
 # Implementation of Teh et al. (2005) Gibbs sampler for the Hierarchical Dirichlet Process: Direct assignement.

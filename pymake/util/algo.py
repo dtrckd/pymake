@@ -6,8 +6,8 @@ from collections import defaultdict
 import numpy as np
 import scipy as sp
 
-from frontend.frontend import Object
-from frontend.frontendnetwork import frontendNetwork
+from pymake.frontend.frontend import Object
+from pymake.frontend.frontendnetwork import frontendNetwork
 
 from .utils import *
 from .math import *

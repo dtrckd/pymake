@@ -8,13 +8,14 @@ lgg = logging.getLogger('root')
 
 import numpy as np
 import scipy as sp
+from numpy import ma
 from scipy.sparse import csr_matrix
 from scipy.sparse import lil_matrix
 sp_dot = csr_matrix.dot
 
 from .ibp import IBP
-from model import ModelBase
-from util.algo import *
+from pymake.model import ModelBase
+from pymake.util.algo import *
 
 # We will be taking log(0) = -Inf, so turn off this warning
 #np.seterr(divide='ignore')
@@ -39,8 +40,7 @@ W_diag = -2
 
 class IBPGibbsSampling(IBP, ModelBase):
 
-    def __init__(self, symmetric=False,
-                 assortativity=False,
+    def __init__(self, assortativity=False,
                  alpha_hyper_parameter=None,
                  sigma_w_hyper_parameter=None,
                  metropolis_hastings_k_new=True,
@@ -49,7 +49,6 @@ class IBPGibbsSampling(IBP, ModelBase):
         self.bilinear_matrix = None
         self.log_likelihood = None
         self.ll_inc = 0
-        self.symmetric = symmetric
         self.assortativity = assortativity
         self._overflow = 1.0
         self.ratio_MH_F = 0.0
@@ -68,13 +67,13 @@ class IBPGibbsSampling(IBP, ModelBase):
     @param sigma_w: standard derivation of the feature
     @param initialize_Z: seeded Z matrix """
     def _initialize(self, data, alpha=1.0, sigma_w=1, initial_Z=None, initial_W=None, KK=None):
-        if type(data) is not np.ma.masked_array:
-            data = np.ma.array(data)
+        if type(data) is not ma.masked_array:
+            # Ignore Diagonal
+            data = np.ma.array(data, mask=np.zeros(data.shape))
+            np.fill_diagonal(data, ma.masked)
 
+        self.symmetric = (data == data.T).all()
         self.nnz = len(data.compressed())
-
-        # Data matrix
-        #super(IBPGibbsSampling, self)._initialize(self.center_data(data), alpha, initial_Z)
         super(IBPGibbsSampling, self)._initialize(data, alpha, initial_Z, KK=KK)
 
         self._mean_w = 0
@@ -539,6 +538,11 @@ class IBPGibbsSampling(IBP, ModelBase):
         self.phi = W
         self.K = self.theta.shape[1]
         return Z, W
+
+    def getData(self):
+        Y = np.array(self._Y)
+        Y[Y <= 0] = 0
+        return Y
 
     # * Precision on masked data
     # -- On Gen Y

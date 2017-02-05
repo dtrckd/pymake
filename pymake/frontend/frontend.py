@@ -69,14 +69,13 @@ class DataBase(object):
     #    * separate better load / save and preprocessing (input can be file or array...)
     #    * view of file confif.... and path creation....
 
-    def __init__(self, config, data=None):
+    def __init__(self, config, load=False):
         if config.get('seed'):
             #np.random.seed(config.get('seed'))
             np.random.set_state(self.load('.seed'))
         self.seed = np.random.get_state()
         self.save(self.seed, '.seed')
         self.cfg = config
-        config['data_type'] = self.bdir
         self._load_data = config.get('load_data')
         self._save_data = config.get('save_data')
 
@@ -92,16 +91,19 @@ class DataBase(object):
         self.features = None
 
         self.true_classes = None
-        self.data = data
-        self.data_t = None
 
-        # Read Directory
-        #self.make_output_path()
+        ########
+        ### Update settings Operations
+        ########
+        config['data_type'] = self.bdir
+        self.make_output_path()
 
-        # self._init()
-        # self.data = self.load_data(spec)
-        if data is not None:
-            self.update_data(data)
+        if load is True:
+            self.load_data(randomize=False)
+
+        # Copy Contructor in Python ?
+        #if data is not None:
+        #    self.update_data(data)
 
     def update_data(self):
         raise NotImplemented
@@ -123,11 +125,9 @@ class DataBase(object):
     def corpus_walker(path):
         raise NotImplementedError()
 
-    #######
-    # How to get a chlidren class from root class !?
-    # See also: load_model() return super('child') ...
-    #######
     def load_data(self):
+        raise NotImplementedError()
+    def _get_corpus(self):
         raise NotImplementedError()
 
     # convert ndarray to list.
@@ -214,6 +214,7 @@ class DataBase(object):
         if data is None:
             return None
         data = np.triu(data) + np.triu(data, 1).T
+        return
 
 
 
