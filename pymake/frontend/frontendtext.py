@@ -1,13 +1,11 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys, os
-from itertools import chain
 from string import Template
 
-from util.utils import make_path
-
+from pymake.util.utils import make_path
+from pymake.util.vocabulary import Vocabulary, parse_corpus
 from .frontend import DataBase
-from util.vocabulary import Vocabulary, parse_corpus
 
 sys.path.insert(1, os.path.join(os.path.dirname(__file__),'../../../gensim'))
 
@@ -20,12 +18,11 @@ except:
 
 
 class frontendText(DataBase):
-    """ Frontend for text data ie Corpus.  """
+    """ Frontend for text Corpus """
 
-    def __init__(self, config=dict(), data=None):
+    def __init__(self, config=dict(), load=False):
         self.bdir = 'text'
-        super(frontendText, self).__init__(config, data)
-        self.make_output_path()
+        super(frontendText, self).__init__(config, load)
 
     def load_data(self, corpus_name=None, randomize=False):
         """ Load data according to different scheme:

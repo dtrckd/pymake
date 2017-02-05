@@ -12,9 +12,9 @@ import scipy as sp
 from scipy.special import digamma
 from numpy.random import dirichlet, gamma, poisson, binomial, beta
 
-from model import GibbsSampler, MSampler, BetaSampler
+from pymake.model import GibbsSampler, MSampler, BetaSampler
 
-from util.math import lognormalize, categorical, sorted_perm, adj_to_degree
+from pymake.util.math import lognormalize, categorical, sorted_perm, adj_to_degree
 #from util.algo import *
 
 # Implementation Mixed Membership Sochastic Blockmodel Stochastic
@@ -35,7 +35,11 @@ HDP: Teh et al. (2005) Gibbs sampler for the Hierarchical Dirichlet Process: Dir
 # Assume delta a scalar.
 class Likelihood(object):
 
-    def __init__(self, delta, data, nodes_list=None, symmetric=False, assortativity=False):
+    def __init__(self, delta, data, nodes_list=None, assortativity=False):
+        """ Notes
+            -----
+            * Diagonal is ignored here for prediction
+        """
 
         if nodes_list is None:
             self.nodes_list = [np.arange(data.shape[0]), np.arange(data.shape[1])]
@@ -44,9 +48,12 @@ class Likelihood(object):
             raise ValueError('re order the networks ! to avoid using _nmap')
 
         if type(data) is not np.ma.masked_array:
-            data = np.ma.array(data)
+            # Ignore Diagonal
+            data = np.ma.array(data, mask=np.zeros(data.shape))
+            np.fill_diagonal(data, ma.masked)
+
         self.data_ma = data
-        self.symmetric = symmetric
+        self.symmetric = (data == data.T).all()
         self.data_dims = self.get_data_dims()
         self.nnz = self.get_nnz()
         # Vocabulary size

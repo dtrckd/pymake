@@ -9,7 +9,7 @@ import numpy as np
 from scipy.special import gammaln
 from numpy.random import dirichlet, gamma, poisson, binomial, beta
 
-from util.math import lognormalize, categorical
+from pymake.util.math import lognormalize, categorical
 
 try:
     import sympy as sym
@@ -19,7 +19,7 @@ except:
 #import sppy
 
 try:
-    from util.compute_stirling import load_stirling
+    from pymake.util.compute_stirling import load_stirling
     _stirling_mat = load_stirling()
 except:
     lgg.error('strling.npy file not found, passing...')
@@ -171,6 +171,11 @@ class ModelBase(object):
         raise NotImplementedError
     def get_clusters(self):
         raise NotImplementedError
+
+class SVB(object):
+    def __init__(self):
+        # Do iniherit from modelBase ?
+        pass
 
 
 def mmm(fun):
@@ -335,8 +340,6 @@ class GibbsSampler(ModelBase):
         self.K = self.theta.shape[1]
         return self.theta, self.phi
 
-
-### Base Sampler
 
 class MSampler(object):
 
