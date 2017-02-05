@@ -1,8 +1,8 @@
-Pymake helps making reproducible research by providing tools adapted for creating **complex and traceable design of experiments** and **Models for data analysis**.
+Pymake helps making reproducible research by providing tools adapted for the creation of **complex and traceable design of experiments** and **Models for data analysis**.
 
 This code is in a living devellopment stage and yet unstable.
 
-## Zen
+### Zen
 
 If a good (scientific) library do the job, wrap it:
 * numpy
@@ -12,14 +12,14 @@ If a good (scientific) library do the job, wrap it:
 * tensorflow (to complete)
 * pyspark (to complete)
 
-## Logic
+### Logic
 
 Once an experiment is designed, we deploy it using two scripts :
 
 *  `zymake` to create the uniq experiment command for each of them.
 *  `pysinc` to parralelize the jobs.
 
-### Usage
+#### Usage
 ###### Zymake
 Script to create the path and command for a design of experiments :
 
@@ -47,32 +47,26 @@ Data Lookup is coded in `util/frontend_io.py` and Output Data path specification
 
     [script_name] [bdir/-d]/[type]/[corpus/-c]/[subdir/--refdir]/[model/-m][iterations/-i]
 
-Results of experiments are stored in data/[specification].
+The Results of experiments are stored in data/[specification].
 
-## Models
+### Models
 
-
-#### Indian Buffet Process
-
-Collapsed Gibbs sampling:
-Uncollapsed Gibbs sampling:
-Variational Bayes:
+* Indian Buffet Process (IBP)
+* Dirichlet Process -- DP and HDP
 
 ##### Networks applications
-ILFRM
+ILFM
 
-#### Hierarchical Dirichlet Process
+### Inference
 
-Collapsed Gibbs sampling:
+* Gibbs Samplers
+* Variationnal Bayes
 
+### Applications
+* LDA (language)
+* MMSB (networks)
 
-##### Text Applications
-LDA
-
-##### Networks Application
-MMSB
-
-## Example
+### Examples
 
 Fit a Gaussian mixtures on a text corpus...
 
