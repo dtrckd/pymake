@@ -50,8 +50,6 @@ or equivalently :
     expe_meas.py EXPE_ID    #  Create a table of results
 
 
-see also: [Directory Tree](#directory-tree).
-
 ### Directory Tree
 
 * `data/` contains dataset and learning output results,
