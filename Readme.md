@@ -31,7 +31,8 @@ Script to create the path and commands for a design of experiments :
             corpus = '20ngroups',
             vsm = 'tfidf',
             repeat = range(10))
-            
+          
+    # Only the first epoch/repeat here.
     data, model = Zymake(spec)
     model.fit(data)
     model.predict()
