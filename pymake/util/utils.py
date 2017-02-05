@@ -89,24 +89,9 @@ def argParse(usage="Usage ?"):
         elif arg in ('-d',):
             _arg = sys.argv.pop(i+1)
             argdict['bdir'] = _arg+'/'
-        elif arg in ('-lall', ):
-            argdict['lall'] = True
-        elif arg in ('-l', '-load', '--load'):
-            try:
-                _arg = sys.argv[i+1]
-            except:
-                _arg = 'tmp'
-            if not os.path.exists(_arg):
-                if _arg == 'corpus' or _arg == 'model':
-                    argdict['load'] = sys.argv.pop(i+1)
-                else:
-                    argdict['load'] = False
-            else:
-                _arg = sys.argv.pop(i+1)
-                argdict['load'] = _arg
         elif arg in ('-r', '--random', 'random'):
             _arg = sys.argv.pop(i+1)
-            argdict['random'] = _arg
+            argdict['corpus'] = _arg
         elif arg in ('-g'):
             argdict.update(random = False)
         elif arg in ('--help','-h'):
@@ -145,6 +130,9 @@ def setup_logger(name, fmt, verbose, file=None):
     logger = logging.getLogger(name)
     logger.setLevel(verbose)
     logger.addHandler(handler)
+
+    # prevent twice loggin
+    logger.propagate = False
     return logger
 
 

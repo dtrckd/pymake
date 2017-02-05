@@ -43,8 +43,6 @@ Examples:
 ./fit.py -m immsb -c generator1 -n 100 -i 10
 # Various networks setting:
 ./fit.py -m ibp_cgs --homo 0 -c clique6 -n 100 -k 3 -i 20
-
-
 '''
 
 if __name__ == '__main__':
@@ -66,14 +64,15 @@ if __name__ == '__main__':
     ))
     ##### Experience Settings
     Expe = dict(
-        random = 'clique2',
+        corpus = 'clique2',
         #corpus = "lucene"
         model_name  = 'immsb',
         hyper       = 'auto',
+        testset_ratio = 0.2,
         K           = 3,
-        N           = 10,
+        N           = 42,
         chunk       = 10000,
-        iterations  = 2,
+        iterations  = 6,
         homo        = 0, # learn W in IBP
     )
 
@@ -81,15 +80,6 @@ if __name__ == '__main__':
     config.update(argParse(USAGE))
 
     lgg = setup_logger('root','%(message)s', config.get('verbose') )
-
-    # Silly ! think different
-    if config.get('lall'):
-        # Load All
-        config.update(load_data=True, load_model=True)
-    if config.get('load') == 'corpus':
-        config['load_data'] = True
-    elif config.get('load') == 'model':
-        config['load_model'] = True
 
     ############################################################
     ##### Simulation Output
@@ -107,40 +97,11 @@ if __name__ == '__main__':
 
     ############################################################
     ##### Load Data
-    frontend = FrontendManager.get(config)
-
+    data = FrontendManager.get(config)
     now = datetime.now()
-    data = frontend.load_data(randomize=False)
-    data = frontend.sample(config['N'])
+    data.load_data(randomize=False)
+    data.sample(config['N'])
     last_d = ellapsed_time('Data Preprocessing Time', now)
-
-    if 'Text' in str(type(frontend)):
-        lgg.warning('check WHY and WHEN overflow in stirling matrix !?')
-        print('debug why error and i get walue superior to 6000 in the striling matrix ????')
-        data, data_t = frontend.cross_set(ratio=0.8)
-    elif 'Network' in str(type(frontend)):
-        if config['refdir'] in ('debug11', 'debug1111','debug111111'):
-            # Random training set on 20% on Data / debug5 - debug11 -- Unbalanced
-            percent_hole = 0.2
-            data = frontend.get_masked(percent_hole)
-            config['symmetric'] = frontend.is_symmetric()
-            data_t = None
-        elif config['refdir']  in ('debug10', 'debug1010', 'debug101010'):
-            # Random training set on 20% on Data vertex (0.2 * data == 1) / debug6 - debug 10 -- Balanced
-            percent_hole = 0.2
-            data = frontend.get_masked_1(percent_hole)
-            config['symmetric'] = frontend.is_symmetric()
-            data_t = None
-        else:
-            # Random training set on 20% on Data / debug5 - debug11
-            percent_hole = 0.2
-            data = frontend.get_masked(percent_hole)
-            config['symmetric'] = frontend.is_symmetric()
-            data_t = None
-
-        #print frontend.nodes_list
-    else:
-        raise ValueError('Unknow data type')
 
     ############################################################
     ##### Load Model
@@ -156,18 +117,18 @@ if __name__ == '__main__':
 
     #### Debug
     #config['write'] = False
-    #model = ModelManager(data, config)
-    #model.init_loop_test()
+    #model = ModelManager(config, data)
+    #model.initialization_test()
     #exit()
 
     # Initializa Model
-    model = ModelManager(data, config, data_t=data_t)
+    model = ModelManager(config)
     last_d = ellapsed_time('Init Model Time', last_d)
 
     #### Run Inference / Learning Model
-    model.fit()
+    model.fit(data)
     last_d = ellapsed_time('Inference Time: %s'%(model.output_path), last_d)
 
     #### Predict Future
-    model.predict(frontend)
+    model.predict(data)
 

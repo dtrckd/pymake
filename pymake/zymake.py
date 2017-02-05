@@ -1,27 +1,28 @@
 #!/usr/bin/python3 -u
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 #from joblib import Parallel, delayed
 import multiprocessing
 import sys
 
-from util.argparser import argparser
-from frontend.frontend_io import make_forest_path, make_forest_runcmd
-from expe.spec import _spec_; _spec = _spec_()
+from .frontend.frontend_io import make_forest_path, make_forest_runcmd, make_forest_conf
+from .frontend.manager import ModelManager, FrontendManager
+from .expe.spec import _spec_; _spec = _spec_()
 
-USAGE = '''\
-# Usage:
-    zymake path[default] SPEC Filetype(pk|json|inf)
-    zymake runcmd SPEC
-    zymake -l : show available spec
-'''
-
-class Zymake(object):
-    pass
+def Zymake(spec):
+    commands = make_forest_conf(spec)
+    if len(commands) == 1:
+        frontend = FrontendManager.get(commands[0], load=True)
+        model = ModelManager(commands[0])
+        return frontend, model
+    else:
+        raise NotImplementedError('Multiple expe handle')
 
 if __name__ == '__main__':
 
-    zyvar = argparser.zymake(USAGE)
+    from util.argparser import argparser
+    zyvar = argparser.zymake()
 
     ### Makes OUT Files
     if zyvar['OUT_TYPE'] == 'runcmd':

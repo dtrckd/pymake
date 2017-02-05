@@ -6,27 +6,29 @@ import logging
 lgg = logging.getLogger('root')
 
 # Frontend Manager Utilities
+from .frontend import DataBase
 from .frontendtext import frontendText
 from .frontendnetwork import frontendNetwork
 from .frontend_io import *
 
 # Model Manager Utilities
 import numpy as np
+from numpy import ma
 import pickle, json # presence of this module here + in .frontend not zen
 
 
 # This is a mess, hormonize things with models
-from model.hdp import mmsb, lda
-from model.ibp.ilfm_gs import IBPGibbsSampling
+from pymake.model.hdp import mmsb, lda
+from pymake.model.ibp.ilfm_gs import IBPGibbsSampling
 
 
 # __future__ **$ù*$ù$
 #### @Debug/temp modules name changed in pickle model
-from model import hdp, ibp
+from pymake.model import hdp, ibp
 sys.modules['hdp'] = hdp
 sys.modules['ibp'] = ibp
-import model
-sys.modules['models'] = model
+import pymake.model
+sys.modules['models'] = pymake.model
 
 
 try:
@@ -38,15 +40,15 @@ except:
     pass
 
 class FrontendManager(object):
-    """ Utility Class who aims at mananing the frontend at the higher level.
+    """ Utility Class who aims at mananing/Getting the datastructure at the higher level.
     """
     @staticmethod
-    def get(config):
+    def get(config, load=False):
         """ Return: The frontend suited for the given configuration"""
         corpus = config.get('corpus_name') or config.get('corpus') or config.get('random')
         corpus_typo = {
             'network': [
-                'clique', 'alternate', 'BA', 'barabasi-albert', # random
+                'clique', 'alternate', 'BA', # random
                 'facebook',
                 'generator',
                 'bench',
@@ -73,10 +75,10 @@ class FrontendManager(object):
         for key, cps in corpus_typo.items():
             if corpus.startswith(tuple(cps)):
                 if key == 'text':
-                    frontend = frontendText(config)
+                    frontend = frontendText(config, load=load)
                     break
                 elif key == 'network':
-                    frontend = frontendNetwork(config)
+                    frontend = frontendNetwork(config, load=load)
                     break
 
         if frontend is None:
@@ -84,61 +86,163 @@ class FrontendManager(object):
         return frontend
 
 
+# it is more a wrapper
 class ModelManager(object):
     """ Utility Class for Managing I/O and debugging Models
     """
-    def __init__(self, data=None, config=None, data_t=None):
-        if data is None:
-            self.data = np.zeros((1,1))
-        else:
-            self.data = data
-        self.data_t = data_t
-
+    def __init__(self, config=None, data=None, data_t=None):
         self._init(config)
 
-        if self.config.get('load_model'):
+        if self.cfg.get('load_model'):
             return
         if not self.model_name:
             return
 
+        # @frontend
         if data is not None:
-            self.model = self.get_model(config)
+            self.model = self._get_model(data, data_t)
+
+    def _init(self, spec):
+        self.model_name = spec.get('model_name') or spec.get('model')
+        self.hyperparams = spec.get('hyperparams', dict())
+        self.output_path = spec.get('output_path')
+        self.inference_method = '?'
+        self.iterations = spec.get('iterations', 1)
+
+        self.write = spec.get('write', False)
+        # **kwargs
+        self.cfg = spec
+
+    def _format_dataset(self, data, data_t):
+
+        testset_ratio = self.cfg.get('testset_ratio')
+
+        if 'text' in str(type(data)).lower():
+            #if issubclass(type(data), DataBase):
+            lgg.warning('check WHY and WHEN overflow in stirling matrix !?')
+            print('debug why error and i get walue superior to 6000 in the striling matrix ????')
+            if testset_ratio is None:
+                data = data.data
+                data_t = None
+            else:
+                data, data_t = data.cross_set(ratio=testset_ratio)
+        elif 'network' in str(type(data)).lower():
+            data_t = None
+            if testset_ratio is None:
+                data = data.data
+            else:
+                data = data.get_masked(testset_ratio)
+        else:
+            raise NotImplementedError('Data not understood')
+
+
+        return data, data_t
+
+
+    def _get_model(self, data=None, data_t=None):
+
+        # Not all model takes data (Automata ?)
+        data, data_t = self._format_dataset(data, data_t)
+
+        kwargs = dict(data=data, data_t=data_t)
+
+        if self.model_name in ('ilda', 'lda_cgs', 'immsb', 'mmsb_cgs'):
+            model = self.loadgibbs_1(**kwargs)
+        elif self.model_name in ('lda_vb'):
+            self.model_name = 'ldafullbaye'
+            model = self.lda_gensim(**kwargs)
+        elif self.model_name in ('ilfm', 'ibp', 'ibp_cgs'):
+            model = self.loadgibbs_2(**kwargs)
+            model.normalization_fun = lambda x : 1/(1 + np.exp(-x))
+        else:
+            raise NotImplementedError()
+
+        model.update_hyper(self.hyperparams)
+        return model
+
+    def fit(self, data=None):
+        ''' if data is not None, create a new model instance.
+            This is a batch mode. Future will be a online update
+
+            Parameters
+            ----------
+            data : dataBase
+        '''
+
+        if data is not None:
+            self.model = self._get_model(data)
+
+        if hasattr(self.model, 'fit'):
+            self.model.fit()
+
+    # frontend ? no, data stat should be elsewhere.
+    # Accept new data for prediction (now is just test data)
+    def predict(self, frontend=None):
+        if not hasattr(self.model, 'predict'):
+            print('No predict method for self._name_ ?')
+            return
+
+        # @data_t manage mask vs held out
+        # model don't necessarly own data...
+        #if self.data_t == None and not hasattr(self.data, 'mask') :
+        #    print('No testing data for prediction ?')
+        #    return
+
+        ### Prediction Measures
+        res = self.model.predict()
+
+        ### Data Measure
+        if frontend is not None:
+            data_prop = frontend.get_data_prop()
+            res.update(data_prop)
+
+        if self.write:
+            frontend.save_json(res)
+            self.save()
+        else:
+            lgg.debug(res)
+
+
 
     # Base class for Gibbs, VB ... ?
-    def loadgibbs_1(self, target, likelihood=None):
+    def loadgibbs_1(self, **kwargs):
         delta = self.hyperparams.get('delta',1)
         alpha = self.hyperparams.get('alpha',1)
         gmma = self.hyperparams.get('gmma',1)
-        hyper = self.config['hyper']
-        hyper_prior = self.config.get('hyper_prior') # HDP hyper optimization
 
-        symmetric = self.config.get('symmetric',False)
-        assortativity = self.config.get('homo')
-        K = self.K
+        hyper = self.cfg['hyper']
+        assortativity = self.cfg.get('homo')
+        hyper_prior = self.cfg.get('hyper_prior') # HDP hyper optimization
+        K = self.cfg['K']
 
-        if 'mmsb' in target:
+        model_name = self.model_name
+        likelihood = kwargs.get('likelihood')
+        data = kwargs['data']
+        data_t = kwargs.get('data_t')
+
+
+        if 'mmsb' in model_name:
             kernel = mmsb
-        elif 'lda' in target:
+        elif 'lda' in model_name:
             kernel = lda
 
         if likelihood is None:
             likelihood = kernel.Likelihood(delta,
-                                           self.data,
-                                           symmetric=symmetric,
+                                           data,
                                            assortativity=assortativity)
 
-        if target.split('_')[-1] == 'cgs':
+        if model_name.split('_')[-1] == 'cgs':
             # Parametric case
             jointsampler = kernel.CGS(kernel.ZSamplerParametric(alpha,
                                                                 likelihood,
                                                                 K,
-                                                                data_t=self.data_t))
+                                                                data_t=data_t))
         else:
             # Nonparametric case
             zsampler = kernel.ZSampler(alpha,
                                        likelihood,
                                        K_init=K,
-                                       data_t=self.data_t)
+                                       data_t=data_t)
             msampler = kernel.MSampler(zsampler)
             betasampler = kernel.BetaSampler(gmma,
                                              msampler)
@@ -151,47 +255,50 @@ class ModelManager(object):
                                iterations=self.iterations,
                         output_path=self.output_path,
                                write=self.write,
-                               data_t=self.data_t)
+                               data_t=data_t)
 
-    def loadgibbs_2(self, model_name):
-        alpha_hyper_parameter = self.config['hyper']
-        symmetric = self.config.get('symmetric',False)
-        assortativity = self.config.get('homo')
-        K = self.K
-        # Hyper parameter init
-        alpha = self.hyperparams.get('alpha',1)
+    def loadgibbs_2(self, **kwargs):
         sigma_w = 1.
         sigma_w_hyper_parameter = None #(1., 1.)
+        alpha = self.hyperparams.get('alpha',1)
+
+        alpha_hyper_parameter = self.cfg['hyper']
+        assortativity = self.cfg.get('homo')
+        K = self.cfg['K']
+
+        model_name = self.model_name
+        data = kwargs['data']
+        data_t = kwargs.get('data_t')
 
         if '_cgs' in model_name:
             metropolis_hastings_k_new = False
         else:
             metropolis_hastings_k_new = True
-            if self.config['homo'] == 2:
+            if self.cfg['homo'] == 2:
                 raise NotImplementedError('Warning !: Metropolis Hasting not implemented with matrix normal. Exiting....')
 
-        model = IBPGibbsSampling(symmetric,
-                                 assortativity,
+        model = IBPGibbsSampling(assortativity,
                                  alpha_hyper_parameter,
                                  sigma_w_hyper_parameter,
                                  metropolis_hastings_k_new,
                                  iterations=self.iterations,
                                  output_path=self.output_path,
                                  write=self.write)
-        model._initialize(self.data, alpha, sigma_w, KK=K)
+        model._initialize(data, alpha, sigma_w, KK=K)
         lgg.warn('Warning: K is IBP initialized...')
         #self.model._initialize(data, alpha, sigma_w, KK=None)
         return model
 
-    def lda_gensim(self, id2word=None, save=False, model='ldamodel', load=False, updatetype='batch'):
+    # **kwargs !?
+    def lda_gensim(self, data=None, data_t=None, id2word=None, save=False, model='ldamodel', load=False, updatetype='batch'):
         fname = self.output_path if self.write else None
-        iter = self.config['iterations']
-        data = self.data
-        heldout_data = self.data_t
         delta = self.hyperparams['delta']
-        #alpha = self.hyperparams['alpha']
         alpha = 'asymmetric'
-        K = self.K
+        K = self.cfg['K']
+
+        data = kwargs['data']
+        data_t = kwargs.get('data_t')
+
         if load:
             return Models[model].LdaModel.load(fname)
 
@@ -205,11 +312,12 @@ class ModelManager(object):
         elif isanparray:
             # up tocsc ??!!! no !
             dense2corpus
-        # Passes is the iterations for batch onlines and iteration the max it in the gamma treshold test loop
-        # Batch setting !
+        # Passes is the iterations for batch onlines and
+        # iteration the max it in the gamma treshold test
+        # loop Batch setting !
         if updatetype == 'batch':
             lda = Models[model].LdaModel(data, id2word=id2word, num_topics=K, alpha=alpha, eta=delta,
-                                         iterations=100, eval_every=None, update_every=None, passes=iter, chunksize=200000,
+                                         iterations=100, eval_every=None, update_every=None, passes=self.iterations, chunksize=200000,
                                          fname=fname, heldout_corpus=heldout_data)
         elif updatetype == 'online':
             lda = Models[model].LdaModel(data, id2word=id2word, num_topics=K, alpha=alpha, eta=delta,
@@ -222,34 +330,8 @@ class ModelManager(object):
             lda.save(fname)
         return lda
 
-    def fit(self):
-        if hasattr(self.model, 'fit'):
-            self.model.fit()
-
-    def predict(self, frontend):
-        if not hasattr(self.model, 'predict'):
-            print('No predict method for self._name_ ?')
-            return
-
-        if self.data_t == None and not hasattr(self.data, 'mask') :
-            print('No testing data for prediction ?')
-            return
-
-        ### Prediction Measures
-        res = self.model.predict()
-
-        ### Data Measure
-        data_prop = frontend.get_data_prop()
-        res.update(data_prop)
-
-        if self.write:
-            frontend.save_json(res)
-            self.save()
-        else:
-            lgg.debug(res)
-
-    # Measure perplexity on different initialization
-    def init_loop_test(self):
+    def initialization_test(self):
+        ''' Measure perplexity on different initialization '''
         niter = 2
         pp = []
         likelihood = self.model.s.zsampler.likelihood
@@ -258,7 +340,6 @@ class ModelManager(object):
             pp.append( self.model.s.zsampler.perplexity() )
             self.model = self.loadgibbs(self.model_name, likelihood)
 
-        print(self.output_path)
         np.savetxt('t.out', np.log(pp))
 
     # Pickle class
@@ -302,7 +383,7 @@ class ModelManager(object):
             self._init(spec)
 
         if init is True:
-            model = self.get_model(spec)
+            model = self._get_model()
         else:
             if spec == None:
                 fn = self.output_path + '.pk'
@@ -324,34 +405,6 @@ class ModelManager(object):
                     _f.seek(0)
                     model =  pickle.load(_f, encoding='latin1')
         self.model = model
-        return model
-
-    def _init(self, spec):
-        self.model_name = spec.get('model_name') or spec.get('model')
-        #models = {'ilda' : HDP_LDA_CGS,
-        #          'lda_cgs' : LDA_CGS, }
-        self.hyperparams = spec.get('hyperparams', dict())
-        self.output_path = spec.get('output_path')
-        self.K = spec.get('K')
-        self.inference_method = '?'
-        self.iterations = spec.get('iterations', 0)
-
-        self.write = spec.get('write', False)
-        # **kwargs
-        self.config = spec
-
-    def get_model(self, spec):
-        if self.model_name in ('ilda', 'lda_cgs', 'immsb', 'mmsb_cgs'):
-            model = self.loadgibbs_1(self.model_name)
-        elif self.model_name in ('lda_vb'):
-            model = self.lda_gensim(model='ldafullbaye')
-        elif self.model_name in ('ilfm', 'ibp', 'ibp_cgs'):
-            model = self.loadgibbs_2(self.model_name)
-            model.normalization_fun = lambda x : 1/(1 + np.exp(-x))
-        else:
-            raise NotImplementedError()
-
-        model.update_hyper(self.hyperparams)
         return model
 
 

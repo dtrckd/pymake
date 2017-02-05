@@ -14,9 +14,8 @@ except:
     pass
 
 from .frontend import DataBase
-from util.utils import parse_file_conf
-from util.math import *
-
+from pymake.util.utils import parse_file_conf
+from pymake.util.math import *
 
 def getClique(N=100, K=4):
     from scipy.linalg import block_diag
@@ -35,34 +34,29 @@ class frontendNetwork(DataBase):
         Symmetric network support.
     """
 
-    def __init__(self, config=dict(), data=None):
-        self.bdir = 'networks'
-        super(frontendNetwork, self).__init__(config, data)
-        self.make_output_path()
-        # /!\ Will set the name of output_path.
+    RANDOM_CORPUS = ('clique', 'alternate', 'BA')
 
-    #Todo; remove conflit wih loader...
-    #def load(self, **kwargs):
-    #    return self.load_data(**kwargs)
+    def __init__(self, config=dict(), load=False):
+        self.bdir = 'networks'
+        super(frontendNetwork, self).__init__(config, load)
+
     def load_data(self, corpus_name=None, randomize=False):
         """ Load data according to different scheme,
             by order of priority (if several specification in settings)
             * Corpus from random generator
             * Corpus from file dataset
         """
+        if corpus_name is not None:
+            self.update_spec(**{'corpus_name': corpus_name})
+        else:
+            corpus_name = self.corpus_name
+        self.make_output_path()
 
-
-        if self.corpus_name:
-            if corpus_name is not None:
-                self.update_spec(**{'corpus_name': corpus_name})
-            else:
-                corpus_name = self.corpus_name
+        if self.corpus_name.startswith(self.RANDOM_CORPUS):
+            data = self.random_corpus(corpus_name)
+        else:
             self.make_output_path()
             data = self._get_corpus(corpus_name)
-        elif self.cfg.get('random'):
-            corpus_name = self.update_spec(**{'corpus_name': self.cfg['random']})
-            data = self.random(corpus_name)
-            self.make_output_path()
 
         self.update_data(data)
 
@@ -75,7 +69,6 @@ class frontendNetwork(DataBase):
         """ @debug Be smarter, has some database strategy.
             Redirect to correct path depending on the corpus_name
         """
-        N = self.getN()
 
         # DB integration ?
         if corpus_name.startswith(('generator', 'Graph')):
@@ -130,22 +123,24 @@ class frontendNetwork(DataBase):
 
     def sample(self, N=None, symmetric=False, randomize=False):
         """ Write self ! """
-        N = int(N) or self.getN()
+        N = N or self.getN()
 
         if N == 'all':
-            pass
-        else:
-            # Can't get why modification inside self.nodes_list is not propagated ?
-            if randomize is True:
-                nodes_list = [np.random.permutation(N), np.random.permutation(N)]
-                self.reorder_node(nodes_list)
-            else:
-                self.data = self.data[:N, :N]
+            N = self.data.shape[0]
 
-        self.update_data(self.data)
+        # Can't get why modification inside self.nodes_list is not propagated ?
+        N = int(N)
+        if randomize is True:
+            nodes_list = [np.random.permutation(N), np.random.permutation(N)]
+            self.reorder_node(nodes_list)
+
+        if N < self.data.shape[0]:
+            self.data = self.data[:N, :N]
+            self.update_data(self.data)
         return self.data
 
     def update_data(self, data):
+        ''' node list order will be lost '''
         self.data = data
         N, M = self.data.shape
         self.N = N
@@ -155,7 +150,9 @@ class frontendNetwork(DataBase):
             self.features = self.features[:N]
 
     def get_masked(self, percent_hole, diag_off=1):
-        """ Construct a random mask """
+        """ Construct a random mask.
+            Random training set on 20% on Data / debug5 - debug11 -- Unbalanced
+        """
         data = self.data
         if type(data) is np.ndarray:
             #self.data_mat = sp.sparse.csr_matrix(data)
@@ -178,7 +175,9 @@ class frontendNetwork(DataBase):
         return data_ma
 
     def get_masked_1(self, percent_hole, diag_off=1):
-        """ Construct Mask nased on the proportion of 1/links """
+        ''' Construct Mask nased on the proportion of 1/links.
+            Random training set on 20% on Data vertex (0.2 * data == 1) / debug6 - debug 10 -- Balanced
+            '''
         data = self.data
         if type(data) is np.ndarray:
             #self.data_mat = sp.sparse.csr_matrix(data)
@@ -212,7 +211,7 @@ class frontendNetwork(DataBase):
             self.symmetric = (self.data == self.data.T).all()
         return self.symmetric
 
-    def random(self, rnd):
+    def random_corpus(self, rnd):
         N = self.getN()
 
         if rnd == 'uniform':
@@ -224,8 +223,8 @@ class frontendNetwork(DataBase):
             except ValueError:
                 K = 42
             data = getClique(N, K=K)
-            G = nx.from_numpy_matrix(data, nx.Graph())
-            data = nx.adjacency_matrix(G, np.random.permutation(range(N))).A
+            #G = nx.from_numpy_matrix(data, nx.Graph())
+            #Data = nx.adjacency_matrix(G, np.random.permutation(range(N))).A
         elif rnd in ('BA', 'barabasi-albert'):
             data = nx.adjacency_matrix(nx.barabasi_albert_graph(N, m=13) ).A
         elif rnd ==  'alternate':
