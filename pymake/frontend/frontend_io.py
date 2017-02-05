@@ -5,7 +5,7 @@ import re, os, json, logging
 from collections import defaultdict, OrderedDict
 import fnmatch
 import numpy as np
-from expe.spec import _spec_
+from pymake.expe.spec import _spec_
 
 lgg = logging.getLogger('root')
 

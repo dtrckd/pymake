@@ -76,10 +76,6 @@ class IBP(object):
 
         return
 
-    def Y(self):
-        Y = np.array(self._Y)
-        Y[Y <= 0] = 0
-        return Y
 
     """
     initialize latent feature appearance matrix Z according to IBP(alpha) """
