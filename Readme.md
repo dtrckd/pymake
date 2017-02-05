@@ -21,7 +21,20 @@ Once an experiment is designed, we deploy it using two scripts :
 
 #### Usage
 ###### Zymake
-Script to create the path and command for a design of experiments :
+Script to create the path and commands for a design of experiments :
+
+    # Fit a Gaussian mixtures on a text corpus...
+
+    Expe_ID = dict(model = 'kmeans++',
+            K = 1e6,
+            corpus = '20ngroups',
+            vsm = 'tfidf',
+            repeat = range(10))
+            
+    data, model = Zymake(spec)
+    model.fit(data)
+    model.predict()
+
 
 ###### Run experiments
     zymake runcmd EXPE_ID | parralle [opt]  # to make run a list of experience in parallel
@@ -67,13 +80,5 @@ ILFM
 * MMSB (networks)
 
 ### Examples
-
-Fit a Gaussian mixtures on a text corpus...
-
-    Expe_ID = dict(model = 'kmeans++',
-            K = 1e6,
-            corpus = '20ngroups',
-            vsm = 'tfidf',
-            repeat = range(10))
 
 (to complete)
