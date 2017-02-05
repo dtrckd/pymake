@@ -23,6 +23,7 @@ Once an experiment is designed, we deploy it using two scripts :
 ###### Zymake
 Script to create the path and commands for a design of experiments :
 
+    from pymake.zymake import Zymake
     # Fit a Gaussian mixtures on a text corpus...
 
     Expe_ID = dict(model = 'kmeans++',
