@@ -16,7 +16,7 @@ If a good (scientific) library do the job, wrap it:
 
 Once an experiment is designed, we deploy it using two scripts :
 
-*  `zymake` to create the uniq experiment command for each of them.
+*  `zymake` to create the uniq experiment command for each of them,
 *  `pysinc` to parralelize the jobs.
 
 #### Usage
@@ -54,9 +54,9 @@ see also: [Directory Tree](#directory-tree).
 
 ### Directory Tree
 
-* `data/` contains dataset and learning output results
-* `results/` contains analysis and report
-* `src/` code source of project
+* `data/` contains dataset and learning output results,
+* `results/` contains analysis and report,
+* `pymake/` code source of the models and frontends.
 
 Data Lookup is coded in `util/frontend_io.py` and Output Data path specification depend on the following arguments :
 
