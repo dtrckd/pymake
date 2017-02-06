@@ -52,6 +52,7 @@ _FLAGKEYS_ = OrderedDict((
 ))
 
 ### directory/file tree reference
+# Default and New values
 _MASTERKEYS_ = OrderedDict((
     ('data_type'   , None),
     ('corpus'      , None),

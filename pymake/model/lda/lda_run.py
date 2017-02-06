@@ -21,26 +21,6 @@ sys.path.insert(1, './gensim')
 import gensim as gsm
 from gensim.models import ldamodel, ldafullbaye
 
-_USAGE = '''lda_run [-vhs] [-k [rvalue] [-n N] [-d basedir] [-lall] [-l type] [-m model] [-c corpus] [-p]
-Default load corpus and run LDA !!
------
---alpha [ 'asymmetric', 'symmetric', 'auto'] : alpha optimization
--n | --limit : Limit size of corpus
--lall   : load all; Corpus and LDA model
--l      : corpus | lda
--c      : 20ngroups | nips12 | wiki | lucene
--m      : ldamodel | ldafullbaye
--p      : do prediction on test data
--d basedir : base directory to save results.
--k K      :K  Number of topics.
-
-Examples:
-# Load corpus and infer modef (eg LDA)
-./lda_run.py -k 6 -m ldafullbaye -p
-# Load corpus and model
-./lda_run.py -k 6 -m ldafullbaye -lall -p
-
-'''
 
 Models = { 'ldamodel': ldamodel, 'ldafullbaye': ldafullbaye }
 
@@ -102,14 +82,6 @@ if __name__ == '__main__':
         predict = False,
     ))
     conf.update(argParse(_USAGE))
-
-    if conf.get('lall'):
-        # Load All
-        conf.update(load_corpus=True, load_lda=True)
-    if conf.get('load') == 'corpus':
-        conf['load_corpus'] = True
-    elif conf.get('load') == 'lda':
-        conf['load_lda'] = True
 
     K = conf['K']
     if conf.get('simul'):

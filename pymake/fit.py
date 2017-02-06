@@ -37,6 +37,8 @@ Default load corpus and run a model.
 Examples:
 # Load corpus and infer modef (eg LDA)
 ./lda_run.py -k 6 -m ldafullbaye -p:
+# assort
+./assortt.py -n 1000 -k 10 --alpha auto --homo 0 -m ibp_cgs -c generator3 -l model --refdir debug5 -nld
 # Load corpus and model:
 ./lda_run.py -k 6 -m ldafullbaye -lall -p
 # Network corpus:
