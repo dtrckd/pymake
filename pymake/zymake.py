@@ -6,9 +6,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import multiprocessing
 import sys
 
-from .frontend.frontend_io import make_forest_path, make_forest_runcmd, make_forest_conf
-from .frontend.manager import ModelManager, FrontendManager
-from .expe.spec import _spec_; _spec = _spec_()
+from frontend.frontend_io import make_forest_path, make_forest_runcmd, make_forest_conf
+from frontend.manager import ModelManager, FrontendManager
+from expe.spec import _spec_; _spec = _spec_()
 
 def Zymake(spec):
     commands = make_forest_conf(spec)
@@ -21,8 +21,14 @@ def Zymake(spec):
 
 if __name__ == '__main__':
 
+    USAGE = ''' # Usage:
+            zymake path[default] SPEC Filetype(pk|json|inf)
+            zymake runcmd SPEC
+            zymake -l : show available spec
+        '''
+
     from util.argparser import argparser
-    zyvar = argparser.zymake()
+    zyvar = argparser.zymake(USAGE)
 
     ### Makes OUT Files
     if zyvar['OUT_TYPE'] == 'runcmd':

@@ -1,9 +1,11 @@
 # Code Factoring
 
 ## IN DOIING
-* tabul
+* tabul | interface for tabulate
 * default VS const (argparser)???
-* settings object (AST)
+    * settings object (AST)
+* rename inference-\* file to \*.inf files
+* ILFM creat sampler and proper inhheritance form GibbsSampler.
 
 
 @purge: 

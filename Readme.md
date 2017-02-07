@@ -1,11 +1,10 @@
 # PYMAKE
 
-Pymake help making reproducible research by providing tools to create :
+Pymake helps making reproducible research by providing tools adapted for the creation of **complex and traceable design of experiments** and **Models for data analysis**.
 
-* complex and traceable design of experiments.
-* Models for data analysis.
+This code is in a living devellopment stage and yet unstable.
 
-## Zen
+### Zen
 
 If a good (scientific) library do the job, wrap it:
 * numpy
@@ -15,16 +14,31 @@ If a good (scientific) library do the job, wrap it:
 * tensorflow (to complete)
 * pyspark (to complete)
 
-## Logic
+### Logic
 
-Once an experiments is designed, we deploy it using two script :
+Once an experiment is designed, we deploy it using two scripts :
 
-*  `zymake` to create the uniq experiment command for each of them.
+*  `zymake` to create the uniq experiment command for each of them,
 *  `pysinc` to parralelize the jobs.
 
-### Usage
+#### Usage
 ###### Zymake
-Script to create the path and command for a design of experiments:
+Script to create the path and commands for a design of experiments :
+
+    from pymake.zymake import Zymake
+    # Fit a Gaussian mixtures on a text corpus...
+
+    Expe_ID = dict(model = 'kmeans++',
+            K = 1e6,
+            corpus = '20ngroups',
+            vsm = 'tfidf',
+            repeat = range(10))
+          
+    # Only the first epoch/repeat here.
+    data, model = Zymake(spec)
+    model.fit(data)
+    model.predict()
+
 
 ###### Run experiments
     zymake runcmd EXPE_ID | parralle [opt]  # to make run a list of experience in parallel
@@ -38,52 +52,33 @@ or equivalently :
     expe_meas.py EXPE_ID    #  Create a table of results
 
 
-see also: [Directory Tree](#directory-tree).
-
 ### Directory Tree
 
 * `data/` contains dataset and learning output results,
 * `results/` contains analysis and report,
-* `wiki/` documentation,
-* `src/` code source of project.
+* `pymake/` code source of the models and frontends.
 
 Data Lookup is coded in `util/frontend_io.py` and Output Data path specification depend on the following arguments :
 
     [script_name] [bdir/-d]/[type]/[corpus/-c]/[subdir/--refdir]/[model/-m][iterations/-i]
 
-Results of experiments are stored in data/[specification].
+The Results of experiments are stored in data/[specification].
 
-## Models
+### Models
 
+* Indian Buffet Process (IBP)
+* Dirichlet Process -- DP and HDP
 
-#### Indian Buffet Process
+### Inference
 
-Collapsed Gibbs sampling:
-Uncollapsed Gibbs sampling:
-Variational Bayes:
+* Gibbs Samplers
+* Variationnal Bayes
 
-##### Networks applications
-ILFRM
+### Applications
+* LDA (language)
+* MMSB (networks)
+* ILFM(networks)
 
-#### Hierarchical Dirichlet Process
-
-Collapsed Gibbs sampling:
-
-
-##### Text Applications
-LDA
-
-##### Networks Application
-MMSB
-
-## Example
-
-Fit a Gaussian mixtures on a text corpus...
-
-    Expe_ID = dict(model = 'kmeans++',
-            K = 1e6,
-            corpus = '20ngroups',
-            vsm = 'tfidf',
-            repeat = range(10))
+### Examples
 
 (to complete)

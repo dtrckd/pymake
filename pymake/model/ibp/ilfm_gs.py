@@ -14,7 +14,7 @@ from scipy.sparse import lil_matrix
 sp_dot = csr_matrix.dot
 
 from .ibp import IBP
-from pymake.model import ModelBase
+from pymake.model import GibbsSampler
 from pymake.util.algo import *
 
 # We will be taking log(0) = -Inf, so turn off this warning
@@ -38,7 +38,7 @@ This code was modified from the code originally written by Zhai Ke (kzhai@umd.ed
 
 W_diag = -2
 
-class IBPGibbsSampling(IBP, ModelBase):
+class IBPGibbsSampling(IBP, GibbsSampler):
 
     def __init__(self, assortativity=False,
                  alpha_hyper_parameter=None,
@@ -53,14 +53,13 @@ class IBPGibbsSampling(IBP, ModelBase):
         self._overflow = 1.0
         self.ratio_MH_F = 0.0
         self.ratio_MH_W = 0.0
-        self.time_sampling = 0
 
         self.burnin = kwargs.get('burnin',  0.05) # Ratio of iteration
         self.thinning = kwargs.get('thinning',  1)
         self.csv_typo = '# it it_time loglikelihood_Y loglikelihood_test K alpha sigma Z_sum ratio_MH_F ratio_MH_W'
         self.fmt = '%d %.4f %.8f %.8f %d %.8f %.8f %d %.4f %.4f'
         IBP.__init__(self, alpha_hyper_parameter, metropolis_hastings_k_new)
-        ModelBase.__init__(self, **kwargs)
+        GibbsSampler.__init__(self, None,  **kwargs)
     """
     @param data: a NxD np data matrix
     @param alpha: IBP hyper parameter
@@ -121,22 +120,16 @@ class IBPGibbsSampling(IBP, ModelBase):
     """
     sample the corpus to train the parameters """
     def fit(self):
-        iterations = self.iterations
-
-        assert(self._Z.shape == (self._N, self._K))
-        assert(self._W.shape == (self._K, self._K))
-        assert(self._Y.shape == (self._N, self._D))
 
         # Sample the total data
-        begin = datetime.now()
 
         likelihood_Y = self.log_likelihood_Y()
         lgg.info( 'Init Likelihood: %f' % likelihood_Y)
-        for iter in range(iterations):
+        for iter in range(self.iterations):
             print('.', end='')
             begin_it = datetime.now()
 
-            # Can't get why I need this !!!!!
+            # Can't get why I need this !
             self.log_likelihood_Y()
             # Sample every object
             order = np.random.permutation(self._N)
@@ -184,7 +177,6 @@ class IBPGibbsSampling(IBP, ModelBase):
                 self.samples.append([self._Z, self._W])
 
         print()
-        self.time_sampling = datetime.now() - begin
 
         ### Clean Things
         if not self.samples:
@@ -459,6 +451,7 @@ class IBPGibbsSampling(IBP, ModelBase):
         # loglikelihood_W ? Z ?
         return self.log_likelihood_Y()
 
+    # @ipb
     def update_hyper(self, hyper):
         if hyper is None:
             return
@@ -470,11 +463,13 @@ class IBPGibbsSampling(IBP, ModelBase):
         if alpha:
             self._alpha = alpha
 
+    # @ipb
     def get_hyper(self):
         alpha = self._alpha
         delta = (self._mean_w, self._sigma_w)
         return (alpha, delta)
 
+    # @ipb
     def generate(self, N, K=None, nodelist=None, hyper=None, _type='predictive', directed=True):
         self.update_hyper(hyper)
         alpha, delta = self.get_hyper()
@@ -510,6 +505,9 @@ class IBPGibbsSampling(IBP, ModelBase):
         self.K = K
         return Y, theta, phi
 
+    def getK(self):
+        return self._K
+
     def likelihood(self, theta=None, phi=None):
         if theta is None:
             theta = self.theta
@@ -540,11 +538,6 @@ class IBPGibbsSampling(IBP, ModelBase):
         self.phi = W
         self.K = self.theta.shape[1]
         return Z, W
-
-    def getData(self):
-        Y = np.array(self._Y)
-        Y[Y <= 0] = 0
-        return Y
 
     def mask_probas(self, data):
         mask = self.get_mask()
@@ -644,5 +637,8 @@ class IBPGibbsSampling(IBP, ModelBase):
         bm = zip(label, hist)
         self.comm['block_ties'] = bm
         return bm
+
+    def purge(self):
+        return
 
 
