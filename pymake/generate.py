@@ -13,7 +13,6 @@ from expe.spec import _spec_; _spec = _spec_()
 from expe import format
 from util.argparser import argparser
 
-from collections import Counter, defaultdict
 
 USAGE = '''\
 # Usage:
@@ -32,10 +31,9 @@ analysis in [clustering, zipf, (to complete)]
 #######################
 ### Config
 #######################
-config = defaultdict(lambda: False, dict(
-    load_data = True,
+config = dict(
     block_plot = False,
-    write_to_file = False,
+    save_plot = False,
     do            = 'zipf',
     #generative    = 'evidence',
     generative    = 'predictive',
@@ -44,7 +42,7 @@ config = defaultdict(lambda: False, dict(
     #### Path Spec
     #debug         = 'debug11'
     debug         = 'debug111111', repeat        = 0,
-))
+)
 config.update(argparser.generate(USAGE))
 
 #######################
@@ -192,6 +190,6 @@ for corpus_pos, corpus_name in enumerate(Corpuses):
         _it += 1
         display(config['block_plot'])
 
-if not config.get('write_to_file'):
+if not config.get('save_plot'):
     display(True)
 

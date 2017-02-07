@@ -11,16 +11,16 @@ from matplotlib import colors as Colors
 import networkx as nx
 from networkx.drawing.nx_agraph import write_dot
 
-from util.utils import *
-from util.math import *
-from util.algo import *
+from pymake.util.utils import *
+from pymake.util.math import *
+from pymake.util.algo import *
 
 import re
 import os
 from multiprocessing import Process
 lgg = logging.getLogger('root')
 
-from util.ascii_code import X11_colors, plt_colors
+from pymake.util.ascii_code import X11_colors, plt_colors
 u_colors = Cycle(list(zip(*plt_colors))[1])
 _markers = Cycle([ '+', '*', '|','x', 'o', '.', '1', 'p', '<', '>', 's' ])
 _colors = Cycle(['r', 'g','b','y','c','m','k'])

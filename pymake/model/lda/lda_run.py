@@ -84,7 +84,7 @@ if __name__ == '__main__':
     conf.update(argParse(_USAGE))
 
     K = conf['K']
-    if conf.get('simul'):
+    if conf.get('simulate'):
         print '''--- Simulation settings ---
         Model : %s
         Target : %s

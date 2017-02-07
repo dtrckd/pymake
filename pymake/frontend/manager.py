@@ -175,6 +175,12 @@ class ModelManager(object):
         if hasattr(self.model, 'fit'):
             self.model.fit()
 
+        if self.write:
+            self.save()
+
+        return
+
+
     # frontend ? no, data stat should be elsewhere.
     # Accept new data for prediction (now is just test data)
     def predict(self, frontend=None):
@@ -187,9 +193,15 @@ class ModelManager(object):
         #if self.data_t == None and not hasattr(self.data, 'mask') :
         #    print('No testing data for prediction ?')
         #    return
+        #
+        #
 
         ### Prediction Measures
-        res = self.model.predict()
+        data = frontend.data
+
+        # if modelNetwork ...
+        res = self.model.predictMask(data)
+        #elif modelText
 
         ### Data Measure
         if frontend is not None:
@@ -198,10 +210,8 @@ class ModelManager(object):
 
         if self.write:
             frontend.save_json(res)
-            self.save()
         else:
             lgg.debug(res)
-
 
 
     # Base class for Gibbs, VB ... ?
@@ -219,7 +229,6 @@ class ModelManager(object):
         likelihood = kwargs.get('likelihood')
         data = kwargs['data']
         data_t = kwargs.get('data_t')
-
 
         if 'mmsb' in model_name:
             kernel = mmsb
@@ -373,6 +382,7 @@ class ModelManager(object):
             except:
                 pass
 
+        lgg.info('Saving Model : %s' % fn)
         with open(fn, 'wb') as _f:
             return pickle.dump(self.model, _f, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -395,9 +405,8 @@ class ModelManager(object):
                 for f in model_walker(os.path.dirname(fn), fmt='list'):
                     print(f)
                 return None
-            lgg.debug('opening file: %s' % fn)
+            lgg.info('Loading Model: %s' % fn)
             with open(fn, 'rb') as _f:
-                lgg.info('loading model: %s' % fn)
                 try:
                     model =  pickle.load(_f)
                 except:

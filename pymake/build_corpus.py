@@ -5,8 +5,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from frontend.frontendtext import frontendText
 
 # @Issue43: Parser/config unification.
-from util.utils import *
-from collections import defaultdict
+from util.utils import Now, ellapsed_time
+from util.argparser import argparser
 import os
 #
 
@@ -17,21 +17,21 @@ np.set_printoptions(threshold='nan')
 _USAGE = '-s'
 
 if __name__ == '__main__':
-    config = defaultdict(lambda: False, dict(
+    config = dict(
         ##### Global settings
         ###### I/O settings
         bdir = '../data',
         load_data = False,
         save_data = True,
-    ))
-    config.update(argParse(_USAGE))
+    )
+    config.update(argparser.gramexp())
 
     corpuses = ('nips12',)
     corpuses = ('nips12', 'kos','reuter50', 'nips', 'enron', 'nytimes', 'pubmed', '20ngroups')
 
     ############################################################
     ##### Simulation Output
-    if config.get('simul'):
+    if config.get('simulate'):
         print ('''--- Simulation settings ---
         Build Corpuses %s''' % (str(corpuses)))
         exit()

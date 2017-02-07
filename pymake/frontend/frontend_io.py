@@ -34,6 +34,7 @@ if not os.path.exists(os.path.dirname(__file__)+'/'+LOCAL_BDIR+'networks/generat
 """
 
 ### Command Line Reference
+# Get it from argparser object !?
 _FLAGKEYS_ = OrderedDict((
     ('N'           , '-n'),
     ('K'           , '-k'),
@@ -47,6 +48,7 @@ _FLAGKEYS_ = OrderedDict((
     ('debug'       , '--refdir'),
     ('repeat'      , '--repeat'),
     ('hyper_prior' , '--hyper_prior'),
+    ('testset_ratio', '--testset_ratio'),
     ('iterations'  , '-i'),
     ('data_type'   , 'null'),
 ))

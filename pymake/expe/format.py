@@ -7,14 +7,14 @@ import os.path
 from random import choice
 import itertools
 
-import util.algo as A
-from util.algo import gofit
-from util.utils import *
-from util.math import *
-from expe.spec import _spec_; _spec = _spec_()
+import pymake.util.algo as A
+from pymake.util.algo import gofit
+from pymake.util.utils import *
+from pymake.util.math import *
+from .spec import _spec_; _spec = _spec_()
 
-from plot import *
-from plot import _markers, _colors
+from pymake.plot import *
+from pymake.plot import _markers, _colors
 
 from tabulate import tabulate
 from numpy import ma
