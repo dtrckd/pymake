@@ -566,6 +566,7 @@ class GibbsRun(GibbsSampler):
         #self.fmt = '%s %s %s %s %s %s %s %s %s %s %s'
         GibbsSampler.__init__(self, sampler, **kwargs)
 
+        self.mask = self.s.zsampler.likelihood.data_ma.mask
 
     def limit_k(self, N, directed=True):
         alpha, gmma, delta = self.get_hyper()
@@ -649,49 +650,6 @@ class GibbsRun(GibbsSampler):
         self.K = K
         return Y, theta, phi
 
-
-    # * Precision on masked data
-    # -- On Gen Y
-    # * Local preferential attachement
-    # * Global preferential attachement
-    def predict(self):
-        lgg.info('Reducing latent variables...')
-        theta, phi = self.reduce_latent()
-
-        ### Computing Precision
-        likelihood = self.s.zsampler.likelihood
-        masked = likelihood.data_ma.mask
-        ### @Debug Ignore the Diagonnal
-        np.fill_diagonal(masked, False)
-        ground_truth = likelihood.data_ma.data[masked]
-        data = likelihood.data_ma.data
-        test_size = float(ground_truth.size)
-
-        p_ji = self.likelihood(theta, phi)
-        prediction = p_ji[masked]
-        #prediction[prediction >= 0.5 ] = 1
-        #prediction[prediction < 0.5 ] = 0
-        prediction = sp.stats.bernoulli.rvs( prediction )
-
-        good_1 = ((prediction + ground_truth) == 2).sum()
-        precision = good_1 / float(prediction.sum())
-        rappel = good_1 / float(ground_truth.sum())
-        g_precision = (prediction == ground_truth).sum() / test_size
-        mask_density = ground_truth.sum() / test_size
-
-        ### Finding Communities
-        lgg.info('Finding Communities...')
-        communities = self.communities_analysis()
-
-        res = {'Precision': precision,
-               'Recall': rappel,
-               'g_precision': g_precision,
-               'mask_density': mask_density,
-               'clustering':communities,
-               'K': self.K
-              }
-        return res
-
     def mask_probas(self, data):
         mask = self.get_mask()
         y_test = data[mask]
@@ -701,7 +659,7 @@ class GibbsRun(GibbsSampler):
         return y_test, probas
 
     def get_mask(self):
-        return self.s.mask
+        return self.mask
 
     def get_clusters(self, K=None, skip=0):
         """ Return a vector of clusters membership of nodes.
@@ -758,13 +716,8 @@ class GibbsRun(GibbsSampler):
 
     #@wrapper !
     ### Degree by class (maxassignment)
-    def communities_analysis(self, data=None, clustering='modularity'):
-        if data is None:
-            likelihood = self.s.zsampler.likelihood
-            data = likelihood.data_ma.data
-            symmetric = likelihood.symmetric
-        else:
-            symmetric = True
+    def communities_analysis(self, data, clustering='modularity'):
+        symmetric = (data == data.T).all()
 
         if hasattr(self, clustering):
             f = getattr(self, clustering)
@@ -846,7 +799,7 @@ class GibbsRun(GibbsSampler):
                 'block_hist': block_hist,
                 'size': len(block_hist)}
 
-    def blockmodel_ties(self, data=None, remove_empty=True):
+    def blockmodel_ties(self, data, remove_empty=True):
         """ return ties based on a weighted average
             of the local degree ditribution """
 

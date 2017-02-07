@@ -1,6 +1,6 @@
 # PYMAKE
 
-Pymake, help making reproducible research by providing tools to create :
+Pymake help making reproducible research by providing tools to create :
 
 * complex and traceable design of experiments.
 * Models for data analysis.
@@ -42,9 +42,10 @@ see also: [Directory Tree](#directory-tree).
 
 ### Directory Tree
 
-* `data/` contains dataset and learning output results
-* `results/` contains analysis and report
-* `src/` code source of project
+* `data/` contains dataset and learning output results,
+* `results/` contains analysis and report,
+* `wiki/` documentation,
+* `src/` code source of project.
 
 Data Lookup is coded in `util/frontend_io.py` and Output Data path specification depend on the following arguments :
 

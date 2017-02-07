@@ -275,7 +275,6 @@ class frontendText(DataBase):
    #     ############
    #     ### Load LDA
    #     load = config['load_model']
-   #     save = config['save_model']
    #     # Path for LDA model!
    #     bdir = '../PyNPB/data/'
    #     bdir = os.path.join(bdir,config.get('corpus'), config.get('bdir', ''))

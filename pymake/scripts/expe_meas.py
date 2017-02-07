@@ -10,17 +10,18 @@ from util.utils import *
 from util.argparser import argparser
 from expe.spec import _spec_; _spec = _spec_()
 
-lgg = logging.getLogger('root')
-
 USAGE = '''\
-# Usage:
-    expe_k [model]
+# Usage:
+    expe_meas [model] [K]
 '''
 
 #TENSOR = _spec.EXPE_ICDM_R
 TENSOR = _spec.EXPE_ICDM_R_R
 
-expe_args = argparser.expe_tabulate(USAGE)
+
+###
+
+expe_args = argparser.exp_tabulate(USAGE)
 
 ###################################################################
 # Data Forest config
@@ -42,12 +43,12 @@ expe_1 = OrderedDict((
     #('debug' , 'debug101010') ,
     ('debug' , 'debug111111') ,
     ('model' , 'immsb')   ,
-    ('K'     , '*')         ,
+    ('K'     , 5)         ,
     ('hyper' , 'auto')     ,
     ('homo'  , 0) ,
     ('N'     , 'all')     ,
     ('repeat', '*'),
-    ('measure', 8),
+    ('measure', ':4'),
     ))
 expe_1.update(expe_args)
 
@@ -75,32 +76,32 @@ ptx = make_tensor_expe_index(expe_1, map_parameters)
 print 'Expe 1:'
 print tabulate([expe_1.keys(), expe_1.values()])
 # Headers
-headers = list(map_parameters['K'])
+headers = [ 'global', 'precision', 'recall', 'K->']
 h_mask = 'mask all' if '11' in expe_1['debug'] else 'mask sub1'
 h = expe_1['model'].upper() + ' / ' + h_mask
 headers.insert(0, h)
 # Row
 keys = map_parameters['corpus']
-keys = [''.join(k) for k in zip(keys, [' b/h', ' b/-h', ' -b/-h', ' -b/h'])]
+#keys = [''.join(k) for k in zip(keys, [' b/h', ' b/-h', ' -b/-h', ' -b/h'])]
 ## Results
 table = rez[ptx]
 
 try:
     table = np.column_stack((keys, table))
 except ValueError, e:
-    lgg.warn('ValueError, assumming repeat mean variance reduction: %d repetition' % table.shape[2])
-    print table.shape
-    #table_mean = np.char.array(table.mean(2))
-    #table_std = np.char.array(table.std(2))
-    table_mean = np.char.array(np.around(table.mean(2), decimals=3)).astype("|S20")
-    table_std = np.char.array(np.around(table.std(2), decimals=3)).astype("|S20")
-    table = table_mean + ' p2m ' + table_std
+    hack_float = np.vectorize(lambda x : '{:.3f}'.format(float(x)))
+    lgg.warn('ValueError, assumming repeat mean variance reduction: %d repetition' % table.shape[1])
+    table_mean = np.char.array(hack_float(table.mean(1)), itemsize=100)
+    table_std = np.char.array(hack_float(table.std(1)), itemsize=100)
+    #table_mean = np.char.array(np.around(table.mean(1), decimals=3))
+    #table_std = np.char.array(np.around(table.std(1), decimals=3))
+    #table = table_mean + ' \pm ' + table_std
+    table_mean[:, 3] = table_mean[:, 3] + ' p2m ' + table_std[:, 3]
+    table = table_mean
     table = np.column_stack((keys, table))
 
 tablefmt = 'latex' # 'latex'
 print
 print tabulate(table, headers=headers, tablefmt=tablefmt, floatfmt='.3f')
-print '\t\t--> precision'
-
 
 

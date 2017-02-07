@@ -6,6 +6,7 @@ import logging
 lgg = logging.getLogger('root')
 
 import numpy as np
+import scipy as sp
 from scipy.special import gammaln
 from numpy.random import dirichlet, gamma, poisson, binomial, beta
 
@@ -164,6 +165,8 @@ class ModelBase(object):
         lgg.error('no method to get hyperparams')
         return
 
+
+
     # Just for MCMC ?():
     def generate(self):
         raise NotImplementedError
@@ -302,11 +305,6 @@ class GibbsSampler(ModelBase):
     # Nasty hack to make serialisation possible
     @mmm
     def purge(self):
-        try:
-            self.s.mask = self.s.zsampler.likelihood.data_ma.mask
-        except:
-            pass
-
         self.s.zsampler.betasampler = None
         self.s.zsampler._nmap = None
         self.s.msampler = None
@@ -339,6 +337,47 @@ class GibbsSampler(ModelBase):
         self.phi = np.mean(phi, 0)
         self.K = self.theta.shape[1]
         return self.theta, self.phi
+
+    def predictMask(self, data, mask=True):
+        lgg.info('Reducing latent variables...')
+        theta, phi = self.reduce_latent()
+
+        if mask is True:
+            masked = self.get_mask()
+        else:
+            masked = mask
+
+        ### @Debug Ignore the Diagonnal
+        np.fill_diagonal(masked, False)
+
+        ground_truth = data[masked]
+
+        p_ji = self.likelihood(theta, phi)
+        prediction = p_ji[masked]
+        prediction = sp.stats.bernoulli.rvs( prediction )
+        #prediction[prediction >= 0.5 ] = 1
+        #prediction[prediction < 0.5 ] = 0
+
+        ### Computing Precision
+        test_size = float(ground_truth.size)
+        good_1 = ((prediction + ground_truth) == 2).sum()
+        precision = good_1 / float(prediction.sum())
+        rappel = good_1 / float(ground_truth.sum())
+        g_precision = (prediction == ground_truth).sum() / test_size
+        mask_density = ground_truth.sum() / test_size
+
+        ### Finding Communities
+        lgg.info('Finding Communities...')
+        communities = self.communities_analysis(data)
+
+        res = {'Precision': precision,
+               'Recall': rappel,
+               'g_precision': g_precision,
+               'mask_density': mask_density,
+               'clustering':communities,
+               'K': self.K
+              }
+        return res
 
 
 class MSampler(object):

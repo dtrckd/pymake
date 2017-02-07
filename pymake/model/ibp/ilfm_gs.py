@@ -72,6 +72,8 @@ class IBPGibbsSampling(IBP, ModelBase):
             data = np.ma.array(data, mask=np.zeros(data.shape))
             np.fill_diagonal(data, ma.masked)
 
+        self.mask = data.mask
+
         self.symmetric = (data == data.T).all()
         self.nnz = len(data.compressed())
         super(IBPGibbsSampling, self)._initialize(data, alpha, initial_Z, KK=KK)
@@ -544,48 +546,6 @@ class IBPGibbsSampling(IBP, ModelBase):
         Y[Y <= 0] = 0
         return Y
 
-    # * Precision on masked data
-    # -- On Gen Y
-    # * Local preferential attachement
-    # * Global preferential attachement
-    def predict(self):
-        lgg.info('Reducing latent variables...')
-        Z, W = self.reduce_latent()
-
-        ### Computing Precision
-        masked = self._Y.mask
-        np.fill_diagonal(masked, False)
-        ground_truth = self._Y.data[masked]
-        data = self._Y.data
-        test_size = float(ground_truth.size)
-
-        bilinear_form = Z.dot(W).dot(Z.T)
-        likelihood = 1 / (1 + np.exp(- self._sigb * bilinear_form))
-        #prediction = sp.stats.bernoulli.rvs(likelihood[masked])
-        prediction = likelihood[masked]
-        #prediction[prediction >= 0.5 ] = 1
-        #prediction[prediction < 0.5 ] = 0
-        prediction = sp.stats.bernoulli.rvs( prediction )
-
-        good_1 = ((prediction + ground_truth) == 2).sum()
-        precision = good_1 / float(prediction.sum())
-        rappel = good_1 / float(ground_truth.sum())
-        g_precision = (prediction == ground_truth).sum() / test_size
-        mask_density = ground_truth.sum() / test_size
-
-        ### Finding Communities
-        lgg.info('Finding Communities...')
-        communities = self.communities_analysis()
-
-        res = {'Precision': precision,
-               'Recall': rappel,
-               'g_precision': g_precision,
-               'mask_density': mask_density,
-               'clustering':communities,
-               'K': self.K
-              }
-        return res
-
     def mask_probas(self, data):
         mask = self.get_mask()
         y_test = data[mask]
@@ -595,7 +555,7 @@ class IBPGibbsSampling(IBP, ModelBase):
         return y_test, probas
 
     def get_mask(self):
-        return self._Y.mask
+        return self.mask
 
     def get_clusters(self, K=None):
         Z, W = self.get_params()
@@ -619,12 +579,8 @@ class IBPGibbsSampling(IBP, ModelBase):
         return clusters
 
     #@wrapper !
-    def communities_analysis(self, data=None, clustering='modularity'):
-        if data is None:
-            data = self._Y.data
-            symmetric = self.symmetric
-        else:
-            symmetric = True
+    def communities_analysis(self, data, clustering='modularity'):
+        symmetric = (data == data.T).all()
 
         # @debug !!!
         clusters = self.get_clusters()
@@ -663,7 +619,7 @@ class IBPGibbsSampling(IBP, ModelBase):
 
         return self.comm
 
-    def blockmodel_ties(self, data=None, remove_empty=True):
+    def blockmodel_ties(self, data, remove_empty=True):
         """ return ties based on a weighted average
             of the local degree ditribution """
 

@@ -74,9 +74,15 @@ class DataBase(object):
             #np.random.seed(config.get('seed'))
             np.random.set_state(self.load('.seed'))
         self.seed = np.random.get_state()
-        self.save(self.seed, '.seed')
-        self.cfg = config
+        self.save(self.seed, '/tmp/pymake.seed')
+        # Who is the master manager you do that ?
+
+        # Load a .pk file for data(default: True if present)
+        # + it faset
+        # - some data features are not stored in .pk
         self._load_data = config.get('load_data')
+
+        # Save a .pk file of data (default: False)
         self._save_data = config.get('save_data')
 
         self.corpus_name = config.get('corpus_name') or config.get('corpus')
@@ -95,8 +101,11 @@ class DataBase(object):
         ########
         ### Update settings Operations
         ########
+        self.cfg = config
         config['data_type'] = self.bdir
         self.make_output_path()
+        # There is some dynamic settings
+        # K, others ?
 
         if load is True:
             self.load_data(randomize=False)
@@ -109,7 +118,7 @@ class DataBase(object):
         raise NotImplemented
 
     def make_output_path(self):
-        # Write Path (for models results)
+        ''' Write Path (for models results) in global settings '''
         self.basedir, self.output_path = make_output_path(self.cfg)
         self.cfg['output_path'] = self.output_path
 
@@ -129,32 +138,6 @@ class DataBase(object):
         raise NotImplementedError()
     def _get_corpus(self):
         raise NotImplementedError()
-
-    # convert ndarray to list.
-    def save_json(self, res):
-        """ Save a dictionnary in json"""
-        fn = self.output_path + '.json'
-        new_res = copy.copy(res)
-        for k, v  in new_res.items():
-            # Go at two level deeper, no more !
-            if type(v) is dict:
-                for kk, vv  in v.items():
-                    if hasattr(vv, 'tolist'):
-                        new_res[k][kk] = vv.tolist()
-            if hasattr(v, 'tolist'):
-                new_res[k] = v.tolist()
-        return json.dump(new_res, open(fn,'w'))
-    def get_json(self):
-        fn = self.output_path + '.json'
-        d = json.load(open(fn,'r'))
-        return d
-    def update_json(self, d):
-        fn = self.output_path + '.json'
-        res = json.load(open(fn,'r'))
-        res.update(d)
-        lgg.info('updating json: %s' % fn)
-        json.dump(res, open(fn,'w'))
-        return fn
 
     def get_data_prop(self):
         prop = defaultdict()
@@ -176,6 +159,14 @@ class DataBase(object):
         #    self.data = sp.sparse.csr_matrix(data)
         #else:
         #    np.random.shuffle(self.data)
+        #
+        #
+    @staticmethod
+    def symmetrize(self, data=None):
+        if data is None:
+            return None
+        data = np.triu(data) + np.triu(data, 1).T
+        return
 
     def shuffle_features(self):
         raise NotImplemented
@@ -199,23 +190,45 @@ class DataBase(object):
     @staticmethod
     def save(data, fn):
         fn = fn + '.pk'
+        lgg.info('Saving frData ; %s' % fn)
         with open(fn, 'wb') as _f:
             return pickle.dump(data, _f, protocol=pickle.HIGHEST_PROTOCOL)
 
     @staticmethod
     def load(fn):
         fn = fn + '.pk'
-        lgg.debug('opening file: %s' % fn)
+        lgg.info('Loading frData: %s' % fn)
         with open(fn, 'rb') as _f:
             return pickle.load(_f)
 
-    @staticmethod
-    def symmetrize(self, data=None):
-        if data is None:
-            return None
-        data = np.triu(data) + np.triu(data, 1).T
-        return
+    # convert ndarray to list.
+    def save_json(self, res):
+        """ Save a dictionnary in json"""
+        fn = self.output_path + '.json'
+        new_res = copy.copy(res)
+        for k, v  in new_res.items():
+            # Go at two level deeper, no more !
+            if type(v) is dict:
+                for kk, vv  in v.items():
+                    if hasattr(vv, 'tolist'):
+                        new_res[k][kk] = vv.tolist()
+            if hasattr(v, 'tolist'):
+                new_res[k] = v.tolist()
 
+        lgg.info('Saving json ; %s' % fn)
+        return json.dump(new_res, open(fn,'w'))
+    def get_json(self):
+        fn = self.output_path + '.json'
+        lgg.info('Loading json frData ; %s' % fn)
+        d = json.load(open(fn,'r'))
+        return d
+    def update_json(self, d):
+        fn = self.output_path + '.json'
+        res = json.load(open(fn,'r'))
+        res.update(d)
+        lgg.info('Updating json frData: %s' % fn)
+        json.dump(res, open(fn,'w'))
+        return fn
 
 
 

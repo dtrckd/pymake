@@ -17,7 +17,7 @@ USAGE = '''\
     expe_k [model]
 '''
 
-expe_args = argparser.expe_tabulate(USAGE)
+expe_args = argparser.exp_tabulate(USAGE)
 
 ###################################################################
 # Data Forest config

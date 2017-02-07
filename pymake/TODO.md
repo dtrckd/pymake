@@ -1,7 +1,10 @@
 # Code Factoring
 
-use args...https://github.com/kennethreitz/args instead parser for fit.py
-use arparser as standard parser !
+## IN DOIING
+* tabul
+* default VS const (argparser)???
+* settings object (AST)
+
 
 @purge: 
 * model/lda

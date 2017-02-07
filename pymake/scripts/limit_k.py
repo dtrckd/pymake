@@ -11,7 +11,6 @@ from expe.spec import _spec_; _spec = _spec_()
 from expe.format import *
 from util.argparser import argparser
 
-from collections import Counter, defaultdict
 import itertools
 
 """ Density - Small world asymptotic analysis
@@ -19,13 +18,12 @@ import itertools
 
 ####################################################
 ### Config
-config = defaultdict(lambda: False, dict(
-    load_data = True
-    write_to_file = False,
+config = dict(
+    save_plot = False,
     gen_size      = 1000,
     generative    = 'evidence',
     epoch         = 10 , #20
-))
+)
 config.update(argparser.generate(''))
 
 # Corpuses
@@ -111,6 +109,6 @@ for corpus_name in Corpuses:
 
         display(False)
 
-if not config.get('write_to_file'):
+if not config.get('save_plot'):
     display(True)
 

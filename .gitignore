@@ -3,7 +3,6 @@
 *.py[co]
 *.[ao]
 tags
-*.out
 *~
 *.session.vim
 *.byobu
@@ -19,4 +18,3 @@ stirling.pk
 stirling.npy
 pymake/ID
 
-.seed.pk
