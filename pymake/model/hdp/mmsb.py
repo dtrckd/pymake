@@ -661,6 +661,10 @@ class GibbsRun(GibbsSampler):
     def get_mask(self):
         return self.mask
 
+    def getK(self):
+        return self.s.zsampler._K
+
+
     def get_clusters(self, K=None, skip=0):
         """ Return a vector of clusters membership of nodes.
 

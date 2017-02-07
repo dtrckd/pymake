@@ -165,7 +165,7 @@ class argparser(object):
     @staticmethod
     @askhelp
     @askverbose
-    def zymake():
+    def zymake(USAGE=''):
         ''' Generates output (files or line arguments) according to the SPEC
             @return OUT_TYPE: runcmd or path
                     SPEC: expe spec
