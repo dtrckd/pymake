@@ -5,6 +5,25 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 try: basestring = basestring # python2
 except NameError: basestring = (str, bytes) # python3
 
+
+''' BASETYPE '''
+from collections import OrderedDict
+class Expe(dict):
+    pass
+class ExpTensor(OrderedDict):
+    pass
+
+from .frontend.frontendtext import frontendText
+from .frontend.frontendnetwork import frontendNetwork
+from .frontend.manager import ModelManager, FrontendManager
+
+from .util.argparser import GramExp
+
+#
+# Erckelfault
+#
+
+''' PRELOAD LIB '''
 import importlib
 _MODULES = ['community',
             ('networkx', 'nx'),
@@ -12,7 +31,6 @@ _MODULES = ['community',
             ('scipy', 'sp'),
             ('matplotlib.pyplot', 'plt')
            ]
-
 
 for m in _MODULES:
     try:

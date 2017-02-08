@@ -367,7 +367,7 @@ def pvalue(**kwargs):
         # Mean and standard deviation
         table_mean = np.char.array(np.around(Table.mean(2), decimals=3)).astype("|S20")
         table_std = np.char.array(np.around(Table.std(2), decimals=3)).astype("|S20")
-        Table = table_mean + ' p2m ' + table_std
+        Table = table_mean + b' p2m ' + table_std
 
         # Table formatting
         Table = np.column_stack((row_headers, Table))
@@ -439,7 +439,7 @@ def homo(**kwargs):
         # Mean and standard deviation
         table_mean = np.char.array(np.around(Table.mean(2), decimals=3)).astype("|S20")
         table_std = np.char.array(np.around(Table.std(2), decimals=3)).astype("|S20")
-        Table = table_mean + ' p2m ' + table_std
+        Table = table_mean + b' p2m ' + table_std
 
         # Table formatting
         Table = np.column_stack((row_headers, Table))
@@ -449,27 +449,9 @@ def homo(**kwargs):
         del Table
 
 
-def debug(**kwargs):
-    y = kwargs['y']
-    model = kwargs['model']
-
-    clustering = 'modularity'
-    comm = model.communities_analysis(data=y, clustering=clustering)
-
-    clusters = comm['clusters']
-
-    #y, l = reorder_mat(y, clusters, labels=True)
-    #clusters = clusters[l]
-
-    #adjblocks(y, clusters=clusters, title='Blockmodels of Adjacency matrix')
-    #adjshow(reorder_mat(y, comm['clusters']), 'test reordering')
-
-    draw_graph_circular(y, clusters)
-
-    print (model.get_mask())
-
 
 def roc_test(**kwargs):
+    ''' AUC/ROC test report '''
     globals().update(kwargs)
     mask = model.get_mask()
     y_true, probas = model.mask_probas(data)
@@ -481,6 +463,7 @@ def roc_test(**kwargs):
     #plt.plot(precision, recall, label='PR curve; %s' % (model_name ))
 
 def perplexity(**kwargs):
+    ''' likelihood/perplxity convergence report '''
     globals().update(kwargs)
 
     data = model.load_some()
@@ -509,6 +492,25 @@ def clustering(algo=_algo, **kwargs):
 
     adjshow(mat, algo)
     plt.colorbar()
+
+def draw(**kwargs):
+    y = kwargs['y']
+    model = kwargs['model']
+
+    clustering = 'modularity'
+    comm = model.communities_analysis(data=y, clustering=clustering)
+
+    clusters = comm['clusters']
+
+    #y, l = reorder_mat(y, clusters, labels=True)
+    #clusters = clusters[l]
+
+    #adjblocks(y, clusters=clusters, title='Blockmodels of Adjacency matrix')
+    #adjshow(reorder_mat(y, comm['clusters']), 'test reordering')
+
+    draw_graph_circular(y, clusters)
+
+    print (model.get_mask())
 
 
 

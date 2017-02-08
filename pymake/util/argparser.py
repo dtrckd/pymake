@@ -5,48 +5,26 @@ import sys
 import argparse
 import logging
 
+from functools import reduce
+import operator
+
 import inspect
 from functools import wraps
 import args as clargs
+
+from pymake import basestring, ExpTensor, Expe
 from pymake.frontend.frontend_io import *
 from pymake.expe.spec import _spec_; _spec = _spec_()
 
-'''
-    Here we build Custom Args Parser
-'''
+''' Grammar Expe '''
 
 #################
 ### ARGPARSE ZONE
 #################
 
-def setup_logger(fmt='%(message)s', level=logging.INFO, name='root'):
-    #formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
-
-    if level == 1:
-        level = logging.DEBUG
-    elif level == 2:
-        print ('what level of verbosity heeere ?')
-        exit()
-    else:
-        # make a --silent option for juste error and critial log ?
-        level = logging.INFO
-
-    # Get logger
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-
-    # Format handler
-    handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter(fmt=fmt))
-    logger.addHandler(handler)
-
-    # Prevent logging propagation of handler,
-    # who reults in logging things multiple times
-    logger.propagate = False
-
-    return logger
-
 class ExpArgumentParser(argparse.ArgumentParser):
+    def __init__(self, **kwargs):
+        super(ExpArgumentParser, self).__init__(**kwargs)
 
     def error(self, message):
         self.print_usage()
@@ -67,6 +45,14 @@ class VerboseAction(argparse.Action):
             values=values.count('v')+1
         setattr(args, self.dest, values)
 
+class SmartFormatter(argparse.HelpFormatter):
+    # Unused -- see RawDescriptionHelpFormatter
+    def _split_lines(self, text, width):
+        if text.startswith('R|'):
+            return text[2:].splitlines()
+        # this is the RawTextHelpFormatter._split_lines
+        return argparse.HelpFormatter._split_lines(self, text, width)
+
 
 def check_positive_integer(value):
     try:
@@ -80,10 +66,10 @@ def check_positive_integer(value):
         return ivalue
 #\
 
-#########
-# @TODO:
+###################
+## ARGS Section
+# @argument wrapper:
 # * wraps cannot handle the decorator chain :(, why ?
-
 
 class askseed(object):
     ''' Load previous random seed '''
@@ -118,53 +104,135 @@ class askhelp(object):
 
         response = self.func(*args, **kwargs)
         return response
-
-class askverbose(object):
-    ''' Augment verbosity on -c '''
-    def __init__(self, func):
-        self.func = func
-        #wraps(func)(self)
-        #functools.update_wrapper(self, func)
-        pass
-
-    def __call__(self, *args, **kwargs):
-
-        if clargs.flags.contains('-v'):
-            self.logger = self.setup_logger('root','%(message)s', logging.DEBUG)
-        else:
-            self.logger = self.setup_logger('root','%(message)s', logging.INFO)
-
-        response = self.func(*args, **kwargs)
-
-        if clargs.flags.contains('-s'):
-            response['simul'] = True
-
-        return response
-
-    def setup_logger(self, name, fmt, level):
-        #formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
-
-        # Get logger
-        logger = logging.getLogger(name)
-        logger.setLevel(level)
-
-        # Format handler
-        handler = logging.StreamHandler()
-        handler.setFormatter(logging.Formatter(fmt=fmt))
-        logger.addHandler(handler)
-
-        return logger
+#\
 
 
-class argparser(object):
-    ''' Utility class for parsing arguments of various script of @project.
-        Each method has the same name of the function/scrpit for which it is used.
-        @return dict of variables used by function/scritpts
+class GramExp(object):
+    ''' Create a mapping between different format of design of experiments.
+
+        Attribute
+        ---------
+        exp_tensor :ExpTensor
+            tensor of experiments
+
+        Methods
+        -------
+        __init__ : conf choice in :
+               * Expe -> One experiments
+               * ExpTensor -> Design of experiments
+               * Expe & spec in Expe -> Design of experiments with global value,
+                    either from conf or command-line args.
+                    conf value will udpdate all experiments first from command-line
+                    argument then from defaut values.
+
+        Notes
+        -----
+
+        Design of Experiments can take three forms :
+            1. command-line arguments (see self.parsearg).
+                * use for parralization with Gnu parallel.
+            2. Expe : Uniq experiments specificattion,
+                * @Todo list of Expe
+            3. ExpTensor : Represente a tensor of experiments.
+               Each entry of the dict contains an iterable over specifications
+               for this entry. (see frontend.frontend_io)
+               * @Todo pass rule to filter experiments...
     '''
+    _examples = '''Examples:
+        >> Text fitting
+        fit.py -k 6 -m ldafullbaye -p
+        >> Network fitting :
+        fit.py -m immsb -c alternate -n 100 -i 10'''
+
+    # Reserved by GramExp
+    _reserved_keywords = ['spec', # for nested specification
+                         'exp' # to track expe walking
+                         ]
+
+    # Avoid conflict between tasks
+    _forbiden_keywords = dict(fit = ['gen_size', 'epoch', 'do', 'mode'],
+                              generate = ['iterations'])
+
+    def __init__(self, _conf={}, usage=None):
+        conf = _conf.copy()
+        if 'spec' in conf: # and conf if a dict
+            self.exp_tensor = self.exp2tensor(conf.pop('spec'))
+        elif isinstance(conf, ExpTensor):
+            self.exp_tensor = conf
+        elif isinstance(conf, (dict, Expe)):
+            if type(conf) is dict:
+                print ('warning : type dict for expe settongs is deprecated.')
+            self.exp_tensor = self.dict2tensor(conf)
+        else:
+            raise ValueError('exp/conf not understood: %s' % type(conf))
+
+        # Update default conf from command-line
+        conf.update(self.parseargs(usage))
+
+        # Populate conf values in experiments
+        for k, v in conf.items():
+            self.exp_tensor[k] = [v]
+
+        self.expe = conf
+
+        self.checkConf(conf)
+        self.checkExp(self.exp_tensor)
+
+        # @logger One logger by Expe !
+        self.setup_logger(fmt='%(message)s', level=conf['verbose'])
+
+        if conf.get('simulate'):
+            self.simulate()
+
+    @classmethod
+    def checkConf(cls, settings):
+        for m in cls._reserved_keywords:
+            if m in settings:
+                raise ValueError('%m is a reserved keyword of gramExp.')
+        # @todo : verify  forbidden keywords
+
+    @staticmethod
+    def checkExp(exp):
+        assert(isinstance(exp, ExpTensor))
+        for k, v in exp.items():
+            if not isinstance(v, list):
+                raise ValueError('error, exp value should be iterable: %s' % k, v)
+
+    def getConfig(self):
+        # get global conf...
+        raise NotImplementedError
+
+    def getCorpuses(self):
+        return self.exp_tensor['corpus']
+
+    def getModels(self):
+        return self.exp_tensor['model']
+
+    def __len__(self):
+        return reduce(operator.mul,
+                      [len(v) for v in self.exp_tensor.values()], 1)
+
+    @staticmethod
+    def dict2tensor(conf):
+        ''' Return the tensor who is a Orderedict of iterable.
+            Assume unique expe. Every value will be listified.
+        '''
+        tensor = ExpTensor([(k, [v]) for k, v in conf.items()])
+        return tensor
+
+    @staticmethod
+    def exp2tensor(conf):
+        ''' Return the tensor who is an Orderedict of iterable.
+            Assume conf is an exp. Non list value will be listified.
+        '''
+        tensor = conf.copy()
+        for k, v in conf.items():
+            if not isinstance(v, list):
+                tensor[k] = [v]
+        return tensor
 
     @staticmethod
     @askhelp
-    @askverbose
     def zymake(USAGE=''):
         ''' Generates output (files or line arguments) according to the SPEC
             @return OUT_TYPE: runcmd or path
@@ -218,12 +286,10 @@ class argparser(object):
             raise ValueError('unknow argument: %s\n available SPEC: %s' % (gargs, _spec.repr()))
         return req
 
-    @staticmethod
-    @askverbose
     @askhelp
     @askseed
     def generate(USAGE=''):
-        conf = {}
+        conf = self.parseargs()
         write_keys = ('-w', 'write', '--write')
         # Write plot
         for write_key in write_keys:
@@ -234,25 +300,22 @@ class argparser(object):
 
         ### map config dict to argument
         for key in clargs.grouped:
-            if '-k' == key:
-                conf['K'] = int(clargs.grouped['-k'].get(0))
-            elif '-n' in key:
+            if '-n' in key:
                 conf['gen_size'] = int(clargs.grouped['-n'].get(0))
             elif '--alpha' in key:
                 try:
                     conf['alpha'] = float(clargs.grouped['--alpha'].get(0))
                 except ValueError:
-                    conf['hyper'] = clargs.grouped['--alpha'].get(0)
+                    # list ?
+                    conf['alpha'] = clargs.grouped['--alpha'].get(0)
             elif '--gmma' in key:
                 conf['gmma'] = float(clargs.grouped['--gmma'].get(0))
             elif '--delta' in key:
                 conf['delta'] = float(clargs.grouped['--delta'].get(0))
             elif '-g' in key:
-                conf['generative'] = 'evidence'
+                conf['mode'] = 'evidence'
             elif '-p' in key:
-                conf['generative'] = 'predictive'
-            elif '-m' in key:
-                conf['model'] = clargs.grouped['-m'].get(0)
+                conf['mode'] = 'predictive'
 
         if clargs.last and clargs.last not in map(str, clargs.flags.all + list(conf.values())):
             conf['do'] = clargs.last
@@ -260,7 +323,6 @@ class argparser(object):
         return conf
 
     @staticmethod
-    @askverbose
     @askhelp
     def exp_tabulate(USAGE=''):
         conf = {}
@@ -273,38 +335,29 @@ class argparser(object):
                 conf['model'] = arg
         return conf
 
+    def parseargs(self, usage=None):
+        description = 'Specify an experimentation.'
+        if not usage:
+            epilog = self._examples
+        else:
+            epilog = usage
+            pass
 
-    @staticmethod
-    def gramexp():
-        parser = ExpArgumentParser(description='Default load corpus and run a model.',
-                                   epilog='''Examples: \n
-                                   # Load corpus and infer modef (eg LDA)
-                                   ./lda_run.py -k 6 -m ldafullbaye -p:
-                                   # assort
-                                   ./assortt.py -n 1000 -k 10 --alpha auto --homo 0 -m ibp_cgs -c generator3 -l model --refdir debug5 -nld
-                                   # Load corpus and model:
-                                   ./lda_run.py -k 6 -m ldafullbaye -lall -p
-                                   # Network corpus:
-                                   ./fit.py -m immsb -c generator1 -n 100 -i 10
-                                   # Various networks setting:
-                                   ./fit.py -m ibp_cgs --homo 0 -c clique6 -n 100 -k 3 -i 20
-                                   ''')
+        parser = ExpArgumentParser(description=description, epilog=epilog,
+                                   formatter_class=argparse.RawDescriptionHelpFormatter)
 
         ### Global settings
         parser.add_argument(
             '--host',  default='localhost',
             help='name to append in data/<bdir>/<refdir>/ for th output path.')
 
-        ### I/O settings
-        parser.add_argument(
-            'datatype', nargs='?',
-            help='Force the type of data (NotImplemented')
+        ### Global settings
         parser.add_argument(
             '-v', nargs='?', action=VerboseAction, dest='verbose', default=logging.INFO,
-            help='verbosity level (-v | -vv | -v 2)')
+            help='Verbosity level (-v | -vv | -v 2)')
         parser.add_argument(
             '-s', '--simulate', action='store_true',
-            help='offline simulation')
+            help='Offline simulation')
         parser.add_argument(
             '--epoch', type=int,
             help='number for averaginf generative process')
@@ -324,21 +377,20 @@ class argparser(object):
             '-w', '--write', action='store_true', default=False,
             help='Write Fitted Model On disk.')
 
-        ### Exp Settings
-        ### get it from key -- chatting
-
-        #parser.add_argument( ?
-        #    '-d', '--datatype','--data_type','--data-type',  type=str,
-        #    help='Set type of data and relative path data/<bdir>/<datatype>/...')
+        ### Expe Settings
+        ### get it from key -- @chatting
+        parser.add_argument(
+            'datatype', nargs='?',
+            help='Force the type of data (NotImplemented')
 
         parser.add_argument(
-            '-c','--corpus', '--corpus_name', '--corpus-name', dest='corpus_name',
+            '-c','--corpus', dest='corpus',
             help='ID of the frontend data.')
         parser.add_argument(
-            '-r','--random', dest='corpus_name',
+            '-r','--random', dest='corpus',
             help='Random generation of synthetic frontend  data [uniforma|alternate|cliqueN|BA].')
         parser.add_argument(
-            '-m','--model', '--model_name', '--model-name', dest='model_name',
+            '-m','--model', dest='model',
             help='ID of the model.')
         parser.add_argument(
             '-n','--N', type=str,
@@ -353,36 +405,73 @@ class argparser(object):
             '--repeat', type=check_positive_integer,
             help='Index of tn nth repetitions/randomization of an design of experiments. Impact the outpout path as data/<bdir>/<refdir>/<repeat>/...')
         parser.add_argument(
-            '--alpha','--hyper', dest='hyper', type=str,
+            '--hyper', dest='hyper', type=str,
             help='type of hyperparameters optimization [auto|fix|symmetric|asymmetric]')
         parser.add_argument(
             '--hyper-prior','--hyper_prior', dest='hyper_prior', action='append',
             help='Set paramters of the hyper-optimization [auto|fix|symmetric|asymmetric]')
         parser.add_argument(
             '--refdir', '--debug', dest='refdir', default='debug',
-            help='name to append in data/<bdir>/<refdir>/ for th output path.')
-
+            help='Name to append in data/<bdir>/<refdir>/ for th output path.')
+        parser.add_argument(
+            '--testset-ratio',  dest='testset_ratio', type=float,
+            help='testset/learnset ratio for testing.')
         parser.add_argument(
             '--homo', type=str,
             help='Centrality type (NotImplemented)')
 
-        settings = vars( parser.parse_args())
+        settings = vars(parser.parse_args())
         # Remove None value
         settings = dict((key,value) for key, value in settings.items() if value is not None)
-        setup_logger(fmt='%(message)s', level=settings['verbose'])
+
+        self.argparser = parser
 
         return settings
 
-    @staticmethod
-    def simulate(exp):
+    def simulate(self):
         ''' Simulation Output '''
-        if exp.get('simulate'):
-            print('''--- Simulation settings ---
-            Model : %s
-            Corpus : %s
-            K : %s
-            N : %s
-            hyper : %s ''' % (exp['model_name'], exp['corpus_name'],
-                         exp['K'], exp['N'], exp['hyper'])
-                 )
-            exit()
+        print('''
+              Nb of experiments : %s
+              Corpuses : %s
+              Models : %s
+              ''' % (len(self), self.getCorpuses(), self.getModels()))
+        exit(2)
+
+    @staticmethod
+    def setup_logger(fmt='%(message)s', level=logging.INFO, name='root'):
+        #formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
+
+        if level == 1:
+            level = logging.DEBUG
+        elif level == 2:
+            print ('what level of verbosity heeere ?')
+            exit(2)
+        else:
+            # make a --silent option for juste error and critial log ?
+            level = logging.INFO
+
+        # Get logger
+        logger = logging.getLogger(name)
+        logger.setLevel(level)
+
+        # Format handler
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter(fmt=fmt))
+        logger.addHandler(handler)
+
+        # Prevent logging propagation of handler,
+        # who results in logging things multiple times
+        logger.propagate = False
+
+        return logger
+
+    # @do parralize
+    def pymake(self, fun):
+        lod = make_forest_conf(self.exp_tensor)
+        for id_expe, expe in enumerate(lod):
+            pt = dict((key, value.index(expe[key])) for key, value in self.exp_tensor.items() if isinstance(expe[key], basestring))
+            pt['expe'] = id_expe
+            _expe = argparse.Namespace(**expe)
+            fun(pt, _expe, self)
+
+

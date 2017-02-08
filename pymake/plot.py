@@ -11,7 +11,7 @@ from matplotlib import colors as Colors
 import networkx as nx
 from networkx.drawing.nx_agraph import write_dot
 
-from pymake.util.utils import *
+from pymake.util.utils import * # Cycle
 from pymake.util.math import *
 from pymake.util.algo import *
 

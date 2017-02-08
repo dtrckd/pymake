@@ -2,16 +2,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from frontend.manager import ModelManager, FrontendManager
-from frontend.frontendnetwork import frontendNetwork
-from util.utils import *
-from util.math import *
-from util.algo import Annealing
-from plot import *
-from frontend.frontend_io import *
+
+from pymake import ExpTensor, ModelManager, FrontendManager, GramExp
+
 from expe.spec import _spec_; _spec = _spec_()
 from expe import format
-from util.argparser import argparser
+
+import logging
+lgg = logging.getLogger('root')
 
 
 USAGE = '''\
@@ -28,22 +26,6 @@ analysis in [clustering, zipf, (to complete)]
     ./generate.py --alpha 1 --gmma 1 -n 1000 --seed
 '''
 
-#######################
-### Config
-#######################
-config = dict(
-    block_plot = False,
-    save_plot = False,
-    do            = 'zipf',
-    #generative    = 'evidence',
-    generative    = 'predictive',
-    gen_size      = 1000,
-    epoch         = 20 , #20
-    #### Path Spec
-    #debug         = 'debug11'
-    debug         = 'debug111111', repeat        = 0,
-)
-config.update(argparser.generate(USAGE))
 
 #######################
 ### Corpuses
@@ -53,16 +35,12 @@ config.update(argparser.generate(USAGE))
 Corpuses = _spec.CORPUS_SYN_ICDM_1 + _spec.CORPUS_REAL_ICDM_1
 Corpuses = _spec.CORPUS_REAL_V2
 
-#Corpuses = ('generator7',)
-#Corpuses = ('fb_uc',)
-
-alpha = 1; gmma = 1; delta = (1, 5)
-
 #######################
 ### Models
 #######################
 #Models = _spec.MODELS_GENERATE
-Models = [dict ((
+Spec = ExpTensor ((
+    ('corpus', Corpuses),
     ('data_type'    , 'networks'),
     ('debug'        , 'debug11') , # ign in gen
     #('model'        , 'mmsb_cgs')   ,
@@ -72,124 +50,143 @@ Models = [dict ((
     ('hyper'        , 'auto')    , # ign in gen
     ('homo'         , 0)         , # ign in gen
     ('repeat'      , '')       ,
-))]
+    #
+    ('alpha', 1),
+    ('gmma', 1),
+    ('delta', [(1, 5)]),
+))
+
+config = dict(
+    block_plot = False,
+    save_plot  = False,
+    do            = 'zipf',
+    #generative    = 'evidence',
+    mode    = 'predictive',
+    gen_size      = 1000,
+    epoch         = 20 , #20
+    #### Path Spec
+    #debug         = 'debug11'
+    debug         = 'debug111111',
+    repeat        = 0,
+    spec = Spec
+)
 
 
-# @debug: n value cause file crash
-for k in Models[0].keys():
-    if k in config:
-        for m in Models:
-            m[k] = config[k]
+def generate(pt, expe, gramexp):
 
-for opt in ('alpha','gmma', 'delta'):
-    if config.get(opt):
-        globals()[opt] = config[opt]
+    #alpha = 1; gmma = 1; delta = (1, 5)
+    #for opt in ('alpha','gmma', 'delta'):
+    #    if expe.get(opt):
+    #        globals()[opt] = expe[opt]
 
-#  to get track of last experimentation in expe.format
-nb_of_iteration = len(Corpuses) * len(Models) -1
-_it = 0
-for corpus_pos, corpus_name in enumerate(Corpuses):
-    _end = _it == nb_of_iteration
-    frontend = frontendNetwork(config)
-    data = frontend.load_data(corpus_name)
-    data = frontend.sample()
+    print(pt)
+    _it = pt['expe']
+    corpus_pos = pt['corpus']
+    model_pos = pt['model']
+
+    #  to get track of last experimentation in expe.format
+    print('nb of it', len(gramexp))
+    _end = _it == (len(gramexp)-1)
+    frontend = FrontendManager.load(expe)
 
     lgg.info('---')
-    lgg.info(_spec.name(corpus_name))
+    lgg.info('Expe : %s -- %s' % (_spec.name(expe.corpus), _spec.name(expe.model)))
     lgg.info('---')
 
-    for Model in Models:
-        lgg.info(_spec.name(Model['model']))
-        lgg.info('---')
+    if expe.mode == 'predictive':
+        ### Generate data from a fitted model
+        model = ModelManager.from_expe(expe)
 
-        ###################################
-        ### Setup Models
-        ###################################
-        if config['generative'] == 'predictive':
-            ### Generate data from a fitted model
-            Model.update(corpus=corpus_name)
-            model = ModelManager(config=config).load(Model)
-            #model = model.load(Model)
-
-            # __future__ remove
-            try:
-                # this try due to mthod modification entry in init not in picke object..
-                Model['hyperparams'] = model.get_hyper()
-            except:
-                model._mean_w = 0
-                Model['hyperparams'] = 0
-
-            N = data.shape[0]
-        elif config['generative'] == 'evidence':
-            N = config['gen_size']
-            ### Generate data from a un-fitted model
-            if Model['model'] == 'ibp':
-                keys_hyper = ('alpha','delta')
-                hyper = (alpha, delta)
+        # __future__ remove
+        try:
+            # this try due to mthod modification entry in init not in picke object..
+            expe.hyperparams = model.get_hyper()
+        except:
+            if model is None:
+                lgg.error('No model for %s' % pt)
+                return
             else:
-                keys_hyper = ('alpha','gmma','delta')
-                hyper = (alpha, gmma, delta)
-            Model['hyperparams'] = dict(zip(keys_hyper, hyper))
-            Model['hyper'] = 'fix' # dummy
-            model = ModelManager(config=config).load(Model, init=True)
-            #model.update_hyper(hyper)
+                model._mean_w = 0
+                expe.hyperparams = 0
+
+        N = frontend.data.shape[0]
+    elif expe['generative'] == 'evidence':
+        N = expe.gen_size
+        ### Generate data from a un-fitted model
+        if expe.model == 'ibp':
+            keys_hyper = ('alpha','delta')
+            hyper = (alpha, delta)
         else:
-            raise NotImplementedError('What generation context ? evidence/generative..')
+            keys_hyper = ('alpha','gmma','delta')
+            hyper = (alpha, gmma, delta)
+        expe.hyperparams = dict(zip(keys_hyper, hyper))
+        expe.hyper = 'fix' # dummy
+        model = ModelManager.from_expe(expe, init=True)
+        #model.update_hyper(hyper)
+    else:
+        raise NotImplementedError('What generation context ? evidence/generative..')
 
-        if model is None:
-            continue
+    if model is None:
+        return
 
-        ###################################
-        ### Generate data
-        ###################################
-        ### Defaut random graph (Evidence), is directed
-        y, theta, phi = model.generate(N, Model['K'], _type=config['generative'])
-        Y = [y]
-        for i in range(config.get('epoch',1)-1):
-            ### Mean and var on the networks generated
-            pij = model.likelihood(theta, phi)
-            pij = np.clip(model.likelihood(theta, phi), 0, 1)
-            Y += [sp.stats.bernoulli.rvs(pij)]
-            ### Mean and variance  on the model generated
-            #y, theta, phi = model.generate(N, Model['K'], _type=config['generative'])
-            #Y += [y]
-        #y = data
-        #Y = [y]
+    ###################################
+    ### Generate data
+    ###################################
+    ### Defaut random graph (Evidence), is directed
+    y, theta, phi = model.generate(N, expe.K, _type=expe.mode)
+    Y = [y]
+    for i in range(expe.epoch - 1):
+        ### Mean and var on the networks generated
+        pij = model.likelihood(theta, phi)
+        pij = np.clip(model.likelihood(theta, phi), 0, 1)
+        Y += [sp.stats.bernoulli.rvs(pij)]
+        ### Mean and variance  on the model generated
+        #y, theta, phi = model.generate(N, Model['K'], _type=expe['generative'])
+        #Y += [y]
+    #y = data
+    #Y = [y]
 
-        ### @TODO: Baselines / put in args input.
-        #R = rescal(data, config['K'])
-        R = None
+    ### @TODO: Baselines / put in args input.
+    #R = rescal(data, expe['K'])
+    R = None
 
-        N = theta.shape[0]
-        K = theta.shape[1]
-        if frontend.is_symmetric():
-            for y in Y:
-                frontend.symmetrize(y)
-                frontend.symmetrize(R)
+    N = theta.shape[0]
+    K = theta.shape[1]
+    if frontend.is_symmetric():
+        for y in Y:
+            frontend.symmetrize(y)
+            frontend.symmetrize(R)
 
-        ###################################
-        ### Expe Show Setup
-        ###################################
-        model_name = Model['model']
-        model_hyper = Model['hyperparams']
-        lgg.info('=== M_e Mode === ')
-        lgg.info('Expe: %s' % config['do'])
-        lgg.info('Mode: %s' % config['generative'])
-        lgg.info('corpus: %s, model: %s, K = %s, N =  %s, hyper: %s'.replace(',','\n') % (_spec.name(corpus_name), _spec.name(model_name), K, N, str(model_hyper)) )
+    ###################################
+    ### Expe Show Setup
+    ###################################
+    model_hyper = Model['hyperparams']
+    lgg.info('=== M_e Mode === ')
+    lgg.info('Expe: %s' % expe.do)
+    lgg.info('Mode: %s' % expe.model)
+    lgg.info('corpus: %s, model: %s, K = %s, N =  %s, hyper: %s'.replace(',','\n') % (_spec.name(expe.corpus), _spec.name(expe.model), K, N, str(model_hyper)) )
 
-        ###################################
-        ### Visualize
-        ###################################
-        g = None # ?; remove !
+    ###################################
+    ### Visualize
+    ###################################
+    g = None # ?; remove !
 
-        analysis = getattr(format, config['do'])
-        analysis(**globals())
+    analysis = getattr(format, expe.do)
+    analysis(**globals())
 
-        #format.debug(**globals())
+    #format.debug(**globals())
 
-        _it += 1
-        display(config['block_plot'])
+    _it += 1
+    display(expe.block_plot)
 
-if not config.get('save_plot'):
-    display(True)
+
+    # arggg, nasty
+    # How to call it ?
+    if not expe.save_plot:
+        display(True)
+
+
+if __name__ == '__main__':
+
+    GramExp(config, USAGE).pymake(generate)
 

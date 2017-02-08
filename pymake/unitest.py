@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 import subprocess
 
-_py = 'python3'
 _py = 'python'
+_py = 'python3'
 
 tests = ('fit',
          'expe_meas',
@@ -19,6 +19,7 @@ for t in tests:
     cmd = _py + ' ' + cmdsplit[0] + '.py ' + ' '.join(cmdsplit[1:])
 
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+    print('Testing :: %s' % cmd)
     out, err = p.communicate()
     result = out.split('\n')
 

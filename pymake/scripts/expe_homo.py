@@ -4,7 +4,8 @@
 import numpy as np
 import logging
 from tabulate import tabulate
-from collections import OrderedDict
+
+from pymake import ExpTensor, OrderedDict
 from frontend.frontend_io import *
 from util.utils import *
 from util.argparser import argparser
@@ -23,7 +24,7 @@ expe_args = argparser.exp_tabulate(USAGE)
 #
 
 ### Expe Forest
-map_parameters = OrderedDict((
+map_parameters = ExpTensor((
     ('data_type', ('networks',)),
     #('corpus' , ('fb_uc', 'manufacturing')),
     ('corpus' , ('Graph7', 'Graph12', 'Graph10', 'Graph4')),
@@ -45,7 +46,7 @@ rez = forest_tensor(target_files, map_parameters)
 # Experimentation
 #
 
-### Expe 1 settings
+### Expe 1 settings # Todo RegularExp
 # debug10, immsb
 expe_1 = OrderedDict((
     ('data_type', 'networks'),

@@ -1,11 +1,13 @@
 # Code Factoring
 
 ## IN DOIING
-* tabul | interface for tabulate
+* tabul | interface for tabulate (repeat /p2m)
+* build_corpus and build_networks are identical : wrap in DataBase
 * default VS const (argparser)???
     * settings object (AST)
 * rename inference-\* file to \*.inf files
 * ILFM creat sampler and proper inhheritance form GibbsSampler.
+* @issue42
 
 
 @purge: 
@@ -16,8 +18,6 @@
 @todo: 
 * OBJECT ! change frontendNetwork to Graph(Object), it is clear ?! (implement morphism in Object for example. (issue42)
 * @frontend: better print the status of what's going on in the beginning of fit.
-* ilfm modelbase/gibsssampler integration
-
 
 @structure
 * simpliy frontend:
@@ -27,10 +27,7 @@
 * plotManager (same scenario, axe, title, **kwargs**)
 
 
-@python3
-* improve compatibility : checl map filter an zip (change zip to .T in numpy)
-
-# Implement some baseline
+# Baseline (to implement)
 
 * Baseline
     * RESCAL -> prediction !?
@@ -42,14 +39,14 @@
 How should be the backend to make big scale learning with database and search engine interface...
 * Spark/Hadoop interface... (hdfs = htable)
 
-## Mesure attachement prefarential:
+# Measure Centrality :
 * proba que tout les lien à 0 soit liée ?  -- comparé à aux leader (ceux qui ont un haut degré)
 
 * Mesure clulstering: 
     * contingency table / cluster%precision rappel F mesure ?
     * NMI (Mutuel Information Normalization)
 
-### communauté
+### community
 * equivalence struturelle (economie / partenariat)
 * algo formelle (une communauté c'est une clique, k-clique / percolation)
 * ensemble de neud fortement connecté, par rapport au reste du réseau.
