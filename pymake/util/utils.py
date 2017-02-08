@@ -18,12 +18,15 @@ class Cycle(object):
         self.seq = seq
         self.it = np.nditer([seq])
     def next(self):
+        return self.__next__()
+    def __next__(self):
         try:
-            return self.it.next().item()
+            return next(self.it).item()
         except StopIteration:
             self.it.reset()
             # Exception on nditer when seq is empty (infinite recursivity)
             return self.next()
+
     def reset(self):
         return self.it.reset()
 

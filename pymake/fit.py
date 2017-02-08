@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from frontend.manager import ModelManager, FrontendManager
-from util.argparser import argparser
+from pymake import Expe, ModelManager, FrontendManager, GramExp
 from util.utils import Now, ellapsed_time
 
 import numpy as np
@@ -11,11 +10,12 @@ import scipy as sp
 #np.set_printoptions(threshold='nan')
 
 if __name__ == '__main__':
-    ##### Experience Settings
-    exp = dict(
-        corpus_name = 'clique2',
+
+    ### Experience Settings
+    expe = GramExp(Expe(
+        corpus = 'clique2',
         #corpus = "lucene"
-        model_name  = 'immsb',
+        model  = 'immsb',
         hyper       = 'auto',
         testset_ratio = 0.2,
         K           = 3,
@@ -23,23 +23,14 @@ if __name__ == '__main__':
         chunk       = 10000,
         iterations  = 6,
         homo        = 0, # learn W in IBP
-    )
+    )).expe
 
-    exp.update(argparser.gramexp())
-
-    argparser.simulate(exp)
-
-
-    ############################################################
-    ##### Load Data
-    frontend = FrontendManager.get(exp)
+    ### Load Data
     now = Now()
-    frontend.load_data(randomize=False)
-    frontend.sample(exp['N'])
+    frontend = FrontendManager.load(expe)
     last_d = ellapsed_time('Data Preprocessing Time', now)
 
-    ############################################################
-    ##### Load Model
+    ### Load Model
     #models = ('ilda_cgs', 'lda_cgs', 'immsb', 'mmsb', 'ilfm_gs', 'lda_vb', 'ldafull_vb')
     # Hyperparameter
     delta = .1
@@ -48,22 +39,22 @@ if __name__ == '__main__':
     gmma = 1.
     hyperparams = {'alpha': alpha, 'delta': delta, 'gmma': gmma}
 
-    exp['hyperparams'] = hyperparams
+    expe['hyperparams'] = hyperparams
 
-    #### Debug
-    #model = ModelManager(exp, frontend)
+    ### Debug
+    #model = ModelManager(expe, frontend)
     #model.initialization_test()
     #exit()
 
-    # Initializa Model
-    model = ModelManager(exp)
+    ### Initializa Model
+    model = ModelManager(expe)
     last_d = ellapsed_time('Init Model Time', last_d)
 
-    #### Run Inference / Learning Model
+    ### Run Inference / Learning Model
     model.fit(frontend)
     last_d = ellapsed_time('Inference Time: %s'%(model.output_path), last_d)
 
-    #### Predict Future
+    ### Predict Future
     # @debug remove frontend...
     model.predict(frontend=frontend)
 

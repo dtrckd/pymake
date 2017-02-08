@@ -28,6 +28,7 @@ def getClique(N=100, K=4):
     return C
 
 ### @Issue42: fronteNetwork should be imported fron frontend
+### =====> : resolve this with @class_method (from_hardrive etc...)
 
 class frontendNetwork(DataBase):
     """ Frontend for network data.
@@ -36,9 +37,9 @@ class frontendNetwork(DataBase):
 
     RANDOM_CORPUS = ('clique', 'alternate', 'BA')
 
-    def __init__(self, config=dict(), load=False):
+    def __init__(self, expe=dict(), load=False):
         self.bdir = 'networks'
-        super(frontendNetwork, self).__init__(config, load)
+        super(frontendNetwork, self).__init__(expe, load)
 
     def load_data(self, corpus_name=None, randomize=False):
         """ Load data according to different scheme,
@@ -98,7 +99,7 @@ class frontendNetwork(DataBase):
         if hasattr(self, 'N'):
             return self.N
 
-        N = str(self.cfg['N'])
+        N = str(self.expe['N'])
         if N.isdigit():
             N = int(N)
         elif N.lower() in ('all', 'false', 'none'):
@@ -127,9 +128,10 @@ class frontendNetwork(DataBase):
 
         if N == 'all':
             N = self.data.shape[0]
+        else:
+            N = int(N)
 
         # Can't get why modification inside self.nodes_list is not propagated ?
-        N = int(N)
         if randomize is True:
             nodes_list = [np.random.permutation(N), np.random.permutation(N)]
             self.reorder_node(nodes_list)
@@ -573,7 +575,12 @@ class frontendNetwork(DataBase):
 
     def get_data_prop(self):
         prop =  super(frontendNetwork, self).get_data_prop()
-        nnz = self.data.sum()
+
+        if self.is_symmetric():
+            nnz = np.triu(self.data).sum()
+        else:
+            nnz = self.data.sum()
+
         _nnz = self.data.sum(axis=1)
         d = {'instances': self.data.shape[1],
                'nnz': nnz,
@@ -592,7 +599,7 @@ class frontendNetwork(DataBase):
 
     def template(self, d):
         d['time'] = d.get('time', None)
-        netw_templ = '''###### $corpus_name
+        netw_templ = '''###### $corpus
         Building: $time minutes
         Nodes: $instances
         Links: $nnz

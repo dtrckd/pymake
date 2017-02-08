@@ -4,6 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import pickle, json, copy
 from itertools import chain
 from string import Template
+from argparse import Namespace
 from collections import defaultdict
 import logging
 lgg = logging.getLogger('root')
@@ -22,8 +23,6 @@ class Object(object):
         * return None for errorAtributes
         * memorize all input as attribute by default
     """
-    # @todo: catch attributeError on config, and print possibilities if possible
-    # (ie the method assciated to the key in the object in getattr ? --> tab completion)
 
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
@@ -61,38 +60,34 @@ class DataBase(object):
         (frontent)  ->   (choice)       -> (adapt preprocessing)
 
     """
-    ### @Debug :
-    #   * update config path !
-    #   * Separate attribute of the frontend: dataset / Learning / IHM ...
 
-    # review that:
-    #    * separate better load / save and preprocessing (input can be file or array...)
-    #    * view of file confif.... and path creation....
+    def __init__(self, expe, load=False):
+        if type(expe) is Namespace:
+            expe = vars(expe)
 
-    def __init__(self, config, load=False):
-        if config.get('seed'):
-            #np.random.seed(config.get('seed'))
+        if expe.get('seed'):
+            #np.random.seed(expe.get('seed'))
             np.random.set_state(self.load('.seed'))
         self.seed = np.random.get_state()
-        self.save(self.seed, '/tmp/pymake.seed')
+        self.save(self.seed, '/tmp/pymake.seed', silent=True)
         # Who is the master manager you do that ?
 
         # Load a .pk file for data(default: True if present)
         # + it faset
         # - some data features are not stored in .pk
-        self._load_data = config.get('load_data')
+        self._load_data = expe.get('load_data')
 
         # Save a .pk file of data (default: False)
-        self._save_data = config.get('save_data')
+        self._save_data = expe.get('save_data')
 
-        self.corpus_name = config.get('corpus_name') or config.get('corpus')
-        self.model_name = config.get('model_name')
+        self.corpus_name = expe.get('corpus')
+        self.model_name = expe.get('model')
 
         # Specific / @issue Object ?
         # How to handld not-defined variable ?
         # What categorie for object ??
-        self.homo = int(config.get('homo', 0))
-        self.hyper_optimiztn = config.get('hyper')
+        self.homo = int(expe.get('homo', 0))
+        self.hyper_optimiztn = expe.get('hyper')
         self.clusters = None
         self.features = None
 
@@ -101,8 +96,8 @@ class DataBase(object):
         ########
         ### Update settings Operations
         ########
-        self.cfg = config
-        config['data_type'] = self.bdir
+        self.expe = expe
+        expe['data_type'] = self.bdir
         self.make_output_path()
         # There is some dynamic settings
         # K, others ?
@@ -119,15 +114,15 @@ class DataBase(object):
 
     def make_output_path(self):
         ''' Write Path (for models results) in global settings '''
-        self.basedir, self.output_path = make_output_path(self.cfg)
-        self.cfg['output_path'] = self.output_path
+        self.basedir, self.output_path = make_output_path(self.expe)
+        self.expe['output_path'] = self.output_path
 
     def update_spec(self, **spec):
         v = None
         if len(spec) == 1:
             k, v = list(spec.items())[0]
             setattr(self, k, v)
-        self.cfg.update(spec)
+        self.expe.update(spec)
         return v
 
     @staticmethod
@@ -141,7 +136,7 @@ class DataBase(object):
 
     def get_data_prop(self):
         prop = defaultdict()
-        prop.update( {'corpus_name': self.corpus_name,
+        prop.update( {'corpus': self.corpus_name,
                 'instances' : self.data.shape[1] })
         return prop
 
@@ -188,9 +183,10 @@ class DataBase(object):
 
     # Pickle class
     @staticmethod
-    def save(data, fn):
+    def save(data, fn, silent=False):
         fn = fn + '.pk'
-        lgg.info('Saving frData ; %s' % fn)
+        if not silent:
+            lgg.info('Saving frData ; %s' % fn)
         with open(fn, 'wb') as _f:
             return pickle.dump(data, _f, protocol=pickle.HIGHEST_PROTOCOL)
 

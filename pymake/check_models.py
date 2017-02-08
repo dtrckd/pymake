@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from frontend.manager import ModelManager, FrontendManager
+from pymake import ModelManager, FrontendManager
 from frontend.frontendnetwork import frontendNetwork
 from frontend.frontend_io import *
 from expe.spec import _spec_; _spec = _spec_()

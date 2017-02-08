@@ -3,7 +3,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 # @Issue43: Parser/config unification.
-from util.utils import Now, ellapsed_time
+from util.utils import Now, ellapsed_time, ask_sure_exit
 from util.argparser import argparser
 import os
 
@@ -15,7 +15,14 @@ from frontend.frontendnetwork import frontendNetwork
 from expe.spec import _spec_; _spec = _spec_()
 
 
-_USAGE = '-s'
+''' Build Networks Corpus '''
+
+# Expe
+corpuses = ('generator7',)
+corpuses = ( 'generator7', 'generator12', 'generator10', 'generator4')
+corpuses += ( 'fb_uc', 'manufacturing', )
+
+corpuses = _spec.CORPUS_NET_ALL
 
 if __name__ == '__main__':
     config = dict(
@@ -26,13 +33,6 @@ if __name__ == '__main__':
         save_data = True,
     )
     config.update(argparser.gramexp())
-
-    # Expe
-    corpuses = ('generator7',)
-    corpuses = ( 'generator7', 'generator12', 'generator10', 'generator4')
-    corpuses += ( 'fb_uc', 'manufacturing', )
-
-    corpuses = _spec.CORPUS_NET_ALL
 
     ############################################################
     ##### Simulation Output

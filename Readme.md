@@ -2,7 +2,7 @@
 
 Pymake helps making reproducible research by providing tools adapted for the creation of **complex and traceable design of experiments** and **Models for data analysis**.
 
-This code is in a living devellopment stage and yet unstable.
+This code is in a living development stage and yet unstable.
 
 ### Zen
 
@@ -33,7 +33,7 @@ Script to create the path and commands for a design of experiments :
             corpus = '20ngroups',
             vsm = 'tfidf',
             repeat = range(10))
-          
+
     # Only the first epoch/repeat here.
     data, model = Zymake(spec)
     model.fit(data)

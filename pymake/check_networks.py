@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from frontend.manager import ModelManager
-from frontend.frontendnetwork import frontendNetwork
-from util.utils import *
-from plot import *
-from expe.spec import _spec_; _spec = _spec_()
-from util.argparser import argparser
-from util.math import reorder_mat
+from pymake.plot import *
+from pymake.expe.spec import _spec_; _spec = _spec_()
+from pymake.util.math import reorder_mat
+
+from pymake.frontend.manager import ModelManager
+from pymake.frontend.frontendnetwork import frontendNetwork
+from pymake.util.argparser import GramExp
 
 """ Inspect data on disk, for checking
     or updating results
@@ -27,7 +27,8 @@ config = dict(
     do           = 'zipf', # homo/zipf/burstiness/pvalue
     clusters_org = 'source' # source/model
 )
-config.update(argparser.generate(''))
+
+expe = GramExp(config).expe
 
 ### Specification
 Corpuses = _spec.CORPUS_SYN_ICDM_1

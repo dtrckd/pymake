@@ -2,6 +2,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import re, os, json, logging
+from argparse import Namespace
 from collections import defaultdict, OrderedDict
 import fnmatch
 import numpy as np
@@ -35,30 +36,27 @@ if not os.path.exists(os.path.dirname(__file__)+'/'+LOCAL_BDIR+'networks/generat
 
 ### Command Line Reference
 # Get it from argparser object !?
-_FLAGKEYS_ = OrderedDict((
+_FLAGKEYS = OrderedDict((
+    ('data_type'   , 'null'), # ?
     ('N'           , '-n'),
     ('K'           , '-k'),
     ('hyper'       , '--hyper'),
     ('homo'        , '--homo'),
     ('model'       , '-m'),
-    ('model_name'  , '-m'),
-    ('corpus_name' , '-c'),
     ('corpus'      , '-c'),
     ('refdir'      , '--refdir'),
-    ('debug'       , '--refdir'),
     ('repeat'      , '--repeat'),
     ('hyper_prior' , '--hyper_prior'),
-    ('testset_ratio', '--testset_ratio'),
+    ('testset_ratio', '--testset-ratio'),
     ('iterations'  , '-i'),
-    ('data_type'   , 'null'),
 ))
 
 ### directory/file tree reference
 # Default and New values
-_MASTERKEYS_ = OrderedDict((
+# @filename to rebuild file
+_MASTERKEYS = OrderedDict((
     ('data_type'   , None),
     ('corpus'      , None),
-    ('debug'       , None),
     ('repeat'      , None),
     ('model'       , None),
     ('K'           , None),
@@ -128,30 +126,33 @@ def make_forest_path(dol_spec, _type, sep=None, status='f', full_path=False):
             targets.append(filen[pt:])
     return targets
 
-def make_output_path(spec, _type=None, sep=None, status=False):
-    """ Make a single output path from a spec/dict
+def make_output_path(expe, _type=None, sep=None, status=False):
+    """ Make a single output path from a expe/dict
         @status: f finished
         @type: pk, json or inference.
     """
-    spec = defaultdict(lambda: False, spec)
+    if type(expe) is Namespace:
+        expe = vars(expe)
+
+    expe = defaultdict(lambda: False, expe)
     filen = None
-    base = spec['data_type']
-    hook = spec.get('debug') or spec.get('refdir', '')
-    c = spec.get('corpus') or spec['corpus_name']
+    base = expe['data_type']
+    hook = expe.get('refdir', '')
+    c = expe.get('corpus')
     if not c:
         return None, None
     if c.startswith(('clique', 'Graph', 'generator')):
         c = c.replace('generator', 'Graph')
         c = 'generator/' + c
-    if 'repeat' in spec and ( spec['repeat'] is not None and spec['repeat'] is not False):
-        p = os.path.join(base, c, hook, str(spec['repeat']))
+    if 'repeat' in expe and ( expe['repeat'] is not None and expe['repeat'] is not False):
+        p = os.path.join(base, c, hook, str(expe['repeat']))
     else:
         p = os.path.join(base, c, hook)
-    m  = spec.get('model') or spec['model_name']
-    k = spec['K']
-    h = spec['hyper']
-    hm = spec['homo']
-    n = spec['N']
+    m  = expe.get('model')
+    k = expe['K']
+    h = expe['hyper']
+    hm = expe['homo']
+    n = expe['N']
     t = '%s_%s_%s_%s_%s' % (m, k, h, hm,  n)
     filen = os.path.join(p, t)
     filen = os.path.join(os.path.dirname(__file__), LOCAL_BDIR, filen)
@@ -207,15 +208,17 @@ def make_forest_conf(dol_spec):
     keys = sorted(dol_spec)
     lod = [dict(zip(keys, prod)) for prod in product(*(dol_spec[key] for key in keys))]
 
-    targets = []
-    for d in lod:
-        _d = defaultdict(lambda: False)
-        _d.update(d)
-        targets.append(_d)
+    return lod
+    #targets = []
+    #for d in lod:
+    #    _d = defaultdict(lambda: False)
+    #    _d.update(d)
+    #    targets.append(_d)
 
-    return targets
+    #return targets
 
 def check_spec(dol_spec):
+    ''' Ensure every values are iterable '''
     for k, v in dol_spec.items():
         if not isinstance(v, (list, tuple, set)):
             dol_spec[k] = [v]
@@ -223,10 +226,10 @@ def check_spec(dol_spec):
             pass
     return True
 
-def make_forest_runcmd(spec):
-    optkeys = _FLAGKEYS_
+def make_forest_runcmd(expe):
+    optkeys = _FLAGKEYS
     opts = []
-    confs = make_forest_conf(spec)
+    confs = make_forest_conf(expe)
     for expe in confs:
         if '' in expe:
             expe.pop('')
@@ -249,7 +252,7 @@ def get_conf_from_file(target, mp):
         format inference-model_K_hyper_N.
         @template_file order important to align the dictionnary.
         """
-    masterkeys = _MASTERKEYS_.copy()
+    masterkeys = _MASTERKEYS.copy()
     template_file = masterkeys.keys()
     ##template_file = 'networks/generator/Graph13/debug11/inference-immsb_10_auto_0_all'
 
@@ -326,7 +329,7 @@ def forest_tensor(target_files, map_parameters):
         lgg.info('Target Files empty')
         return None
 
-    #dim = get_conf_dim_from_files(target_files, map_parameters) # Rely on Spec...
+    #dim = get_conf_dim_from_files(target_files, map_parameters) # Rely on Expe...
     dim = dict( (k, len(v)) if isinstance(v, (list, tuple)) else (k, len([v])) for k, v in map_parameters.items() )
 
     rez_map = map_parameters.keys() # order !

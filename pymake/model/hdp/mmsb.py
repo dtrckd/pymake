@@ -580,11 +580,11 @@ class GibbsRun(GibbsSampler):
         K = int(gmma * (digamma(m+gmma) - digamma(gmma)))
         return K
 
-    def generate(self, N, K=None, hyper=None, _type='predictive', directed=True):
+    def generate(self, N, K=None, hyper=None, mode='predictive', directed=True):
         self.update_hyper(hyper)
         alpha, gmma, delta = self.get_hyper()
         N = int(N)
-        if _type == 'evidence' :
+        if mode == 'evidence' :
             if type(self.s) is NP_CGS:
                 # @todo: compute the variance for random simulation
                 # Number of table in the CRF
@@ -627,7 +627,7 @@ class GibbsRun(GibbsSampler):
             if directed is True:
                 phi = np.triu(phi) + np.triu(phi, 1).T
 
-        elif _type == 'predictive':
+        elif mode == 'predictive':
             theta, phi = self.reduce_latent()
             K = theta.shape[1]
 

@@ -470,11 +470,11 @@ class IBPGibbsSampling(IBP, GibbsSampler):
         return (alpha, delta)
 
     # @ipb
-    def generate(self, N, K=None, nodelist=None, hyper=None, _type='predictive', directed=True):
+    def generate(self, N, K=None, nodelist=None, hyper=None, mode='predictive', directed=True):
         self.update_hyper(hyper)
         alpha, delta = self.get_hyper()
         N = int(N)
-        if _type == 'evidence':
+        if mode == 'evidence':
 
             # Use for the stick breaking generation
             #K = alpha * np.log(N)
@@ -488,7 +488,7 @@ class IBPGibbsSampling(IBP, GibbsSampler):
             if directed is True:
                 phi = np.triu(phi) + np.triu(phi, 1).T
 
-        elif _type == 'predictive':
+        elif mode == 'predictive':
             theta, phi = self.reduce_latent()
 
         if nodelist:

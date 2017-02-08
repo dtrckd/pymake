@@ -17,4 +17,5 @@ data/**/*.gz
 stirling.pk
 stirling.npy
 pymake/ID
+pymake/TODO.md
 

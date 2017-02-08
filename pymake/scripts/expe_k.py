@@ -4,7 +4,8 @@
 import numpy as np
 import logging
 from tabulate import tabulate
-from collections import OrderedDict
+
+from pymake import ExpTensor, OrderedDict
 from frontend.frontend_io import *
 from util.utils import *
 from util.argparser import argparser
