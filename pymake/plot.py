@@ -82,6 +82,7 @@ def plot(P, logscale=False, colors=False, line=True, ax=None, title=None, sort=F
     if ax is None:
         # Note: difference betwwen ax and plt method are the get_ and set_ suffix
         ax = plt.gca()
+
     if isinstance(P, (list, tuple)):
         x, y = P
     else:
@@ -147,8 +148,12 @@ def log_binning(counter_dict,bin_count=35):
 #    if title:
 #        plt.title(title)
 
-def plot_degree(y, spec=False):
+def plot_degree(y, spec=False,logscale=True, title=None, ax=None):
     """ Degree plot """
+    if ax is None:
+        # Note: difference betwwen ax and plt method are the get_ and set_ suffix
+        ax = plt.gca()
+
     # To convert normalized degrees to raw degrees
     #ba_c = {k:int(v*(len(ba_g)-1)) for k,v in ba_c.iteritems()}
     if isinstance(y, np.ndarray) and y.ndim == 2:
@@ -159,22 +164,27 @@ def plot_degree(y, spec=False):
         d = np.arange(len(y))
         dc = sorted(y)
 
-    plt.xscale('log'); plt.yscale('log')
+    ### Matplotlib
+    if logscale:
+        ax.set_xscale('log'); ax.set_yscale('log')
+    if title:
+        ax.set_title(title)
 
-    plt.scatter(d,dc,c='b',marker='o')
+    ax.scatter(d,dc,c='b',marker='o')
     #plt.scatter(ba_x,ba_y,c='r',marker='s',s=50)
 
     if spec is True:
-        plt.xlim(left=1)
-        plt.ylim((.9,1e3))
-        plt.xlabel('Degree')
-        plt.ylabel('Counts')
+        ax.set_xlim(left=1)
+        ax.set_ylim((.9,1e3))
+        ax.set_xlabel('Degree')
+        ax.set_ylabel('Counts')
+        ax.legend()
 
 def plor_degree_polygof(y, gof):
     # I dunno structore for plot ?
     pass
 
-def plot_degree_poly(y, scatter=True):
+def plot_degree_poly(y, scatter=True, spec=True, title=None, ax=None,label='', logscale=True):
     """ Degree plot along with a linear regression of the distribution.
     if scatter is false, draw only the linear approx"""
     # To convert normalized degrees to raw degrees
@@ -182,20 +192,29 @@ def plot_degree_poly(y, scatter=True):
     ba_c = adj_to_degree(y)
     d, dc = degree_hist(ba_c)
 
-    plt.xscale('log'); plt.yscale('log')
+    ### Matplotlib
+    if ax is None:
+        # Note: difference betwwen ax and plt method are the get_ and set_ suffix
+        ax = plt.gca()
+    if logscale:
+        ax.set_xscale('log'); ax.set_yscale('log')
+    if title:
+        ax.set_title(title)
 
     fit = np.polyfit(np.log(d), np.log(dc), deg=1)
-    plt.plot(d,np.exp(fit[0] *np.log(d) + fit[1]), 'g--', label='power %.2f' % fit[1])
-    leg = plt.legend(loc='upper right',prop={'size':10})
+    ax.plot(d,np.exp(fit[0] *np.log(d) + fit[1]), 'g--', label=label % fit[1])
+    if label:
+        leg = ax.legend(loc='upper right',prop={'size':10})
 
     if scatter:
-        plt.scatter(d,dc,c='b',marker='o')
+        ax.scatter(d,dc,c='b',marker='o')
         #plt.scatter(ba_x,ba_y,c='r',marker='s',s=50)
 
-    plt.xlim(left=1)
-    plt.ylim((.9,1e3))
-    plt.xlabel('Degree')
-    plt.ylabel('Counts')
+    if spec is True:
+        ax.set_xlim(left=1)
+        ax.set_ylim((.9,1e3))
+        ax.set_xlabel('Degree')
+        ax.set_ylabel('Counts')
 
 def plot_degree_poly_l(Y):
     """ Same than plot_degree_poly, but for a list of random graph ie plot errorbar."""
@@ -328,7 +347,7 @@ except ImportError:
         import pydotplus
         from networkx.drawing.nx_pydot import graphviz_layout
     except ImportError:
-        lgg.error("This example needs Graphviz and either "
+        lgg.debug("Networks needs Graphviz and either "
                   "PyGraphviz or PyDotPlus")
 def draw_graph_circular(y, clusters='blue', ns=30):
     G = nxG(y)

@@ -12,7 +12,7 @@ import inspect
 from functools import wraps
 import args as clargs
 
-from pymake import basestring, ExpTensor, Expe
+from pymake import basestring, ExpTensor, Expe, ExpeFormat
 from pymake.frontend.frontend_io import *
 from pymake.expe.spec import _spec_; _spec = _spec_()
 
@@ -153,15 +153,15 @@ class GramExp(object):
     _forbiden_keywords = dict(fit = ['gen_size', 'epoch', 'do', 'mode'],
                               generate = ['iterations'])
 
-    def __init__(self, _conf={}, usage=None):
-        conf = _conf.copy()
+    def __init__(self, conf={}, usage=None, from_cls=False):
         if 'spec' in conf: # and conf if a dict
             self.exp_tensor = self.exp2tensor(conf.pop('spec'))
         elif isinstance(conf, ExpTensor):
             self.exp_tensor = conf
         elif isinstance(conf, (dict, Expe)):
             if type(conf) is dict:
-                print ('warning : type dict for expe settongs is deprecated.')
+                # @zymake ?
+                print ('warning : type dict for expe settings is deprecated.')
             self.exp_tensor = self.dict2tensor(conf)
         else:
             raise ValueError('exp/conf not understood: %s' % type(conf))
@@ -231,25 +231,28 @@ class GramExp(object):
                 tensor[k] = [v]
         return tensor
 
-    @staticmethod
-    @askhelp
-    def zymake(USAGE=''):
+    #@staticmethod
+    #@askhelp
+    @classmethod
+    def zymake(cls, conf={}, usage=None):
         ''' Generates output (files or line arguments) according to the SPEC
             @return OUT_TYPE: runcmd or path
                     SPEC: expe spec
                     FTYPE: filetype targeted
                     STATUS: status of file required  on the filesystem
         '''
-        USAGE = '''\
-                # Usage:
-            zymake path[default] SPEC Filetype(pk|json|inf)
-            zymake runcmd SPEC
-            zymake -l : show available spec
-            '''
+        USAGE = usage or '''\
+-----------
+Communicate with the data :
+-----------
+ |   zymake path[default] SPEC Filetype(pk|json|inf)
+ |   zymake runcmd SPEC
+ |   zymake -l : show available spec
+'''
 
         # Default request
         req = dict(
-            OUT_TYPE = 'path',
+            OUT_TYPE = 'list',
             request = 'RUN_DD',
             SPEC = _spec.RUN_DD, # gatattr(_spec, request)
             FTYPE = 'pk',
@@ -283,19 +286,19 @@ class GramExp(object):
             req['OUT_TYPE'] = 'list'
 
         if checksum != 0:
-            raise ValueError('unknow argument: %s\n available SPEC: %s' % (gargs, _spec.repr()))
-        return req
+            raise ValueError('unknow argument: %s\n\nAvailable SPEC : %s' % (gargs, _spec.repr()))
+        conf.update(req)
+        return cls(conf, usage=USAGE, from_cls=True)
 
-    @askhelp
-    @askseed
-    def generate(USAGE=''):
-        conf = self.parseargs()
+    #@askhelp
+    #@askseed
+    @classmethod
+    def generate(cls, conf={},  USAGE=''):
         write_keys = ('-w', 'write', '--write')
         # Write plot
         for write_key in write_keys:
             if write_key in clargs.all:
                 conf['save_plot'] = True
-
         gargs = clargs.grouped.pop('_')
 
         ### map config dict to argument
@@ -317,10 +320,7 @@ class GramExp(object):
             elif '-p' in key:
                 conf['mode'] = 'predictive'
 
-        if clargs.last and clargs.last not in map(str, clargs.flags.all + list(conf.values())):
-            conf['do'] = clargs.last
-
-        return conf
+        return cls(conf, usage=USAGE, from_cls=True)
 
     @staticmethod
     @askhelp
@@ -380,8 +380,8 @@ class GramExp(object):
         ### Expe Settings
         ### get it from key -- @chatting
         parser.add_argument(
-            'datatype', nargs='?',
-            help='Force the type of data (NotImplemented')
+            'do', nargs='?',
+            help='Specify and handler for the task.')
 
         parser.add_argument(
             '-c','--corpus', dest='corpus',
@@ -420,7 +420,8 @@ class GramExp(object):
             '--homo', type=str,
             help='Centrality type (NotImplemented)')
 
-        settings = vars(parser.parse_args())
+        s, remaining = parser.parse_known_args()
+        settings = vars(s)
         # Remove None value
         settings = dict((key,value) for key, value in settings.items() if value is not None)
 
@@ -466,12 +467,30 @@ class GramExp(object):
         return logger
 
     # @do parralize
-    def pymake(self, fun):
+    def pymake(self, sandbox=ExpeFormat):
+        ''' Walk Trough experiments.  '''
+
+        sandbox.preprocess(self)
+
         lod = make_forest_conf(self.exp_tensor)
         for id_expe, expe in enumerate(lod):
             pt = dict((key, value.index(expe[key])) for key, value in self.exp_tensor.items() if isinstance(expe[key], basestring))
             pt['expe'] = id_expe
             _expe = argparse.Namespace(**expe)
-            fun(pt, _expe, self)
+
+            expbox= sandbox(pt, _expe, self)
+
+            if hasattr(_expe, 'do'):
+                pmk = getattr(expbox, _expe.do)
+            else:
+                pmk = expbox
+
+            try:
+                pmk()
+            except KeyboardInterrupt:
+                # it's hard to detach matplotlib...
+                break
+
+        return sandbox.postprocess(self)
 
 

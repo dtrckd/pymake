@@ -24,7 +24,6 @@ import scipy as sp
 from sklearn.metrics import roc_curve, auc, precision_recall_curve
 
 
-
 """ **kwargs is passed to the format function.
     The attributes curently in used in the globals dict are:
     * model_name (str)
@@ -513,4 +512,65 @@ def draw(**kwargs):
     print (model.get_mask())
 
 
+from pymake import ModelManager, FrontendManager
+
+class ExpeFormat(object):
+    def __init__(self, pt, expe, gramexp):
+        # Global
+        self.expe_size = len(gramexp)
+        self.gramexp = gramexp
+        # Local
+        self.pt = pt
+        self.expe = expe
+
+        # to exploit / Vizu
+        self._it = pt['expe']
+        self.corpus_pos = pt['corpus']
+        self.model_pos = pt['model']
+
+        lgg.info('---')
+        lgg.info('Expe %d/%d : %s -- %s -- N=%s -- K=%s' % (
+            self._it+1, self.expe_size,
+            _spec.name(expe.corpus),
+            _spec.name(expe.model),
+            expe.N, expe.K
+        ))
+        lgg.info('---')
+
+    @classmethod
+    def display(cls, conf):
+        block = not conf.get('save_plot', False)
+        display(block=block)
+
+    @classmethod
+    def preprocess(cls, gramexp):
+        # @here try to read the decorator that were called
+        # * if @plot then dicplay
+        # * if @tabulate then ...
+        #   etc..
+        if 'save_plot' in gramexp.expe:
+            import matplotlib; matplotlib.use('Agg')
+        return
+
+    @classmethod
+    def postprocess(cls, gramexp):
+        # @here try to read the decorator that were called
+        # * if @plot then dicplay
+        # * if @tabulate then ...
+        #   etc..
+        cls.display(gramexp.expe)
+
+    @staticmethod
+    def plot(fun):
+        def wrapper(*args, **kwargs):
+            expe = args[0].expe
+            f = fun(*args, **kwargs)
+            if hasattr(expe, 'block_plot'):
+                display(block=expe.block_plot)
+            return f
+        return wrapper
+
+
+    def __call__(self):
+        raise NotImplementedError
 

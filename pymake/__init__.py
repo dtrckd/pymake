@@ -13,11 +13,15 @@ class Expe(dict):
 class ExpTensor(OrderedDict):
     pass
 
-from .frontend.frontendtext import frontendText
-from .frontend.frontendnetwork import frontendNetwork
-from .frontend.manager import ModelManager, FrontendManager
+#import matplotlib; matplotlib.use('Agg')
 
-from .util.argparser import GramExp
+from pymake.frontend.frontendtext import frontendText
+from pymake.frontend.frontendnetwork import frontendNetwork
+from pymake.frontend.manager import ModelManager, FrontendManager
+from pymake.expe.format import ExpeFormat # GramExp+frontend_io
+
+from pymake.util.argparser import GramExp
+
 
 #
 # Erckelfault
