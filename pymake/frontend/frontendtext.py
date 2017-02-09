@@ -3,9 +3,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import sys, os
 from string import Template
 
+from .frontend import DataBase
 from pymake.util.utils import make_path
 from pymake.util.vocabulary import Vocabulary, parse_corpus
-from .frontend import DataBase
 
 sys.path.insert(1, os.path.join(os.path.dirname(__file__),'../../../gensim'))
 

@@ -478,7 +478,7 @@ def gofit(x, y, model='powerlaw'):
 
     pvalue = float(sum(pvalue)) / len(pvalue)
     estim = {'alpha': alpha, 'x_min':x_min, 'y_max':y_max,
-             'n_tail': n_tail,'n_head':N - n_tail,
+             'n_tail': int(n_tail),'n_head':N - n_tail,
              'pvalue':pvalue}
     print ('KS data: ', ks_d)
     print ('KS synthetic: ', ks_s)

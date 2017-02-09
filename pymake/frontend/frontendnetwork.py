@@ -61,7 +61,9 @@ class frontendNetwork(DataBase):
 
         self.update_data(data)
 
+        # For Gof smothness
         #np.fill_diagonal(self.data, 1)
+
         if randomize:
             self.shuffle_node()
         return self.data
@@ -218,7 +220,7 @@ class frontendNetwork(DataBase):
 
         if rnd == 'uniform':
             data = np.random.randint(0, 2, (N, N))
-            np.fill_diagonal(data, 1)
+            #np.fill_diagonal(data, 1)
         elif rnd.startswith('clique'):
             try :
                 K = int(rnd[len('clique'):])
@@ -446,7 +448,7 @@ class frontendNetwork(DataBase):
 
     # used by (obsolete) zipf.py
     def communities_analysis(self):
-        from util.algo import adj_to_degree # Circular import bug inthetop
+        from pymake.util.algo import adj_to_degree # Circular import bug inthetop
         clusters = self.clusters
         if clusters is None:
             return None

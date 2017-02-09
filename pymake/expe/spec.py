@@ -9,12 +9,7 @@ class _spec_(object):
           in order to print table (tabulate) of results.
     """
 
-
-    """
-    =================
-    === Mapping  Dictionary
-    ================= """
-
+    # Mapping Dict
     _trans = dict((
         ('propro'   , 'Protein')  ,
         ('blogs'    , 'Blogs')    ,
@@ -29,10 +24,8 @@ class _spec_(object):
         ('ibp'     , 'ilfm' ),
         ('mmsb'     , 'immsb' ),
     ))
-    """
-    =================
-    === Networks Corpus
-    ================= """
+
+    # Networks Data
 
     ### Bursty
     CORPUS_BURST_1     = ['generator3', 'generator11', 'generator12', 'generator7', 'generator14']
@@ -50,17 +43,10 @@ class _spec_(object):
 
     CORPUS_NET_ALL = ['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad']
 
-    """
-    =================
-    === Text Corpus
-    ================= """
-
+    # Text Corpus
     CORPUS_TEXT_ALL = ['kos', 'nips12', 'nips', 'reuter50', '20ngroups']
 
-    """
-    =================
-    === Expe Spec
-    ================= """
+    # Tensor Exp
     EXPE_ICDM = ExpTensor((
         ('data_type', ('networks',)),
         ('refdir'  , ('debug10', 'debug11')),
@@ -100,6 +86,7 @@ class _spec_(object):
         ('repeat'   , list(range(10))),
     ))
 
+    # Single Expe
 
     MODEL_FOR_CLUSTER_IBP = dict ((
         ('data_type'    , 'networks'),
@@ -122,17 +109,7 @@ class _spec_(object):
         #('repeat'      , '*')       ,
     ))
 
-    NETWORKS_DD        = ('generator10', )
-    MODELS_DD = [ dict ((
-        ('data_type'    , 'networks'),
-        ('refdir'        , 'debug10') ,
-        ('model'        , 'ibp')   ,
-        ('K'            , 10)        ,
-        ('N'            , 'all')     ,
-        ('hyper'        , 'auto')     ,
-        ('homo'         , 0)         ,
-        #('repeat'      , '*')       ,
-    ))]
+    # List of Expe
 
     MODELS_GENERATE_IBP = [dict ((
         ('data_type'    , 'networks'),
@@ -244,13 +221,9 @@ class _spec_(object):
     def name(self, l):
         if isinstance(l, (set, list, tuple)):
             return [ self._trans[i] for i in l ]
-        elif isinstance(l, basestring):
+        else :
             try:
                 return self._trans[l]
             except:
                 return l
-        else:
-            print (l)
-            print (type(l))
-            raise NotImplementedError
 

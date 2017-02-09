@@ -73,25 +73,18 @@ config = dict(
 
 
 def generate(pt, expe, gramexp):
-
-    #alpha = 1; gmma = 1; delta = (1, 5)
-    #for opt in ('alpha','gmma', 'delta'):
-    #    if expe.get(opt):
-    #        globals()[opt] = expe[opt]
-
-    print(pt)
     _it = pt['expe']
     corpus_pos = pt['corpus']
     model_pos = pt['model']
 
     #  to get track of last experimentation in expe.format
-    print('nb of it', len(gramexp))
-    _end = _it == (len(gramexp)-1)
     frontend = FrontendManager.load(expe)
 
     lgg.info('---')
     lgg.info('Expe : %s -- %s' % (_spec.name(expe.corpus), _spec.name(expe.model)))
     lgg.info('---')
+
+    _end = _it == (len(gramexp)-1)
 
     if expe.mode == 'predictive':
         ### Generate data from a fitted model
@@ -187,6 +180,5 @@ def generate(pt, expe, gramexp):
 
 
 if __name__ == '__main__':
-
     GramExp(config, USAGE).pymake(generate)
 
