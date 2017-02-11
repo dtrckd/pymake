@@ -4,44 +4,61 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np
 from pymake import ExpTensor, ModelManager, FrontendManager, GramExp, ExpeFormat
-from pymake.expe.spec import _spec_; _spec = _spec_()
+from pymake.expe.spec import _spec
 
 import logging
 lgg = logging.getLogger('root')
 
 USAGE = """\
 -------
-Inspect data on disk, for checking
+Inspect data on disk, for questions.
 -------
  |       or updating results
  |
  |   params
  |   ------
- |   zipf       : adjacency matrix + global degree
- |   burstiness : global + local + feature burstiness
- |   homo       : homophily based analysis
+ |   zipf       : adjacency matrix + global degree.
+ |   burstiness : global + local + feature burstiness.
+ |   homo       : homophily based analysis.
+     stats      : standard measure abd stats.
 """
 
 #Corpuses = _spec.CORPUS_REAL_ICDM_1
-Corpuses = _spec.CORPUS_NET_ALL
-Corpuses = _spec.CORPUS_SYN_ICDM_1
+Corpuses = _spec['CORPUS_SYN_ICDM_1']
+Corpuses = _spec['CORPUS_NET_ALL']
 
 #Model = _spec.MODEL_FOR_CLUSTER_IBP
-Model = _spec.MODEL_FOR_CLUSTER_IMMSB
+#Model = _spec.MODEL_FOR_CLUSTER_IMMSB
+Model = ExpTensor ((
+    ('corpus', Corpuses),
+    ('data_type'    , 'networks'),
+    ('refdir'        , 'debug11') , # ign in gen
+    #('model'        , 'mmsb_cgs')   ,
+    ('model'        , 'immsb')   ,
+    ('K'            , 10)        ,
+    ('N'            , 'all')     , # ign in gen
+    ('hyper'        , 'auto')    , # ign in gen
+    ('homo'         , 0)         , # ign in gen
+    ('repeat'      , '')       ,
+    #
+    ('alpha', 1),
+    ('gmma', 1),
+    ('delta', [(1, 5)]),
+))
 
 config = dict(
     block_plot = False,
     save_plot = False,
-    do           = 'zipf', # homo/zipf/burstiness/pvalue
+    _do           = 'zipf', # homo/zipf/burstiness/pvalue
     clusters_org = 'source', # source/model
-    spec = ExpTensor(corpus = Corpuses, **Model)
+    spec = Model
 )
 
 class ExpeNetwork(ExpeFormat):
 
     @ExpeFormat.plot
     def zipf(self, **kwargs):
-        ''' Zipf Analisis
+        ''' Zipf Analysis
             Local/Global Preferential attachment effect analysis
         '''
         expe = self.expe
@@ -212,15 +229,15 @@ class ExpeNetwork(ExpeFormat):
 
         if expe.save_plot:
             from private import out
-            out.write_burstiness(expe, figs)
+            out.write_figs(expe, figs)
             return
 
+    # in @ExpFormat.table
     def pvalue(self, **kwargs):
-
+        ''' Compute Goodness of fit statistics '''
         expe = self.expe
         frontend = FrontendManager.load(expe)
         data = frontend.data
-        np.fill_diagonal(self.data, 1)
 
         d, dc = degree_hist(adj_to_degree(data))
         gof = gofit(d, dc)
@@ -242,15 +259,40 @@ class ExpeNetwork(ExpeFormat):
 
         if self._it == self.expe_size -1:
             tablefmt = 'latex' # 'latex'
-            print
+            print(colored('\nPvalue Table:', 'green'))
             print (tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
 
+    # in @ExpFormat.table
+    def stats(self, frontend='frontend'):
+        ''' Show data stats '''
+        expe = self.expe
+        frontend = FrontendManager.load(expe)
+
+        try:
+            #@ugly debug
+            Table = self.gramexp.Table
+            Meas = self.gramexp.Meas
+        except AttributeError:
+            Corpuses = list(map(_spec.name, self.gramexp.getCorpuses()))
+            Meas = [ 'nodes', 'edges', 'density']
+            Table = np.empty((len(Corpuses), len(Meas)))
+            Table = np.column_stack((Corpuses, Table))
+            self.gramexp.Table = Table
+            self.gramexp.Meas = Meas
+
+        #print (frontend.get_data_prop())
+        for i, v in enumerate(Meas):
+            Table[self.corpus_pos, i+1] = getattr(frontend, v)()
+
+        if self._it == self.expe_size -1:
+            tablefmt = 'latex' # 'latex'
+            print(colored('\nStats Table :', 'green'))
+            print (tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
 
 if __name__ == '__main__':
     from pymake.util.algo import gofit
     from pymake.util.math import reorder_mat, sorted_perm
-    from tabulate import tabulate
     import matplotlib.pyplot as plt
-    from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2
+    from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2, colored, tabulate
 
     GramExp.generate(config, USAGE).pymake(ExpeNetwork)

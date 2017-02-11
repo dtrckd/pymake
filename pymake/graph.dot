@@ -1,7 +1,0 @@
-graph  {
-	0	 [fillcolor="#4B0082",
-		height=2.0,
-		style=filled,
-		width=2.0];
-	0 -- 0	 [penwidth=14.7781121979];
-}

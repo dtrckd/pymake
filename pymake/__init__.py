@@ -5,22 +5,19 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 try: basestring = basestring # python2
 except NameError: basestring = (str, bytes) # python3
 
+import  os
+if os.environ.get('DISPLAY') is None:
+    import matplotlib; matplotlib.use('Agg')
 
-''' BASETYPE '''
-from collections import OrderedDict
-class Expe(dict):
-    pass
-class ExpTensor(OrderedDict):
-    pass
 
-#import matplotlib; matplotlib.use('Agg')
-
+from pymake.expe.format import Expe, ExpTensor, Corpus, ExpeFormat, ExpDesign
+from pymake.expe.gramexp import GramExp
 from pymake.frontend.frontendtext import frontendText
 from pymake.frontend.frontendnetwork import frontendNetwork
 from pymake.frontend.manager import ModelManager, FrontendManager
-from pymake.expe.format import ExpeFormat # GramExp+frontend_io
 
-from pymake.util.argparser import GramExp
+
+
 
 
 #

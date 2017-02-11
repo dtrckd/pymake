@@ -4,6 +4,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from pymake import Expe, ModelManager, FrontendManager, GramExp
 from util.utils import Now, ellapsed_time
+import logging
+lgg = logging.getLogger('root')
 
 import numpy as np
 import scipy as sp
@@ -12,18 +14,20 @@ import scipy as sp
 if __name__ == '__main__':
 
     ### Experience Settings
-    expe = GramExp(Expe(
+    g = GramExp(Expe(
         corpus = 'clique2',
-        #corpus = "lucene"
         model  = 'immsb',
         hyper       = 'auto',
         testset_ratio = 0.2,
         K           = 3,
         N           = 42,
         chunk       = 10000,
-        iterations  = 6,
+        iterations  = 3,
         homo        = 0, # learn W in IBP
-    )).expe
+    ))
+
+    lgg.info(g.exp_tensor.table())
+    expe = g.expe
 
     ### Load Data
     now = Now()

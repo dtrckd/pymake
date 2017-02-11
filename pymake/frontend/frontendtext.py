@@ -284,9 +284,7 @@ class frontendText(DataBase):
 
    #     ##############
    #     ### Log Output
-   #     print
    #     lda.print_topics(K)
-   #     print
 
    #     ##############
    #     ### Prediction
@@ -332,7 +330,6 @@ class frontendText(DataBase):
    #         for d in corpus:
    #             print lda.get_document_topics(d, minimum_probability=0.01)
 
-   #     print
    #     print lda
    #     if type(corpus) is not list:
    #         print corpus

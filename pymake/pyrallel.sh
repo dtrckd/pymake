@@ -2,7 +2,7 @@
 
 CORES="2"
 
-COMMAND="python3 fit.py -nv -w -i 200"
+COMMAND="python3 fit.py -w -i 200"
 
 SPEC="HELP"
 if [ ! -z "$1" ]; then

@@ -28,9 +28,9 @@ from pymake.model.ibp.ilfm_gs import IBPGibbsSampling
 from pymake.model import hdp, ibp
 sys.modules['hdp'] = hdp
 sys.modules['ibp'] = ibp
-import pymake.model
-sys.modules['models'] = pymake.model
-
+from pymake import model
+sys.modules['models'] = model
+sys.modules['model'] = model
 
 try:
     sys.path.insert(1, '../../gensim')
@@ -55,7 +55,7 @@ class FrontendManager(object):
         if type(expe) is Namespace:
             expe = vars(expe)
 
-        corpus = expe.get('corpus_name') or expe.get('corpus') or expe.get('random')
+        corpus = expe.get('corpus') or expe.get('random')
         corpus_typo = {
             'network': [
                 'clique', 'alternate', 'BA', # random
@@ -135,6 +135,8 @@ class ModelManager(object):
         self.expe = expe
 
     def _format_dataset(self, data, data_t):
+        if data is None:
+            return None, None
 
         testset_ratio = self.expe.get('testset_ratio')
 
@@ -197,7 +199,8 @@ class ModelManager(object):
             self.model.fit()
 
         if self.write:
-            self.save()
+            #self.save()
+            self.model.save()
 
         return
 
@@ -372,6 +375,25 @@ class ModelManager(object):
 
         np.savetxt('t.out', np.log(pp))
 
+    @staticmethod
+    def _load_model(fn):
+        if not os.path.isfile(fn) or os.stat(fn).st_size == 0:
+            lgg.info('No file for this model : %s' %fn)
+            lgg.debug('The following are available :')
+            for f in model_walker(os.path.dirname(fn), fmt='list'):
+                lgg.debug(f)
+            return None
+        lgg.info('Loading Model: %s' % fn)
+        with open(fn, 'rb') as _f:
+            try:
+                model =  pickle.load(_f)
+            except:
+                # python 2to3 bug
+                _f.seek(0)
+                model =  pickle.load(_f, encoding='latin1')
+        return model
+
+
     # Pickle class
     def save(self):
         fn = self.output_path + '.pk'
@@ -382,7 +404,6 @@ class ModelManager(object):
         #            pickle.dump(v, _f, protocol=pickle.HIGHEST_PROTOCOL )
         #        except:
         #            print 'not serializable here: %s, %s' % (u, v)
-        self.model._f = None
         self.model.purge()
         # |
         # |
@@ -420,21 +441,4 @@ class ModelManager(object):
             fn = make_output_path(expe, 'pk')
             model = cls.from_file(fn)
         return model
-
-    @staticmethod
-    def _load_model(fn):
-        if not os.path.isfile(fn) or os.stat(fn).st_size == 0:
-            lgg.info('No file for this model : %s' %fn)
-            lgg.debug('The following are available :')
-            for f in model_walker(os.path.dirname(fn), fmt='list'):
-                lgg.debug(f)
-            return None
-        lgg.info('Loading Model: %s' % fn)
-        with open(fn, 'rb') as _f:
-            try:
-                model =  pickle.load(_f)
-            except:
-                # python 2to3 bug
-                _f.seek(0)
-                model =  pickle.load(_f, encoding='latin1')
 

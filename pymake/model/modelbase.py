@@ -2,8 +2,8 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from datetime import datetime
-import logging
-lgg = logging.getLogger('root')
+import pickle
+from copy import deepcopy
 
 import numpy as np
 import scipy as sp
@@ -18,6 +18,9 @@ try:
 except:
     pass
 #import sppy
+
+import logging
+lgg = logging.getLogger('root')
 
 try:
     from pymake.util.compute_stirling import load_stirling
@@ -40,12 +43,12 @@ class ModelBase(object):
     * Virtual methods for the desired propertie of models
     """
     default_settings = {
-        'snapshot_interval' : 100, # UNUSED
         'write' : False,
         'output_path' : 'tm-output',
         'csv_typo' : None,
         'fmt' : None,
-        'iterations' : 1
+        'iterations' : 1,
+        'snapshot_freq': 20,
     }
     def __init__(self, **kwargs):
         """ Model Initialization strategy:
@@ -151,7 +154,15 @@ class ModelBase(object):
         if hasattr(self, 'theta') and hasattr(self, 'phi'):
             return self.theta, self.phi
         else:
-            return self.reduce_latent()
+            return self._reduce_latent()
+
+    def getK(self):
+        theta, _ = self.get_params()
+        return theta.shape[1]
+
+    def getN(self):
+        theta, _ = self.get_params()
+        return theta.shape[0]
 
     def purge(self):
         """ Remove variable that are non serializable. """
@@ -165,7 +176,43 @@ class ModelBase(object):
         lgg.error('no method to get hyperparams')
         return
 
+    def save(self, silent=False):
+        fn = self.output_path + '.pk'
+        model = deepcopy(self)
+        model.purge()
+        to_remove = []
+        for k, v in model.__dict__.items():
+            if hasattr(v, 'func_name') and v.func_name == '<lambda>':
+                to_remove.append(k)
+            if str(v).find('<lambda>') >= 0:
+                # python3 hook, nothing better ?
+                to_remove.append(k)
+            #elif type(k) is defaultdict:
+            #    setattr(self.model, k, dict(v))
 
+        for k in to_remove:
+            try:
+                delattr(model, k)
+            except:
+                pass
+
+        if not silent:
+            lgg.info('Snapshotting Model : %s' % fn)
+        with open(fn, 'wb') as _f:
+            return pickle.dump(model, _f, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            try:
+                setattr(result, k, deepcopy(v, memo))
+            except:
+                #print('can\'t copy %s : %s' % (k, v))
+                continue
+        return result
 
     # Just for MCMC ?():
     def generate(self):
@@ -247,6 +294,9 @@ class GibbsSampler(ModelBase):
                 if i % self.thinning == 0:
                     self.samples.append([self._theta, self._phi])
 
+            if self.write and i!=0 and i % self.iterations == self.snapshot_freq:
+                self.save(silent=True)
+
         print()
         ### Clean Things
         self.samples = self.samples
@@ -318,7 +368,7 @@ class GibbsSampler(ModelBase):
 
     # keep only the most representative dimension (number of topics) in the samples
     @mmm
-    def reduce_latent(self):
+    def _reduce_latent(self):
         theta, phi = list(map(list, zip(*self.samples)))
         ks = [ mat.shape[1] for mat in theta]
         bn = np.bincount(ks)
@@ -340,7 +390,7 @@ class GibbsSampler(ModelBase):
 
     def predictMask(self, data, mask=True):
         lgg.info('Reducing latent variables...')
-        theta, phi = self.reduce_latent()
+        theta, phi = self.get_params()
 
         if mask is True:
             masked = self.get_mask()

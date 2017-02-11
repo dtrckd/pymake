@@ -1,5 +1,14 @@
 # Code Factoring
 
+MODEL Specifivation:
+*  \_initialize  random init !!!!  cleanerinit of class for empty model....
+* ModelManager constructor from_model (object) (it calls \_load_model)
+
+* @readme : different example
+    * zymake stats [spec]
+    * zymake check/generate [spec]
+    * zymake runcmd [spec] | parallel #parralisation
+
 ## IN DOIING
 * tabul | interface for tabulate (repeat /p2m)
 * build_corpus and build_networks are identical : wrap in DataBase
@@ -10,21 +19,15 @@
 * @issue42
 
 
+@structure
+* plotManager (same scenario, axe, title, **kwargs**)
+* OBJECT ! change frontendNetwork to Graph(Object), it is clear ?! (implement morphism in Object for example. (issue42)
+
 @purge: 
 * model/lda
 * clean and homogeneize, the communities analysis framework. There is redoncdancy, and non consistent call to modularity...
 * import models -> import pymake.models ?
 
-@todo: 
-* OBJECT ! change frontendNetwork to Graph(Object), it is clear ?! (implement morphism in Object for example. (issue42)
-* @frontend: better print the status of what's going on in the beginning of fit.
-
-@structure
-* simpliy frontend:
-    * check [dataset/model](source) [zipf|homo](measure)  -- plot figure / things
-    * tabulate (tensor spec)  -- tabs
-* ExpeManger (factorize the scripts)
-* plotManager (same scenario, axe, title, **kwargs**)
 
 
 # Baseline (to implement)

@@ -7,7 +7,7 @@ from util.utils import *
 from util.math import *
 from plot import *
 from frontend.frontend_io import *
-from expe.spec import _spec_; _spec = _spec_()
+from expe.spec import _spec
 from expe.format import *
 from util.argparser import argparser
 
@@ -21,7 +21,7 @@ import itertools
 config = dict(
     save_plot = False,
     gen_size      = 1000,
-    generative    = 'evidence',
+    mode    = 'generative',
     epoch         = 10 , #20
 )
 config.update(argparser.generate(''))
@@ -98,7 +98,7 @@ for corpus_name in Corpuses:
                 ttle = 'Class dynamics %s' % Model['model']
 
                 ### Density
-                #y, theta, phi = model.generate(N, _type=config['generative'])
+                #y, theta, phi = model.generate(N, mode=config['generative'])
                 #K[j] = float(y.sum()) / (N**2)
                 #ttle = 'density %s' % Model['model']
 

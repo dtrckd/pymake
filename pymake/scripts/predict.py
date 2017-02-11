@@ -3,7 +3,7 @@
 
 from pymake.frontend.manager import ModelManager, FrontendManager
 from pymake.frontend.frontendnetwork import frontendNetwork
-from pymake.expe.spec import _spec_; _spec = _spec_()
+from pymake.expe.spec import _spec
 from pymake.expe.format import *
 from pymake.util.argparser import argparser
 from pymake.util.utils import *

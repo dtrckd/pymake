@@ -9,7 +9,7 @@ from pymake import ExpTensor, OrderedDict
 from frontend.frontend_io import *
 from util.utils import *
 from util.argparser import argparser
-from expe.spec import _spec_; _spec = _spec_()
+from expe.spec import _spec
 
 USAGE = '''\
 # Usage:

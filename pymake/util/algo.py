@@ -6,8 +6,7 @@ from collections import defaultdict
 import numpy as np
 import scipy as sp
 
-from pymake.frontend.frontend import Object
-from pymake.frontend.frontendnetwork import frontendNetwork
+#from pymake.frontend.frontend import Object
 
 from .utils import *
 from .math import *
@@ -18,7 +17,7 @@ lgg = logging.getLogger('root')
 # Optimize Algothim (cython, etc) ?
 # frontend -- data copy -- integration ?
 
-class Algo(Object):
+class Algo(object):
     def __init__(self, **kwargs):
         super(Algo, self).__init__(**kwargs)
 
@@ -73,8 +72,10 @@ class Louvain(Algo):
 #warnings.filterwarnings('error')
 
 from copy import deepcopy
+#from pymake.frontend.frontendnetwork import frontendNetwork
 
-class Annealing(Algo, frontendNetwork):
+class Annealing(Algo):
+#class Annealing(Algo, frontendNetwork):
     """ Find near optimal partitionning of a square matrix (0,1),
         by using a modularity that maximize communities detection.
         This is a kind of Simulated Annealing (SA) that maximize

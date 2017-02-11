@@ -2,25 +2,23 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys
-import argparse
-import logging
-
-from functools import reduce
+from functools import reduce, wraps
 import operator
+import inspect, traceback
+from copy import deepcopy
 
-import inspect
-from functools import wraps
 import args as clargs
+import argparse
 
 from pymake import basestring, ExpTensor, Expe, ExpeFormat
-from pymake.frontend.frontend_io import *
-from pymake.expe.spec import _spec_; _spec = _spec_()
+from pymake.frontend.frontend_io import make_forest_conf, make_forest_path
+from pymake.expe.spec import _spec
+from pymake.plot import colored
+
+import logging
+lgg = logging.getLogger('root')
 
 ''' Grammar Expe '''
-
-#################
-### ARGPARSE ZONE
-#################
 
 class ExpArgumentParser(argparse.ArgumentParser):
     def __init__(self, **kwargs):
@@ -64,13 +62,8 @@ def check_positive_integer(value):
         return ''
     else:
         return ivalue
-#\
 
-###################
-## ARGS Section
-# @argument wrapper:
 # * wraps cannot handle the decorator chain :(, why ?
-
 class askseed(object):
     ''' Load previous random seed '''
     def __init__(self, func, help=False):
@@ -82,29 +75,6 @@ class askseed(object):
         if clargs.flags.contains('--seed'):
             response['seed'] = True
         return response
-
-class askhelp(object):
-    ''' Print help and exit on -h'''
-    def __init__(self, func, help=False):
-        self.func = func
-        self.help = help
-        #wraps(func)(self)
-        #functools.update_wrapper(self, func)
-
-    def __call__(self, *args, **kwargs):
-        try:
-            usage = args[0]
-        except:
-            usage = self.func.__name__ + ' ?'
-        # function name
-        #(inspect.currentframe().f_code.co_name
-        if clargs.flags.contains('--help') or clargs.flags.contains('-h') or self.help:
-            print(usage)
-            exit()
-
-        response = self.func(*args, **kwargs)
-        return response
-#\
 
 
 class GramExp(object):
@@ -137,6 +107,10 @@ class GramExp(object):
                Each entry of the dict contains an iterable over specifications
                for this entry. (see frontend.frontend_io)
                * @Todo pass rule to filter experiments...
+
+        Expe* can contains keywords :
+            * _bind ->  [a.b , ...] --- a shoudld occur with b only.
+                List of rules of constraintson the design.
     '''
     _examples = '''Examples:
         >> Text fitting
@@ -146,42 +120,56 @@ class GramExp(object):
 
     # Reserved by GramExp
     _reserved_keywords = ['spec', # for nested specification
-                         'exp' # to track expe walking
+                         'exp' # to track expe walking # Unused
                          ]
 
     # Avoid conflict between tasks
-    _forbiden_keywords = dict(fit = ['gen_size', 'epoch', 'do', 'mode'],
+    _forbiden_keywords = dict(fit = ['gen_size', 'epoch', '_do', '_mode', '_type'],
                               generate = ['iterations'])
 
-    def __init__(self, conf={}, usage=None, from_cls=False):
-        if 'spec' in conf: # and conf if a dict
+    def __init__(self, conf={}, usage=None, parseargs=True):
+
+        if 'spec' in conf:
             self.exp_tensor = self.exp2tensor(conf.pop('spec'))
+            self.exp_tensor.update_from_dict(conf)
         elif isinstance(conf, ExpTensor):
-            self.exp_tensor = conf
+            self.exp_tensor = self.exp2tensor(conf)
         elif isinstance(conf, (dict, Expe)):
             if type(conf) is dict:
                 # @zymake ?
-                print ('warning : type dict for expe settings is deprecated.')
+                lgg.debug('warning : type dict for expe settings may be deprecated.')
             self.exp_tensor = self.dict2tensor(conf)
         else:
             raise ValueError('exp/conf not understood: %s' % type(conf))
 
-        # Update default conf from command-line
-        conf.update(self.parseargs(usage))
-
-        # Populate conf values in experiments
-        for k, v in conf.items():
-            self.exp_tensor[k] = [v]
-
-        self.expe = conf
+        conf = deepcopy(conf)
+        if parseargs:
+            # Populate conf from command line
+            kwargs = self.parseargsexpe(usage)
+            self.exp_tensor.update_from_dict(kwargs)
+            conf.update(kwargs)
 
         self.checkConf(conf)
         self.checkExp(self.exp_tensor)
 
-        # @logger One logger by Expe !
-        self.setup_logger(fmt='%(message)s', level=conf['verbose'])
+        # Make Rules
+        if '_bind' in self.exp_tensor:
+            self._bind = self.exp_tensor.pop('_bind')
+            if not isinstance(self._bind, list):
+                self._bind = [self._bind]
+        else:
+            self._bind = []
 
-        if conf.get('simulate'):
+        # Make lod
+        self.lod = self.lodify(self.exp_tensor)
+
+        # global conf
+        self.expe = conf
+
+        # @logger One logger by Expe !
+        self.setup_logger(fmt='%(message)s', level=self.expe['verbose'])
+
+        if self.expe.get('simulate'):
             self.simulate()
 
     @classmethod
@@ -195,8 +183,24 @@ class GramExp(object):
     def checkExp(exp):
         assert(isinstance(exp, ExpTensor))
         for k, v in exp.items():
-            if not isinstance(v, list):
+            if not issubclass(type(v), (list, tuple, set)):
                 raise ValueError('error, exp value should be iterable: %s' % k, v)
+
+    def lodify(self, exp):
+        ''' Make a list of Expe from tensor, with filtering '''
+
+        lod = make_forest_conf(exp)
+
+        # Bind Rules
+        itoremove = []
+        for i, d in enumerate(lod):
+            for rule in self._bind:
+                a, b = rule.split('.')
+                values = list(d.values())
+                if a in values and not b in values:
+                    itoremove.append(i)
+
+        return [d for i,d in enumerate(lod) if i not in itoremove]
 
     def getConfig(self):
         # get global conf...
@@ -225,73 +229,74 @@ class GramExp(object):
         ''' Return the tensor who is an Orderedict of iterable.
             Assume conf is an exp. Non list value will be listified.
         '''
-        tensor = conf.copy()
+        if not isinstance(conf, ExpTensor):
+            tensor = ExpTensor(conf)
+        else:
+            tensor = conf
         for k, v in conf.items():
-            if not isinstance(v, list):
+            if not issubclass(type(v), (list, set, tuple)):
                 tensor[k] = [v]
         return tensor
 
-    #@staticmethod
-    #@askhelp
+    # @askhelp
+    # @askseed
+    # @overload argparse
+    # @Debug use _do and _type from argparse
     @classmethod
     def zymake(cls, conf={}, usage=None):
-        ''' Generates output (files or line arguments) according to the SPEC
-            @return OUT_TYPE: runcmd or path
-                    SPEC: expe spec
-                    FTYPE: filetype targeted
-                    STATUS: status of file required  on the filesystem
-        '''
         USAGE = usage or '''\
 -----------
 Communicate with the data :
 -----------
- |   zymake path[default] SPEC Filetype(pk|json|inf)
- |   zymake runcmd SPEC
- |   zymake -l : show available spec
+ |   zymake -l         : (default) show available spec
+ |   zymake show SPEC  : show one spec details
+ |   zymake cmd SPEC   : generate command-line
+ |   zymake burn SPEC [--script ...] : parallelize tasks
+ |   zymake path SPEC Filetype(pk|json|inf) [status]
 '''
 
         # Default request
         req = dict(
-            OUT_TYPE = 'list',
-            request = 'RUN_DD',
-            SPEC = _spec.RUN_DD, # gatattr(_spec, request)
-            FTYPE = 'pk',
-            STATUS = None )
+            _do = 'list',
+            spec = _spec['RAGNRK'],
+            _ftype = 'pk',
+            _status = None )
 
         ontologies = dict(
-            out_type = ('runcmd', 'path'),
-            spec = list(map(str.lower, _spec.repr())),
-            ftype = ('json', 'pk', 'inf') )
+            _do = ['cmd', 'show', 'path', 'burn'],
+            _out_type = ('cmd', 'path', 'show'),
+            spec = _spec.keys(),
+            _ftype = ('json', 'pk', 'inf') )
 
         ### Making ontologie based argument attribution
         ### Used the grouped argument whitout flags ['_']
         gargs = clargs.grouped['_'].all
         checksum = len(gargs)
-        for v in gargs:
-            v = v.lower()
+        for i, v in enumerate(gargs):
             for ont, words in ontologies.items():
+                # Walktrough the ontology to find arg meaning
                 if v in words:
-                    if ont == 'spec':
-                        req['request'] = v
-                        v = getattr(_spec, v.upper())
-                    req[ont.upper()] = v
+                    if ont == 'spec' and i > 0:
+                        v = _spec[v]
+                    req[ont] = v
                     checksum -= 1
                     break
 
         if '-status' in clargs.grouped:
             # debug status of filr (path)
-            req['STATUS'] = clargs.grouped['-status'].get(0)
+            req['_status'] = clargs.grouped['-status'].get(0)
         if '-l' in clargs.grouped or '--list' in clargs.grouped:
             # debug show spec
-            req['OUT_TYPE'] = 'list'
+            req['_do'] = 'list'
 
         if checksum != 0:
-            raise ValueError('unknow argument: %s\n\nAvailable SPEC : %s' % (gargs, _spec.repr()))
+            raise ValueError('unknow argument: %s\n\nAvailable SPEC : %s' % (gargs, _spec.keys()))
         conf.update(req)
-        return cls(conf, usage=USAGE, from_cls=True)
+        return cls(conf, usage=USAGE)
 
-    #@askhelp
-    #@askseed
+    # @askhelp
+    # @askseed
+    # @overload argparse
     @classmethod
     def generate(cls, conf={},  USAGE=''):
         write_keys = ('-w', 'write', '--write')
@@ -304,7 +309,7 @@ Communicate with the data :
         ### map config dict to argument
         for key in clargs.grouped:
             if '-n' in key:
-                conf['gen_size'] = int(clargs.grouped['-n'].get(0))
+                conf['gen_size'] = clargs.grouped['-n'].get(0)
             elif '--alpha' in key:
                 try:
                     conf['alpha'] = float(clargs.grouped['--alpha'].get(0))
@@ -316,16 +321,17 @@ Communicate with the data :
             elif '--delta' in key:
                 conf['delta'] = float(clargs.grouped['--delta'].get(0))
             elif '-g' in key:
-                conf['mode'] = 'evidence'
+                conf['_mode'] = 'generative'
             elif '-p' in key:
-                conf['mode'] = 'predictive'
+                conf['_mode'] = 'predictive'
 
-        return cls(conf, usage=USAGE, from_cls=True)
+        return cls(conf, usage=USAGE)
 
-    @staticmethod
-    @askhelp
-    def exp_tabulate(USAGE=''):
-        conf = {}
+    # @askhelp
+    # @askseed
+    # @overload argparse
+    @classmethod
+    def exp_tabulate(cls, conf={}, usage=''):
 
         gargs = clargs.grouped['_'].all
         for arg in gargs:
@@ -333,9 +339,9 @@ Communicate with the data :
                 conf['K'] = int(arg)
             except:
                 conf['model'] = arg
-        return conf
+        return cls(conf, usage=usage)
 
-    def parseargs(self, usage=None):
+    def parseargsexpe(self, usage=None, args=None):
         description = 'Specify an experimentation.'
         if not usage:
             epilog = self._examples
@@ -362,9 +368,6 @@ Communicate with the data :
             '--epoch', type=int,
             help='number for averaginf generative process')
         parser.add_argument(
-            '-p', '--predict', type=str,
-            help='Do predict some data (NotImplemented: precise fit/predict..)')
-        parser.add_argument(
             '-nld','--no-load-data', dest='load_data',  action='store_false', default=True,
             help='Try to load pickled frontend data')
         parser.add_argument(
@@ -380,8 +383,8 @@ Communicate with the data :
         ### Expe Settings
         ### get it from key -- @chatting
         parser.add_argument(
-            'do', nargs='?',
-            help='Specify and handler for the task.')
+            '_do', nargs='*',
+            help='Commands to pass to sub-machines.')
 
         parser.add_argument(
             '-c','--corpus', dest='corpus',
@@ -411,7 +414,7 @@ Communicate with the data :
             '--hyper-prior','--hyper_prior', dest='hyper_prior', action='append',
             help='Set paramters of the hyper-optimization [auto|fix|symmetric|asymmetric]')
         parser.add_argument(
-            '--refdir', '--debug', dest='refdir', default='debug',
+            '--refdir', '--debug', dest='refdir',
             help='Name to append in data/<bdir>/<refdir>/ for th output path.')
         parser.add_argument(
             '--testset-ratio',  dest='testset_ratio', type=float,
@@ -419,8 +422,12 @@ Communicate with the data :
         parser.add_argument(
             '--homo', type=str,
             help='Centrality type (NotImplemented)')
+        parser.add_argument(
+            '--script', nargs='*',  type=list,
+            help='Script request : name *args.')
 
-        s, remaining = parser.parse_known_args()
+        #s, remaining = parser.parse_known_args(args=args)
+        s = parser.parse__args(args=args)
         settings = vars(s)
         # Remove None value
         settings = dict((key,value) for key, value in settings.items() if value is not None)
@@ -429,7 +436,54 @@ Communicate with the data :
 
         return settings
 
-    def simulate(self):
+    def make_commands(self):
+        lod = self.lod
+        commands = []
+        for e in lod:
+            argback = self.argparser._actions
+            command = []
+            args_seen = []
+            for a in argback:
+                if not hasattr(a, 'option_strings') or len(a.option_strings) == 0:
+                    # Assume every options of expe has a flags
+                    continue
+                if a.dest in e and a.dest not in args_seen:
+                    if a.nargs == 0:
+                        store = e[a.dest]
+                        if 'StoreTrue' in str(type(a)):
+                            storetrue = True
+                        elif 'StoreFalse' in str(type(a)):
+                            storetrue = False
+                        else:
+                            raise ValueError('Check the Type of argparse for : %s'%e)
+                        if storetrue and store:
+                            command += [a.option_strings[0]]
+                    else:
+                        command += [a.option_strings[0]] + [str(e[a.dest])]
+                        args_seen.append(a.dest)
+
+            commands.append(command)
+        return commands
+
+    def make_commandline(self):
+        commands = self.make_commands()
+        commands = [' '.join(c) for c in commands]
+        return commands
+
+    def make_path(self, ftype, status=None, fullpath=None):
+        return make_forest_path(self.lod, ftype, status, fullpath)
+
+
+    def expname(self):
+        return self.exp_tensor.name()
+
+    def exptable(self, extra=[]):
+        if self._bind:
+            extra += [('_bind', self._bind)]
+        return self.exp_tensor.table(extra)
+
+
+    def simulate_short(self):
         ''' Simulation Output '''
         print('''
               Nb of experiments : %s
@@ -437,6 +491,12 @@ Communicate with the data :
               Models : %s
               ''' % (len(self), self.getCorpuses(), self.getModels()))
         exit(2)
+
+    def simulate(self):
+        print('Exp : %s' % self.exp_tensor.name())
+        print(self.exp_tensor.table())
+        exit(2)
+
 
     @staticmethod
     def setup_logger(fmt='%(message)s', level=logging.INFO, name='root'):
@@ -472,21 +532,37 @@ Communicate with the data :
 
         sandbox.preprocess(self)
 
-        lod = make_forest_conf(self.exp_tensor)
-        for id_expe, expe in enumerate(lod):
+        for id_expe, expe in enumerate(self.lod):
             pt = dict((key, value.index(expe[key])) for key, value in self.exp_tensor.items() if isinstance(expe[key], basestring))
             pt['expe'] = id_expe
             _expe = argparse.Namespace(**expe)
 
-            expbox= sandbox(pt, _expe, self)
+            # Init Expe
+            try:
+                expbox = sandbox(pt, _expe, self)
+            except Exception as e:
+                print(('Error during '+colored('%s', 'red')+' Initialization.') % (str(sandbox)))
+                traceback.print_exc()
+                exit()
 
-            if hasattr(_expe, 'do'):
-                pmk = getattr(expbox, _expe.do)
+            # Setup handler
+            if hasattr(_expe, '_do') and len(_expe._do) > 0:
+                # ExpFormat task ? decorator and autoamtic argument passing ....
+                pmk = getattr(expbox, _expe._do[0])
+                do = _expe._do
             else:
                 pmk = expbox
+                do = ['__call__']
 
+            # Launch handler
+            args = do[1:]
             try:
-                pmk()
+                try:
+                    pmk(*args)
+                except Exception as e:
+                    print(('Error during '+colored('%s', 'red')+' Expe.') % (do))
+                    traceback.print_exc()
+                    exit()
             except KeyboardInterrupt:
                 # it's hard to detach matplotlib...
                 break

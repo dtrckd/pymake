@@ -43,6 +43,8 @@ def ask_sure_exit(question):
 
 def Now():
     return  datetime.now()
+def nowDiff(last):
+    return datetime.now() - last
 def ellapsed_time(text, since):
     current = datetime.now()
     delta = current - since
