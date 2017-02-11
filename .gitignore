@@ -8,6 +8,8 @@ tags
 *.byobu
 
 results/
+doc/html/
+doc/graph/
 
 data/*/*/**
 data/**/*.zip

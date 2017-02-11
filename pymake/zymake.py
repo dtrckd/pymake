@@ -2,14 +2,18 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-#from joblib import Parallel, delayed
-import multiprocessing
-import sys
 
-from frontend.frontend_io import make_forest_path, make_forest_runcmd, make_forest_conf
+# __remove__ -> INTERNAL !
+#from joblib import Parallel, delayed
+import sys, multiprocessing
+
+from pymake import GramExp
 from frontend.manager import ModelManager, FrontendManager
-from expe.spec import _spec_; _spec = _spec_()
-from util.argparser import GramExp
+from pymake.expe.spec import _spec
+
+
+''' A Command line controler of Pymake '''
+
 
 def Zymake(spec):
     commands = make_forest_conf(spec)
@@ -26,12 +30,18 @@ if __name__ == '__main__':
     zyvar = zymake.expe
 
     ### Makes OUT Files
-    if zyvar['OUT_TYPE'] == 'runcmd':
-        source_files = make_forest_runcmd(zyvar['SPEC'])
-    elif zyvar['OUT_TYPE'] == 'path':
-        source_files = make_forest_path(zyvar['SPEC'], zyvar['FTYPE'], status=zyvar['STATUS'])
-    elif zyvar['OUT_TYPE'] == 'list':
-        print (_spec.repr())
+    if zyvar['_do'][0] == 'cmd':
+        lines = zymake.make_commandline()
+    elif zyvar['_do'] == 'path':
+        lines = zymake.make_path(zyvar['_ftype'], status=zyvar['_status'])
+    elif zyvar['_do'] == 'burn':
+        server = 'hertog, macks, fuzzy, zombie-dust, victory, racer, tiger'
+    elif zyvar['_do'] == 'show':
+        print(zymake.expname())
+        print(zymake.exptable())
+        exit()
+    elif zyvar['_do'] == 'list':
+        print (_spec.table())
         exit()
     else:
         raise NotImplementedError('zymake options unknow')
@@ -42,6 +52,6 @@ if __name__ == '__main__':
     #results_files = Parallel(n_jobs=num_cores)(delayed(expe_figures)(i) for i in source_files)
     ### ...and Retrieve the figure
 
-    print('zymake request : %s\n  %s' %(zyvar.get('request'),  zyvar['SPEC']), file=sys.stderr)
-    print( '\n'.join(source_files))
+    print('zymake request : %s\n  %s' %(zymake.expname(), zymake.exptable()), file=sys.stderr)
+    print( '\n'.join(lines))
 

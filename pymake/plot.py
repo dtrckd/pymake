@@ -1,29 +1,35 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import json
-import numpy as np
+import re, os, json
+from multiprocessing import Process
+from tabulate import tabulate
 
+import numpy as np
+import networkx as nx
+from networkx.drawing.nx_agraph import write_dot
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import colors as Colors
-
-import networkx as nx
-from networkx.drawing.nx_agraph import write_dot
 
 from pymake.util.utils import * # Cycle
 from pymake.util.math import *
 from pymake.util.algo import *
 
-import re
-import os
-from multiprocessing import Process
-lgg = logging.getLogger('root')
 
 from pymake.util.ascii_code import X11_colors, plt_colors
 u_colors = Cycle(list(zip(*plt_colors))[1])
 _markers = Cycle([ '+', '*', '|','x', 'o', '.', '1', 'p', '<', '>', 's' ])
 _colors = Cycle(['r', 'g','b','y','c','m','k'])
+
+import logging
+lgg = logging.getLogger('root')
+
+try:
+    from termcolor import colored
+except ImportError:
+    lgg.debug('needs `termcolor\' modules for colors printing')
+    colored = lambda *x : x[0]
 
 def display(block=False):
     #p = Process(target=_display)

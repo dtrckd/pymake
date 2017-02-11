@@ -62,7 +62,8 @@ class frontendNetwork(DataBase):
         self.update_data(data)
 
         # For Gof smothness
-        #np.fill_diagonal(self.data, 1)
+        # error in degree_ check ?
+        np.fill_diagonal(self.data, 1)
 
         if randomize:
             self.shuffle_node()
@@ -96,21 +97,6 @@ class frontendNetwork(DataBase):
                 setattr(self, a, None)
 
         return data
-
-    def getN(self):
-        if hasattr(self, 'N'):
-            return self.N
-
-        N = str(self.expe['N'])
-        if N.isdigit():
-            N = int(N)
-        elif N.lower() in ('all', 'false', 'none'):
-            N = 'all'
-        else:
-            raise TypeError('Size of data no set (-n)')
-
-        self.N = N
-        return self.N
 
     def shuffle_node(self):
         """ Shuffle rows and columns of data """
@@ -248,12 +234,6 @@ class frontendNetwork(DataBase):
             raise NotImplementedError()
 
         return data
-
-    def update_data(self, data):
-        self.data = data
-        N, M = self.data.shape
-        self.N = N
-        self.nodes_list = [np.arange(N), np.arange(M)]
 
     def networkloader(self, corpus_name, format):
         """ Load pickle or parse data.
@@ -494,9 +474,42 @@ class frontendNetwork(DataBase):
                 'block_hist': block_hist,
                 'size': len(block_hist)}
 
+
+    def GG(self):
+        if not hasattr(self, 'G'):
+            if self.is_symmetric():
+                # Undirected Graph
+                typeG = nx.Graph()
+            else:
+                # Directed Graph
+                typeG = nx.DiGraph()
+            self.G = nx.from_numpy_matrix(self.data, typeG)
+            #self.G = nx.from_scipy_sparse_matrix(self.data, typeG)
+        return self.G
+
+    #
+    # Get Statistics
+    #
+
+    def nodes(self):
+        g = self.GG()
+        return g.number_of_nodes()
+
+    def edges(self):
+        g = self.GG()
+        return g.number_of_edges()
+
+    def diameter(self):
+        g = self.GG()
+        try:
+            diameter = nx.diameter(g)
+        except:
+            diameter = None
+        return diameter
+
     def density(self):
-        G = self.GG()
-        return nx.density(G)
+        g = self.GG()
+        return nx.density(g)
 
     def modularity(self):
         part =  self.get_partition()
@@ -511,17 +524,32 @@ class frontendNetwork(DataBase):
             modul = None
         return modul
 
+    def clustering_coefficient(self):
+        G = self.GG()
+        try:
+            cc = nx.average_clustering(G)
+        except:
+            cc = None
+        return cc
+
+    def getN(self):
+        if hasattr(self, 'N'):
+            return self.N
+
+        N = str(self.expe['N'])
+        if N.isdigit():
+            N = int(N)
+        elif N.lower() in ('all', 'false', 'none'):
+            N = 'all'
+        else:
+            raise TypeError('Size of data no set (-n)')
+
+        self.N = N
+        return self.N
+
     #def louvain_feature(self):
     #    get the louvain modularity
     #    and the feature for local analysis
-
-    def diameter(self):
-        G = self.GG()
-        try:
-            diameter = nx.diameter(G)
-        except:
-            diameter = None
-        return diameter
 
     def degree(self):
         G = self.GG()
@@ -531,32 +559,13 @@ class frontendNetwork(DataBase):
         G = self.GG()
         return nx.degree_histogram(G)
 
-    def clustering_coefficient(self):
-        G = self.GG()
-        try:
-            cc = nx.average_clustering(G)
-        except:
-            cc = None
-        return cc
-
-    def GG(self):
-        if not hasattr(self, 'G'):
-            if self.is_symmetric():
-                # Undirected Graph
-                typeG = nx.Graph()
-            else:
-                # Directed Graph
-                typeG = nx.DiGraph()
-            self.G = nx.from_numpy_matrix(self.data, typeG)
-            #self.G = nx.from_scipy_sparse_matrix(self.data, typeG)
-        return self.G
-
     def get_nfeat(self):
         nfeat = self.data.max() + 1
         if nfeat == 1:
             lgg.warn('Warning, only zeros in adjacency matrix...')
             nfeat = 2
         return nfeat
+
 
     def get_clusters(self):
         return self.clusters
@@ -699,7 +708,7 @@ class frontendNetwork(DataBase):
         card = N*(N-1)
 
         if model:
-            data, theta, phi = model.generate(N)
+            data  = model.generate(N)
             #y = np.triu(y) + np.triu(y, 1).T
             gram_matrix = model.similarity_matrix(sim=sim)
             delta_treshold = .1
@@ -761,7 +770,7 @@ class frontendNetwork(DataBase):
         N = self.data.shape[0]
         sim_source = self.similarity_matrix(sim='cos')
 
-        y, _, _ = model.generate(N)
+        y = model.generate(N)
         #y = np.triu(y) + np.triu(y, 1).T
         sim_learn = model.similarity_matrix(sim='cos')
 

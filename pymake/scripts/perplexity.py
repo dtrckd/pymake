@@ -7,7 +7,7 @@ from pymake.util.utils import *
 from pymake.util.math import *
 from pymake.plot import *
 from pymake.frontend.frontend_io import *
-from pymake.expe.spec import _spec_; _spec = _spec_()
+from pymake.expe.spec import _spec
 from pymake.expe.format import *
 from pymake.util.argparser import argparser
 

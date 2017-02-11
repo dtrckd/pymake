@@ -6,12 +6,11 @@ from argparse import Namespace
 from collections import defaultdict, OrderedDict
 import fnmatch
 import numpy as np
-from pymake.expe.spec import _spec_
 
 lgg = logging.getLogger('root')
 
 LOCAL_BDIR = '../../data/' # Last slash(/) necessary.
-if not os.path.exists(os.path.dirname(__file__)+'/'+LOCAL_BDIR+'networks/generator/Graph7/t0.graph') and True:
+if not os.path.exists(os.path.dirname(__file__)+'/'+LOCAL_BDIR+'networks/generator/Graph7/t0.graph') and False:
     LOCAL_BDIR = '/media/dtrckd/TOSHIBA EXT/pymake/data/'
     if not os.path.exists(LOCAL_BDIR):
         print ('Error Data path: %s' % LOCAL_BDIR)
@@ -33,23 +32,6 @@ if not os.path.exists(os.path.dirname(__file__)+'/'+LOCAL_BDIR+'networks/generat
                                         self.homo,
                                         self.N)
 """
-
-### Command Line Reference
-# Get it from argparser object !?
-_FLAGKEYS = OrderedDict((
-    ('data_type'   , 'null'), # ?
-    ('N'           , '-n'),
-    ('K'           , '-k'),
-    ('hyper'       , '--hyper'),
-    ('homo'        , '--homo'),
-    ('model'       , '-m'),
-    ('corpus'      , '-c'),
-    ('refdir'      , '--refdir'),
-    ('repeat'      , '--repeat'),
-    ('hyper_prior' , '--hyper_prior'),
-    ('testset_ratio', '--testset-ratio'),
-    ('iterations'  , '-i'),
-))
 
 ### directory/file tree reference
 # Default and New values
@@ -107,26 +89,8 @@ def model_walker(bdir, fmt='list'):
         raise NotImplementedError()
     return tree
 
-def make_forest_path(dol_spec, _type, sep=None, status='f', full_path=False):
-    """ Make a list of path from a spec/dict, the filename are
-        oredered need to be align with teh get_from_conf_file.
-
-        *args -> make_output_path
-    """
-    targets = []
-    check_spec(dol_spec)
-    lod_spec = make_forest_conf(dol_spec)
-    for spec in lod_spec:
-        filen = make_output_path(spec, _type, status=status)
-        if filen:
-            s = filen.find(LOCAL_BDIR)
-            pt = 0
-            if not full_path and s >= 0:
-                pt = s + len(LOCAL_BDIR)
-            targets.append(filen[pt:])
-    return targets
-
-def make_output_path(expe, _type=None, sep=None, status=False):
+# debug track filename
+def make_output_path(expe, _type=None, status=False):
     """ Make a single output path from a expe/dict
         @status: f finished
         @type: pk, json or inference.
@@ -202,7 +166,9 @@ def make_forest_conf(dol_spec):
     """ Make a list of config/dict.
         Convert a dict of list to a list of dict.
     """
-    check_spec(dol_spec)
+    if len(dol_spec) == 0:
+        return []
+
     len_l = [len(l) for l in dol_spec.values()]
     _len = functools.reduce(mul, len_l )
     keys = sorted(dol_spec)
@@ -217,26 +183,23 @@ def make_forest_conf(dol_spec):
 
     #return targets
 
-def check_spec(dol_spec):
-    ''' Ensure every values are iterable '''
-    for k, v in dol_spec.items():
-        if not isinstance(v, (list, tuple, set)):
-            dol_spec[k] = [v]
-        else:
-            pass
-    return True
+def make_forest_path(lod, _type, status='f', full_path=False):
+    """ Make a list of path from a spec/dict, the filename are
+        oredered need to be align with teh get_from_conf_file.
 
-def make_forest_runcmd(expe):
-    optkeys = _FLAGKEYS
-    opts = []
-    confs = make_forest_conf(expe)
-    for expe in confs:
-        if '' in expe:
-            expe.pop('')
-        opt = [' '.join(list(map(str, (optkeys[i], j)))) for i, j in expe.items() if optkeys[i] != 'null']
-        opt = ' '.join(opt)
-        opts.append(opt)
-    return opts
+        *args -> make_output_path
+    """
+    targets = []
+    for spec in lod:
+        filen = make_output_path(spec, _type, status=status)
+        if filen:
+            s = filen.find(LOCAL_BDIR)
+            pt = 0
+            if not full_path and s >= 0:
+                pt = s + len(LOCAL_BDIR)
+            targets.append(filen[pt:])
+    return targets
+
 
 def tree_hook(key, value):
     hook = False
@@ -350,9 +313,12 @@ def forest_tensor(target_files, map_parameters):
 
     not_finished = []
     info_file = []
+    print(rez.shape)
     for _f in target_files:
         prop = get_conf_from_file(_f, map_parameters)
         pt = np.empty(rez.ndim)
+
+        print(rez.ndim, prop)
 
         assert(len(pt) - len(new_dims) == len(prop))
         for k, v in prop.items():

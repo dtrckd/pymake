@@ -29,7 +29,7 @@ This code was modified from the code originally written by Zhai Ke (kzhai@umd.ed
 
 ### @TODO
 #   * 2 parameter ibp
-#   * poisson-gamma ipb for real valued relation
+#   * poisson-gamma ibp for real valued relation
 #   * Oprimization:
 #   *   - updating only the subset of relation affected by feature modified (active in both sides).
 #   * Structure:
@@ -53,6 +53,7 @@ class IBPGibbsSampling(IBP, GibbsSampler):
         self._overflow = 1.0
         self.ratio_MH_F = 0.0
         self.ratio_MH_W = 0.0
+        self.snapshot_freq = 20
 
         self.burnin = kwargs.get('burnin',  0.05) # Ratio of iteration
         self.thinning = kwargs.get('thinning',  1)
@@ -66,6 +67,10 @@ class IBPGibbsSampling(IBP, GibbsSampler):
     @param sigma_w: standard derivation of the feature
     @param initialize_Z: seeded Z matrix """
     def _initialize(self, data, alpha=1.0, sigma_w=1, initial_Z=None, initial_W=None, KK=None):
+        if data is None:
+            # @debug if data=None !
+            data = np.zeros((1,1))
+
         if type(data) is not ma.masked_array:
             # Ignore Diagonal
             data = np.ma.array(data, mask=np.zeros(data.shape))
@@ -175,6 +180,9 @@ class IBPGibbsSampling(IBP, GibbsSampler):
 
             if iter >= self.burnin:
                 self.samples.append([self._Z, self._W])
+
+            if self.write and iter!=0 and iter % self.iterations == self.snapshot_freq:
+                self.save(silent=True)
 
         print()
 
@@ -451,7 +459,7 @@ class IBPGibbsSampling(IBP, GibbsSampler):
         # loglikelihood_W ? Z ?
         return self.log_likelihood_Y()
 
-    # @ipb
+    # @ibp
     def update_hyper(self, hyper):
         if hyper is None:
             return
@@ -463,18 +471,18 @@ class IBPGibbsSampling(IBP, GibbsSampler):
         if alpha:
             self._alpha = alpha
 
-    # @ipb
+    # @ibp
     def get_hyper(self):
         alpha = self._alpha
         delta = (self._mean_w, self._sigma_w)
         return (alpha, delta)
 
-    # @ipb
-    def generate(self, N, K=None, nodelist=None, hyper=None, mode='predictive', directed=True):
-        self.update_hyper(hyper)
+    # @ibp
+    def generate(self, N, K=None, nodelist=None, hyperarams=None, mode='predictive', symmetric=True, **kwargs):
+        self.update_hyper(hyperarams)
         alpha, delta = self.get_hyper()
-        N = int(N)
-        if mode == 'evidence':
+        if mode == 'generative':
+            N = int(N)
 
             # Use for the stick breaking generation
             #K = alpha * np.log(N)
@@ -485,11 +493,14 @@ class IBPGibbsSampling(IBP, GibbsSampler):
 
             # Generate Phi
             phi = np.random.normal(delta[0], delta[1], size=(K,K))
-            if directed is True:
+            if symmetric is True:
                 phi = np.triu(phi) + np.triu(phi, 1).T
 
+            self.theta = theta
+            self.phi = phi
         elif mode == 'predictive':
-            theta, phi = self.reduce_latent()
+            theta, phi = self.get_params()
+            K = theta.shape[1]
 
         if nodelist:
             Y = Y[nodelist, :][:, nodelist]
@@ -500,13 +511,7 @@ class IBPGibbsSampling(IBP, GibbsSampler):
         #likelihood[likelihood < 0.5 ] = 0
         #Y = likelihood
         Y = sp.stats.bernoulli.rvs(likelihood)
-        self.theta = theta
-        self.phi = phi
-        self.K = K
-        return Y, theta, phi
-
-    def getK(self):
-        return self._K
+        return Y
 
     def likelihood(self, theta=None, phi=None):
         if theta is None:
@@ -517,7 +522,7 @@ class IBPGibbsSampling(IBP, GibbsSampler):
         likelihood = 1 / (1 + np.exp(- self._sigb * bilinear_form))
         return likelihood
 
-    def reduce_latent(self):
+    def _reduce_latent(self):
         Z, W = list(map(list, zip(*self.samples)))
         ks = [ mat.shape[1] for mat in Z]
         bn = np.bincount(ks)
@@ -542,13 +547,17 @@ class IBPGibbsSampling(IBP, GibbsSampler):
     def mask_probas(self, data):
         mask = self.get_mask()
         y_test = data[mask]
-        theta, phi = self.reduce_latent()
+        theta, phi = self.get_params()
         p_ji = theta.dot(phi).dot(theta.T)
         probas = p_ji[mask]
         return y_test, probas
 
     def get_mask(self):
-        return self.mask
+        # future remove
+        try:
+            return self.mask
+        except:
+            return self.s.mask
 
     def get_clusters(self, K=None):
         Z, W = self.get_params()

@@ -27,17 +27,9 @@ analysis in [clustering, zipf, (to complete)]
 '''
 
 
-#######################
-### Corpuses
-#######################
-#Corpuses = _spec.CORPUS_SYN_ICDM_1
-#Corpuses = _spec.CORPUS_REAL_ICDM_1
-Corpuses = _spec.CORPUS_SYN_ICDM_1 + _spec.CORPUS_REAL_ICDM_1
+Corpuses = _spec.CORPUS_NET_ALL
 Corpuses = _spec.CORPUS_REAL_V2
 
-#######################
-### Models
-#######################
 #Models = _spec.MODELS_GENERATE
 Spec = ExpTensor ((
     ('corpus', Corpuses),
