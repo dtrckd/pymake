@@ -75,10 +75,10 @@ class DataBase(object):
         # Load a .pk file for data(default: True if present)
         # + it faset
         # - some data features are not stored in .pk
-        self._load_data = expe.get('load_data')
+        self._load_data = expe.get('load_data', True)
 
-        # Save a .pk file of data (default: False)
-        self._save_data = expe.get('save_data')
+        # Save a .pk file of data
+        self._save_data = expe.get('save_data', False)
 
         self.corpus_name = expe.get('corpus')
         self.model_name = expe.get('model')

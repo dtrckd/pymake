@@ -30,7 +30,7 @@ if __name__ == '__main__':
     zyvar = zymake.expe
 
     ### Makes OUT Files
-    if zyvar['_do'][0] == 'cmd':
+    if zyvar['_do'] == 'cmd':
         lines = zymake.make_commandline()
     elif zyvar['_do'] == 'path':
         lines = zymake.make_path(zyvar['_ftype'], status=zyvar['_status'])
@@ -44,13 +44,17 @@ if __name__ == '__main__':
         print (_spec.table())
         exit()
     else:
-        raise NotImplementedError('zymake options unknow')
+        raise NotImplementedError('zymake options unknow : %s' % zyvar)
 
 
     ### Makes figures on remote / parallelize
     #num_cores = int(multiprocessing.cpu_count() / 4)
     #results_files = Parallel(n_jobs=num_cores)(delayed(expe_figures)(i) for i in source_files)
     ### ...and Retrieve the figure
+
+    if 'script' in zyvar:
+        script = zyvar['script']
+        lines = [' '.join((' '.join(script), l)) for l in lines]
 
     print('zymake request : %s\n  %s' %(zymake.expname(), zymake.exptable()), file=sys.stderr)
     print( '\n'.join(lines))

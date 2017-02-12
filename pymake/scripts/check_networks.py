@@ -10,12 +10,12 @@ import logging
 lgg = logging.getLogger('root')
 
 USAGE = """\
--------
-Inspect data on disk, for questions.
--------
+----------------
+Inspect data on disk, for questions :
+----------------
  |       or updating results
  |
- |   params
+ |   methods
  |   ------
  |   zipf       : adjacency matrix + global degree.
  |   burstiness : global + local + feature burstiness.
@@ -48,7 +48,7 @@ Model = ExpTensor ((
 
 config = dict(
     block_plot = False,
-    save_plot = False,
+    write = False,
     _do           = 'zipf', # homo/zipf/burstiness/pvalue
     clusters_org = 'source', # source/model
     spec = Model
@@ -93,7 +93,7 @@ class ExpeNetwork(ExpeFormat):
             print( 'corpus: %s/%s, No Reordering !' % (expe.corpus, _spec.name(expe.corpus)))
         print()
 
-        if expe.save_plot:
+        if expe.write:
             from private import out
             out.write_zipf(expe, data_r)
             return
@@ -227,7 +227,7 @@ class ExpeNetwork(ExpeFormat):
         plt.title('Blocks Size (max assignement)')
         figs.append(plt.gcf())
 
-        if expe.save_plot:
+        if expe.write:
             from private import out
             out.write_figs(expe, figs)
             return

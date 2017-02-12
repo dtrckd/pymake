@@ -19,7 +19,7 @@ import itertools
 ####################################################
 ### Config
 config = dict(
-    save_plot = False,
+    write = False,
     gen_size      = 1000,
     epoch         = 10 , #20
 )
@@ -92,6 +92,4 @@ for corpus_name in Corpuses:
 
     display(False)
 
-if not config.get('save_plot'):
-    display(True)
 

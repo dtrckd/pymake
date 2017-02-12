@@ -24,9 +24,6 @@ Models = _spec.MODELS_GENERATE
 ##################
 if __name__ == '__main__':
 
-    config = dict(
-        save_plot = False,
-    )
     config.update(argparser.generate(''))
 
 

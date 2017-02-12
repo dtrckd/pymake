@@ -10,22 +10,18 @@ import logging
 lgg = logging.getLogger('root')
 
 USAGE = '''\
--------
-Generate data for answers.
--------
+----------------
+Generate data for answers :
+----------------
  |
- |   params
+ |   methods
  |   ------
  |   burstiness : global + local + feature burstiness.
  |   homo       : homophily based analysis.
  |
- |  -g: generative model -- evidence
- |  -p: predicted data -- model fitted
- |  --hyper-name *
- |
 >> Examples
     parallel ./generate.py -k {}  ::: $(echo 5 10 15 20)
-    ./generate.py --alpha 1 --gmma 1 -n 1000 --seed
+    generate --alpha 1 --gmma 1 -n 1000 --seed
 '''
 
 Corpuses = _spec['CORPUS_NET_ALL']
@@ -260,7 +256,7 @@ class GenNetwork(ExpeFormat):
 
         figs.append(plt.gcf())
 
-        if expe.save_plot:
+        if expe.write:
             from private import out
             out.write_figs(expe, figs, _fn=expe.model)
             return
@@ -483,7 +479,7 @@ if __name__ == '__main__':
 
     config = dict(
         block_plot = False,
-        save_plot  = False,
+        write  = False,
         _do            = 'burstiness',
         #generative    = 'generative',
         _mode    = 'predictive',

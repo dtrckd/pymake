@@ -378,7 +378,7 @@ class ModelManager(object):
     @staticmethod
     def _load_model(fn):
         if not os.path.isfile(fn) or os.stat(fn).st_size == 0:
-            lgg.info('No file for this model : %s' %fn)
+            lgg.error('No file for this model : %s' %fn)
             lgg.debug('The following are available :')
             for f in model_walker(os.path.dirname(fn), fmt='list'):
                 lgg.debug(f)

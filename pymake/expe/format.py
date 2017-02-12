@@ -106,7 +106,7 @@ class BaseObject(object):
     def name(self):
         return self.__name__
     def items(self):
-        return enumerate(self)
+        return [(str(i), j) for i,j in enumerate(self)]
     def table(self):
         return tabulate(self.items())
 

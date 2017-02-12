@@ -1,6 +1,8 @@
 # PYMAKE
 
-Pymake helps making reproducible research by providing tools adapted for the creation of **complex and traceable design of experiments** and **Models for data analysis**.
+Pymake is machine-friendly platform for making reproducible research. It provides tools adapted for the creation of :
+* Complex and traceable design of experiments 
+* Models for  Machhine Learning.
 
 This code is in a living development stage and yet unstable.
 

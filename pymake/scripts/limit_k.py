@@ -19,7 +19,7 @@ import itertools
 ####################################################
 ### Config
 config = dict(
-    save_plot = False,
+    write = False,
     gen_size      = 1000,
     mode    = 'generative',
     epoch         = 10 , #20
@@ -107,8 +107,5 @@ for corpus_name in Corpuses:
         plt.legend(loc="upper left", prop={'size':10})
         plt.title(ttle)
 
-        display(False)
 
-if not config.get('save_plot'):
-    display(True)
 
