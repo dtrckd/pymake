@@ -10,6 +10,7 @@ from copy import deepcopy
 import args as clargs
 import argparse
 
+from .gram import _Gram
 from pymake import basestring, ExpTensor, Expe, ExpeFormat
 from pymake.frontend.frontend_io import make_forest_conf, make_forest_path
 from pymake.expe.spec import _spec
@@ -31,51 +32,6 @@ class ExpArgumentParser(argparse.ArgumentParser):
         #print()
         #print_available_ model, datasets ?
         sys.exit(2)
-
-class VerboseAction(argparse.Action):
-    def __call__(self, parser, args, values, option_string=None):
-        # print 'values: {v!r}'.format(v=values)
-        if values==None:
-            values='1'
-        try:
-            values=int(values)
-        except ValueError:
-            values=values.count('v')+1
-        setattr(args, self.dest, values)
-
-class SmartFormatter(argparse.HelpFormatter):
-    # Unused -- see RawDescriptionHelpFormatter
-    def _split_lines(self, text, width):
-        if text.startswith('R|'):
-            return text[2:].splitlines()
-        # this is the RawTextHelpFormatter._split_lines
-        return argparse.HelpFormatter._split_lines(self, text, width)
-
-
-def check_positive_integer(value):
-    try:
-        ivalue = int(value)
-    except:
-        raise argparse.ArgumentTypeError("%s is invalid argument value, need integer." % value)
-
-    if ivalue < 0:
-        return ''
-    else:
-        return ivalue
-
-# * wraps cannot handle the decorator chain :(, why ?
-class askseed(object):
-    ''' Load previous random seed '''
-    def __init__(self, func, help=False):
-        self.func = func
-    def __call__(self, *args, **kwargs):
-
-        response = self.func(*args, **kwargs)
-
-        if clargs.flags.contains('--seed'):
-            response['seed'] = True
-        return response
-
 
 class GramExp(object):
     ''' Create a mapping between different format of design of experiments.
@@ -127,8 +83,25 @@ class GramExp(object):
     _forbiden_keywords = dict(fit = ['gen_size', 'epoch', '_do', '_mode', '_type'],
                               generate = ['iterations'])
 
-    def __init__(self, conf={}, usage=None, parseargs=True):
+    _exp_default = dict(
+        host = 'localhost',
+        verbose = 20,
+        load_data = True,
+        save_data = False,
+        write = False,
+    )
 
+    def __init__(self, conf={}, usage=None, parser=None, parseargs=True):
+        if parseargs is True:
+            kwargs = self.parseargsexpe(usage)
+            conf.update(kwargs)
+        if parser is not None:
+            self.argparser = parser
+        else:
+            self.argparser = GramExp.get_parser()
+
+        [conf.update({k:v}) for k,v in self._exp_default.items() if k not in conf]
+        conf = deepcopy(conf)
         if 'spec' in conf:
             self.exp_tensor = self.exp2tensor(conf.pop('spec'))
             self.exp_tensor.update_from_dict(conf)
@@ -141,13 +114,6 @@ class GramExp(object):
             self.exp_tensor = self.dict2tensor(conf)
         else:
             raise ValueError('exp/conf not understood: %s' % type(conf))
-
-        conf = deepcopy(conf)
-        if parseargs:
-            # Populate conf from command line
-            kwargs = self.parseargsexpe(usage)
-            self.exp_tensor.update_from_dict(kwargs)
-            conf.update(kwargs)
 
         self.checkConf(conf)
         self.checkExp(self.exp_tensor)
@@ -238,98 +204,128 @@ class GramExp(object):
                 tensor[k] = [v]
         return tensor
 
-    # @askhelp
+    @staticmethod
+    def get_parser(description=None, usage=None):
+
+        parser = ExpArgumentParser(description=description, epilog=usage,
+                                   formatter_class=argparse.RawDescriptionHelpFormatter)
+        g = _Gram
+        grammar = []
+        args = []
+        for e in g:
+            if not isinstance(e, dict):
+                args.append(e)
+                continue
+            grammar.append((args, e))
+            args = []
+
+        parser.add_argument('--version', action='version', version='%(prog)s 0.1')
+        [parser.add_argument(*r[0], **r[1]) for r in grammar]
+
+
+        return parser
+
+
+    @staticmethod
+    def parseargsexpe(usage=None, args=None, parser=None):
+        description = 'Specify an experimentation.'
+        if not usage:
+            usage = GramExp._examples
+
+        if parser is None:
+            parser = GramExp.get_parser(description, usage)
+        #s, remaining = parser.parse_known_args(args=args)
+        s = parser.parse_args(args=args)
+        settings = dict((key,value) for key, value in vars(s).items() if value)
+        return settings
+
     # @askseed
-    # @overload argparse
-    # @Debug use _do and _type from argparse
     @classmethod
-    def zymake(cls, conf={}, usage=None):
-        USAGE = usage or '''\
------------
+    def zymake(cls, request={}, usage=''):
+        usage ='''\
+----------------
 Communicate with the data :
------------
+----------------
  |   zymake -l         : (default) show available spec
  |   zymake show SPEC  : show one spec details
- |   zymake cmd SPEC   : generate command-line
- |   zymake burn SPEC [--script ...] : parallelize tasks
+ |   zymake cmd SPEC [fun][*args]   : generate command-line
+ |   zymake burn SPEC [fun][*args][--script ...] : parallelize tasks
  |   zymake path SPEC Filetype(pk|json|inf) [status]
-'''
+''' + '\n' + usage
 
-        # Default request
-        req = dict(
-            _do = 'list',
-            spec = _spec['RAGNRK'],
-            _ftype = 'pk',
-            _status = None )
+        s = GramExp.parseargsexpe(usage)
+        request.update(s)
 
         ontologies = dict(
-            _do = ['cmd', 'show', 'path', 'burn'],
-            _out_type = ('cmd', 'path', 'show'),
+            _do = ('cmd', 'show','list', 'path', 'burn'),
             spec = _spec.keys(),
-            _ftype = ('json', 'pk', 'inf') )
+            _ftype = ('json', 'pk', 'inf'))
 
-        ### Making ontologie based argument attribution
-        ### Used the grouped argument whitout flags ['_']
-        gargs = clargs.grouped['_'].all
-        checksum = len(gargs)
-        for i, v in enumerate(gargs):
-            for ont, words in ontologies.items():
-                # Walktrough the ontology to find arg meaning
-                if v in words:
-                    if ont == 'spec' and i > 0:
-                        v = _spec[v]
-                    req[ont] = v
-                    checksum -= 1
-                    break
+        #### Making ontologie based argument attribution
+        do = request.get('_do') or ['list']
 
-        if '-status' in clargs.grouped:
-            # debug status of filr (path)
-            req['_status'] = clargs.grouped['-status'].get(0)
-        if '-l' in clargs.grouped or '--list' in clargs.grouped:
-            # debug show spec
-            req['_do'] = 'list'
+        if not do[0] in ontologies['_do']:
+            # seek the files ...
+            pass
+        else:
+            checksum = len(do)
+            for i, v in enumerate(do):
+                for ont, words in ontologies.items():
+                    # Walktrough the ontology to find arg meaning
+                    if v in words:
+                        if ont == 'spec' and i > 0:
+                            v = _spec[v]
+                        request[ont] = v
+                        checksum -= 1
+                        break
+
+        #if '-status' in clargs.grouped:
+        #    # debug status of filr (path)
+        #    request['_status'] = clargs.grouped['-status'].get(0)
+        if request.get('do_list'):
+            request['_do'] = 'list'
 
         if checksum != 0:
-            raise ValueError('unknow argument: %s\n\nAvailable SPEC : %s' % (gargs, _spec.keys()))
-        conf.update(req)
-        return cls(conf, usage=USAGE)
+            raise ValueError('unknow argument: %s\n\nAvailable SPEC : %s' % (do, _spec.keys()))
+        return cls(request, usage=usage, parseargs=False)
 
-    # @askhelp
     # @askseed
-    # @overload argparse
     @classmethod
-    def generate(cls, conf={},  USAGE=''):
-        write_keys = ('-w', 'write', '--write')
-        # Write plot
-        for write_key in write_keys:
-            if write_key in clargs.all:
-                conf['save_plot'] = True
-        gargs = clargs.grouped.pop('_')
+    def generate(cls, request={},  usage=''):
+        usage = '''\
+----------------
+Execute scripts :
+----------------
+ |   generate [method][fun][*args]  : (default) show methods
+ |  -g: generative model -- evidence
+ |  -p: predicted data -- model fitted
+ |  --hyper-name *
+ |
+ ''' +'\n'+usage
 
-        ### map config dict to argument
-        for key in clargs.grouped:
-            if '-n' in key:
-                conf['gen_size'] = clargs.grouped['-n'].get(0)
-            elif '--alpha' in key:
-                try:
-                    conf['alpha'] = float(clargs.grouped['--alpha'].get(0))
-                except ValueError:
-                    # list ?
-                    conf['alpha'] = clargs.grouped['--alpha'].get(0)
-            elif '--gmma' in key:
-                conf['gmma'] = float(clargs.grouped['--gmma'].get(0))
-            elif '--delta' in key:
-                conf['delta'] = float(clargs.grouped['--delta'].get(0))
-            elif '-g' in key:
-                conf['_mode'] = 'generative'
-            elif '-p' in key:
-                conf['_mode'] = 'predictive'
+        parser = GramExp.get_parser(usage=usage)
+        parser.add_argument('--alpha', type=float)
+        parser.add_argument('--gmma', type=float)
+        parser.add_argument('--delta', type=float)
+        parser.add_argument('-g', '--generative', dest='_mode', action='store_const', const='generative')
+        parser.add_argument('-p', '--predictive', dest='_mode', action='store_const', const='predictive')
 
-        return cls(conf, usage=USAGE)
+        s = GramExp.parseargsexpe(parser=parser)
+        request.update(s)
 
-    # @askhelp
+        # get list of scripts/*
+        # get list of method
+        ontologies = dict()
+
+        #### Making ontologie based argument attribution
+        do = request.get('_do') or ['list']
+        if not isinstance(do, list):
+            do = [do]
+            request['_do'] = do
+
+        return cls(request, usage=usage, parseargs=False)
+
     # @askseed
-    # @overload argparse
     @classmethod
     def exp_tabulate(cls, conf={}, usage=''):
 
@@ -340,101 +336,6 @@ Communicate with the data :
             except:
                 conf['model'] = arg
         return cls(conf, usage=usage)
-
-    def parseargsexpe(self, usage=None, args=None):
-        description = 'Specify an experimentation.'
-        if not usage:
-            epilog = self._examples
-        else:
-            epilog = usage
-            pass
-
-        parser = ExpArgumentParser(description=description, epilog=epilog,
-                                   formatter_class=argparse.RawDescriptionHelpFormatter)
-
-        ### Global settings
-        parser.add_argument(
-            '--host',  default='localhost',
-            help='name to append in data/<bdir>/<refdir>/ for th output path.')
-
-        ### Global settings
-        parser.add_argument(
-            '-v', nargs='?', action=VerboseAction, dest='verbose', default=logging.INFO,
-            help='Verbosity level (-v | -vv | -v 2)')
-        parser.add_argument(
-            '-s', '--simulate', action='store_true',
-            help='Offline simulation')
-        parser.add_argument(
-            '--epoch', type=int,
-            help='number for averaginf generative process')
-        parser.add_argument(
-            '-nld','--no-load-data', dest='load_data',  action='store_false', default=True,
-            help='Try to load pickled frontend data')
-        parser.add_argument(
-            '--save-fr-data', dest='save_data',  action='store_true', default=False,
-            help='Picked the frontend data.')
-        parser.add_argument(
-            '--seed', nargs='?', const=42, type=int,
-            help='set seed value.')
-        parser.add_argument(
-            '-w', '--write', action='store_true', default=False,
-            help='Write Fitted Model On disk.')
-
-        ### Expe Settings
-        ### get it from key -- @chatting
-        parser.add_argument(
-            '_do', nargs='*',
-            help='Commands to pass to sub-machines.')
-
-        parser.add_argument(
-            '-c','--corpus', dest='corpus',
-            help='ID of the frontend data.')
-        parser.add_argument(
-            '-r','--random', dest='corpus',
-            help='Random generation of synthetic frontend  data [uniforma|alternate|cliqueN|BA].')
-        parser.add_argument(
-            '-m','--model', dest='model',
-            help='ID of the model.')
-        parser.add_argument(
-            '-n','--N', type=str,
-            help='Size of frontend data [int | all].')
-        parser.add_argument(
-            '-k','--K', type=int,
-            help='Latent dimensions')
-        parser.add_argument(
-            '-i','--iterations', type=int,
-            help='Max number of iterations for the optimization.')
-        parser.add_argument(
-            '--repeat', type=check_positive_integer,
-            help='Index of tn nth repetitions/randomization of an design of experiments. Impact the outpout path as data/<bdir>/<refdir>/<repeat>/...')
-        parser.add_argument(
-            '--hyper', dest='hyper', type=str,
-            help='type of hyperparameters optimization [auto|fix|symmetric|asymmetric]')
-        parser.add_argument(
-            '--hyper-prior','--hyper_prior', dest='hyper_prior', action='append',
-            help='Set paramters of the hyper-optimization [auto|fix|symmetric|asymmetric]')
-        parser.add_argument(
-            '--refdir', '--debug', dest='refdir',
-            help='Name to append in data/<bdir>/<refdir>/ for th output path.')
-        parser.add_argument(
-            '--testset-ratio',  dest='testset_ratio', type=float,
-            help='testset/learnset ratio for testing.')
-        parser.add_argument(
-            '--homo', type=str,
-            help='Centrality type (NotImplemented)')
-        parser.add_argument(
-            '--script', nargs='*',  type=list,
-            help='Script request : name *args.')
-
-        #s, remaining = parser.parse_known_args(args=args)
-        s = parser.parse__args(args=args)
-        settings = vars(s)
-        # Remove None value
-        settings = dict((key,value) for key, value in settings.items() if value is not None)
-
-        self.argparser = parser
-
-        return settings
 
     def make_commands(self):
         lod = self.lod
@@ -448,6 +349,9 @@ Communicate with the data :
                     # Assume every options of expe has a flags
                     continue
                 if a.dest in e and a.dest not in args_seen:
+                    if isinstance(e[a.dest], (list, dict, tuple, set)):
+                        # Assume extra args, not relevant for expe commands
+                        continue
                     if a.nargs == 0:
                         store = e[a.dest]
                         if 'StoreTrue' in str(type(a)):
@@ -530,6 +434,11 @@ Communicate with the data :
     def pymake(self, sandbox=ExpeFormat):
         ''' Walk Trough experiments.  '''
 
+        if 'do_list' in self.expe:
+            print('Available methods for %s: ' % (sandbox))
+            print(*[m for m in dir(sandbox) if callable(getattr(sandbox, m)) and not m.startswith('__')], sep='\n')
+            exit(2)
+
         sandbox.preprocess(self)
 
         for id_expe, expe in enumerate(self.lod):
@@ -548,11 +457,11 @@ Communicate with the data :
             # Setup handler
             if hasattr(_expe, '_do') and len(_expe._do) > 0:
                 # ExpFormat task ? decorator and autoamtic argument passing ....
-                pmk = getattr(expbox, _expe._do[0])
                 do = _expe._do
+                pmk = getattr(expbox, do[0])
             else:
-                pmk = expbox
                 do = ['__call__']
+                pmk = expbox
 
             # Launch handler
             args = do[1:]
