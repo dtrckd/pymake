@@ -82,15 +82,15 @@ _Gram = [
         help='Write Fitted Model On disk.'),
 
     '-c','--corpus', dict(
-        dest='corpus',
+        nargs='*', dest='corpus',
         help='ID of the frontend data.'),
 
     '-r','--random', dict(
-        dest='corpus',
+        nargs='*', dest='corpus',
         help='Random generation of synthetic frontend  data [uniforma|alternate|cliqueN|BA].'),
 
     '-m','--model', dict(
-        dest='model',
+        nargs='*',dest='model',
         help='ID of the model.'),
 
     '-n','--N', dict(

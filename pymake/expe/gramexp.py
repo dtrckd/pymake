@@ -11,7 +11,7 @@ import args as clargs
 import argparse
 
 from .gram import _Gram
-from pymake import basestring, ExpTensor, Expe, ExpeFormat
+from pymake import basestring, ExpTensor, Expe, ExpeFormat, Model, Corpus, ExpVector
 from pymake.frontend.frontend_io import make_forest_conf, make_forest_path
 from pymake.expe.spec import _spec
 from pymake.plot import colored
@@ -80,16 +80,16 @@ class GramExp(object):
                          ]
 
     # Avoid conflict between tasks
-    _forbiden_keywords = dict(fit = ['gen_size', 'epoch', '_do', '_mode', '_type'],
-                              generate = ['iterations'])
+    _forbiden_keywords = {'fit' : ['gen_size', 'epoch', '_do', '_mode', '_type'],
+                          'generate' : ['iterations']}
 
-    _exp_default = dict(
-        host = 'localhost',
-        verbose = 20,
-        load_data = True,
-        save_data = False,
-        write = False,
-    )
+    _exp_default = {
+        'host'      : 'localhost',
+        'verbose'   : 20,
+        'load_data' : True,
+        'save_data' : False,
+        'write'     : False,
+    }
 
     def __init__(self, conf={}, usage=None, parser=None, parseargs=True):
         if parseargs is True:
@@ -108,6 +108,7 @@ class GramExp(object):
         elif isinstance(conf, ExpTensor):
             self.exp_tensor = self.exp2tensor(conf)
         elif isinstance(conf, (dict, Expe)):
+            # Assume Single Expe (type dict or Expe)
             if type(conf) is dict:
                 # @zymake ?
                 lgg.debug('warning : type dict for expe settings may be deprecated.')
@@ -195,11 +196,16 @@ class GramExp(object):
         ''' Return the tensor who is an Orderedict of iterable.
             Assume conf is an exp. Non list value will be listified.
         '''
-        if not isinstance(conf, ExpTensor):
+        if issubclass(type(conf), Corpus):
+            tensor = ExpTensor(corpus=conf)
+        elif issubclass(type(conf), Model):
+            tensor = ExpTensor(model=conf)
+        elif not isinstance(conf, ExpTensor):
             tensor = ExpTensor(conf)
         else:
             tensor = conf
-        for k, v in conf.items():
+
+        for k, v in tensor.items():
             if not issubclass(type(v), (list, set, tuple)):
                 tensor[k] = [v]
         return tensor
@@ -243,34 +249,32 @@ class GramExp(object):
     @classmethod
     def zymake(cls, request={}, usage=''):
         usage ='''\
-----------------
-Communicate with the data :
-----------------
- |   zymake -l         : (default) show available spec
- |   zymake show SPEC  : show one spec details
- |   zymake cmd SPEC [fun][*args]   : generate command-line
- |   zymake burn SPEC [fun][*args][--script ...] : parallelize tasks
- |   zymake path SPEC Filetype(pk|json|inf) [status]
-''' + '\n' + usage
+        ----------------
+        Communicate with the data :
+        ----------------
+         |   zymake -l         : (default) show available spec
+         |   zymake show SPEC  : show one spec details
+         |   zymake cmd SPEC [fun][*args]   : generate command-line
+         |   zymake burn SPEC [fun][*args][--script ...] : parallelize tasks
+         |   zymake path SPEC Filetype(pk|json|inf) [status]
+        ''' + '\n' + usage
 
         s = GramExp.parseargsexpe(usage)
         request.update(s)
 
-        ontologies = dict(
+        ontology = dict(
             _do = ('cmd', 'show','list', 'path', 'burn'),
             spec = _spec.keys(),
             _ftype = ('json', 'pk', 'inf'))
 
-        #### Making ontologie based argument attribution
         do = request.get('_do') or ['list']
-
-        if not do[0] in ontologies['_do']:
+        if not do[0] in ontology['_do']:
             # seek the files ...
             pass
         else:
             checksum = len(do)
             for i, v in enumerate(do):
-                for ont, words in ontologies.items():
+                for ont, words in ontology.items():
                     # Walktrough the ontology to find arg meaning
                     if v in words:
                         if ont == 'spec' and i > 0:
@@ -293,15 +297,15 @@ Communicate with the data :
     @classmethod
     def generate(cls, request={},  usage=''):
         usage = '''\
-----------------
-Execute scripts :
-----------------
- |   generate [method][fun][*args]  : (default) show methods
- |  -g: generative model -- evidence
- |  -p: predicted data -- model fitted
- |  --hyper-name *
- |
- ''' +'\n'+usage
+        ----------------
+        Execute scripts :
+        ----------------
+         |   generate [method][fun][*args]  : (default) show methods
+         |  -g: generative model -- evidence
+         |  -p: predicted data -- model fitted
+         |  --hyper-name *
+         |
+         ''' +'\n'+usage
 
         parser = GramExp.get_parser(usage=usage)
         parser.add_argument('--alpha', type=float)
@@ -315,9 +319,29 @@ Execute scripts :
 
         # get list of scripts/*
         # get list of method
-        ontologies = dict()
+        ontology = dict(
+            # Allowed multiple flags keywords
+            check_spec = {'corpus':Corpus, 'model':Model},
+            spec = _spec.keys(),
+        )
 
-        #### Making ontologie based argument attribution
+        # Handle spec and multiple flags arg value
+        # Too comples, better Grammat/Ast ?
+        for k in ontology['check_spec']:
+            sub_request = ExpVector()
+            for v in request.get(k, []):
+                if v in ontology['spec']:
+                    # Flag value is in specification
+                    if issubclass(type(_spec[v]), ontology['check_spec'][k]):
+                        sub_request.extend( _spec[v] )
+                    else:
+                        raise ValueError('%s not in Spec' % v)
+                else:
+                    # Multiple Flags
+                    sub_request.extend([v])
+            if sub_request:
+                request[k] = sub_request
+
         do = request.get('_do') or ['list']
         if not isinstance(do, list):
             do = [do]
@@ -449,6 +473,9 @@ Execute scripts :
             # Init Expe
             try:
                 expbox = sandbox(pt, _expe, self)
+            except FileNotFoundError as e:
+                lgg.error('ignoring %s'%e)
+                continue
             except Exception as e:
                 print(('Error during '+colored('%s', 'red')+' Initialization.') % (str(sandbox)))
                 traceback.print_exc()
@@ -466,15 +493,14 @@ Execute scripts :
             # Launch handler
             args = do[1:]
             try:
-                try:
-                    pmk(*args)
-                except Exception as e:
-                    print(('Error during '+colored('%s', 'red')+' Expe.') % (do))
-                    traceback.print_exc()
-                    exit()
+                pmk(*args)
             except KeyboardInterrupt:
                 # it's hard to detach matplotlib...
                 break
+            except Exception as e:
+                print(('Error during '+colored('%s', 'red')+' Expe.') % (do))
+                traceback.print_exc()
+                exit()
 
         return sandbox.postprocess(self)
 

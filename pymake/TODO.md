@@ -1,19 +1,20 @@
 # Code Factoring
 
-MODEL Specifivation:
+MODEL Specification:
 *  \_initialize  random init !!!!  cleanerinit of class for empty model....
 * ModelManager constructor from_model (object) (it calls \_load_model)
 
-* @readme : different example
+* @pymake : different example
     * zymake stats [spec]
-    * zymake check/generate [spec]
+    * zymake **search** [spec]
+    * zymake check/gen [spec]
     * zymake runcmd [spec] | parallel #parralisation
 
+* @expformat
+    * postprocess strategy(decorocator?) to write figs/table....
+
 ## IN DOIING
-* tabul | interface for tabulate (repeat /p2m)
 * build_corpus and build_networks are identical : wrap in DataBase
-* default VS const (argparser)???
-    * settings object (AST)
 * rename inference-\* file to \*.inf files
 * ILFM creat sampler and proper inhheritance form GibbsSampler.
 * @issue42

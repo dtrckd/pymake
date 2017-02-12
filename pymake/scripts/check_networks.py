@@ -29,7 +29,7 @@ Corpuses = _spec['CORPUS_NET_ALL']
 
 #Model = _spec.MODEL_FOR_CLUSTER_IBP
 #Model = _spec.MODEL_FOR_CLUSTER_IMMSB
-Model = ExpTensor ((
+Exp = ExpTensor ((
     ('corpus', Corpuses),
     ('data_type'    , 'networks'),
     ('refdir'        , 'debug11') , # ign in gen
@@ -51,7 +51,7 @@ config = dict(
     write = False,
     _do           = 'zipf', # homo/zipf/burstiness/pvalue
     clusters_org = 'source', # source/model
-    spec = Model
+    spec = Exp
 )
 
 class ExpeNetwork(ExpeFormat):
@@ -242,17 +242,16 @@ class ExpeNetwork(ExpeFormat):
         d, dc = degree_hist(adj_to_degree(data))
         gof = gofit(d, dc)
 
-        try:
-            #@ugly debug
-            Table = self.gramexp.Table
-            Meas = self.gramexp.Meas
-        except AttributeError:
+        if not hasattr(self.gramexp, 'Table'):
             Corpuses = list(map(_spec.name, self.gramexp.getCorpuses()))
             Meas = [ 'pvalue', 'alpha', 'x_min', 'n_tail']
             Table = np.empty((len(Corpuses), len(Meas)))
             Table = np.column_stack((Corpuses, Table))
             self.gramexp.Table = Table
             self.gramexp.Meas = Meas
+        else:
+            Table = self.gramexp.Table
+            Meas = self.gramexp.Meas
 
         for i, v in enumerate(Meas):
             Table[self.corpus_pos, i+1] = gof[v]
