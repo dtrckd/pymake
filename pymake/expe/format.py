@@ -158,9 +158,15 @@ class ExpDesign(dict, BaseObject):
             except:
                 return l
 
-class Corpus(list, BaseObject):
+class ExpVector(list, BaseObject):
+    pass
+class Corpus(ExpVector):
     def __add__(self, other):
         return Corpus(list.__add__(self, other))
+
+class Model(ExpVector):
+    def __add__(self, other):
+        return Model(list.__add__(self, other))
 
 class Expe(dict, BaseObject):
     pass
@@ -173,7 +179,10 @@ class ExpTensor(OrderedDict, BaseObject):
 
     def update_from_dict(self, d):
         for k, v in d.items():
-            self[k] = [v]
+            if issubclass(type(v), ExpVector):
+                self[k] = v
+            else:
+                self[k] = [v]
 
     def table(self, extra=[]):
         return tabulate(extra+sorted(self.items(), key=lambda x:x[0]),

@@ -3,6 +3,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
+from numpy import ma
 from pymake import ExpTensor, ModelManager, FrontendManager, GramExp, ExpeFormat
 from pymake.expe.spec import _spec
 
@@ -27,7 +28,7 @@ Generate data for answers :
 Corpuses = _spec['CORPUS_NET_ALL']
 Corpuses = _spec['CORPUS_REAL_V2']
 
-Model = ExpTensor ((
+Exp = ExpTensor ((
     ('corpus', Corpuses),
     ('data_type'    , 'networks'),
     ('refdir'        , 'debug11') , # ign in gen
@@ -105,8 +106,7 @@ class GenNetwork(ExpeFormat):
         ### Generate data
 
         if model is None:
-            lgg.error('No model for expe %s' % self.pt)
-            return
+            raise FileNotFoundError('No model for Expe at :  %s' % self.expe.output_path)
 
         Y = []
         now = Now()
@@ -156,8 +156,8 @@ class GenNetwork(ExpeFormat):
         # Local burstiness
         print ('Computing Local Preferential attachment')
         theta, phi = model.get_params()
-        limit_epoch = 50
-        limit_class = 50
+        limit_epoch = 20
+        limit_class = 20
         now = Now()
         if expe.model == 'immsb':
             ### Z assignement method #
@@ -275,14 +275,28 @@ class GenNetwork(ExpeFormat):
         N = Y[0].shape[0]
         model = self.model
 
+        if not hasattr(self.gramexp, 'tables'):
+            corpuses = list(map(_spec.name, self.gramexp.getCorpuses()))
+            models = list(map(_spec.name, self.gramexp.getModels()))
+            Meas = [ 'pvalue', 'alpha', 'x_min', 'n_tail']
+            tables = {}
+            for m in models:
+                if _type == 'local':
+                    table_shape = (len(corpuses), len(Meas), expe.K**2)
+                    table = ma.array(np.empty(table_shape), mask=np.ones(table_shape))
+                elif _type == 'global':
+                    table = np.empty((len(corpuses), len(Meas), len(Y)))
+                tables[m] = table
+            self.gramexp.Meas = Meas
+            self.gramexp.tables = tables
+            Table = tables[expe.model]
+        else:
+            Table = self.gramexp.tables[expe.model]
+            Meas = self.gramexp.Meas
+
         lgg.info('using `%s\' burstiness' % _type)
 
-        global Table
-        Meas = [ 'pvalue', 'alpha', 'x_min', 'n_tail']; headers = Meas
-        row_headers = _spec.name(Corpuses)
-
         if _type == 'global':
-            Table = globals().get('Table', np.empty((len(row_headers), len(Meas), len(Y))))
 
             ### Global degree
             d, dc, yerr = random_degree(Y)
@@ -297,14 +311,15 @@ class GenNetwork(ExpeFormat):
 
         elif _type == 'local':
             ### Z assignement method
+            theta, phi = model.get_params()
+            K = theta.shape[1]
+            limit_epoch = 5
+            limit_class = 20
             now = Now()
-            table_shape = (len(row_headers), len(Meas), K**2)
-            Table = globals().get('Table', ma.array(np.empty(table_shape), mask=np.ones(table_shape)))
-
             if expe.model == 'immsb':
                 ZZ = []
                 #for _ in [Y[0]]:
-                for _ in Y[:5]: # Do not reflect real local degree !
+                for _ in Y[:limit_epoch]: # Do not reflect real local degree !
                     Z = np.empty((2,N,N))
                     order = np.arange(N**2).reshape((N,N))
                     if frontend.is_symmetric():
@@ -324,18 +339,20 @@ class GenNetwork(ExpeFormat):
 
             clustering = 'modularity'
             comm = model.communities_analysis(data=Y[0], clustering=clustering)
-            print ('clustering method: %s, active clusters ratio: %f' % (clustering, len(comm['block_hist']>0)/float(theta.shape[1])))
+            print('clustering method: %s, active clusters ratio: %f' % (
+                clustering,
+                len(comm['block_hist']>0)/float(theta.shape[1])))
 
             local_degree_c = {}
             ### Iterate over all classes couple
-            if frontend.is_symmetric():
+            if expe.symmetric:
                 #k_perm = np.unique( map(list, map(set, itertools.product(np.unique(clusters) , repeat=2))))
                 k_perm =  np.unique(list(map(list, map(list, map(set, itertools.product(range(theta.shape[1]) , repeat=2))))))
             else:
                 #k_perm = itertools.product(np.unique(clusters) , repeat=2)
                 k_perm = itertools.product(range(theta.shape[1]) , repeat=2)
             for it_k, c in enumerate(k_perm):
-                if it_k > 20:
+                if it_k > limit_class:
                     break
                 if len(c) == 2:
                     # Stochastic Equivalence (extra class bind
@@ -378,17 +395,25 @@ class GenNetwork(ExpeFormat):
             raise NotImplementedError
 
         if self._it == self.expe_size -1:
-            # Function in (utils. ?)
-            # Mean and standard deviation
-            table_mean = np.char.array(np.around(Table.mean(2), decimals=3)).astype("|S20")
-            table_std = np.char.array(np.around(Table.std(2), decimals=3)).astype("|S20")
-            Table = table_mean + b' p2m ' + table_std
+            for _model, table in self.gramexp.tables.items():
 
-            # Table formatting
-            Table = np.column_stack((row_headers, Table))
-            tablefmt = 'latex' # 'latex'
-            print()
-            print (tabulate(Table, headers=headers, tablefmt=tablefmt, floatfmt='.3f'))
+                # Function in (utils. ?)
+                # Mean and standard deviation
+                table_mean = np.char.array(np.around(table.mean(2), decimals=3)).astype("|S20")
+                table_std = np.char.array(np.around(table.std(2), decimals=3)).astype("|S20")
+                table = table_mean + b' $\pm$ ' + table_std
+
+                # Table formatting
+                corpuses = list(map(_spec.name, self.gramexp.getCorpuses()))
+                table = np.column_stack((corpuses, table))
+                tablefmt = 'simple' # 'latex'
+                table = tabulate(table, headers=['__'+_model.upper()+'__']+Meas, tablefmt=tablefmt, floatfmt='.3f')
+                print()
+                print(table)
+                if expe.write:
+                    from private import out
+                    fn = '%s_%s' % (_model, _type)
+                    out.write_table(expe, table, _fn=fn, ext='.md')
 
     @ExpeFormat.plot
     def draw(self):
@@ -488,7 +513,7 @@ if __name__ == '__main__':
         #debug         = 'debug11'
         refdir         = 'debug111111',
         repeat        = 0,
-        spec = Model
+        spec = Exp
     )
 
     GramExp.generate(config, USAGE).pymake(GenNetwork)
