@@ -1,8 +1,8 @@
 # PYMAKE
 
 Pymake is machine-friendly platform for making reproducible research. It provides tools adapted for the creation of :
-* Complex and traceable design of experiments 
-* Models for  Machhine Learning.
+* Complex and traceable design of experiments, as a **command-line**.
+* Models and workflows for Machhine Learning, as a **framework**.
 
 This code is in a living development stage and yet unstable.
 

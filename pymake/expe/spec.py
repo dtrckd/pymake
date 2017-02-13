@@ -16,10 +16,11 @@ class Netw():
         ('generator10'    , 'Network 3' ),
         ('generator4'     , 'Network 4' ),
         ('ibp'     , 'ilfm' ),
-        ('mmsb'     , 'immsb' ),
+        ('mmsb'    , 'immsb' ),
     ))
 
     # Networks Data
+    CORPUS_REAL_NET = Corpus(['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad'])
 
     ### Bursty
     CORPUS_BURST_1     = Corpus(['generator3', 'generator11', 'generator12', 'generator7', 'generator14'])
@@ -27,11 +28,11 @@ class Netw():
     ### Non Bursty
     CORPUS_NBURST_1    = Corpus(['generator4', 'generator5', 'generator6', 'generator9', 'generator10'])
 
-    CORPUS_SYN_ICDM_1  = Corpus(['generator7', 'generator12', 'generator10', 'generator4'])
-    CORPUS_REAL_ICDM_1 = Corpus(['manufacturing', 'fb_uc',])
-    CORPUS_ALL_3 = CORPUS_SYN_ICDM_1 + CORPUS_REAL_ICDM_1
-    CORPUS_REAL_V2 = Corpus(['blogs', 'emaileu', 'propro', 'euroroad'])
-    CORPUS_NET_ALL = Corpus(['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad'])
+    CORPUS_SYN_ICDM  = Corpus(['generator7', 'generator12', 'generator10', 'generator4'])
+    CORPUS_REAL_ICDM = Corpus(['manufacturing', 'fb_uc',])
+    CORPUS_ALL_ICDM = CORPUS_SYN_ICDM + CORPUS_REAL_ICDM
+    CORPUS_REAL_PNAS = Corpus(['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro'])
+    CORPUS_ALL_PNAS = CORPUS_REAL_PNAS +  CORPUS_SYN_ICDM
 
     # Text Corpus
     # intruder ?
@@ -42,7 +43,7 @@ class Netw():
         ('data_type', ('networks',)),
         ('refdir'  , ('debug10', 'debug11')),
         #('corpus' , ('fb_uc', 'manufacturing')),
-        ('corpus' , CORPUS_ALL_3),
+        ('corpus' , CORPUS_ALL_ICDM),
         ('model'  , ('immsb', 'ibp')),
         ('K'      , (5,10,15,20)),
         ('N'      , ('all',)),
@@ -52,7 +53,7 @@ class Netw():
     ))
 
     PNAS1 = ExpTensor ((
-        ('corpus', CORPUS_REAL_V2),
+        ('corpus', CORPUS_ALL_PNAS),
         ('data_type'    , 'networks'),
         ('refdir'        , 'debug111111') , # ign in gen
         #('model'        , 'mmsb_cgs')   ,
@@ -61,13 +62,13 @@ class Netw():
         ('N'            , 'all')     , # ign in gen
         ('hyper'        , ['auto', 'fix'])    , # ign in gen
         ('homo'         , 0)         , # ign in gen
-        ('repeat'      , '0')       ,
+        ('repeat'      , 0)       ,
         ('_bind'    , ['immsb.auto', 'ibp.fix']),
         ('iterations', '200'),
     ))
 
     PNAS2 = ExpTensor ((
-        ('corpus', CORPUS_REAL_V2),
+        ('corpus', CORPUS_ALL_PNAS),
         ('data_type'    , 'networks'),
         ('refdir'        , 'pnas2') , # ign in gen
         #('model'        , 'mmsb_cgs')   ,
@@ -76,15 +77,18 @@ class Netw():
         ('N'            , 'all')     , # ign in gen
         ('hyper'        , ['fix','auto'])    , # ign in gen
         ('homo'         , 0)         , # ign in gen
-        ('repeat'      , '0')       ,
+        ('repeat'      , 0)       ,
         ('_bind'    , ['immsb.auto', 'ibp.fix']),
         ('iterations', '200'),
+        ('testset_ratio', [40, 60, 80]),
+        ('_format', '{model}_{K}_{hyper}_{homo}_{N}_{testset_ratio}')
+
     ))
 
     EXPE_ICDM_R = ExpTensor((
         ('data_type', ('networks',)),
         #('corpus' , ('fb_uc', 'manufacturing')),
-        ('corpus' , CORPUS_SYN_ICDM_1),
+        ('corpus' , CORPUS_SYN_ICDM),
         #('refdir'  , ('debug10', 'debug11')),
         ('refdir'  , ('debug101010', 'debug111111')),
         ('model'  , ('immsb', 'ibp')),
@@ -148,10 +152,10 @@ class Netw():
 
 #### Temp
 
-    EXPE_ALL_3_IBP = ExpTensor((
+    EXPE_ALL_ICDM_IBP = ExpTensor((
         ('data_type', ('networks',)),
         ('refdir'  , ('debug111111', 'debug101010')),
-        ('corpus' , CORPUS_ALL_3),
+        ('corpus' , CORPUS_ALL_ICDM),
         ('model'  , ('ibp',)),
         ('K'      , (5, 10, 15, 20)),
         ('N'      , ('all',)),
@@ -159,10 +163,10 @@ class Netw():
         ('homo'   , (0,)),
         ('repeat'   , (6, 7, 8, 9)),
     ))
-    EXPE_ALL_3_IMMSB = ExpTensor((
+    EXPE_ALL_ICDM_IMMSB = ExpTensor((
         ('data_type', ('networks',)),
         ('refdir'  , ('debug111111', 'debug101010')),
-        ('corpus' , CORPUS_ALL_3),
+        ('corpus' , CORPUS_ALL_ICDM),
         ('model'  , ('immsb',)),
         ('K'      , (5, 10, 15, 20)),
         ('N'      , ('all',)),

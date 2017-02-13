@@ -25,20 +25,19 @@ Generate data for answers :
     generate --alpha 1 --gmma 1 -n 1000 --seed
 '''
 
-Corpuses = _spec['CORPUS_NET_ALL']
-Corpuses = _spec['CORPUS_REAL_V2']
+Corpuses = _spec['CORPUS_SYN_ICDM']
 
 Exp = ExpTensor ((
     ('corpus', Corpuses),
     ('data_type'    , 'networks'),
-    ('refdir'        , 'debug11') , # ign in gen
+    ('refdir'        , 'debug111111') , # ign in gen
     #('model'        , 'mmsb_cgs')   ,
     ('model'        , ['immsb', 'ibp'])   ,
     ('K'            , 10)        ,
     ('N'            , 'all')     , # ign in gen
     ('hyper'        , 'auto')    , # ign in gen
     ('homo'         , 0)         , # ign in gen
-    ('repeat'      , '')       ,
+    ('repeat'      , 1)       ,
     #
     ('alpha', 1),
     ('gmma', 1),
@@ -110,7 +109,7 @@ class GenNetwork(ExpeFormat):
 
         Y = []
         now = Now()
-        for i in range(expe.epoch - 1):
+        for i in range(expe.epoch):
             try:
                 y = model.generate(mode=expe._mode, N=N, K=expe.K)
             except:
@@ -133,7 +132,7 @@ class GenNetwork(ExpeFormat):
 
 
     @ExpeFormat.plot
-    def burstiness(self, **kwargs):
+    def burstiness(self, _type='all', *args):
         '''Zipf Analysis
            (global burstiness) + local burstiness + feature burstiness
         '''
@@ -145,114 +144,116 @@ class GenNetwork(ExpeFormat):
         N = Y[0].shape[0]
         model = self.model
 
-        # Global burstiness
-        d, dc, yerr = random_degree(Y)
-        god = gofit(d, dc)
-        fig = plt.figure()
-        plot_degree_2((d,dc,yerr), logscale=True, title=expe.title)
+        if _type in ('global', 'all'):
+            # Global burstiness
+            d, dc, yerr = random_degree(Y)
+            god = gofit(d, dc)
+            fig = plt.figure()
+            plot_degree_2((d,dc,yerr), logscale=True, title=expe.title)
 
-        figs.append(plt.gcf())
+            figs.append(plt.gcf())
 
-        # Local burstiness
-        print ('Computing Local Preferential attachment')
-        theta, phi = model.get_params()
-        limit_epoch = 20
-        limit_class = 20
-        now = Now()
-        if expe.model == 'immsb':
-            ### Z assignement method #
-            ZZ = []
-            #for _ in [Y[0]]:
-            for _ in Y[:limit_epoch]: # Do not reflect real local degree !
-                Z = np.empty((2,N,N))
-                order = np.arange(N**2).reshape((N,N))
-                if expe.symmetric:
-                    triu = np.triu_indices(N)
-                    order = order[triu]
-                else:
-                    order = order.flatten()
-                order = zip(*np.unravel_index(order, (N,N)))
-
-                for i,j in order:
-                    Z[0, i,j] = categorical(theta[i])
-                    Z[1, i,j] = categorical(theta[j])
-                Z[0] = np.triu(Z[0]) + np.triu(Z[0], 1).T
-                Z[1] = np.triu(Z[1]) + np.triu(Z[1], 1).T
-                ZZ.append( Z )
-            lgg.info('Z formation %s second', nowDiff(now))
-
-        clustering = 'modularity'
-        comm = model.communities_analysis(data=Y[0], clustering=clustering)
-        print('clustering method: %s, active clusters ratio: %f' % (
-            clustering,
-            len(comm['block_hist']>0)/float(theta.shape[1])))
-
-        local_degree_c = {}
-        ### Iterate over all classes couple
-        if expe.symmetric:
-            #k_perm = np.unique( map(list, map(set, itertools.product(np.unique(clusters) , repeat=2))))
-            k_perm =  np.unique(list(map(list, map(list, map(set, itertools.product(range(theta.shape[1]) , repeat=2))))))
-        else:
-            #k_perm = itertools.product(np.unique(clusters) , repeat=2)
-            k_perm = itertools.product(range(theta.shape[1]) , repeat=2)
-
-        fig = plt.figure()
-        for i, c in enumerate(k_perm):
-            if i > limit_class:
-                break
-            if len(c) == 2:
-                # Stochastic Equivalence (outer class)
-                k, l = c
-            else:
-                # Comunnities (inner class)
-                k = l = c.pop()
-
-            degree_c = []
-            YY = []
+        if _type in  ('local', 'all'):
+            # Local burstiness
+            print ('Computing Local Preferential attachment')
+            theta, phi = model.get_params()
+            Y = Y[:expe.limit_gen]
+            now = Now()
             if expe.model == 'immsb':
-                for y, z in zip(Y, ZZ): # take the len of ZZ if < Y
-                    y_c = np.zeros(y.shape)
-                    phi_c = np.zeros(y.shape)
-                    # UNDIRECTED !
-                    phi_c[(z[0] == k) & (z[1] == l)] = 1
-                    y_c = y * phi_c
-                    #degree_c += adj_to_degree(y_c).values()
-                    #yerr= None
-                    YY.append(y_c)
-            elif expe.model == 'ibp': # or Corpus !
-                for y in Y:
-                    YY.append((y * np.outer(theta[:,k], theta[:,l] )).astype(int))
+                ### Z assignement method #
+                ZZ = []
+                for _ in Y:
+                #for _ in Y: # Do not reflect real local degree !
+                    Z = np.empty((2,N,N))
+                    order = np.arange(N**2).reshape((N,N))
+                    if expe.symmetric:
+                        triu = np.triu_indices(N)
+                        order = order[triu]
+                    else:
+                        order = order.flatten()
+                    order = zip(*np.unravel_index(order, (N,N)))
 
-            ## remove ,old issue
-            #if len(degree_c) == 0: continue
-            #d, dc = degree_hist(degree_c)
+                    for i,j in order:
+                        Z[0, i,j] = categorical(theta[i])
+                        Z[1, i,j] = categorical(theta[j])
+                    Z[0] = np.triu(Z[0]) + np.triu(Z[0], 1).T
+                    Z[1] = np.triu(Z[1]) + np.triu(Z[1], 1).T
+                    ZZ.append( Z )
+                lgg.info('Z formation %s second', nowDiff(now))
 
-            d, dc, yerr = random_degree(YY)
-            if len(dc) == 0: continue
-            #local_degree_c[str(k)+str(l)] = filter(lambda x: x != 0, degree_c)
-            god =  gofit(d, dc)
-            plot_degree_2((d,dc,yerr), logscale=True, colors=True, line=True,
-                         title='Local Preferential attachment (Stochastic Block)')
-        figs.append(plt.gcf())
+            clustering = 'modularity'
+            comm = model.communities_analysis(data=Y[0], clustering=clustering)
+            print('clustering method: %s, active clusters ratio: %f' % (
+                clustering,
+                len(comm['block_hist']>0)/float(theta.shape[1])))
+
+            local_degree_c = {}
+            ### Iterate over all classes couple
+            if expe.symmetric:
+                #k_perm = np.unique( map(list, map(set, itertools.product(np.unique(clusters) , repeat=2))))
+                k_perm =  np.unique(list(map(list, map(list, map(set, itertools.product(range(theta.shape[1]) , repeat=2))))))
+            else:
+                #k_perm = itertools.product(np.unique(clusters) , repeat=2)
+                k_perm = itertools.product(range(theta.shape[1]) , repeat=2)
+
+            fig = plt.figure()
+            for i, c in enumerate(k_perm):
+                if i > expe.limit_class:
+                    break
+                if len(c) == 2:
+                    # Stochastic Equivalence (outer class)
+                    k, l = c
+                else:
+                    # Comunnities (inner class)
+                    k = l = c.pop()
+
+                degree_c = []
+                YY = []
+                if expe.model == 'immsb':
+                    for y, z in zip(Y, ZZ): # take the len of ZZ if < Y
+                        y_c = np.zeros(y.shape)
+                        phi_c = np.zeros(y.shape)
+                        # UNDIRECTED !
+                        phi_c[(z[0] == k) & (z[1] == l)] = 1
+                        y_c = y * phi_c
+                        #degree_c += adj_to_degree(y_c).values()
+                        #yerr= None
+                        YY.append(y_c)
+                elif expe.model == 'ibp': # or Corpus !
+                    for y in Y:
+                        YY.append((y * np.outer(theta[:,k], theta[:,l] )).astype(int))
+
+                ## remove ,old issue
+                #if len(degree_c) == 0: continue
+                #d, dc = degree_hist(degree_c)
+
+                d, dc, yerr = random_degree(YY)
+                if len(dc) == 0: continue
+                #local_degree_c[str(k)+str(l)] = filter(lambda x: x != 0, degree_c)
+                god =  gofit(d, dc)
+                plot_degree_2((d,dc,yerr), logscale=True, colors=True, line=True,
+                             title='Local Preferential attachment (Stochastic Block)')
+            figs.append(plt.gcf())
 
         ### Blockmodel Analysis
-        plt.figure()
-        if expe.model == "immsb":
-            # Class burstiness
-            hist, label = clusters_hist(comm['clusters'])
-            bins = len(hist)
-            plt.bar(range(bins), hist)
-            plt.xticks(np.arange(bins)+0.5, label)
-            plt.xlabel('Class labels')
-            plt.title('Blocks Size (max assignement)')
-        elif expe.model == "ibp":
-            # Class burstiness
-            hist, label = sorted_perm(comm['block_hist'], reverse=True)
-            bins = len(hist)
-            plt.bar(range(bins), hist)
-            plt.xticks(np.arange(bins)+0.5, label)
-            plt.xlabel('Class labels')
-            plt.title('Blocks Size (max assignement)')
+        lgg.info('Skipping Features burstiness')
+        #plt.figure()
+        #if expe.model == "immsb":
+        #    # Class burstiness
+        #    hist, label = clusters_hist(comm['clusters'])
+        #    bins = len(hist)
+        #    plt.bar(range(bins), hist)
+        #    plt.xticks(np.arange(bins)+0.5, label)
+        #    plt.xlabel('Class labels')
+        #    plt.title('Blocks Size (max assignement)')
+        #elif expe.model == "ibp":
+        #    # Class burstiness
+        #    hist, label = sorted_perm(comm['block_hist'], reverse=True)
+        #    bins = len(hist)
+        #    plt.bar(range(bins), hist)
+        #    plt.xticks(np.arange(bins)+0.5, label)
+        #    plt.xlabel('Class labels')
+        #    plt.title('Blocks Size (max assignement)')
 
         figs.append(plt.gcf())
 
@@ -263,7 +264,7 @@ class GenNetwork(ExpeFormat):
 
     # @redondancy with burstiness !
     # in @ExpFormat.table
-    def pvalue(self, _type='global'):
+    def pvalue(self, _type='global', *args):
         """ similar to zipf but compute pvalue and print table
 
             Parameters
@@ -313,16 +314,15 @@ class GenNetwork(ExpeFormat):
             ### Z assignement method
             theta, phi = model.get_params()
             K = theta.shape[1]
-            limit_epoch = 5
-            limit_class = 20
+            Y = Y[:expe.limit_gen]
             now = Now()
             if expe.model == 'immsb':
                 ZZ = []
-                #for _ in [Y[0]]:
-                for _ in Y[:limit_epoch]: # Do not reflect real local degree !
+                for _ in Y:
+                #for _ in Y: # Do not reflect real local degree !
                     Z = np.empty((2,N,N))
                     order = np.arange(N**2).reshape((N,N))
-                    if frontend.is_symmetric():
+                    if expe.symmetric:
                         triu = np.triu_indices(N)
                         order = order[triu]
                     else:
@@ -335,7 +335,7 @@ class GenNetwork(ExpeFormat):
                     Z[0] = np.triu(Z[0]) + np.triu(Z[0], 1).T
                     Z[1] = np.triu(Z[1]) + np.triu(Z[1], 1).T
                     ZZ.append( Z )
-                ellapsed_time('Z formation', now)
+                lgg.info('Z formation %s second', nowDiff(now))
 
             clustering = 'modularity'
             comm = model.communities_analysis(data=Y[0], clustering=clustering)
@@ -352,7 +352,7 @@ class GenNetwork(ExpeFormat):
                 #k_perm = itertools.product(np.unique(clusters) , repeat=2)
                 k_perm = itertools.product(range(theta.shape[1]) , repeat=2)
             for it_k, c in enumerate(k_perm):
-                if it_k > limit_class:
+                if it_k > expe.limit_class:
                     break
                 if len(c) == 2:
                     # Stochastic Equivalence (extra class bind
@@ -491,9 +491,6 @@ class GenNetwork(ExpeFormat):
         adjshow(mat, algo)
         plt.colorbar()
 
-
-
-
 if __name__ == '__main__':
     from pymake.util.algo import gofit
     from pymake.util.math import reorder_mat, sorted_perm, categorical, clusters_hist
@@ -509,10 +506,9 @@ if __name__ == '__main__':
         #generative    = 'generative',
         _mode    = 'predictive',
         gen_size      = 1000,
-        epoch         = 20 , #20
-        #debug         = 'debug11'
-        refdir         = 'debug111111',
-        repeat        = 0,
+        epoch         = 30 , #20
+        limit_gen   = 1, # Local superposition !!!
+        limit_class   = 30,
         spec = Exp
     )
 

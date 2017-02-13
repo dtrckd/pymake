@@ -58,10 +58,8 @@ class FrontendManager(object):
         corpus = expe.get('corpus') or expe.get('random')
         corpus_typo = {
             'network': [
-                'clique', 'alternate', 'BA', # random
+                'clique', 'generator', 'graph', 'alternate', 'BA', # random
                 'facebook',
-                'generator',
-                'bench',
                 'fb_uc',
                 'manufacturing',
                 'propro',
@@ -138,7 +136,7 @@ class ModelManager(object):
         if data is None:
             return None, None
 
-        testset_ratio = self.expe.get('testset_ratio')
+        testset_ratio = int(self.expe.get('testset_ratio'))
 
         if 'text' in str(type(data)).lower():
             #if issubclass(type(data), DataBase):

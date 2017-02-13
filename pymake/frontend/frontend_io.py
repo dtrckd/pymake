@@ -98,26 +98,28 @@ def make_output_path(expe, _type=None, status=False):
     if type(expe) is Namespace:
         expe = vars(expe)
 
-    expe = defaultdict(lambda: False, expe)
+    expe = defaultdict(lambda: None, expe)
     filen = None
     base = expe['data_type']
     hook = expe.get('refdir', '')
     c = expe.get('corpus')
     if not c:
         return None, None
-    if c.startswith(('clique', 'Graph', 'generator')):
+    if c.lower().startswith(('clique', 'graph', 'generator')):
         c = c.replace('generator', 'Graph')
+        c = c.replace('graph', 'Graph')
         c = 'generator/' + c
     if 'repeat' in expe and ( expe['repeat'] is not None and expe['repeat'] is not False):
         p = os.path.join(base, c, hook, str(expe['repeat']))
     else:
         p = os.path.join(base, c, hook)
-    m  = expe.get('model')
-    k = expe['K']
-    h = expe['hyper']
-    hm = expe['homo']
-    n = expe['N']
-    t = '%s_%s_%s_%s_%s' % (m, k, h, hm,  n)
+
+    if not expe['_format']:
+        _format = '{model}_{K}_{hyper}_{homo}_{N}'
+    else:
+        _format = expe['_format']
+    t = _format.format(**expe)
+
     filen = os.path.join(p, t)
     filen = os.path.join(os.path.dirname(__file__), LOCAL_BDIR, filen)
 
@@ -201,6 +203,7 @@ def make_forest_path(lod, _type, status='f', full_path=False):
     return targets
 
 
+# Obsolete !
 def tree_hook(key, value):
     hook = False
     if key == 'corpus':
@@ -209,6 +212,7 @@ def tree_hook(key, value):
     return hook
 
 
+# Obsolete !
 def get_conf_from_file(target, mp):
     """ Return dictionary of property for an expe file.
         @mp: map parameters

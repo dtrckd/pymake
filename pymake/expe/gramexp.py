@@ -112,7 +112,8 @@ class GramExp(object):
             if type(conf) is dict:
                 # @zymake ?
                 lgg.debug('warning : type dict for expe settings may be deprecated.')
-            self.exp_tensor = self.dict2tensor(conf)
+            #self.exp_tensor = self.dict2tensor(conf)
+            self.exp_tensor = self.exp2tensor(conf)
         else:
             raise ValueError('exp/conf not understood: %s' % type(conf))
 
@@ -180,10 +181,11 @@ class GramExp(object):
         return self.exp_tensor['model']
 
     def __len__(self):
-        return reduce(operator.mul,
-                      [len(v) for v in self.exp_tensor.values()], 1)
+        #return reduce(operator.mul, [len(v) for v in self.exp_tensor.values()], 1)
+        return len(self.lod)
 
     @staticmethod
+    # deprecated
     def dict2tensor(conf):
         ''' Return the tensor who is a Orderedict of iterable.
             Assume unique expe. Every value will be listified.
@@ -243,6 +245,7 @@ class GramExp(object):
         #s, remaining = parser.parse_known_args(args=args)
         s = parser.parse_args(args=args)
         settings = dict((key,value) for key, value in vars(s).items() if value)
+        GramExp.multiple_flags(settings)
         return settings
 
     # @askseed
@@ -317,14 +320,31 @@ class GramExp(object):
         s = GramExp.parseargsexpe(parser=parser)
         request.update(s)
 
+        do = request.get('_do') or ['list']
+        if not isinstance(do, list):
+            do = [do]
+            request['_do'] = do
+
+        # Update the spec is a new one is argified
+        for a in do:
+            if a in _spec.keys() and issubclass(type(_spec[a]), ExpTensor):
+                request['spec'] = _spec[a]
+                do.remove(a)
+
+        return cls(request, usage=usage, parseargs=False)
+
+    @staticmethod
+    def multiple_flags(request):
+
         # get list of scripts/*
         # get list of method
         ontology = dict(
             # Allowed multiple flags keywords
             check_spec = {'corpus':Corpus, 'model':Model},
-            spec = _spec.keys(),
+            spec = _spec.keys()
         )
 
+        # @duplicate
         # Handle spec and multiple flags arg value
         # Too comples, better Grammat/Ast ?
         for k in ontology['check_spec']:
@@ -341,13 +361,6 @@ class GramExp(object):
                     sub_request.extend([v])
             if sub_request:
                 request[k] = sub_request
-
-        do = request.get('_do') or ['list']
-        if not isinstance(do, list):
-            do = [do]
-            request['_do'] = do
-
-        return cls(request, usage=usage, parseargs=False)
 
     # @askseed
     @classmethod
@@ -421,8 +434,8 @@ class GramExp(object):
         exit(2)
 
     def simulate(self):
-        print('Exp : %s' % self.exp_tensor.name())
-        print(self.exp_tensor.table())
+        print('%s : %d expe' % (self.exp_tensor.name(), len(self) ))
+        print(self.exptable())
         exit(2)
 
 

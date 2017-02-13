@@ -37,8 +37,7 @@ if __name__ == '__main__':
     elif zyvar['_do'] == 'burn':
         server = 'hertog, macks, fuzzy, zombie-dust, victory, racer, tiger'
     elif zyvar['_do'] == 'show':
-        print(zymake.expname())
-        print(zymake.exptable())
+        zymake.simulate()
         exit()
     elif zyvar['_do'] == 'list':
         print (_spec.table())

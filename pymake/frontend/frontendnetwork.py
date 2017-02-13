@@ -75,7 +75,7 @@ class frontendNetwork(DataBase):
         """
 
         # DB integration ?
-        if corpus_name.startswith(('generator', 'Graph')):
+        if corpus_name.startswith(('generator', 'graph')):
             format = 'graph'
         elif corpus_name in ('bench1'):
             raise NotImplementedError()
@@ -143,6 +143,14 @@ class frontendNetwork(DataBase):
         """ Construct a random mask.
             Random training set on 20% on Data / debug5 - debug11 -- Unbalanced
         """
+        if type(percent_hole) is int:
+            percent_hole = percent_hole / 100.0
+        elif type(percent_hole) is float:
+            assert(0 <= percent_hole < 1)
+        else:
+            raise ValueError('cross validation ration not understood : %s' % percent_hole)
+
+
         data = self.data
         if type(data) is np.ndarray:
             #self.data_mat = sp.sparse.csr_matrix(data)
