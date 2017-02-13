@@ -122,8 +122,12 @@ _Gram = [
         help='Name to append in data/<bdir>/<refdir>/ for th output path.'),
 
     '--testset-ratio', dict(
-        dest='testset_ratio', type=float,
-        help='testset/learnset ratio for testing.'),
+        dest='testset_ratio', type=int,
+        help='testset/learnset percentage for testing.'),
+
+    '--format', dict(
+        dest='_format', type=str,
+        help='File format for saving results and models.'),
 
     '--homo', dict(
         type=str,

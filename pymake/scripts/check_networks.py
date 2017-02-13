@@ -23,36 +23,26 @@ Inspect data on disk, for questions :
      stats      : standard measure abd stats.
 """
 
-#Corpuses = _spec.CORPUS_REAL_ICDM_1
-Corpuses = _spec['CORPUS_SYN_ICDM_1']
-Corpuses = _spec['CORPUS_NET_ALL']
+Corpuses = _spec['CORPUS_SYN_ICDM']
 
 #Model = _spec.MODEL_FOR_CLUSTER_IBP
 #Model = _spec.MODEL_FOR_CLUSTER_IMMSB
 Exp = ExpTensor ((
     ('corpus', Corpuses),
     ('data_type'    , 'networks'),
-    ('refdir'        , 'debug11') , # ign in gen
+    ('refdir'        , 'debug111111') , # ign in gen
     #('model'        , 'mmsb_cgs')   ,
     ('model'        , 'immsb')   ,
     ('K'            , 10)        ,
     ('N'            , 'all')     , # ign in gen
     ('hyper'        , 'auto')    , # ign in gen
     ('homo'         , 0)         , # ign in gen
-    ('repeat'      , '')       ,
+    ('repeat'      , '0')       ,
     #
     ('alpha', 1),
     ('gmma', 1),
     ('delta', [(1, 5)]),
 ))
-
-config = dict(
-    block_plot = False,
-    write = False,
-    _do           = 'zipf', # homo/zipf/burstiness/pvalue
-    clusters_org = 'source', # source/model
-    spec = Exp
-)
 
 class ExpeNetwork(ExpeFormat):
 
@@ -293,5 +283,13 @@ if __name__ == '__main__':
     from pymake.util.math import reorder_mat, sorted_perm
     import matplotlib.pyplot as plt
     from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2, colored, tabulate
+
+    config = dict(
+        block_plot = False,
+        write = False,
+        _do           = 'zipf', # homo/zipf/burstiness/pvalue
+        clusters_org = 'source', # source/model
+        spec = Exp
+    )
 
     GramExp.generate(config, USAGE).pymake(ExpeNetwork)

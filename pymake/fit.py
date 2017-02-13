@@ -27,7 +27,7 @@ if __name__ == '__main__':
     ))
 
     lgg.info(g.exp_tensor.table())
-    expe = g.expe
+    expe = g.lod[0]
 
     ### Load Data
     now = Now()
