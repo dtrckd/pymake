@@ -10,11 +10,12 @@ import numpy as np
 lgg = logging.getLogger('root')
 
 LOCAL_BDIR = '../../data/' # Last slash(/) necessary.
-if not os.path.exists(os.path.dirname(__file__)+'/'+LOCAL_BDIR+'networks/generator/Graph7/t0.graph') and True:
+if not os.path.exists(os.path.dirname(__file__)+'/'+LOCAL_BDIR+'networks/generator/Graph7/debug111111'):
     LOCAL_BDIR = '/media/dtrckd/TOSHIBA EXT/pymake/data/'
     if not os.path.exists(LOCAL_BDIR):
-        print ('Error Data path: %s' % LOCAL_BDIR)
-        exit()
+        LOCAL_BDIR = '/home/ama/adulac/workInProgress/networkofgraphs/process/pymake/data'
+        #print ('Error Data path: %s' % LOCAL_BDIR)
+        #exit()
 
 """
     #### I/O
@@ -25,7 +26,7 @@ if not os.path.exists(os.path.dirname(__file__)+'/'+LOCAL_BDIR+'networks/generat
     * bdir/debug/rept/model_name_parameters.json <--> DataBase
     * bdir/debug/rept/inference-model_name_parameters <--> ModelBase
 
-    Filnemame is formatted as follow:
+    Filnemame is formatted as follow by default :
     fname_out = '%s_%s_%s_%s_%s' % (self.model_name,
                                         self.K,
                                         self.hyper_optimiztn,
@@ -109,10 +110,13 @@ def make_output_path(expe, _type=None, status=False):
         c = c.replace('generator', 'Graph')
         c = c.replace('graph', 'Graph')
         c = 'generator/' + c
+
+    basedir = os.path.join(os.path.dirname(__file__), LOCAL_BDIR, base, c)
+
     if 'repeat' in expe and ( expe['repeat'] is not None and expe['repeat'] is not False):
-        p = os.path.join(base, c, hook, str(expe['repeat']))
+        p = os.path.join(hook, str(expe['repeat']))
     else:
-        p = os.path.join(base, c, hook)
+        p = os.path.join(hook)
 
     if not expe['_format']:
         _format = '{model}_{K}_{hyper}_{homo}_{N}'
@@ -120,21 +124,18 @@ def make_output_path(expe, _type=None, status=False):
         _format = expe['_format']
     t = _format.format(**expe)
 
-    filen = os.path.join(p, t)
-    filen = os.path.join(os.path.dirname(__file__), LOCAL_BDIR, filen)
+    filen = os.path.join(basedir, p, t)
 
     ext = ext_status(filen, _type)
     if ext:
         filen = ext
     else:
-        basedir = os.path.join(os.path.dirname(__file__), LOCAL_BDIR,
-                               base, c)
         filen = (basedir, filen)
 
     if status is 'f' and is_empty_file(filen):
-        filen = None
-
-    return filen
+        return  None
+    else:
+        return filen
 
 def is_empty_file(filen):
     if not os.path.isfile(filen) or os.stat(filen).st_size == 0:

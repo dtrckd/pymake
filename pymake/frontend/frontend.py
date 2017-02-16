@@ -100,6 +100,7 @@ class DataBase(object):
         expe['data_type'] = self.bdir
         self.make_output_path()
         # There is some dynamic settings
+        # Yes, use gramexp to setup path !!!
         # K, others ?
 
         if load is True:
@@ -115,6 +116,7 @@ class DataBase(object):
     def make_output_path(self):
         ''' Write Path (for models results) in global settings '''
         self.basedir, self.output_path = make_output_path(self.expe)
+        # deprecated / outputapth it setup y gramexp
         self.expe['output_path'] = self.output_path
 
     def update_spec(self, **spec):

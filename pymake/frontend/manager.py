@@ -136,7 +136,7 @@ class ModelManager(object):
         if data is None:
             return None, None
 
-        testset_ratio = int(self.expe.get('testset_ratio'))
+        testset_ratio = self.expe.get('testset_ratio')
 
         if 'text' in str(type(data)).lower():
             #if issubclass(type(data), DataBase):

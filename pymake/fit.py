@@ -18,6 +18,7 @@ if __name__ == '__main__':
         corpus = 'clique2',
         model  = 'immsb',
         hyper       = 'auto',
+        refdir      = 'debug',
         testset_ratio = 0.2,
         K           = 3,
         N           = 42,

@@ -2,12 +2,12 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys
+from collections import OrderedDict
 from functools import reduce, wraps
 import operator
 import inspect, traceback
 from copy import deepcopy
 
-import args as clargs
 import argparse
 
 from .gram import _Gram
@@ -29,8 +29,6 @@ class ExpArgumentParser(argparse.ArgumentParser):
         self.print_usage()
         print('error', message)
         #self.print_help()
-        #print()
-        #print_available_ model, datasets ?
         sys.exit(2)
 
 class GramExp(object):
@@ -64,9 +62,12 @@ class GramExp(object):
                for this entry. (see frontend.frontend_io)
                * @Todo pass rule to filter experiments...
 
-        Expe* can contains keywords :
+        Expe* can contains **special** keywords and value :
             * _bind ->  [a.b , ...] --- a shoudld occur with b only.
                 List of rules of constraintson the design.
+            * if an attribute  take the value "_null_",
+              then it will be removed from the Exp. This can be usefull when piping
+              ouptuf of pymake to some script to parallelize.
     '''
     _examples = '''Examples:
         >> Text fitting
@@ -157,8 +158,14 @@ class GramExp(object):
     def lodify(self, exp):
         ''' Make a list of Expe from tensor, with filtering '''
 
+        # PREFILTERING
+        for k in exp.copy():
+            if '_null_' in exp.get(k, []):
+                exp.pop(k)
+
         lod = make_forest_conf(exp)
 
+        # POSTFILTERING
         # Bind Rules
         itoremove = []
         for i, d in enumerate(lod):
@@ -230,7 +237,6 @@ class GramExp(object):
         parser.add_argument('--version', action='version', version='%(prog)s 0.1')
         [parser.add_argument(*r[0], **r[1]) for r in grammar]
 
-
         return parser
 
 
@@ -243,9 +249,11 @@ class GramExp(object):
         if parser is None:
             parser = GramExp.get_parser(description, usage)
         #s, remaining = parser.parse_known_args(args=args)
+
         s = parser.parse_args(args=args)
+
         settings = dict((key,value) for key, value in vars(s).items() if value)
-        GramExp.multiple_flags(settings)
+        GramExp.expVectorLookup(settings)
         return settings
 
     # @askseed
@@ -266,25 +274,31 @@ class GramExp(object):
         request.update(s)
 
         ontology = dict(
-            _do = ('cmd', 'show','list', 'path', 'burn'),
-            spec = _spec.keys(),
-            _ftype = ('json', 'pk', 'inf'))
+            _do    = ['cmd', 'show', 'path', 'burn', 'list'],
+            spec   = _spec.keys(),
+            _ftype = ['json', 'pk', 'inf']
+        )
+        ont_values = sum([w for k, w in ontology.items() if k != 'spec'] , [])
 
         do = request.get('_do') or ['list']
-        if not do[0] in ontology['_do']:
-            # seek the files ...
-            pass
-        else:
-            checksum = len(do)
-            for i, v in enumerate(do):
-                for ont, words in ontology.items():
-                    # Walktrough the ontology to find arg meaning
-                    if v in words:
-                        if ont == 'spec' and i > 0:
-                            v = _spec[v]
-                        request[ont] = v
-                        checksum -= 1
-                        break
+        checksum = len(do)
+        # No more Complex !
+        for i, v in enumerate(do):
+            for ont, words in ontology.items():
+                # Walktrough the ontology to find arg meaning
+                if v in words:
+                    if ont == 'spec':
+                        if v in ont_values:
+                            lgg.error('warning: conflict between name of ExpDesign and GramExp ontology keywords ')
+                        ont = 'spec'
+                        do.remove(v)
+                        v = _spec[v]
+                    request[ont] = v
+                    checksum -= 1
+                    break
+
+        if request.get('spec') and len(do) == 0:
+            request['_do'] = 'show'
 
         #if '-status' in clargs.grouped:
         #    # debug status of filr (path)
@@ -303,7 +317,8 @@ class GramExp(object):
         ----------------
         Execute scripts :
         ----------------
-         |   generate [method][fun][*args]  : (default) show methods
+         |   generate [method][fun][*args] [EXP]
+         |
          |  -g: generative model -- evidence
          |  -p: predicted data -- model fitted
          |  --hyper-name *
@@ -320,7 +335,7 @@ class GramExp(object):
         s = GramExp.parseargsexpe(parser=parser)
         request.update(s)
 
-        do = request.get('_do') or ['list']
+        do = request.get('_do') or ['_list']
         if not isinstance(do, list):
             do = [do]
             request['_do'] = do
@@ -334,7 +349,8 @@ class GramExp(object):
         return cls(request, usage=usage, parseargs=False)
 
     @staticmethod
-    def multiple_flags(request):
+    def expVectorLookup(request):
+        ''' set exp from spec if present '''
 
         # get list of scripts/*
         # get list of method
@@ -344,13 +360,12 @@ class GramExp(object):
             spec = _spec.keys()
         )
 
-        # @duplicate
         # Handle spec and multiple flags arg value
         # Too comples, better Grammat/Ast ?
         for k in ontology['check_spec']:
             sub_request = ExpVector()
             for v in request.get(k, []):
-                if v in ontology['spec']:
+                if v in ontology['spec'] and k in ontology['check_spec']:
                     # Flag value is in specification
                     if issubclass(type(_spec[v]), ontology['check_spec'][k]):
                         sub_request.extend( _spec[v] )
@@ -448,8 +463,9 @@ class GramExp(object):
         elif level == 2:
             print ('what level of verbosity heeere ?')
             exit(2)
+        elif level == -1:
+            level = logging.ERROR
         else:
-            # make a --silent option for juste error and critial log ?
             level = logging.INFO
 
         # Get logger
@@ -467,13 +483,35 @@ class GramExp(object):
 
         return logger
 
+    @staticmethod
+    def tb_expeformat(sandbox):
+        signatures = []
+        for m in dir(sandbox):
+            if not callable(getattr(sandbox, m)) or m.startswith('__') or hasattr(ExpeFormat, m):
+                continue
+            sgn = inspect.signature(getattr(sandbox, m))
+            d = [v for k,v in sgn.parameters.items() if k != 'self'] or []
+            signatures.append((m, d))
+        return signatures
+
+    @staticmethod
+    def functable(obj):
+        lines = []
+        for m in  GramExp.tb_expeformat(obj):
+            name = m[0]
+            opts = ['%s [%s]'% (o.name, o.default) for o in m[1] if o]
+            opts = ' '.join(opts)
+            line = name + ' ' + opts
+            lines.append(line)
+        return lines
+
     # @do parralize
     def pymake(self, sandbox=ExpeFormat):
         ''' Walk Trough experiments.  '''
 
         if 'do_list' in self.expe:
             print('Available methods for %s: ' % (sandbox))
-            print(*[m for m in dir(sandbox) if callable(getattr(sandbox, m)) and not m.startswith('__')], sep='\n')
+            print(*self.functable(sandbox) , sep='\n')
             exit(2)
 
         sandbox.preprocess(self)

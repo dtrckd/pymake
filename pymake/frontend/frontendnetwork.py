@@ -143,13 +143,13 @@ class frontendNetwork(DataBase):
         """ Construct a random mask.
             Random training set on 20% on Data / debug5 - debug11 -- Unbalanced
         """
-        if type(percent_hole) is int:
+        percent_hole = float(percent_hole)
+        if percent_hole > 1:
             percent_hole = percent_hole / 100.0
-        elif type(percent_hole) is float:
-            assert(0 <= percent_hole < 1)
+        elif 0 <= percent_hole < 1:
+            pass
         else:
             raise ValueError('cross validation ration not understood : %s' % percent_hole)
-
 
         data = self.data
         if type(data) is np.ndarray:
@@ -221,7 +221,6 @@ class frontendNetwork(DataBase):
             except ValueError:
                 K = 42
             data = getClique(N, K=K)
-            #G = nx.from_numpy_matrix(data, nx.Graph())
             #Data = nx.adjacency_matrix(G, np.random.permutation(range(N))).A
         elif rnd in ('BA', 'barabasi-albert'):
             data = nx.adjacency_matrix(nx.barabasi_albert_graph(N, m=13) ).A
@@ -483,7 +482,7 @@ class frontendNetwork(DataBase):
                 'size': len(block_hist)}
 
 
-    def GG(self):
+    def getG(self):
         if not hasattr(self, 'G'):
             if self.is_symmetric():
                 # Undirected Graph
@@ -491,24 +490,32 @@ class frontendNetwork(DataBase):
             else:
                 # Directed Graph
                 typeG = nx.DiGraph()
-            self.G = nx.from_numpy_matrix(self.data, typeG)
+            self.G = nx.from_numpy_matrix(self.data, create_using=typeG)
             #self.G = nx.from_scipy_sparse_matrix(self.data, typeG)
         return self.G
+
+    def to_directed(self):
+        ''' Return self verion of graph wehre all links are flatened '''
+        if self.is_symmetric():
+            return self.getG()
+        else:
+            # nx to_undirected nedd a linkks in both side.
+            return nx.from_numpy_matrix(self.data, create_using=nx.Graph())
 
     #
     # Get Statistics
     #
 
     def nodes(self):
-        g = self.GG()
+        g = self.getG()
         return g.number_of_nodes()
 
     def edges(self):
-        g = self.GG()
+        g = self.getG()
         return g.number_of_edges()
 
     def diameter(self):
-        g = self.GG()
+        g = self.getG()
         try:
             diameter = nx.diameter(g)
         except:
@@ -516,14 +523,14 @@ class frontendNetwork(DataBase):
         return diameter
 
     def density(self):
-        g = self.GG()
+        g = self.getG()
         return nx.density(g)
 
     def modularity(self):
         part =  self.get_partition()
         if not part:
             return None
-        g = self.GG()
+        g = self.getG()
         try:
             modul = pylouvain.modularity(part, g)
         except NameError:
@@ -533,9 +540,9 @@ class frontendNetwork(DataBase):
         return modul
 
     def clustering_coefficient(self):
-        G = self.GG()
+        g = self.getG()
         try:
-            cc = nx.average_clustering(G)
+            cc = nx.average_clustering(g)
         except:
             cc = None
         return cc
@@ -560,12 +567,12 @@ class frontendNetwork(DataBase):
     #    and the feature for local analysis
 
     def degree(self):
-        G = self.GG()
-        return nx.degree(G)
+        g = self.getG()
+        return nx.degree(g)
 
     def degree_histogram(self):
-        G = self.GG()
-        return nx.degree_histogram(G)
+        g = self.getG()
+        return nx.degree_histogram(g)
 
     def get_nfeat(self):
         nfeat = self.data.max() + 1
@@ -574,6 +581,13 @@ class frontendNetwork(DataBase):
             nfeat = 2
         return nfeat
 
+    def get_params(self):
+        clusters = self.get_clusters()
+        K = max(clusters)+1
+        N = len(clusters)
+        theta = np.zeros((N,K))
+        theta[np.arange(N),clusters] = 1
+        return theta, None
 
     def get_clusters(self):
         return self.clusters
@@ -582,8 +596,8 @@ class frontendNetwork(DataBase):
         clusters = self.clusters or clusters
         if not clusters:
             return {}
-        K = len(clusters)
-        return dict(zip(*[np.arange(K), clusters]))
+        N = len(clusters)
+        return dict(zip(*[np.arange(N), clusters]))
 
     def clusters_len(self):
         clusters = self.get_clusters()
@@ -650,7 +664,9 @@ class frontendNetwork(DataBase):
             sim = np.dot(cluster.T,cluster)
         elif sim == 'comm':
             N = len(self.clusters)
-            sim = np.repeat(np.array(self.clusters)[np.newaxis], N, 0)
+            #sim = np.repeat(np.array(self.clusters)[np.newaxis], N, 0)
+            theta , _ = self.get_params()
+            sim = theta.dot(theta.T)
             sim = (sim == sim.T)*1
             sim[sim < 1] = -1
         elif sim == 'euclide_old':

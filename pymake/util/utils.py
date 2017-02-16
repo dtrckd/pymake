@@ -192,8 +192,7 @@ def nxG(y):
         else:
             # Directed Graph
             typeG = nx.DiGraph()
-        G = nx.from_numpy_matrix(y, typeG)
+        G = nx.from_numpy_matrix(y, create_using=typeG)
     else:
         G = y
-
     return G

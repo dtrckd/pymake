@@ -1,33 +1,16 @@
 # PYMAKE
 
 Pymake is machine-friendly platform for making reproducible research. It provides tools adapted for the creation of :
-* Complex and traceable design of experiments, as a **command-line**.
+* Complex and traceable design of experiments, as a **command-line** interface.
 * Models and workflows for Machhine Learning, as a **framework**.
 
 This code is in a living development stage and yet unstable.
 
-### Zen
 
-If a good (scientific) library do the job, wrap it:
-* numpy
-* networkx
-* scikit-learn
-* nltk
-* tensorflow (to complete)
-* pyspark (to complete)
-
-### Logic
-
-Once an experiment is designed, we deploy it using two scripts :
-
-*  `zymake` to create the uniq experiment command for each of them,
-*  `pysinc` to parralelize the jobs.
-
-#### Usage
-###### Zymake
+### Usage
 Script to create the path and commands for a design of experiments :
 
-    from pymake.zymake import Zymake
+    from pymake import Gramexp, Zymake
     # Fit a Gaussian mixtures on a text corpus...
 
     Expe_ID = dict(model = 'kmeans++',
@@ -37,21 +20,27 @@ Script to create the path and commands for a design of experiments :
             repeat = range(10))
 
     # Only the first epoch/repeat here.
-    data, model = Zymake(spec)
+    gram = Gramexp(Expe_ID)
     model.fit(data)
     model.predict()
 
+List design of experiments :
+
+    pymake -l
+
+Show one experiments :
+
+    pymake show ExpeID
+
 
 ###### Run experiments
-    zymake runcmd EXPE_ID | parralle [opt]  # to make run a list of experience in parallel
+With parallell :
 
-or equivalently :
+    zymake cmd ExpTensor | parralle [opt]  # to make run a list of experience in parallel
 
-      pyrallel.sh EXPE_ID [nb CORES]
 
 ######  Results Analysis
-    zymake path EXPE_ID json | some_matplotlib_script.py  # plot some results
-    expe_meas.py EXPE_ID    #  Create a table of results
+    zymake --script ExpeDesign
 
 
 ### Directory Tree

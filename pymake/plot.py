@@ -184,7 +184,6 @@ def plot_degree(y, spec=False,logscale=True, title=None, ax=None):
         ax.set_ylim((.9,1e3))
         ax.set_xlabel('Degree')
         ax.set_ylabel('Counts')
-        ax.legend()
 
 def plor_degree_polygof(y, gof):
     # I dunno structore for plot ?
@@ -196,7 +195,7 @@ def plot_degree_poly(y, scatter=True, spec=True, title=None, ax=None,label='', l
     # To convert normalized degrees to raw degrees
     #ba_c = {k:int(v*(len(ba_g)-1)) for k,v in ba_c.iteritems()}
     ba_c = adj_to_degree(y)
-    d, dc = degree_hist(ba_c)
+    d, dc = degree_hist(ba_c, filter_zeros=True)
 
     ### Matplotlib
     if ax is None:
@@ -245,6 +244,12 @@ def plot_degree_2(P, logscale=False, colors=False, line=False, ax=None, title=No
         ax = plt.gca()
 
     x, y, yerr = P
+    y = ma.array(y)
+    for i, v in enumerate(y):
+        if v == 0:
+            y[i] = ma.masked
+        else:
+            break
 
     c = next(_colors) if colors else 'b'
     m = next(_markers) if colors else 'o'

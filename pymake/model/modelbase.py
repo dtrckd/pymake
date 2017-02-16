@@ -390,7 +390,6 @@ class GibbsSampler(ModelBase):
 
     def predictMask(self, data, mask=True):
         lgg.info('Reducing latent variables...')
-        theta, phi = self.get_params()
 
         if mask is True:
             masked = self.get_mask()
@@ -402,7 +401,7 @@ class GibbsSampler(ModelBase):
 
         ground_truth = data[masked]
 
-        p_ji = self.likelihood(theta, phi)
+        p_ji = self.likelihood(self.get_params())
         prediction = p_ji[masked]
         prediction = sp.stats.bernoulli.rvs( prediction )
         #prediction[prediction >= 0.5 ] = 1

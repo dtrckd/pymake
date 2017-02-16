@@ -3,84 +3,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import traceback
 import numpy as np
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from pymake.plot import colored, display, tabulate
+from decorator import decorator
 
 import logging
 lgg = logging.getLogger('root')
 
-
-def homo(self, _type='pearson', _sim='latent'):
-    """ Hmophily test -- table output
-        Parameters
-        ==========
-        _type: similarity type in (contengency, pearson)
-        _sim: similarity metric in (natural, latent)
-    """
-    expe = self.expe
-    Y = self._Y
-    N = Y[0].shape[0]
-    model = self.model
-
-    lgg.info('using `%s\' type' % _type)
-    lgg.info('using `%s\' similarity' % _sim)
-    force_table_print = False
-
-    # class / self !
-    global Table
-
-    if _type == 'pearson':
-        # No variance for link expecation !!!
-        Y = [Y[0]]
-
-        Meas = [ 'pearson coeff', '2-tailed pvalue' ]; headers = Meas
-        row_headers = _spec.name(self.gramexp.getCorpuses())
-        Table = globals().get('Table', np.empty((len(row_headers), len(Meas), len(Y))))
-
-        ### Global degree
-        d, dc, yerr = random_degree(Y)
-        sim = model.similarity_matrix(sim=_sim)
-        #plot(sim, title='Similarity', sort=True)
-        #plot_degree(sim)
-        for it_dat, data in enumerate(Y):
-
-            #homo_object = data
-            homo_object = model.likelihood()
-
-            Table[corpus_pos, :,  it_dat] = sp.stats.pearsonr(homo_object.flatten(), sim.flatten())
-
-    elif _type == 'contingency':
-        force_table_print = True
-        Meas = [ 'esij', 'vsij' ]; headers = Meas
-        row_headers = ['Non Links', 'Links']
-        Table = globals().get('Table', np.empty((len(row_headers), len(Meas), len(Y))))
-
-        ### Global degree
-        d, dc, yerr = random_degree(Y)
-        sim = model.similarity_matrix(sim=_sim)
-        for it_dat, data in enumerate(Y):
-
-            #homo_object = data
-            homo_object = model.likelihood()
-
-            Table[0, 0,  it_dat] = sim[data == 0].mean()
-            Table[1, 0,  it_dat] = sim[data == 1].mean()
-            Table[0, 1,  it_dat] = sim[data == 0].var()
-            Table[1, 1,  it_dat] = sim[data == 1].var()
-
-    if self._it == self.expe_size -1:
-        # Function in (utils. ?)
-        # Mean and standard deviation
-        table_mean = np.char.array(np.around(Table.mean(2), decimals=3)).astype("|S20")
-        table_std = np.char.array(np.around(Table.std(2), decimals=3)).astype("|S20")
-        Table = table_mean + b' p2m ' + table_std
-
-        # Table formatting
-        Table = np.column_stack((row_headers, Table))
-        tablefmt = 'latex' # 'latex'
-        print()
-        print( tabulate(Table, headers=headers, tablefmt=tablefmt, floatfmt='.3f'))
-        del Table
 
 
 ### Base Object
@@ -147,16 +76,15 @@ class ExpDesign(dict, BaseObject):
         return sep[1:]+sep.join(raw)
 
     def name(self, l):
-        if not hasattr(self, '_mapname'):
+        if '_mapname' in self:
+            mapname =  self['_mapname']
+        else:
             return l
 
         if isinstance(l, (set, list, tuple)):
-            return [ self._mapname[i] for i in l ]
+            return [ mapname.get(i, i) for i in l ]
         else :
-            try:
-                return self._mapname[l]
-            except:
-                return l
+            return mapname.get(l, l)
 
 class ExpVector(list, BaseObject):
     pass
@@ -218,6 +146,16 @@ class ExpeFormat(object):
         block = not conf.get('save_plot', False)
         display(block=block)
 
+    @staticmethod
+    @decorator
+    def plot(fun, *args, **kwargs):
+        self = args[0]
+        expe = self.expe
+        f = fun(*args, **kwargs)
+        if hasattr(expe, 'block_plot') and getattr(self, 'noplot', False) is not True:
+            display(block=expe.block_plot)
+        return f
+
     @classmethod
     def preprocess(cls, gramexp):
         # @here try to read the decorator that were called
@@ -238,15 +176,6 @@ class ExpeFormat(object):
         #   etc..
         cls.display(gramexp.expe)
 
-    @staticmethod
-    def plot(fun):
-        def wrapper(*args, **kwargs):
-            expe = args[0].expe
-            f = fun(*args, **kwargs)
-            if hasattr(expe, 'block_plot'):
-                display(block=expe.block_plot)
-            return f
-        return wrapper
 
 
     def __call__(self):
