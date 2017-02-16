@@ -1,5 +1,13 @@
 # Code Factoring
 
+@init
+* if no _spec 'print help'
+    * pmk init [project]
+    -> results
+    -> data
+    -> spec.py
+    -> simple.py
+
 MODEL Specification:
 *  \_initialize  random init !!!!  cleanerinit of class for empty model....
 * ModelManager constructor from_model (object) (it calls \_load_model)

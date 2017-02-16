@@ -515,9 +515,16 @@ class IBPGibbsSampling(IBP, GibbsSampler):
 
     def likelihood(self, theta=None, phi=None):
         if theta is None:
-            theta = self.theta
+            # __future__ do getTheta() : return self._Z, _W
+            try:
+                theta = self.theta
+            except:
+                theta = self._Z
         if phi is None:
-            phi = self.phi
+            try:
+                phi = self.phi
+            except:
+                phi = self._W
         bilinear_form = theta.dot(phi).dot(theta.T)
         likelihood = 1 / (1 + np.exp(- self._sigb * bilinear_form))
         return likelihood
@@ -553,6 +560,8 @@ class IBPGibbsSampling(IBP, GibbsSampler):
         return y_test, probas
 
     def get_mask(self):
+        # future remove
+        return self._Y.mask
         # future remove
         try:
             return self.mask

@@ -3,6 +3,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
+from numpy import ma
 from pymake import ExpTensor, ModelManager, FrontendManager, GramExp, ExpeFormat
 from pymake.expe.spec import _spec
 
@@ -37,7 +38,7 @@ Exp = ExpTensor ((
     ('N'            , 'all')     , # ign in gen
     ('hyper'        , 'auto')    , # ign in gen
     ('homo'         , 0)         , # ign in gen
-    ('repeat'      , '0')       ,
+    ('repeat'      , 0)       ,
     #
     ('alpha', 1),
     ('gmma', 1),
@@ -46,8 +47,31 @@ Exp = ExpTensor ((
 
 class ExpeNetwork(ExpeFormat):
 
+    def init_fit_tables(self, _type, Y=[]):
+        expe = self.expe
+        if not hasattr(self.gramexp, 'tables'):
+            corpuses = _spec.name(self.gramexp.getCorpuses())
+            models = self.gramexp.getModels()
+            Meas = [ 'pvalue', 'alpha', 'x_min', 'n_tail']
+            tables = {}
+            for m in models:
+                if _type == 'local':
+                    table_shape = (len(corpuses), len(Meas), expe.K**2)
+                    table = ma.array(np.empty(table_shape), mask=np.ones(table_shape))
+                elif _type == 'global':
+                    table = np.empty((len(corpuses), len(Meas), len(Y)))
+                tables[m] = table
+            self.gramexp.Meas = Meas
+            self.gramexp.tables = tables
+            Table = tables[expe.model]
+        else:
+            Table = self.gramexp.tables[expe.model]
+            Meas = self.gramexp.Meas
+
+        return Table, Meas
+
     @ExpeFormat.plot
-    def zipf(self, **kwargs):
+    def zipf(self, clusters_org='source'):
         ''' Zipf Analysis
             Local/Global Preferential attachment effect analysis
         '''
@@ -55,29 +79,26 @@ class ExpeNetwork(ExpeFormat):
         frontend = FrontendManager.load(expe)
         data_r = frontend.data
 
-        ### Get the Class/Cluster and local degree information
+        #
+        # Get the Class/Cluster and local degree information
+        # Reordering Adjacency Mmatrix based on Clusters/Class/Communities
+        #
         clusters = None
         K = None
-        try:
-            msg =  'Getting Cluster from Dataset.'
+        if clusters_org == 'source':
             clusters = frontend.get_clusters()
-            if config.get('clusters_org') == 'model':
-                if clusters is not None:
-                    class_hist = np.bincount(clusters)
-                    K = (class_hist != 0).sum()
-                raise TypeError
-        except TypeError:
-            msg =  'Getting Latent Classes from Latent Models %s' % expe.model
+            if clusters is not None:
+                class_hist = np.bincount(clusters)
+                K = (class_hist != 0).sum()
+        elif clusters_org == 'model':
             model = ModelManager.from_expe(expe)
-            clusters = model.get_clusters(K, skip=1)
+            #clusters = model.get_clusters(K, skip=1)
             #clusters = model.get_communities(K)
-        except Exception as e:
-            msg = 'Skypping reordering adjacency matrix: %s' % e
+            clusters = Louvain.get_clusters(frontend.data)
 
-        ### Reordering Adjacency Mmatrix based on Clusters/Class/Communities
         if clusters is not None:
-            print ('Reordering Adj matrix from `%s\':' % config.get('clusters_org'))
-            print ('corpus: %s/%s, %s, Clusters size: %s' % (expe.corpus, _spec.name(expe.corpus), msg, K))
+            print ('Reordering Adj matrix from `%s\':' % clusters_org)
+            print ('corpus: %s/%s, Clusters size: %s' % (expe.corpus, _spec.name(expe.corpus),  K))
             data_r = reorder_mat(data_r, clusters)
         else:
             print( 'corpus: %s/%s, No Reordering !' % (expe.corpus, _spec.name(expe.corpus)))
@@ -100,7 +121,7 @@ class ExpeNetwork(ExpeFormat):
         plot_degree_poly(data_r)
 
     @ExpeFormat.plot
-    def burstiness(self, **kwargs):
+    def burstiness(self, clusters_org='source'):
         '''Zipf Analisis
            (global burstiness) + local burstiness + feature burstiness
         '''
@@ -110,10 +131,10 @@ class ExpeNetwork(ExpeFormat):
         figs = []
 
         # Global burstiness
-        d, dc = degree_hist(adj_to_degree(data))
+        d, dc = degree_hist(adj_to_degree(data), filter_zeros=True)
         gof = gofit(d, dc)
         fig = plt.figure()
-        plot_degree(data, spec=True, title=expe.corpus)
+        plot_degree(data, spec=True, title=_spec.name(expe.corpus))
         #plot_degree_poly(data, spec=True, title=expe.corpus)
 
         alpha = gof['alpha']
@@ -143,7 +164,6 @@ class ExpeNetwork(ExpeFormat):
         poly_fit = fit[0] *np.log(d) + fit[1]
         diff = np.abs(poly_fit[-1] - np.log(ylin[-1]))
         ylin = np.exp( np.log(ylin) + diff*0.75)
-
         #\#
 
         plt.plot(x, ylin , 'g--', label='power %.2f' % alpha)
@@ -151,31 +171,34 @@ class ExpeNetwork(ExpeFormat):
 
         # Local burstiness
 
-        ### Get the Class/Cluster and local degree information
-        try:
-            msg =  'Getting Cluster from Dataset.'
+        Table,Meas = self.init_fit_tables(_type='local')
+
+        #
+        # Get the Class/Cluster and local degree information
+        # Reordering Adjacency Mmatrix based on Clusters/Class/Communities
+        #
+        clusters = None
+        K = None
+        if clusters_org == 'source':
             clusters = frontend.get_clusters()
-            if config.get('clusters_org') == 'model':
-                if clusters is not None:
-                    class_hist = np.bincount(clusters)
-                    K = (class_hist != 0).sum()
-                raise TypeError
-        except TypeError:
-            msg =  'Getting Latent Classes from Latent Models %s' % expe.model
+            if clusters is not None:
+                class_hist = np.bincount(clusters)
+                K = (class_hist != 0).sum()
+        elif clusters_org == 'model':
             model = ModelManager.from_expe(expe)
-            clusters = model.get_clusters(K, skip=1)
+            #clusters = model.get_clusters(K, skip=1)
             #clusters = model.get_communities(K)
-        except Exception as e:
-            msg = 'Skypping reordering adjacency matrix: %s' % e
+            clusters = Louvain.get_clusters(frontend.to_directed(), resolution=10)
+            if len(np.unique(clusters)) > 20 or True:
+                clusters = Annealing(frontend.data, iterations=200, C_init=5, grow_rate=0).search()
 
         if clusters is None:
             lgg.error('No clusters here...passing')
             return
-
-        comm = frontend.communities_analysis()
-        K = len(comm['block_hist'])
-
-        print ('clusters ground truth: %s' % ( comm['block_hist']))
+        else:
+            block_hist = np.bincount(clusters)
+            K = len(block_hist)
+            lgg.info('%d Clusters from `%s\':' % (K, clusters_org))
 
         #data_r, labels= reorder_mat(data, clusters, labels=True)
 
@@ -184,9 +207,11 @@ class ExpeNetwork(ExpeFormat):
         f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, sharex=True)
 
         # assume symmetric
+        it_k = 0
+        np.fill_diagonal(data, 0)
         for l in np.arange(K):
             for k in np.arange(K):
-                if k > l :
+                if k > l:
                     continue
 
                 ixgrid = np.ix_(clusters == k, clusters == l)
@@ -204,12 +229,22 @@ class ExpeNetwork(ExpeFormat):
                     ax = ax2
 
                 d, dc = degree_hist(adj_to_degree(y))
+                if len(d) == 0: continue
                 plot_degree_2((d,dc,None), logscale=True, colors=True, line=True, ax=ax, title=title)
+
+                gof =  gofit(d, dc)
+                if not gof:
+                    continue
+
+                for i, v in enumerate(Meas):
+                    Table[self.corpus_pos, i, it_k] = gof[v] #* y.sum() / TOT
+                it_k += 1
+
         figs.append(plt.gcf())
 
         # Class burstiness
         plt.figure()
-        hist, label = sorted_perm(comm['block_hist'], reverse=True)
+        hist, label = sorted_perm(block_hist, reverse=True)
         bins = len(hist)
         plt.bar(range(bins), hist)
         plt.xticks(np.arange(bins)+0.5, label)
@@ -220,7 +255,26 @@ class ExpeNetwork(ExpeFormat):
         if expe.write:
             from private import out
             out.write_figs(expe, figs)
-            return
+
+        if self._it == self.expe_size -1:
+            for _model, table in self.gramexp.tables.items():
+
+                # Mean and standard deviation
+                table_mean = np.char.array(np.around(table.mean(2), decimals=3)).astype("|S20")
+                table_std = np.char.array(np.around(table.std(2), decimals=3)).astype("|S20")
+                table = table_mean + b' $\pm$ ' + table_std
+
+                # Table formatting
+                corpuses = _spec.name(self.gramexp.getCorpuses())
+                table = np.column_stack((_spec.name(corpuses), table))
+                tablefmt = 'simple'
+                table = tabulate(table, headers=['__'+_model.upper()+'__']+Meas, tablefmt=tablefmt, floatfmt='.3f')
+                print()
+                print(table)
+                #if expe.write:
+                #    from private import out
+                #    fn = '%s' % (clusters_org)
+                #    out.write_table(expe, table, _fn=fn, ext='.md')
 
     # in @ExpFormat.table
     def pvalue(self, **kwargs):
@@ -229,14 +283,14 @@ class ExpeNetwork(ExpeFormat):
         frontend = FrontendManager.load(expe)
         data = frontend.data
 
-        d, dc = degree_hist(adj_to_degree(data))
+        d, dc = degree_hist(adj_to_degree(data), filter_zeros=True)
         gof = gofit(d, dc)
 
         if not hasattr(self.gramexp, 'Table'):
-            Corpuses = list(map(_spec.name, self.gramexp.getCorpuses()))
+            corpuses = _spec.name(self.gramexp.getCorpuses())
             Meas = [ 'pvalue', 'alpha', 'x_min', 'n_tail']
-            Table = np.empty((len(Corpuses), len(Meas)))
-            Table = np.column_stack((Corpuses, Table))
+            Table = np.empty((len(corpuses), len(Meas)))
+            Table = np.column_stack((corpuses, Table))
             self.gramexp.Table = Table
             self.gramexp.Meas = Meas
         else:
@@ -247,7 +301,7 @@ class ExpeNetwork(ExpeFormat):
             Table[self.corpus_pos, i+1] = gof[v]
 
         if self._it == self.expe_size -1:
-            tablefmt = 'latex' # 'latex'
+            tablefmt = 'latex'
             print(colored('\nPvalue Table:', 'green'))
             print (tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
 
@@ -262,10 +316,10 @@ class ExpeNetwork(ExpeFormat):
             Table = self.gramexp.Table
             Meas = self.gramexp.Meas
         except AttributeError:
-            Corpuses = list(map(_spec.name, self.gramexp.getCorpuses()))
+            corpuses = _spec.name(self.gramexp.getCorpuses())
             Meas = [ 'nodes', 'edges', 'density']
-            Table = np.empty((len(Corpuses), len(Meas)))
-            Table = np.column_stack((Corpuses, Table))
+            Table = np.empty((len(corpuses), len(Meas)))
+            Table = np.column_stack((corpuses, Table))
             self.gramexp.Table = Table
             self.gramexp.Meas = Meas
 
@@ -274,12 +328,12 @@ class ExpeNetwork(ExpeFormat):
             Table[self.corpus_pos, i+1] = getattr(frontend, v)()
 
         if self._it == self.expe_size -1:
-            tablefmt = 'latex' # 'latex'
+            tablefmt = 'simple' # 'latex'
             print(colored('\nStats Table :', 'green'))
             print (tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
 
 if __name__ == '__main__':
-    from pymake.util.algo import gofit
+    from pymake.util.algo import gofit, Louvain, Annealing
     from pymake.util.math import reorder_mat, sorted_perm
     import matplotlib.pyplot as plt
     from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2, colored, tabulate

@@ -18,8 +18,8 @@ lgg = logging.getLogger('root')
 # frontend -- data copy -- integration ?
 
 class Algo(object):
-    def __init__(self, **kwargs):
-        super(Algo, self).__init__(**kwargs)
+    def __init__(self, *args, **kwargs):
+        pass
 
     def get_clusters(self, state=dict(), true_order=True):
         """ return cluster of each element in the original order:
@@ -50,6 +50,7 @@ except:
     pass
 
 class Louvain(Algo):
+    # Ugh : structure ?
     def __init__(self, data, iterations=100, **kwargs):
         super(Louvain, self).__init__(**kwargs)
         #nxG do a copy of data ?
@@ -59,13 +60,22 @@ class Louvain(Algo):
     def search(self):
         g = nxG(self.data)
         self._partition = pylouvain.best_partition(g, resolution=1)
-        return self._partition.values()
+        return list(self._partition.values())
 
     def partition(self):
         return self._partition
 
-    def get_clusters(self):
-        return self._partition.values()
+    def _get_clusters(self):
+        return list(self._partition.values())
+
+    @staticmethod
+    def get_clusters(data, resolution=0.5):
+        g = nxG(data)
+        _partition = pylouvain.best_partition(g, resolution=resolution)
+        _c = list(_partition.values())
+        c_i = list(np.unique(_c))
+        clusters = [c_i.index(v) for v in _c]
+        return clusters
 
 
 #import warnings
@@ -96,11 +106,15 @@ class Annealing(Algo):
             Number of clusters at start
         iterations: int
             Iterations for boundary search
+        grow_rate : int
+            Number of clusters to add a each super-iteration
+            if 0, just one super-iteration.
     """
 
-    def __init__(self, data, iterations=200, C_init=2):
+    def __init__(self, data, iterations=200, C_init=2, grow_rate=1):
         super(Annealing, self).__init__(data=data)
         self.data = data.copy()
+        self.grow_rate = grow_rate
         # Number of initial classes
         self.K = data.shape[0]
         # Keep track of class labels
@@ -144,7 +158,7 @@ class Annealing(Algo):
         return [np.arange(B[i], B[i+1]) for i in range(C)]
 
     def modularity(self, state=dict()):
-        g = self.GG()
+        g = self.getG()
         part = self.partition(state)
         modul = pylouvain.modularity(part, g)
         return modul
@@ -160,7 +174,7 @@ class Annealing(Algo):
         # Inner Energy
         #blocks = [ np.ix_(*[slice]*2) for slice in pi ]
         diag_blocks = [data[np.ix_(*[slice]*2)] for slice in pi]
-        I, L_i = np.asarray(zip(* [(a.sum(), float(a.size)) for a in diag_blocks]))
+        I, L_i = np.asarray(list(zip(* [(a.sum(), float(a.size)) for a in diag_blocks])))
 
         # Outer Energy
         O = []
@@ -321,7 +335,7 @@ class Annealing(Algo):
             E_new = self.energy(state)
             #if E_new > self.E :
             if E_new > self.E or self.anneal_transition(E_new, it):
-                print ('acceptance %f, %f' %( E_new, self.E))
+                print (' acceptance %f, %f' %( E_new, self.E))
                 self.set_state(state)
                 self.E = self.concentrate_clases()
                 print ('total Energy %f, B: %s' % (self.E, self.B))
@@ -338,12 +352,12 @@ class Annealing(Algo):
             self.sample_B()
 
             #break
-            if self.E > E_old:
+            if self.E > E_old and self.grow_rate > 0:
                 ### Insert new cluster or keep the current state
                 print ('adding new clusters')
                 old_state = deepcopy(self.get_state())
                 E_old = self.E
-                self.set_state(self.boundary_sample(new=1))
+                self.set_state(self.boundary_sample(new=self.grow_rate))
             else:
                 self.set_state(old_state)
                 print ('replacing previsous state (%d cluster)' % self.get_C())
@@ -382,10 +396,8 @@ from scipy.special import zeta
 # Debug
 # @todo: Estimation of x_min instead of the "max" heuristic.
 # @todo: cut-off
-def gofit(x, y, model='powerlaw'):
+def gofit(x, y, model='powerlaw', precision=0.03):
     """ (x, y): the empirical distribution with x the values and y **THE COUNTS** """
-
-
     y = y.astype(float)
     #### Power law Goodness of fit
     # Estimate x_min
@@ -395,13 +407,15 @@ def gofit(x, y, model='powerlaw'):
     data = degree_hist_to_list(x, y)
     #x = np.arange(1, y.sum()) ?
 
-
     # X_min heuristic /Estim
-    #index_min = len(y) - np.argmax(y[::-1]) # max from right
+    index_min = len(y) - np.argmax(y[::-1]) # max from right
     #index_min = np.argmax(y) # max from left
+    #x_min = x[index_min]
     index_min = 0
-
-    x_min = x[index_min] or 1
+    x_min = x[index_min]
+    while x_min == 0:
+        index_min += 1
+        x_min = x[index_min]
 
     ### cutoff ?
     x_max = x.max()
@@ -413,12 +427,12 @@ def gofit(x, y, model='powerlaw'):
         # no enough point
         lgg.error('Not enough samples %s' % n_tail)
         return
-    elif n_tail / float(N) < 3/4.0:
-        # tail not relevant
-        index_min = len(y) - np.argmax(y[::-1]) # max from left
-        #index_min = 0 # all the distribution
-        x_min = x[index_min]
-        n_tail = y[index_min:].sum()
+    #elif n_tail / float(N) < 3/4.0:
+    #    # tail not relevant
+    #    index_min = len(y) - np.argmax(y[::-1]) # max from left
+    #    #index_min = 0 # all the distribution
+    #    x_min = x[index_min]
+    #    n_tail = y[index_min:].sum()
 
     alpha = 1 + n_tail * (np.log(data[data>x_min] / (x_min -0.5)).sum())**-1
 
@@ -432,9 +446,7 @@ def gofit(x, y, model='powerlaw'):
         lgg.error('Godfit: Hypothese Unknow %s' % model)
         return
 
-    # Number of synthetic datasets to generate
-    #precision = 0.03
-    precision = 0.03
+    # Number of synthetic datasets to generate #precision = 0.03
     S = int(0.25 * (precision)**-2)
     pvalue = []
 
@@ -455,8 +467,13 @@ def gofit(x, y, model='powerlaw'):
         # Generate synthetic dataset
         ratio_plaw = 1
         ratio_random = 1
-        out_samples = np.random.choice((data[data<=x_min]), size=out_empirical_samples_size*ratio_random)
         powerlaw_samples = random_powerlaw(alpha, x_min, powerlaw_samples_size*ratio_plaw)
+
+        if len(data[data<=x_min]) > 0:
+            out_samples = np.random.choice((data[data<=x_min]), size=out_empirical_samples_size*ratio_random)
+            sync_samples = np.hstack((out_samples, powerlaw_samples))
+        else:
+            sync_samples = powerlaw_samples
 
         ### Cutoff ?!
         #powerlaw_samples = powerlaw_samples[powerlaw_samples <= x_max]
@@ -468,7 +485,6 @@ def gofit(x, y, model='powerlaw'):
         #else:
         #    sync_samples = np.hstack((out_samples, powerlaw_samples))
 
-        sync_samples = np.hstack((out_samples, powerlaw_samples))
 
         #ks_2 = ks_2samp(sync_samples, d)
         ks_s = kstest(sync_samples, cdf)

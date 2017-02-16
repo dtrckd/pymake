@@ -35,10 +35,10 @@ Exp = ExpTensor ((
     ('model'        , ['immsb', 'ibp'])   ,
     ('K'            , 10)        ,
     ('N'            , 'all')     , # ign in gen
-    ('hyper'        , 'auto')    , # ign in gen
+    ('hyper'        , ['auto', 'fix'])    , # ign in gen
     ('homo'         , 0)         , # ign in gen
     ('repeat'      , 1)       ,
-    #
+    ('_bind'    , ['immsb.auto', 'ibp.fix']),
     ('alpha', 1),
     ('gmma', 1),
     ('delta', [(1, 5)]),
@@ -50,8 +50,6 @@ class GenNetwork(ExpeFormat):
         expe = self.expe
 
         if expe._mode == 'predictive':
-            if expe.model == 'ibp':
-                expe.hyper = 'fix'
             ### Generate data from a fitted model
             model = ModelManager.from_expe(expe)
 
@@ -95,44 +93,65 @@ class GenNetwork(ExpeFormat):
         else:
             raise NotImplementedError('What generation context ? predictive/generative..')
 
-
         lgg.debug('Deprecated : get symmetric info from model.')
         expe.symmetric = frontend.is_symmetric()
         self.expe = expe
         self.frontend = frontend
         self.model = model
 
-        ### Generate data
-
         if model is None:
             raise FileNotFoundError('No model for Expe at :  %s' % self.expe.output_path)
 
-        Y = []
-        now = Now()
-        for i in range(expe.epoch):
-            try:
-                y = model.generate(mode=expe._mode, N=N, K=expe.K)
-            except:
-            # __future__, remove, one errror, update y = model.gen.....
-                y,_,_ = model.generate(mode=expe._mode, N=N, K=expe.K)
-            Y.append(y)
-        lgg.info('Data Generation : %s second' % nowDiff(now))
+        if expe._do[0] in ('burstiness','pvalue','homo'):
+            ### Generate data
+            Y = []
+            now = Now()
+            for i in range(expe.epoch):
+                try:
+                    y = model.generate(mode=expe._mode, N=N, K=expe.K)
+                except:
+                # __future__, remove, one errror, update y = model.gen.....
+                    y,_,_ = model.generate(mode=expe._mode, N=N, K=expe.K)
+                Y.append(y)
+            lgg.info('Data Generation : %s second' % nowDiff(now))
 
-        #R = rescal(data, expe['K'])
+            #R = rescal(data, expe['K'])
 
-        if expe.symmetric:
-            for y in Y:
-                frontend.symmetrize(y)
-
-        self._Y = Y
+            if expe.symmetric:
+                for y in Y:
+                    frontend.symmetrize(y)
+            self._Y = Y
 
         lgg.info('=== M_e Mode === ')
         lgg.info('Mode: %s' % expe._mode)
         lgg.info('hyper: %s' % (str(expe.hyperparams)))
 
 
+    def init_fit_tables(self,_type, Y=[]):
+        expe = self.expe
+        if not hasattr(self.gramexp, 'tables'):
+            corpuses = _spec.name(self.gramexp.getCorpuses())
+            models = self.gramexp.getModels()
+            Meas = [ 'pvalue', 'alpha', 'x_min', 'n_tail']
+            tables = {}
+            for m in models:
+                if _type == 'local':
+                    table_shape = (len(corpuses), len(Meas), expe.K**2)
+                    table = ma.array(np.empty(table_shape), mask=np.ones(table_shape))
+                elif _type == 'global':
+                    table = np.empty((len(corpuses), len(Meas), len(Y)))
+                tables[m] = table
+            self.gramexp.Meas = Meas
+            self.gramexp.tables = tables
+            Table = tables[expe.model]
+        else:
+            Table = self.gramexp.tables[expe.model]
+            Meas = self.gramexp.Meas
+
+        return Table, Meas
+
     @ExpeFormat.plot
-    def burstiness(self, _type='all', *args):
+    def burstiness(self, _type='all'):
         '''Zipf Analysis
            (global burstiness) + local burstiness + feature burstiness
         '''
@@ -147,7 +166,6 @@ class GenNetwork(ExpeFormat):
         if _type in ('global', 'all'):
             # Global burstiness
             d, dc, yerr = random_degree(Y)
-            god = gofit(d, dc)
             fig = plt.figure()
             plot_degree_2((d,dc,yerr), logscale=True, title=expe.title)
 
@@ -223,14 +241,8 @@ class GenNetwork(ExpeFormat):
                     for y in Y:
                         YY.append((y * np.outer(theta[:,k], theta[:,l] )).astype(int))
 
-                ## remove ,old issue
-                #if len(degree_c) == 0: continue
-                #d, dc = degree_hist(degree_c)
-
                 d, dc, yerr = random_degree(YY)
-                if len(dc) == 0: continue
-                #local_degree_c[str(k)+str(l)] = filter(lambda x: x != 0, degree_c)
-                god =  gofit(d, dc)
+                if len(d) == 0: continue
                 plot_degree_2((d,dc,yerr), logscale=True, colors=True, line=True,
                              title='Local Preferential attachment (Stochastic Block)')
             figs.append(plt.gcf())
@@ -262,47 +274,34 @@ class GenNetwork(ExpeFormat):
             out.write_figs(expe, figs, _fn=expe.model)
             return
 
+
+
     # @redondancy with burstiness !
     # in @ExpFormat.table
-    def pvalue(self, _type='global', *args):
+    def pvalue(self, _type='global'):
         """ similar to zipf but compute pvalue and print table
 
             Parameters
             ==========
             _type: str in [global, local, feature]
         """
+        if self.model is None: return
         expe = self.expe
+        figs = []
+
         Y = self._Y
         N = Y[0].shape[0]
         model = self.model
 
-        if not hasattr(self.gramexp, 'tables'):
-            corpuses = list(map(_spec.name, self.gramexp.getCorpuses()))
-            models = list(map(_spec.name, self.gramexp.getModels()))
-            Meas = [ 'pvalue', 'alpha', 'x_min', 'n_tail']
-            tables = {}
-            for m in models:
-                if _type == 'local':
-                    table_shape = (len(corpuses), len(Meas), expe.K**2)
-                    table = ma.array(np.empty(table_shape), mask=np.ones(table_shape))
-                elif _type == 'global':
-                    table = np.empty((len(corpuses), len(Meas), len(Y)))
-                tables[m] = table
-            self.gramexp.Meas = Meas
-            self.gramexp.tables = tables
-            Table = tables[expe.model]
-        else:
-            Table = self.gramexp.tables[expe.model]
-            Meas = self.gramexp.Meas
+        Table, Meas = self.init_fit_tables(_type, Y)
 
         lgg.info('using `%s\' burstiness' % _type)
 
         if _type == 'global':
 
             ### Global degree
-            d, dc, yerr = random_degree(Y)
             for it_dat, data in enumerate(Y):
-                d, dc = degree_hist(adj_to_degree(data))
+                d, dc = degree_hist(adj_to_degree(data), filter_zeros=True)
                 gof = gofit(d, dc)
                 if not gof:
                     continue
@@ -312,9 +311,9 @@ class GenNetwork(ExpeFormat):
 
         elif _type == 'local':
             ### Z assignement method
-            theta, phi = model.get_params()
-            K = theta.shape[1]
             Y = Y[:expe.limit_gen]
+            theta, _phi = model.get_params()
+            K = theta.shape[1]
             now = Now()
             if expe.model == 'immsb':
                 ZZ = []
@@ -351,6 +350,7 @@ class GenNetwork(ExpeFormat):
             else:
                 #k_perm = itertools.product(np.unique(clusters) , repeat=2)
                 k_perm = itertools.product(range(theta.shape[1]) , repeat=2)
+
             for it_k, c in enumerate(k_perm):
                 if it_k > expe.limit_class:
                     break
@@ -378,13 +378,8 @@ class GenNetwork(ExpeFormat):
                     for y in Y:
                         YY.append((y * np.outer(theta[:,k], theta[:,l])).astype(int))
 
-                ## remove ,old issue
-                #if len(degree_c) == 0: continue
-                #d, dc = degree_hist(degree_c)
-
                 d, dc, yerr = random_degree(YY)
-                if len(dc) == 0: continue
-                #local_degree_c[str(k)+str(l)] = filter(lambda x: x != 0, degree_c)
+                if len(d) == 0: continue
                 gof =  gofit(d, dc)
                 if not gof:
                     continue
@@ -397,22 +392,21 @@ class GenNetwork(ExpeFormat):
         if self._it == self.expe_size -1:
             for _model, table in self.gramexp.tables.items():
 
-                # Function in (utils. ?)
                 # Mean and standard deviation
                 table_mean = np.char.array(np.around(table.mean(2), decimals=3)).astype("|S20")
                 table_std = np.char.array(np.around(table.std(2), decimals=3)).astype("|S20")
                 table = table_mean + b' $\pm$ ' + table_std
 
                 # Table formatting
-                corpuses = list(map(_spec.name, self.gramexp.getCorpuses()))
-                table = np.column_stack((corpuses, table))
-                tablefmt = 'simple' # 'latex'
+                corpuses = _spec.name(self.gramexp.getCorpuses())
+                table = np.column_stack((_spec.name(corpuses), table))
+                tablefmt = 'simple'
                 table = tabulate(table, headers=['__'+_model.upper()+'__']+Meas, tablefmt=tablefmt, floatfmt='.3f')
                 print()
                 print(table)
                 if expe.write:
                     from private import out
-                    fn = '%s_%s' % (_model, _type)
+                    fn = '%s_%s' % (_spec.name(_model), _type)
                     out.write_table(expe, table, _fn=fn, ext='.md')
 
     @ExpeFormat.plot
@@ -440,22 +434,150 @@ class GenNetwork(ExpeFormat):
         #adjshow(reorder_mat(y, comm['clusters']), 'test reordering')
         #draw_blocks(comm)
 
+    def homo(self, _type='pearson', _sim='latent'):
+        """ Hmophily test -- table output
+            Parameters
+            ==========
+            _type: similarity type in (contengency, pearson)
+            _sim: similarity metric in (natural, latent)
+        """
+        if self.model is None: return
+        expe = self.expe
+        figs = []
+
+        Y = self._Y
+        N = Y[0].shape[0]
+        model = self.model
+
+        lgg.info('using `%s\' type' % _type)
+
+        if not hasattr(self.gramexp, 'tables'):
+            corpuses = _spec.name(self.gramexp.getCorpuses())
+            models = self.gramexp.getModels()
+            tables = {}
+            corpuses = _spec.name(self.gramexp.getCorpuses())
+            for m in models:
+                if _type == 'pearson':
+                    Meas = [ 'pearson coeff', '2-tailed pvalue' ]
+                    table = np.empty((len(corpuses), len(Meas), len(Y)))
+                elif _type == 'contingency':
+                    Meas = [ 'natural', 'latent', 'natural', 'latent' ]
+                    table = np.empty((2*len(corpuses), len(Meas), len(Y)))
+                tables[m] = table
+
+            self.gramexp.Meas = Meas
+            self.gramexp.tables = tables
+            table = tables[expe.model]
+        else:
+            table = self.gramexp.tables[expe.model]
+            Meas = self.gramexp.Meas
+
+        if _type == 'pearson':
+            lgg.info('using `%s\' similarity' % _sim)
+            import scipy as sp
+            # No variance for link expecation !!!
+            Y = [Y[0]]
+
+            ### Global degree
+            d, dc, yerr = random_degree(Y)
+            sim = model.similarity_matrix(sim=_sim)
+            #plot(sim, title='Similarity', sort=True)
+            #plot_degree(sim)
+            for it_dat, data in enumerate(Y):
+                #homo_object = data
+                homo_object = model.likelihood()
+                table[self.corpus_pos, :,  it_dat] = sp.stats.pearsonr(homo_object.flatten(), sim.flatten())
+
+        elif _type == 'contingency':
+
+            ### Global degree
+            d, dc, yerr = random_degree(Y)
+            sim_nat = model.similarity_matrix(sim='natural')
+            sim_lat = model.similarity_matrix(sim='latent')
+            step_tab = len(_spec.name(self.gramexp.getCorpuses()))
+            for it_dat, data in enumerate(Y):
+
+                #homo_object = data
+                homo_object = model.likelihood()
+
+                table[self.corpus_pos, 0,  it_dat] = sim_nat[data == 1].mean()
+                table[self.corpus_pos, 1,  it_dat] = sim_lat[data == 1].mean()
+                table[self.corpus_pos, 2,  it_dat] = sim_nat[data == 1].var()
+                table[self.corpus_pos, 3,  it_dat] = sim_lat[data == 1].var()
+                table[self.corpus_pos+step_tab, 0,  it_dat] = sim_nat[data == 0].mean()
+                table[self.corpus_pos+step_tab, 1,  it_dat] = sim_lat[data == 0].mean()
+                table[self.corpus_pos+step_tab, 2,  it_dat] = sim_nat[data == 0].var()
+                table[self.corpus_pos+step_tab, 3,  it_dat] = sim_lat[data == 0].var()
+
+        if self._it == self.expe_size -1:
+            for _model, table in self.gramexp.tables.items():
+                # Function in (utils. ?)
+                # Mean and standard deviation
+                table_mean = np.char.array(np.around(table.mean(2), decimals=3)).astype("|S20")
+                table_std = np.char.array(np.around(table.std(2), decimals=3)).astype("|S20")
+                table = table_mean + b' $\pm$ ' + table_std
+
+                # Table formatting
+                corpuses = _spec.name(self.gramexp.getCorpuses())
+                try:
+                    table = np.column_stack((corpuses, table))
+                except:
+                    table = np.column_stack((corpuses*2, table))
+                tablefmt = 'simple' # 'latex'
+                table = tabulate(table, headers=['__'+_model.upper()+'__']+Meas, tablefmt=tablefmt, floatfmt='.3f')
+                print()
+                print(table)
+                if expe.write:
+                    from private import out
+                    fn = '%s_homo_%s' % (_spec.name(_model), _type)
+                    out.write_table(expe, table, _fn=fn, ext='.md')
+
     @ExpeFormat.plot
-    def roc(self):
+    def roc(self, _type='testset', ratio=0.2):
         ''' AUC/ROC test report '''
         from sklearn.metrics import roc_curve, auc, precision_recall_curve
         expe = self.expe
         model = self.model
         data = self.frontend.data
 
+        if not hasattr(self.gramexp, 'figs'):
+            figs = {}
+            for c in self.gramexp.getCorpuses():
+                figs[c] = plt.figure()
+            setattr(self.gramexp, 'figs', figs)
+
+        ax = self.gramexp.figs[expe.corpus].gca()
+
         #mask = model.get_mask()
-        y_true, probas = model.mask_probas(data)
+        if _type == 'testset':
+            y_true, probas = model.mask_probas(data)
+        elif _type == 'learnset' or True:
+            n = int(data.size * 0.2)
+            mask_index = np.unravel_index(np.random.permutation(data.size)[:n], data.shape)
+            y_true = data[mask_index]
+            probas = model.likelihood()[mask_index]
+
         fpr, tpr, thresholds = roc_curve(y_true, probas)
         roc_auc = auc(fpr, tpr)
-        plt.plot(fpr, tpr, label='ROC %s (area = %0.2f)' % (expe.model, roc_auc))
+        ax.plot(fpr, tpr, label='ROC %s (area = %0.2f)' % (expe.model, roc_auc))
+        ax.set_title(_spec.name(expe.corpus))
+        self.noplot = True
 
         #precision, recall, thresholds = precision_recall_curve( y_true, probas)
         #plt.plot(precision, recall, label='PR curve; %s' % (expe.model ))
+
+        if self._it == self.expe_size -1:
+            for c, fig in self.gramexp.figs.items():
+                ax = fig.gca()
+                ax.plot([0, 1], [0, 1], linestyle='--', color='k', label='Luck')
+                ax.legend(loc="lower right", prop={'size':10})
+
+            if expe.write:
+                from private import out
+                fn = 'roc_%s' % expe.testset_ratio
+                figs = self.gramexp.figs
+                out.write_figs(expe, figs, _fn=fn)
+
 
     @ExpeFormat.plot
     def perplexity(self):
@@ -492,7 +614,7 @@ class GenNetwork(ExpeFormat):
         plt.colorbar()
 
 if __name__ == '__main__':
-    from pymake.util.algo import gofit
+    from pymake.util.algo import gofit, Louvain, Annealing
     from pymake.util.math import reorder_mat, sorted_perm, categorical, clusters_hist
     from pymake.util.utils import Now, nowDiff
     import matplotlib.pyplot as plt
@@ -507,7 +629,7 @@ if __name__ == '__main__':
         _mode    = 'predictive',
         gen_size      = 1000,
         epoch         = 30 , #20
-        limit_gen   = 1, # Local superposition !!!
+        limit_gen   = 5, # Local superposition !!!
         limit_class   = 30,
         spec = Exp
     )

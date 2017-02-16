@@ -33,6 +33,7 @@ class Netw():
     CORPUS_ALL_ICDM = CORPUS_SYN_ICDM + CORPUS_REAL_ICDM
     CORPUS_REAL_PNAS = Corpus(['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro'])
     CORPUS_ALL_PNAS = CORPUS_REAL_PNAS +  CORPUS_SYN_ICDM
+    pnas_short = Corpus([ 'blogs', 'manufacturing', 'generator7','generator4'])
 
     # Text Corpus
     # intruder ?
@@ -62,9 +63,10 @@ class Netw():
         ('N'            , 'all')     , # ign in gen
         ('hyper'        , ['auto', 'fix'])    , # ign in gen
         ('homo'         , 0)         , # ign in gen
-        ('repeat'      , 0)       ,
+        ('repeat'      , 1)       ,
         ('_bind'    , ['immsb.auto', 'ibp.fix']),
         ('iterations', '200'),
+        ('_format', '{model}_{K}_{hyper}_{homo}_{N}')
     ))
 
     PNAS2 = ExpTensor ((
@@ -98,6 +100,7 @@ class Netw():
         ('N'      , ('all',)),
         ('repeat'   , list(range(10))),
         ('iterations', '200'),
+        ('_bind'    , ['immsb.auto', 'ibp.fix']),
     ))
 
     EXPE_ICDM_R_R = ExpTensor((
@@ -111,6 +114,7 @@ class Netw():
         ('N'      , ('all',)),
         ('repeat'   , list(range(10))),
         ('iterations', '200'),
+        ('_bind'    , ['immsb.auto', 'ibp.fix']),
     ))
 
     # Single Expe
@@ -229,6 +233,6 @@ class Netw():
     )
 
 
-_spec = ExpDesign((k, getattr(Netw, k)) for k in dir(Netw()) if not k.startswith('__') )
+_spec = ExpDesign((k, getattr(Netw, k)) for k in dir(Netw) if not k.startswith('__') )
 
 
