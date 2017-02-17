@@ -1,4 +1,4 @@
-
+default: install
 docs: 
 	@echo 'todo'
 

@@ -1,0 +1,2 @@
+./zymake.py cmd  PNAS2 -m _null_ --hyper _null_  --testset-ratio 20 40 60 65 70 75 80 85 90 95 | para ./scripts/generate.py roc testset 40 {} -m ibp immsb  -w --repeat 1                   
+

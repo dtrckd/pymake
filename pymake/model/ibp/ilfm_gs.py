@@ -184,9 +184,8 @@ class IBPGibbsSampling(IBP, GibbsSampler):
             if self.write and iter!=0 and iter % self.iterations == self.snapshot_freq:
                 self.save(silent=True)
 
-        print()
-
         ### Clean Things
+        print()
         if not self.samples:
             self.samples.append([self._Z, self._W])
         self.close()
@@ -550,14 +549,6 @@ class IBPGibbsSampling(IBP, GibbsSampler):
         self.phi = W
         self.K = self.theta.shape[1]
         return Z, W
-
-    def mask_probas(self, data):
-        mask = self.get_mask()
-        y_test = data[mask]
-        theta, phi = self.get_params()
-        p_ji = theta.dot(phi).dot(theta.T)
-        probas = p_ji[mask]
-        return y_test, probas
 
     def get_mask(self):
         # future remove

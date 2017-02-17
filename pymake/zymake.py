@@ -55,6 +55,6 @@ if __name__ == '__main__':
         script = zyvar['script']
         lines = [' '.join((' '.join(script), l)) for l in lines]
 
-    print('PYMAKE request : %s\n  %s' %(zymake.expname(), zymake.exptable()), file=sys.stderr)
+    zymake.simulate(halt=False, file=sys.stderr)
     print( '\n'.join(lines))
 

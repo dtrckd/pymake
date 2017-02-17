@@ -25,8 +25,8 @@ lgg = logging.getLogger('root')
 try:
     from pymake.util.compute_stirling import load_stirling
     _stirling_mat = load_stirling()
-except:
-    lgg.error('strling.npy file not found, passing...')
+except Exception as e:
+    lgg.error('stirling.npy file not found, passing...')
 
 
 #
@@ -297,8 +297,8 @@ class GibbsSampler(ModelBase):
             if self.write and i!=0 and i % self.iterations == self.snapshot_freq:
                 self.save(silent=True)
 
-        print()
         ### Clean Things
+        print()
         self.samples = self.samples
         if not self.samples:
             self.samples.append([self._theta, self._phi])
@@ -313,6 +313,14 @@ class GibbsSampler(ModelBase):
             phi = self.phi
         likelihood = theta.dot(phi).dot(theta.T)
         return likelihood
+
+    def mask_probas(self, data):
+        mask = self.get_mask()
+        y_test = data[mask]
+        p_ji = self.likelihood(*self.get_params())
+        probas = p_ji[mask]
+        return y_test, probas
+
 
     @mmm
     def update_hyper(self, hyper):
@@ -388,6 +396,7 @@ class GibbsSampler(ModelBase):
         self.K = self.theta.shape[1]
         return self.theta, self.phi
 
+
     def predictMask(self, data, mask=True):
         lgg.info('Reducing latent variables...')
 
@@ -401,7 +410,7 @@ class GibbsSampler(ModelBase):
 
         ground_truth = data[masked]
 
-        p_ji = self.likelihood(self.get_params())
+        p_ji = self.likelihood(*self.get_params())
         prediction = p_ji[masked]
         prediction = sp.stats.bernoulli.rvs( prediction )
         #prediction[prediction >= 0.5 ] = 1
