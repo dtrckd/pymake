@@ -38,10 +38,9 @@ if __name__ == '__main__':
     ### Load Model
     #models = ('ilda_cgs', 'lda_cgs', 'immsb', 'mmsb', 'ilfm_gs', 'lda_vb', 'ldafull_vb')
     # Hyperparameter
-    delta = .1
-    # Those are sampled
-    alpha = .5
-    gmma = 1.
+    alpha = expe.get('alpha', .1)
+    gmma = expe.get('gmma', .5)
+    delta = expe.get('delta', 1.)
     hyperparams = {'alpha': alpha, 'delta': delta, 'gmma': gmma}
 
     expe['hyperparams'] = hyperparams

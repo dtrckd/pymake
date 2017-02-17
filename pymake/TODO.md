@@ -1,5 +1,9 @@
 # Code Factoring
 
+@here
+* move .0. -> . resulrs
+* plot(integrale  dela surface roc en fonction de testset_ratio
+
 @init
 * if no _spec 'print help'
     * pmk init [project]

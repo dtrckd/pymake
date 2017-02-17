@@ -648,14 +648,6 @@ class GibbsRun(GibbsSampler):
         #        Y[j, i] = sp.stats.bernoulli.rvs(B[zj, zi])
         return Y
 
-    def mask_probas(self, data):
-        mask = self.get_mask()
-        y_test = data[mask]
-        theta, phi = self.get_params()
-        p_ji = theta.dot(phi).dot(theta.T)
-        probas = p_ji[mask]
-        return y_test, probas
-
     def get_mask(self):
         # __future__ remove
         try:

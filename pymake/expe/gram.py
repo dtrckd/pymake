@@ -1,14 +1,25 @@
 # -*- coding: utf-8 -*-
-import argparse
+import sys, argparse
+from functools import partial
 from pymake import ExpVector
 
-class SmartFormatter(argparse.HelpFormatter):
-    # Unused -- see RawDescriptionHelpFormatter
-    def _split_lines(self, text, width):
-        if text.startswith('R|'):
-            return text[2:].splitlines()
-        # this is the RawTextHelpFormatter._split_lines
-        return argparse.HelpFormatter._split_lines(self, text, width)
+#class SmartFormatter(argparse.HelpFormatter):
+#    # Unused -- see RawDescriptionHelpFormatter
+#    def _split_lines(self, text, width):
+#        if text.startswith('R|'):
+#            return text[2:].splitlines()
+#        # this is the RawTextHelpFormatter._split_lines
+#        return argparse.HelpFormatter._split_lines(self, text, width)
+
+class ExpArgumentParser(argparse.ArgumentParser):
+    def __init__(self, **kwargs):
+        super(ExpArgumentParser, self).__init__(**kwargs)
+
+    def error(self, message):
+        self.print_usage()
+        print('error', message)
+        #self.print_help()
+        sys.exit(2)
 
 # * wraps cannot handle the decorator chain :(, why ?
 class askseed(object):
@@ -39,8 +50,21 @@ class VerboseAction(argparse.Action):
             setattr(args, self.dest, values)
 
 class exp_append(argparse.Action):
+    def __init__(self, *args, **kwargs):
+        self._type = kwargs.pop('_t', str)
+        super(exp_append, self).__init__(*args, **kwargs)
+
     def __call__(self, parser, args, values, option_string=None):
-        setattr(args, self.dest, ExpVector(values))
+        try:
+            exp_values = []
+            for v in values:
+                if v == '_null_':
+                    exp_values.append(v)
+                else:
+                    exp_values.append(self._type(v))
+                setattr(args, self.dest, ExpVector(exp_values))
+        except Exception as e:
+            parser.error(e)
 
 
 def check_positive_integer(value):
@@ -114,7 +138,7 @@ _Gram = [
     #
 
     '--epoch', dict(
-        type=int, nargs='*', action=exp_append,
+        nargs='*', action=partial(exp_append, _t=int),
         help='number for averaginf generative process'),
 
     '-c','--corpus', dict(
@@ -130,15 +154,15 @@ _Gram = [
         help='ID of the model.'),
 
     '-n','--N', dict(
-        type=str, nargs='*', action=exp_append,
+        nargs='*', action=exp_append, # str because keywords "all"
         help='Size of frontend data [int | all].'),
 
     '-k','--K', dict(
-        type=int, nargs='*', action=exp_append,
+        nargs='*', action=partial(exp_append, _t=int),
         help='Latent dimensions'),
 
     '-i','--iterations', dict(
-        type=int, nargs='*', action=exp_append,
+        nargs='*', action=partial(exp_append, _t=int),
         help='Max number of iterations for the optimization.'),
 
     '--repeat', dict(
@@ -146,7 +170,7 @@ _Gram = [
         help='Index of tn nth repetitions/randomization of an design of experiments. Impact the outpout path as data/<bdir>/<refdir>/<repeat>/...'),
 
     '--hyper',  dict(
-        type=str, dest='hyper', nargs='*', action=exp_append,
+        dest='hyper', nargs='*', action=exp_append,
         help='type of hyperparameters optimization [auto|fix|symmetric|asymmetric]'),
 
     '--hyper-prior','--hyper_prior', dict(
@@ -154,12 +178,22 @@ _Gram = [
         help='Set paramters of the hyper-optimization [auto|fix|symmetric|asymmetric]'),
 
     '--testset-ratio', dict(
-        dest='testset_ratio', type=str, nargs='*', action=exp_append,
+        dest='testset_ratio', nargs='*', action=partial(exp_append, _t=int),
         help='testset/learnset percentage for testing.'),
 
     '--homo', dict(
-        type=str, nargs='*', action=exp_append,
+        nargs='*', action=exp_append,
         help='Centrality type (NotImplemented)'),
+
+    '--alpha', dict(
+        nargs='*', action=partial(exp_append, _t=float),
+        help='First hyperparameter.'),
+    '--gmma', dict(
+        nargs='*', action=partial(exp_append, _t=float),
+        help='Second hyperparameter.'),
+    '--delta', dict(
+        nargs='*', action=partial(exp_append, _t=float),
+        help='Third hyperparameter.'),
 
     #
     #

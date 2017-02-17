@@ -150,6 +150,23 @@ class GenNetwork(ExpeFormat):
 
         return Table, Meas
 
+    def init_roc_tables(self):
+        expe = self.expe
+        if not hasattr(self.gramexp, 'tables'):
+            corpuses = _spec.name(self.gramexp.getCorpuses())
+            if not 'testset_ratio' in self.pt:
+                Meas = ['20']
+            else:
+                Meas = self.gramexp.expe['testset_ratio']
+            tables = np.empty((len(corpuses), len(Meas), 2))
+            self.gramexp.Meas = Meas
+            self.gramexp.tables = tables
+        else:
+            tables = self.gramexp.tables
+            Meas = self.gramexp.Meas
+
+        return tables, Meas
+
     @ExpeFormat.plot
     def burstiness(self, _type='all'):
         '''Zipf Analysis
@@ -533,12 +550,16 @@ class GenNetwork(ExpeFormat):
                     out.write_table(expe, table, _fn=fn, ext='.md')
 
     @ExpeFormat.plot
-    def roc(self, _type='testset', ratio=0.2):
+    def roc(self, _type='testset', _ratio=20, _predictall=False):
         ''' AUC/ROC test report '''
         from sklearn.metrics import roc_curve, auc, precision_recall_curve
         expe = self.expe
         model = self.model
         data = self.frontend.data
+        _ratio = int(_ratio)
+        _predictall = bool(int(_predictall))
+        if not hasattr(expe, 'testset_ratio'):
+            setattr(expe, 'testset_ratio', 20)
 
         if not hasattr(self.gramexp, 'figs'):
             figs = {}
@@ -551,8 +572,16 @@ class GenNetwork(ExpeFormat):
         #mask = model.get_mask()
         if _type == 'testset':
             y_true, probas = model.mask_probas(data)
-        elif _type == 'learnset' or True:
-            n = int(data.size * 0.2)
+            if not _predictall:
+                # take 20% of the size of the training set
+                n_d =int( _ratio/100 * data.size * (1 - expe.testset_ratio/100) / (1 - _ratio/100))
+                y_true = y_true[:n_d]
+                probas = probas[:n_d]
+            else:
+                pass
+
+        elif _type == 'learnset':
+            n = int(data.size * _ratio)
             mask_index = np.unravel_index(np.random.permutation(data.size)[:n], data.shape)
             y_true = data[mask_index]
             probas = model.likelihood()[mask_index]
@@ -578,6 +607,62 @@ class GenNetwork(ExpeFormat):
                 figs = self.gramexp.figs
                 out.write_figs(expe, figs, _fn=fn)
 
+    def roc_evolution(self, _type='testset', _ratio=20, _predictall=False):
+        ''' AUC difference between two models against testset_ratio  '''
+        from sklearn.metrics import roc_curve, auc, precision_recall_curve
+        expe = self.expe
+        model = self.model
+        data = self.frontend.data
+        _ratio = int(_ratio)
+        _predictall = bool(int(_predictall))
+        if not hasattr(expe, 'testset_ratio'):
+            setattr(expe, 'testset_ratio', 20)
+            self.testset_ratio_pos = 0
+        else:
+            self.testset_ratio_pos = self.pt['testset_ratio']
+
+        table, Meas = self.init_roc_tables()
+
+        #mask = model.get_mask()
+        if _type == 'testset':
+            y_true, probas = model.mask_probas(data)
+            if not _predictall:
+                # take 20% of the size of the training set
+                n_d =int( _ratio/100 * data.size * (1 - expe.testset_ratio/100) / (1 - _ratio/100))
+                y_true = y_true[:n_d]
+                probas = probas[:n_d]
+            else:
+                pass
+
+        elif _type == 'learnset':
+            n = int(data.size * _ratio)
+            mask_index = np.unravel_index(np.random.permutation(data.size)[:n], data.shape)
+            y_true = data[mask_index]
+            probas = model.likelihood()[mask_index]
+
+        fpr, tpr, thresholds = roc_curve(y_true, probas)
+        roc_auc = auc(fpr, tpr)
+
+        table[self.corpus_pos, self.testset_ratio_pos, self.model_pos] = roc_auc
+
+        #precision, recall, thresholds = precision_recall_curve( y_true, probas)
+        #plt.plot(precision, recall, label='PR curve; %s' % (expe.model ))
+
+        if self._it == self.expe_size -1:
+
+            #reduce end table
+            id_mmsb = self.gramexp.exp_tensor['model'].index('immsb')
+            id_ibp = 1 if id_mmsb == 0 else 0
+            table = table[:,:, id_mmsb] - table[:,:,id_ibp]
+
+            # Table formatting
+            corpuses = _spec.name(self.gramexp.getCorpuses())
+            table = np.column_stack((_spec.name(corpuses), table))
+            tablefmt = 'simple'
+            headers = ['']+Meas
+            table = tabulate(table, headers=headers, tablefmt=tablefmt, floatfmt='.3f')
+            print()
+            print(table)
 
     @ExpeFormat.plot
     def perplexity(self):

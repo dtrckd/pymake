@@ -8,9 +8,9 @@ import operator
 import inspect, traceback
 from copy import deepcopy
 
-import argparse
+from argparse import Namespace, RawDescriptionHelpFormatter
 
-from .gram import _Gram
+from .gram import _Gram, ExpArgumentParser
 from pymake import basestring, ExpTensor, Expe, ExpeFormat, Model, Corpus, ExpVector
 from pymake.frontend.frontend_io import make_forest_conf, make_forest_path
 from pymake.expe.spec import _spec
@@ -20,16 +20,6 @@ import logging
 lgg = logging.getLogger('root')
 
 ''' Grammar Expe '''
-
-class ExpArgumentParser(argparse.ArgumentParser):
-    def __init__(self, **kwargs):
-        super(ExpArgumentParser, self).__init__(**kwargs)
-
-    def error(self, message):
-        self.print_usage()
-        print('error', message)
-        #self.print_help()
-        sys.exit(2)
 
 class GramExp(object):
     ''' Create a mapping between different format of design of experiments.
@@ -223,7 +213,7 @@ class GramExp(object):
     def get_parser(description=None, usage=None):
 
         parser = ExpArgumentParser(description=description, epilog=usage,
-                                   formatter_class=argparse.RawDescriptionHelpFormatter)
+                                   formatter_class=RawDescriptionHelpFormatter)
         g = _Gram
         grammar = []
         args = []
@@ -326,9 +316,6 @@ class GramExp(object):
          ''' +'\n'+usage
 
         parser = GramExp.get_parser(usage=usage)
-        parser.add_argument('--alpha', type=float)
-        parser.add_argument('--gmma', type=float)
-        parser.add_argument('--delta', type=float)
         parser.add_argument('-g', '--generative', dest='_mode', action='store_const', const='generative')
         parser.add_argument('-p', '--predictive', dest='_mode', action='store_const', const='predictive')
 
@@ -448,10 +435,13 @@ class GramExp(object):
               ''' % (len(self), self.getCorpuses(), self.getModels()))
         exit(2)
 
-    def simulate(self):
-        print('%s : %d expe' % (self.exp_tensor.name(), len(self) ))
-        print(self.exptable())
-        exit(2)
+    def simulate(self, halt=True, file=sys.stdout):
+        print('PYMAKE Request %s : %d expe' % (self.exp_tensor.name(), len(self) ), file=file)
+        print(self.exptable(), file=file)
+        if halt:
+            exit(2)
+        else:
+            return
 
 
     @staticmethod
@@ -464,7 +454,7 @@ class GramExp(object):
             print ('what level of verbosity heeere ?')
             exit(2)
         elif level == -1:
-            level = logging.ERROR
+            level = logging.DEBUG
         else:
             level = logging.INFO
 
@@ -517,9 +507,9 @@ class GramExp(object):
         sandbox.preprocess(self)
 
         for id_expe, expe in enumerate(self.lod):
-            pt = dict((key, value.index(expe[key])) for key, value in self.exp_tensor.items() if isinstance(expe[key], basestring))
+            pt = dict((key, value.index(expe[key])) for key, value in self.exp_tensor.items() if isinstance(expe[key], (basestring, int, float)))
             pt['expe'] = id_expe
-            _expe = argparse.Namespace(**expe)
+            _expe = Namespace(**expe)
 
             # Init Expe
             try:
