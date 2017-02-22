@@ -550,14 +550,14 @@ class GenNetwork(ExpeFormat):
                     out.write_table(table, _fn=fn, ext='.md')
 
     @ExpeFormat.plot('corpus', 'testset_ratio')
-    def roc(self, _type='testset', _ratio=20, _predictall=False):
+    def roc(self, _type='testset', _ratio=20):
         ''' AUC/ROC test report '''
         from sklearn.metrics import roc_curve, auc, precision_recall_curve
         expe = self.expe
         model = self.model
         data = self.frontend.data
         _ratio = int(_ratio)
-        _predictall = bool(int(_predictall))
+        _predictall = (_ratio >= 100) or (_ratio < 0)
         if not hasattr(expe, 'testset_ratio'):
             setattr(expe, 'testset_ratio', 20)
 
@@ -594,14 +594,19 @@ class GenNetwork(ExpeFormat):
                 ax.legend(loc="lower right", prop={'size':10})
 
 
-    def roc_evolution(self, _type='testset', _ratio=20, _predictall=False):
-        ''' AUC difference between two models against testset_ratio  '''
+    def roc_evolution(self, _type='testset', _type2='max', _ratio=20):
+        ''' AUC difference between two models against testset_ratio
+            * _type : learnset/testset
+            * _type2 : max/min/mean
+            * _ratio : ration of the traning set to predict. If 100 _predictall will be true
+
+        '''
         from sklearn.metrics import roc_curve, auc, precision_recall_curve
         expe = self.expe
         model = self.model
         data = self.frontend.data
         _ratio = int(_ratio)
-        _predictall = bool(int(_predictall)) or _ratio == 100
+        _predictall = (_ratio >= 100) or (_ratio < 0)
         if not hasattr(expe, 'testset_ratio'):
             setattr(expe, 'testset_ratio', 20)
             self.testset_ratio_pos = 0
@@ -628,11 +633,11 @@ class GenNetwork(ExpeFormat):
             probas = model.likelihood()[mask_index]
 
         # Just the ONE:1
-        #idx_1 = (y_true == 1)
-        #idx_0 = (y_true == 0)
-        #size_1 = idx_1.sum()
-        #y_true = np.hstack((y_true[idx_1], y_true[idx_0][:size_1]))
-        #probas = np.hstack((probas[idx_1], probas[idx_0][:size_1]))
+        idx_1 = (y_true == 1)
+        idx_0 = (y_true == 0)
+        size_1 = idx_1.sum()
+        y_true = np.hstack((y_true[idx_1], y_true[idx_0][:size_1]))
+        probas = np.hstack((probas[idx_1], probas[idx_0][:size_1]))
 
         fpr, tpr, thresholds = roc_curve(y_true, probas)
         roc_auc = auc(fpr, tpr)
@@ -644,32 +649,31 @@ class GenNetwork(ExpeFormat):
 
         if self._it == self.expe_size -1:
 
+            # Reduce each repetitions
+            take_type = getattr(np, _type2)
             t = ma.array(np.empty(table[:,:,0,:].shape), mask=True)
-            t[:,:,0] = table[:, :, :, 0].mean(-1)
-            t[:,:,1] = table[:, :, :, 1].mean(-1)
+            t[:,:,0] = take_type(table[:, :, :, 0], -1)
+            t[:,:,1] = take_type(table[:, :, :, 1], -1)
             table_mean = t.copy()
             t[:,:,0] = table[:, :, :, 0].std(-1)
             t[:,:,1] = table[:, :, :, 1].std(-1)
             table_std = t
 
-            #reduce end table
+            # Measure is comparaison of two AUC.
             id_mmsb = self.gramexp.exp_tensor['model'].index('immsb')
             id_ibp = 1 if id_mmsb == 0 else 0
             table_mean = table_mean[:,:, id_mmsb] - table_mean[:,:, id_ibp]
             table_std = table_std[:,:, id_mmsb] + table_std[:,:, id_ibp]
-            ##table = table[:,:,:, id_mmsb] - table[:,:,:, id_ibp]
+
+            #table = table_mean + b' $\pm$ ' + table_std
+            table = table_mean
 
             fig = plt.figure()
             corpuses = _spec.name(self.gramexp.getCorpuses())
             for i in range(len(corpuses)):
-                plt.errorbar(list(map(int,Meas)), table_mean[i], yerr=table_std[i], fmt=_markers.next(), label=corpuses[i])
-            plt.legend(loc='upper left',prop={'size':10})
-
-            ## average tables -- on repeat
-            #table_mean = np.char.array(np.around(table.mean(2), decimals=3)).astype("|S20")
-            #table_std = np.char.array(np.around(table.std(2), decimals=3)).astype("|S20")
-            #table = table_mean + b' $\pm$ ' + table_std
-            table = table_mean
+                plt.errorbar(Meas, table_mean[i], fmt=_markers.next(), label=corpuses[i])
+            plt.errorbar(Meas,[0]*len(Meas), linestyle='--', color='k')
+            plt.legend(loc='upper left',prop={'size':7})
 
             # Table formatting
             corpuses = _spec.name(self.gramexp.getCorpuses())
@@ -681,8 +685,8 @@ class GenNetwork(ExpeFormat):
             print(table)
             if expe.write:
                 from private import out
-                fn = '%s_%s' % ( _type, _ratio)
-                figs = {'roc_evolution': ExpSpace({'fig':fig, 'table':table, 'fn':fn})}
+                fn = '%s_%s_%s' % ( _type, _type2, _ratio)
+                figs = {'roc_evolution_1': ExpSpace({'fig':fig, 'table':table, 'fn':fn})}
                 out.write_table(figs, ext='.md')
                 out.write_figs(expe, figs)
 
