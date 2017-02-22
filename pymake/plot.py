@@ -19,7 +19,7 @@ from pymake.util.algo import *
 
 from pymake.util.ascii_code import X11_colors, plt_colors
 u_colors = Cycle(list(zip(*plt_colors))[1])
-_markers = Cycle([ '+', '*', '|','x', 'o', '.', '1', 'p', '<', '>', 's' ])
+_markers = Cycle([ '+', '*','x', 'o', '.', '1', 'p', '<', '>', 's' ])
 _colors = Cycle(['r', 'g','b','y','c','m','k'])
 
 import logging
@@ -51,8 +51,8 @@ def tag_from_csv(c):
 
     return ylabel, label
 
+# Obsolete
 def csv_row(s):
-    #csv_typo = '# mean_eta, var_eta, mean_alpha, var_alpha, log_perplexity'
     if s == 'Iteration':
         row = 0
     if s == 'Timeit':

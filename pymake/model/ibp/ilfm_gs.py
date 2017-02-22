@@ -131,6 +131,7 @@ class IBPGibbsSampling(IBP, GibbsSampler):
         likelihood_Y = self.log_likelihood_Y()
         lgg.info( 'Init Likelihood: %f' % likelihood_Y)
         for iter in range(self.iterations):
+            #sys.stdout.write('.')
             print('.', end='')
             begin_it = datetime.now()
 
@@ -139,11 +140,14 @@ class IBPGibbsSampling(IBP, GibbsSampler):
             # Sample every object
             order = np.random.permutation(self._N)
             for (object_counter, object_index) in enumerate(order):
+                #sys.stdout.write('Z')
                 singleton_features = self.sample_Zn(object_index)
 
                 if self._metropolis_hastings_k_new:
                     if self.metropolis_hastings_K_new(object_index, singleton_features):
+                        #sys.stdout.write('Z+')
                         self.ratio_MH_F += 1
+                #sys.stdout.flush()
 
             self.ratio_MH_F /= len(order)
 
@@ -313,6 +317,7 @@ class IBPGibbsSampling(IBP, GibbsSampler):
     """
     Sample W using metropolis hasting """
     def sample_W(self):
+        #sys.stdout.write('W')
         # sample every weight
         sigma_rw = 1.0
         if self.symmetric:

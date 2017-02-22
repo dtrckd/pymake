@@ -21,20 +21,6 @@ class ExpArgumentParser(argparse.ArgumentParser):
         #self.print_help()
         sys.exit(2)
 
-# * wraps cannot handle the decorator chain :(, why ?
-class askseed(object):
-    ''' Load previous random seed '''
-    def __init__(self, func, help=False):
-        self.func = func
-    def __call__(self, *args, **kwargs):
-
-        response = self.func(*args, **kwargs)
-
-        if clargs.flags.contains('--seed'):
-            response['seed'] = True
-        return response
-
-
 class VerboseAction(argparse.Action):
     def __call__(self, parser, args, values, option_string=None):
         if option_string in ('-nv', '--silent'):
@@ -58,7 +44,7 @@ class exp_append(argparse.Action):
         try:
             exp_values = []
             for v in values:
-                if v == '_null_':
+                if v == '_null':
                     exp_values.append(v)
                 else:
                     exp_values.append(self._type(v))

@@ -57,7 +57,7 @@ class ExpeNetwork(ExpeFormat):
             for m in models:
                 if _type == 'local':
                     table_shape = (len(corpuses), len(Meas), expe.K**2)
-                    table = ma.array(np.empty(table_shape), mask=np.ones(table_shape))
+                    table = ma.array(np.empty(table_shape), mask=True)
                 elif _type == 'global':
                     table = np.empty((len(corpuses), len(Meas), len(Y)))
                 tables[m] = table
@@ -274,9 +274,9 @@ class ExpeNetwork(ExpeFormat):
                 #if expe.write:
                 #    from private import out
                 #    fn = '%s' % (clusters_org)
-                #    out.write_table(expe, table, _fn=fn, ext='.md')
+                #    out.write_table(table, _fn=fn, ext='.md')
 
-    # in @ExpFormat.table
+    @ExpeFormat.tabulate
     def pvalue(self, **kwargs):
         ''' Compute Goodness of fit statistics '''
         expe = self.expe
@@ -305,7 +305,7 @@ class ExpeNetwork(ExpeFormat):
             print(colored('\nPvalue Table:', 'green'))
             print (tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
 
-    # in @ExpFormat.table
+    @ExpeFormat.tabulate
     def stats(self, frontend='frontend'):
         ''' Show data stats '''
         expe = self.expe

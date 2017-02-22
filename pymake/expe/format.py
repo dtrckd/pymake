@@ -6,10 +6,41 @@ import numpy as np
 from collections import OrderedDict, defaultdict
 from pymake.plot import colored, display, tabulate
 from decorator import decorator
+from functools import wraps
+
+import matplotlib.pyplot as plt
 
 import logging
 lgg = logging.getLogger('root')
 
+
+class ExpSpace(dict):
+    def __init__(self, *args, **kwargs):
+        super(ExpSpace, self).__init__(*args, **kwargs)
+        for arg in args:
+            if isinstance(arg, dict):
+                for k, v in arg.items():
+                    self[k] = v
+
+        if kwargs:
+            for k, v in kwargs.items():
+                self[k] = v
+
+    """dot.notation access to dictionary attributes"""
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+    def __getattr__(self, key):
+        try:
+            return self[key]
+        except KeyError:
+            raise AttributeError(key)
+
+    # For Piclking
+    def __getstate__(self):
+        return self
+    def __setstate__(self, state):
+        self.update(state)
+        self.__dict__ = self
 
 
 ### Base Object
@@ -148,13 +179,76 @@ class ExpeFormat(object):
 
     @staticmethod
     @decorator
-    def plot(fun, *args, **kwargs):
+    def plot_simple(fun, *args, **kwargs):
         self = args[0]
         expe = self.expe
-        f = fun(*args, **kwargs)
+        kernel = fun(*args, **kwargs)
         if hasattr(expe, 'block_plot') and getattr(self, 'noplot', False) is not True:
             display(block=expe.block_plot)
-        return f
+        return kernel
+
+    @staticmethod
+    def plot(*groups):
+        ''' If no argument, simple plot.
+            If arguments :
+                * [0] : group figure by this
+                * [1] : key for id (title and filename)
+        '''
+        if len(groups[1:]) == 0 and callable(groups[0]):
+            # decorator whithout arguments
+            return ExpeFormat.plot_simple(groups[0])
+        else:
+            def decorator(fun):
+                @wraps(fun)
+                def wrapper(*args, **kwargs):
+                    group = groups[0]
+                    self = args[0]
+                    expe = self.expe
+
+                    # Init Figs Sink
+                    if not hasattr(self.gramexp, 'figs'):
+                        figs = dict()
+                        for c in self.gramexp.get(group, []):
+                            figs[c] = ExpSpace()
+                            figs[c].fig = plt.figure()
+                        self.gramexp.figs = figs
+
+                    kernel = fun(*args, **kwargs)
+
+                    # Set title and filename
+                    title = ' '.join('{{{0}}}'.format(w) for w  in groups).format(**expe)
+                    expfig = self.gramexp.figs[expe[group]]
+                    expfig.fn = '%s_%s' % (fun.__name__, title.replace(' ', '_'))
+                    expfig.fig.gca().set_title(title)
+
+                    # Save on last call
+                    if self._it == self.expe_size -1:
+                        if expe.write:
+                            from private import out
+                            out.write_figs(expe, self.gramexp.figs)
+
+                    return kernel
+                return wrapper
+        return decorator
+
+    @staticmethod
+    #tensor in decorator to build SINK thiis th new tensor !!!!
+    def tabulate(*groups):
+        ''' TODO
+        '''
+        if len(groups[1:]) == 0 and callable(groups[0]):
+            # decorator whithout arguments
+            return groups[0]
+        else:
+            row = groups[0]
+            column = groups[1]
+            def decorator(fun):
+                @wraps(fun)
+                def wrapper(*args, **kwargs):
+                    kernel = fun(*args, **kwargs)
+                    return kernel
+                return wrapper
+        return decorator
 
     @classmethod
     def preprocess(cls, gramexp):

@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import sys, os
 import logging
-from argparse import Namespace
 lgg = logging.getLogger('root')
 
 # Frontend Manager Utilities
@@ -52,8 +51,6 @@ class FrontendManager(object):
     @staticmethod
     def get(expe, load=False):
         """ Return: The frontend suited for the given expeuration"""
-        if type(expe) is Namespace:
-            expe = vars(expe)
 
         corpus = expe.get('corpus') or expe.get('random')
         corpus_typo = {
@@ -95,8 +92,6 @@ class FrontendManager(object):
 
     @classmethod
     def load(cls, expe):
-        if type(expe) is Namespace:
-            expe = vars(expe)
         fr = cls.get(expe, load=True)
         fr.sample(expe.get('N'), randomize=False)
         return fr
@@ -119,8 +114,6 @@ class ModelManager(object):
             self.model = self._get_model(data, data_t)
 
     def _init(self, expe):
-        if type(expe) is Namespace:
-            expe = vars(expe)
 
         self.model_name = expe.get('model')
         self.hyperparams = expe.get('hyperparams', dict())

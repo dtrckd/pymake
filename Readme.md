@@ -49,26 +49,23 @@ With parallell :
 * `results/` contains analysis and report,
 * `pymake/` code source of the models and frontends.
 
-Data Lookup is coded in `util/frontend_io.py` and Output Data path specification depend on the following arguments :
-
-    [script_name] [bdir/-d]/[type]/[corpus/-c]/[subdir/--refdir]/[model/-m][iterations/-i]
+Data Lookup is coded in `util/frontend_io.py` and Output Data path specification are automatically adaptated from the design of experiments. Note that you can specify the format of the results of each expetiments with `--format options`, see examples.
 
 The Results of experiments are stored in data/[specification].
 
-### Models
 
-* Indian Buffet Process (IBP)
-* Dirichlet Process -- DP and HDP
-
-### Inference
+### Inference Scheme
 
 * Gibbs Samplers
 * Variationnal Bayes
 
-### Applications
+### Implemented Models
 * LDA (language)
 * MMSB (networks)
 * ILFM(networks)
+
+Notes : it includes nonparametric version using Hierarchical Dirichlet
+Processes (HDP) and Beta Process (IBP).
 
 ### Examples
 

@@ -12,7 +12,7 @@ numpy.seterr(divide='ignore')
 
 class CollapsedGibbsSampling(object):
     import scipy.stats;
-    
+
     """
     @param truncation_level: the maximum number of clusters, used for speeding up the computation
     @param snapshot_interval: the interval for exporting a snapshot of the model
@@ -40,38 +40,38 @@ class CollapsedGibbsSampling(object):
     def _initialize(self, data, alpha=1., kappa_0=1., nu_0=1., mu_0=None, lambda_0=None):
         self._X = data;
         (self._N, self._D) = self._X.shape;
-        
+
         # initialize every point to one cluster
         self._K = 1;
         self._count = numpy.zeros(self._truncation_level, numpy.uint8);
         self._count[0] = self._N;
         self._label = numpy.zeros(self._N, numpy.uint8);
-        
+
         # compute the sum and square sum of all cluster up to truncation level
         self._sum = numpy.zeros((self._truncation_level, self._D));
         self._sum[0, :] = numpy.sum(self._X, 0);
         self._square_sum = numpy.zeros((self._truncation_level, self._D, self._D));
         self._square_sum[[0], :, :] = numpy.dot(self._X.transpose(), self._X);
-        
+
         # initialize the initial mean for the cluster
         if mu_0 == None:
             self._mu_0 = numpy.zeros((1, self._D));
         else:
             self._mu_0 = mu_0;
         assert(self._mu_0.shape == (1, self._D));
-        
+
         # initialize the concentration parameter of the dirichlet distirbution
         self._alpha = alpha;
 
         # initialize the mean fraction
         self._kappa_0 = kappa_0;
-        
+
         # initialize the degree of freedom
         self._nu_0 = nu_0;
         if self._nu_0 < self._D:
-            print "warning: nu_0 is less than data dimensionality, will set to dimensionality..."
+            print("warning: nu_0 is less than data dimensionality, will set to dimensionality...")
             self._nu_0 = self._D;
-        
+
         # initialize the lambda
         if lambda_0 == None:
             self._lambda_0 = numpy.eye(self._D);
@@ -83,7 +83,7 @@ class CollapsedGibbsSampling(object):
         #self._sigma = numpy.zeros((self._truncation_level, self._D, self._D));
         self._sigma_inv = numpy.zeros((self._truncation_level, self._D, self._D));
         self._log_sigma_det = numpy.zeros(self._truncation_level);
-        
+
         # compute the sigma, inv(sigma) and log(det(sigma)) of the first cluster
         nu = self._nu_0 + self._count[0] - self._D + 1;
         mu_x = self._sum[[0], :] / self._count[0];
@@ -94,21 +94,21 @@ class CollapsedGibbsSampling(object):
         lambda_n = self._lambda_0 + S + self._kappa_0 * self._count[0] * numpy.dot(mu_x_mu_0.transpose(), mu_x_mu_0) / (self._kappa_0 + self._count[0]);
         sigma = (lambda_n * (self._kappa_0 + self._count[0] + 1)) / ((self._kappa_0 + self._count[0]) * nu);
         assert(numpy.linalg.det(sigma) > 0);
-        
+
         #self._sigma[0, :, :] = sigma;
         self._sigma_inv[0, :, :] = numpy.linalg.inv(sigma);
         self._log_sigma_det[0] = numpy.log(numpy.linalg.det(sigma));
-        
+
         # initialize the default log(det(sigma)) and inv(sigma) for new cluster
         nu = self._nu_0 - self._D + 1;
         sigma_0 = self._lambda_0 * (self._kappa_0 + 1) / (self._kappa_0 * nu);
         self._log_sigma_det_0 = numpy.log(numpy.linalg.det(sigma_0));
         self._sigma_inv_0 = numpy.linalg.inv(sigma_0);
-        
+
     """
     sample the data to train the parameters
     @param iteration: the number of gibbs sampling iteration
-    @param directory: the directory to save output, default to "../../output/tmp-output"  
+    @param directory: the directory to save output, default to "../../output/tmp-output"
     """
     def sample(self, iteration, directory="../../output/tmp-output/"):
         #sample the total data
@@ -123,7 +123,7 @@ class CollapsedGibbsSampling(object):
                 old_sigma_inv = self._sigma_inv[old_label, :, :];
                 old_log_sigma_det = self._log_sigma_det[old_label];
 
-                # remove the current point from the cluster                
+                # remove the current point from the cluster
                 self._count[old_label] -= 1;
                 if self._count[old_label] == 0:
                     # if current point is from a singleton cluster, shift the last cluster to current one
@@ -140,7 +140,7 @@ class CollapsedGibbsSampling(object):
                     # change the sum and square sum of the old cluster
                     self._sum[old_label, :] -= self._X[point_index, :];
                     self._square_sum[old_label, :, :] -= numpy.dot(self._X[[point_index], :].transpose(), self._X[[point_index], :]);
-                    
+
                     # change the inv(sigma) and log(det(sigma)) of the old cluster
                     mu_y = self._sum[[old_label], :] / self._count[old_label];
                     kappa_n = self._kappa_0 + self._count[old_label];
@@ -156,11 +156,11 @@ class CollapsedGibbsSampling(object):
                     #self._sigma[old_label, :, :] = sigma;
                     self._sigma_inv[old_label, :, :] = numpy.linalg.inv(sigma);
                     self._log_sigma_det[old_label] = numpy.linalg.det(sigma);
-                    
+
                 # compute the prior of being in any of the clusters
                 cluster_prior = numpy.hstack((self._count[:self._K], self._alpha));
                 cluster_prior = cluster_prior / (self._N - 1. + self._alpha);
-                
+
                 # initialize the likelihood vector for all clusters
                 cluster_likelihood = numpy.zeros(self._K + 1);
                 # compute the likelihood for the existing clusters
@@ -176,7 +176,7 @@ class CollapsedGibbsSampling(object):
                     assert(numpy.dot(numpy.dot(y_mu_n, self._sigma_inv[k, :, :]), y_mu_n.transpose()).shape == (1, 1))
                     log_prob -= 0.5 * (nu + self._D) * numpy.log(1. + 1. / nu * numpy.dot(numpy.dot(y_mu_n, self._sigma_inv[k, :, :]), y_mu_n.transpose()));
                     cluster_likelihood[k] = numpy.exp(log_prob);
-                    
+
                 # compute the likelihood for new cluster
                 nu = self._nu_0 - self._D + 1;
                 y_mu_0 = self._X[[point_index], :] - self._mu_0;
@@ -187,15 +187,15 @@ class CollapsedGibbsSampling(object):
                 assert(numpy.dot(numpy.dot(y_mu_0, self._sigma_inv_0), y_mu_0.transpose()).shape == (1, 1));
                 log_prob -= 0.5 * (nu + self._D) * numpy.log(1. + 1. / nu * numpy.dot(numpy.dot(y_mu_0, self._sigma_inv_0), y_mu_0.transpose()));
                 cluster_likelihood[self._K] = numpy.exp(log_prob);
-                
+
                 cluster_posterior = cluster_prior * cluster_likelihood;
                 cluster_posterior /= numpy.sum(cluster_posterior);
 
-                # sample a new cluster label for current point                
+                # sample a new cluster label for current point
                 cdf = numpy.cumsum(cluster_posterior);
                 new_label = numpy.uint8(numpy.nonzero(cdf >= numpy.random.random())[0][0]);
                 assert(new_label >= 0 and new_label <= self._K and numpy.dtype(new_label) == numpy.uint8);
-                
+
                 # if this point starts up a new cluster
                 if new_label == self._K:
                     self._K += 1;
@@ -203,7 +203,7 @@ class CollapsedGibbsSampling(object):
                 self._sum[new_label, :] += self._X[point_index, :];
                 self._square_sum[new_label, :, :] += numpy.dot(self._X[[point_index], :].transpose(), self._X[[point_index], :]);
                 self._label[point_index] = new_label;
-                
+
                 if old_label == new_label:
                     # if the point is allocated to the old cluster, retrieve all previous parameter
                     self._sigma_inv[new_label, :, :] = old_sigma_inv;
@@ -224,11 +224,11 @@ class CollapsedGibbsSampling(object):
                     #self._sigma[new_label, :, :] = sigma;
                     self._sigma_inv[new_label, :, :] = numpy.linalg.inv(sigma);
                     self._log_sigma_det[new_label] = numpy.linalg.det(sigma);
-                
+
             if iter > 0 and iter % 100 == 0:
-                print "sampling in progress %2d%%" % (100 * iter / iteration);
-                print "total number of cluster %i, likelihood is %f" % (self._K, self.log_likelihood());
-                
+                print("sampling in progress %2d%%" % (100 * iter / iteration))
+                print("total number of cluster %i, likelihood is %f" % (self._K, self.log_likelihood()))
+
             if (iter + 1) % self._snapshot_interval == 0:
                 self.export_snapshot(directory, iter + 1);
 
@@ -243,9 +243,9 @@ class CollapsedGibbsSampling(object):
             log_likelihood -= 0.5 * numpy.dot(numpy.dot(mean_offset, self._sigma_inv[self._label[n], :, :]), mean_offset.transpose());
 
         #todo: add in the likelihood for K and hyperparameter
-        
+
         return log_likelihood;
-                
+
     """
     """
     def export_snapshot(self, directory, index):
@@ -253,7 +253,7 @@ class CollapsedGibbsSampling(object):
         if not os.path.exists(directory):
             os.mkdir(directory);
         assert(directory.endswith("/"));
-        
+
         numpy.savetxt(directory + self._label_title + str(index), numpy.uint8(self._label));
         numpy.savetxt(directory + self._mu_title + str(index), self._sum[:self._K, :] / self._count[:self._K][numpy.newaxis, :].transpose());
         sigma = self._sigma_inv;
@@ -264,20 +264,20 @@ class CollapsedGibbsSampling(object):
         numpy.savetxt(directory + self._hyper_parameter_vector_title + str(index), vector);
         matrix = numpy.vstack((self._mu_0, self._lambda_0));
         numpy.savetxt(directory + self._hyper_parameter_matrix_title, matrix);
-        
-        print "successfully export the snapshot to " + directory + " for iteration " + str(index) + "..."
-        
+
+        prin( "successfully export the snapshot to " + directory + " for iteration " + str(index) + "...")
+
 """
 run IGMM on the synthetic clustering dataset.
 """
 if __name__ == '__main__':
     data = numpy.loadtxt('../../data/clustering/test.dat');
-        
+
     gs = CollapsedGibbsSampling();
     gs._initialize(data);
-    
+
     gs.sample(1000);
-    
-    print gs._K
-    print gs._count[:gs._K]
-    print gs._label
+
+    print( gs._K)
+    print( gs._count[:gs._K])
+    print( gs._label)
