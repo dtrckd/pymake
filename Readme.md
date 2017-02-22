@@ -2,10 +2,9 @@
 
 Pymake is machine-friendly platform for making reproducible research. It provides tools adapted for the creation of :
 * Complex and traceable design of experiments, as a **command-line** interface.
-* Models and workflows for Machhine Learning, as a **framework**.
+* Models and workflows for Machine Learning, as a **framework**.
 
-This code is in a living development stage and yet unstable.
-
+This code is in a living development stage and yet unstable and this introduction needs to be completed.
 
 ### Usage
 Script to create the path and commands for a design of experiments :
@@ -26,7 +25,7 @@ Script to create the path and commands for a design of experiments :
 
 List design of experiments :
 
-    pymake -l
+    pymake list
 
 Show one experiments :
 
@@ -34,9 +33,9 @@ Show one experiments :
 
 
 ###### Run experiments
-With parallell :
+With gnu-parallel :
 
-    zymake cmd ExpTensor | parralle [opt]  # to make run a list of experience in parallel
+    zymake cmd ExpeID --script ./fit.py | parallel [opt]  # to make run a list of experience in parallel
 
 
 ######  Results Analysis
@@ -62,7 +61,7 @@ The Results of experiments are stored in data/[specification].
 ### Implemented Models
 * LDA (language)
 * MMSB (networks)
-* ILFM(networks)
+* ILFM (networks)
 
 Notes : it includes nonparametric version using Hierarchical Dirichlet
 Processes (HDP) and Beta Process (IBP).
