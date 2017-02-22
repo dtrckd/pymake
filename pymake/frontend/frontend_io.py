@@ -2,7 +2,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import re, os, json, logging
-from argparse import Namespace
 from collections import defaultdict, OrderedDict
 import fnmatch
 import numpy as np
@@ -98,8 +97,6 @@ def make_output_path(expe, _type=None, status=False):
         @status: f finished
         @type: pk, json or inference.
     """
-    if type(expe) is Namespace:
-        expe = vars(expe)
 
     expe = defaultdict(lambda: None, expe)
     filen = None

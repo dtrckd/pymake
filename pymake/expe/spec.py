@@ -80,8 +80,8 @@ class Netw():
         ('hyper'        , ['fix','auto'])    , # ign in gen
         ('homo'         , 0)         , # ign in gen
         ('repeat'      , 0)       ,
-        ('_bind'    , ['immsb.auto', 'ibp.fix']),
-        ('iterations', '200'),
+        ('_bind'    , ['immsb.auto', 'ibp.fix', 'ibp.iterations.25', 'immsb.iterations.150']),
+        ('iterations', [25, 150]),
         ('testset_ratio', [40, 60, 80]),
         ('_format', '{model}_{K}_{hyper}_{homo}_{N}_{testset_ratio}')
 

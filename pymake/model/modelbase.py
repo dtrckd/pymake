@@ -4,6 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from datetime import datetime
 import pickle
 from copy import deepcopy
+import re
 
 import numpy as np
 import scipy as sp
@@ -12,21 +13,10 @@ from numpy.random import dirichlet, gamma, poisson, binomial, beta
 
 from pymake.util.math import lognormalize, categorical
 
-try:
-    import sympy as sym
-    from sympy.functions.combinatorial.numbers import stirling
-except:
-    pass
 #import sppy
 
 import logging
 lgg = logging.getLogger('root')
-
-try:
-    from pymake.util.compute_stirling import load_stirling
-    _stirling_mat = load_stirling()
-except Exception as e:
-    lgg.error('stirling.npy file not found, passing...')
 
 
 #
@@ -105,7 +95,7 @@ class ModelBase(object):
             self._samples = []
 
     # try on output_path i/o error manage fname_i
-    def load_some(self, iter_max=None):
+    def load_some(self, iter_max=None, get=None):
         filen = self.fname_i
         with open(filen) as f:
             data = f.read()
@@ -115,6 +105,17 @@ class ModelBase(object):
             data = data[:iter_max]
         # Ignore Comments
         data = [re.sub("\s\s+" , " ", x.strip()) for l,x in enumerate(data) if not x.startswith(('#', '%'))]
+
+        if get is not None:
+            sep = ' '
+            # __future__ remove
+            try:
+                csv_typo = self.csv_typo
+            except:
+                csv_typo = '# it it_time likelihood likelihood_t K alpha gamma alpha_mean delta_mean alpha_var delta_var'
+            col_typo = csv_typo.split()
+            col = col_typo.index(get) - 1
+            data = [row.split(sep)[col] for row in data]
 
         #ll_y = [row.split(sep)[column] for row in data]
         #ll_y = np.ma.masked_invalid(np.array(ll_y, dtype='float'))
@@ -438,10 +439,21 @@ class GibbsSampler(ModelBase):
         return res
 
 
+try:
+    import sympy as sym
+    from sympy.functions.combinatorial.numbers import stirling
+except:
+    pass
+from pymake.util.compute_stirling import load_stirling
+
 class MSampler(object):
 
+    try:
+        stirling_mat = load_stirling()
+    except Exception as e:
+        lgg.error('stirling.npy file not found, passing...')
+
     def __init__(self, zsampler):
-        self.stirling_mat = _stirling_mat
         self.zsampler = zsampler
         self.get_log_alpha_beta = zsampler.get_log_alpha_beta
         self.count_k_by_j = zsampler.doc_topic_counts

@@ -4,7 +4,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import pickle, json, copy
 from itertools import chain
 from string import Template
-from argparse import Namespace
 from collections import defaultdict
 import logging
 lgg = logging.getLogger('root')
@@ -62,8 +61,6 @@ class DataBase(object):
     """
 
     def __init__(self, expe, load=False):
-        if type(expe) is Namespace:
-            expe = vars(expe)
 
         if expe.get('seed'):
             #np.random.seed(expe.get('seed'))

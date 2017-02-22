@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np
 from numpy import ma
-from pymake import ExpTensor, ModelManager, FrontendManager, GramExp, ExpeFormat
+from pymake import ExpTensor, ModelManager, FrontendManager, GramExp, ExpeFormat, ExpSpace
 from pymake.expe.spec import _spec
 
 import logging
@@ -137,7 +137,7 @@ class GenNetwork(ExpeFormat):
             for m in models:
                 if _type == 'local':
                     table_shape = (len(corpuses), len(Meas), expe.K**2)
-                    table = ma.array(np.empty(table_shape), mask=np.ones(table_shape))
+                    table = ma.array(np.empty(table_shape), mask=True)
                 elif _type == 'global':
                     table = np.empty((len(corpuses), len(Meas), len(Y)))
                 tables[m] = table
@@ -158,7 +158,7 @@ class GenNetwork(ExpeFormat):
                 Meas = ['20']
             else:
                 Meas = self.gramexp.expe['testset_ratio']
-            tables = np.empty((len(corpuses), len(Meas), 2))
+            tables = ma.array(np.empty((len(corpuses), len(Meas),len(self.gramexp.get('repeat')), 2)), mask=True)
             self.gramexp.Meas = Meas
             self.gramexp.tables = tables
         else:
@@ -424,7 +424,7 @@ class GenNetwork(ExpeFormat):
                 if expe.write:
                     from private import out
                     fn = '%s_%s' % (_spec.name(_model), _type)
-                    out.write_table(expe, table, _fn=fn, ext='.md')
+                    out.write_table(table, _fn=fn, ext='.md')
 
     @ExpeFormat.plot
     def draw(self):
@@ -547,9 +547,9 @@ class GenNetwork(ExpeFormat):
                 if expe.write:
                     from private import out
                     fn = '%s_homo_%s' % (_spec.name(_model), _type)
-                    out.write_table(expe, table, _fn=fn, ext='.md')
+                    out.write_table(table, _fn=fn, ext='.md')
 
-    @ExpeFormat.plot
+    @ExpeFormat.plot('corpus', 'testset_ratio')
     def roc(self, _type='testset', _ratio=20, _predictall=False):
         ''' AUC/ROC test report '''
         from sklearn.metrics import roc_curve, auc, precision_recall_curve
@@ -561,15 +561,8 @@ class GenNetwork(ExpeFormat):
         if not hasattr(expe, 'testset_ratio'):
             setattr(expe, 'testset_ratio', 20)
 
-        if not hasattr(self.gramexp, 'figs'):
-            figs = {}
-            for c in self.gramexp.getCorpuses():
-                figs[c] = plt.figure()
-            setattr(self.gramexp, 'figs', figs)
+        ax = self.gramexp.figs[expe.corpus].fig.gca()
 
-        ax = self.gramexp.figs[expe.corpus].gca()
-
-        #mask = model.get_mask()
         if _type == 'testset':
             y_true, probas = model.mask_probas(data)
             if not _predictall:
@@ -589,23 +582,17 @@ class GenNetwork(ExpeFormat):
         fpr, tpr, thresholds = roc_curve(y_true, probas)
         roc_auc = auc(fpr, tpr)
         ax.plot(fpr, tpr, label='ROC %s (area = %0.2f)' % (expe.model, roc_auc))
-        ax.set_title(_spec.name(expe.corpus))
         self.noplot = True
 
         #precision, recall, thresholds = precision_recall_curve( y_true, probas)
         #plt.plot(precision, recall, label='PR curve; %s' % (expe.model ))
 
         if self._it == self.expe_size -1:
-            for c, fig in self.gramexp.figs.items():
-                ax = fig.gca()
+            for c, f in self.gramexp.figs.items():
+                ax = f.fig.gca()
                 ax.plot([0, 1], [0, 1], linestyle='--', color='k', label='Luck')
                 ax.legend(loc="lower right", prop={'size':10})
 
-            if expe.write:
-                from private import out
-                fn = 'roc_%s' % expe.testset_ratio
-                figs = self.gramexp.figs
-                out.write_figs(expe, figs, _fn=fn)
 
     def roc_evolution(self, _type='testset', _ratio=20, _predictall=False):
         ''' AUC difference between two models against testset_ratio  '''
@@ -614,7 +601,7 @@ class GenNetwork(ExpeFormat):
         model = self.model
         data = self.frontend.data
         _ratio = int(_ratio)
-        _predictall = bool(int(_predictall))
+        _predictall = bool(int(_predictall)) or _ratio == 100
         if not hasattr(expe, 'testset_ratio'):
             setattr(expe, 'testset_ratio', 20)
             self.testset_ratio_pos = 0
@@ -640,20 +627,49 @@ class GenNetwork(ExpeFormat):
             y_true = data[mask_index]
             probas = model.likelihood()[mask_index]
 
+        # Just the ONE:1
+        #idx_1 = (y_true == 1)
+        #idx_0 = (y_true == 0)
+        #size_1 = idx_1.sum()
+        #y_true = np.hstack((y_true[idx_1], y_true[idx_0][:size_1]))
+        #probas = np.hstack((probas[idx_1], probas[idx_0][:size_1]))
+
         fpr, tpr, thresholds = roc_curve(y_true, probas)
         roc_auc = auc(fpr, tpr)
 
-        table[self.corpus_pos, self.testset_ratio_pos, self.model_pos] = roc_auc
+        table[self.corpus_pos, self.testset_ratio_pos, self.pt['repeat'], self.model_pos] = roc_auc
 
         #precision, recall, thresholds = precision_recall_curve( y_true, probas)
         #plt.plot(precision, recall, label='PR curve; %s' % (expe.model ))
 
         if self._it == self.expe_size -1:
 
+            t = ma.array(np.empty(table[:,:,0,:].shape), mask=True)
+            t[:,:,0] = table[:, :, :, 0].mean(-1)
+            t[:,:,1] = table[:, :, :, 1].mean(-1)
+            table_mean = t.copy()
+            t[:,:,0] = table[:, :, :, 0].std(-1)
+            t[:,:,1] = table[:, :, :, 1].std(-1)
+            table_std = t
+
             #reduce end table
             id_mmsb = self.gramexp.exp_tensor['model'].index('immsb')
             id_ibp = 1 if id_mmsb == 0 else 0
-            table = table[:,:, id_mmsb] - table[:,:,id_ibp]
+            table_mean = table_mean[:,:, id_mmsb] - table_mean[:,:, id_ibp]
+            table_std = table_std[:,:, id_mmsb] + table_std[:,:, id_ibp]
+            ##table = table[:,:,:, id_mmsb] - table[:,:,:, id_ibp]
+
+            fig = plt.figure()
+            corpuses = _spec.name(self.gramexp.getCorpuses())
+            for i in range(len(corpuses)):
+                plt.errorbar(list(map(int,Meas)), table_mean[i], yerr=table_std[i], fmt=_markers.next(), label=corpuses[i])
+            plt.legend(loc='upper left',prop={'size':10})
+
+            ## average tables -- on repeat
+            #table_mean = np.char.array(np.around(table.mean(2), decimals=3)).astype("|S20")
+            #table_std = np.char.array(np.around(table.std(2), decimals=3)).astype("|S20")
+            #table = table_mean + b' $\pm$ ' + table_std
+            table = table_mean
 
             # Table formatting
             corpuses = _spec.name(self.gramexp.getCorpuses())
@@ -663,22 +679,25 @@ class GenNetwork(ExpeFormat):
             table = tabulate(table, headers=headers, tablefmt=tablefmt, floatfmt='.3f')
             print()
             print(table)
+            if expe.write:
+                from private import out
+                fn = '%s_%s' % ( _type, _ratio)
+                figs = {'roc_evolution': ExpSpace({'fig':fig, 'table':table, 'fn':fn})}
+                out.write_table(figs, ext='.md')
+                out.write_figs(expe, figs)
 
-    @ExpeFormat.plot
-    def perplexity(self):
+    @ExpeFormat.plot('corpus')
+    def plot_some(self, _type='likelihood'):
         ''' likelihood/perplxity convergence report '''
         expe = self.expe
         model = self.model
 
-        data = model.load_some()
+        ax = self.gramexp.figs[expe.corpus].fig.gca()
+
+        data = model.load_some(get='likelihood')
         burnin = 5
-        sep = ' '
-        # Test perplexity not done for masked data. Usefull ?!
-        #column = csv_row('likelihood_t')
-        column = csv_row('likelihood')
-        ll_y = [row.split(sep)[column] for row in data][5:]
-        ll_y = np.ma.masked_invalid(np.array(ll_y, dtype='float'))
-        plt.plot(ll_y, label=_spec.name(expe.model))
+        ll_y = np.ma.masked_invalid(np.array(data, dtype='float'))
+        ax.plot(ll_y, label=_spec.name(expe.model))
 
     @ExpeFormat.plot
     def clustering(self):
@@ -703,7 +722,7 @@ if __name__ == '__main__':
     from pymake.util.math import reorder_mat, sorted_perm, categorical, clusters_hist
     from pymake.util.utils import Now, nowDiff
     import matplotlib.pyplot as plt
-    from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2, random_degree, colored, draw_graph_circular, draw_graph_spectral, draw_graph_spring, tabulate
+    from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2, random_degree, colored, draw_graph_circular, draw_graph_spectral, draw_graph_spring, tabulate, _markers
     import itertools
 
     config = dict(

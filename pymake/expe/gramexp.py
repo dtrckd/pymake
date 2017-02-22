@@ -8,10 +8,10 @@ import operator
 import inspect, traceback
 from copy import deepcopy
 
-from argparse import Namespace, RawDescriptionHelpFormatter
+from argparse import RawDescriptionHelpFormatter
 
 from .gram import _Gram, ExpArgumentParser
-from pymake import basestring, ExpTensor, Expe, ExpeFormat, Model, Corpus, ExpVector
+from pymake import basestring, ExpTensor, Expe, ExpSpace, ExpeFormat, Model, Corpus, ExpVector
 from pymake.frontend.frontend_io import make_forest_conf, make_forest_path
 from pymake.expe.spec import _spec
 from pymake.plot import colored
@@ -53,9 +53,10 @@ class GramExp(object):
                * @Todo pass rule to filter experiments...
 
         Expe* can contains **special** keywords and value :
-            * _bind ->  [a.b , ...] --- a shoudld occur with b only.
+            * _bind rules ->  [a.b or a.b.c] --- a shoudld occur only with b,
+                        or for a, key b take only c.
                 List of rules of constraintson the design.
-            * if an attribute  take the value "_null_",
+            * if an attribute  take the value "_null",
               then it will be removed from the Exp. This can be usefull when piping
               ouptuf of pymake to some script to parallelize.
     '''
@@ -76,7 +77,7 @@ class GramExp(object):
 
     _exp_default = {
         'host'      : 'localhost',
-        'verbose'   : 20,
+        'verbose'   : logging.INFO,
         'load_data' : True,
         'save_data' : False,
         'write'     : False,
@@ -126,7 +127,7 @@ class GramExp(object):
         self.expe = conf
 
         # @logger One logger by Expe !
-        self.setup_logger(fmt='%(message)s', level=self.expe['verbose'])
+        self.setup_logger(fmt='%(message)s', level=self.expe.get('verbose'))
 
         if self.expe.get('simulate'):
             self.simulate()
@@ -150,7 +151,7 @@ class GramExp(object):
 
         # PREFILTERING
         for k in exp.copy():
-            if '_null_' in exp.get(k, []):
+            if '_null' in exp.get(k, []):
                 exp.pop(k)
 
         lod = make_forest_conf(exp)
@@ -160,10 +161,20 @@ class GramExp(object):
         itoremove = []
         for i, d in enumerate(lod):
             for rule in self._bind:
-                a, b = rule.split('.')
+                _bind = rule.split('.')
                 values = list(d.values())
-                if a in values and not b in values:
-                    itoremove.append(i)
+                if len(_bind) == 2:
+                    # remove all occurence of this
+                    a, b = _bind
+                    if a in values and not b in values:
+                        itoremove.append(i)
+                elif len(_bind) == 3:
+                    # remove occurence of this specific key:value
+                    # Get the type of this key:value
+                    a, b, c = _bind
+                    _type = type(d[b])
+                    if a in values and _type(c) != d[b]:
+                        itoremove.append(i)
 
         return [d for i,d in enumerate(lod) if i not in itoremove]
 
@@ -172,10 +183,13 @@ class GramExp(object):
         raise NotImplementedError
 
     def getCorpuses(self):
-        return self.exp_tensor['corpus']
+        return self.exp_tensor.get('corpus', [])
 
     def getModels(self):
-        return self.exp_tensor['model']
+        return self.exp_tensor.get('model',[])
+
+    def get(self, key, default=None):
+        return self.exp_tensor.get(key, default)
 
     def __len__(self):
         #return reduce(operator.mul, [len(v) for v in self.exp_tensor.values()], 1)
@@ -246,7 +260,6 @@ class GramExp(object):
         GramExp.expVectorLookup(settings)
         return settings
 
-    # @askseed
     @classmethod
     def zymake(cls, request={}, usage=''):
         usage ='''\
@@ -300,7 +313,6 @@ class GramExp(object):
             raise ValueError('unknow argument: %s\n\nAvailable SPEC : %s' % (do, _spec.keys()))
         return cls(request, usage=usage, parseargs=False)
 
-    # @askseed
     @classmethod
     def generate(cls, request={},  usage=''):
         usage = '''\
@@ -364,7 +376,6 @@ class GramExp(object):
             if sub_request:
                 request[k] = sub_request
 
-    # @askseed
     @classmethod
     def exp_tabulate(cls, conf={}, usage=''):
 
@@ -436,6 +447,7 @@ class GramExp(object):
         exit(2)
 
     def simulate(self, halt=True, file=sys.stdout):
+        print('-'*30)
         print('PYMAKE Request %s : %d expe' % (self.exp_tensor.name(), len(self) ), file=file)
         print(self.exptable(), file=file)
         if halt:
@@ -454,9 +466,11 @@ class GramExp(object):
             print ('what level of verbosity heeere ?')
             exit(2)
         elif level == -1:
-            level = logging.DEBUG
-        else:
+            level = logging.ERROR
+        elif level is None:
             level = logging.INFO
+        else:
+            level = level
 
         # Get logger
         logger = logging.getLogger(name)
@@ -509,7 +523,7 @@ class GramExp(object):
         for id_expe, expe in enumerate(self.lod):
             pt = dict((key, value.index(expe[key])) for key, value in self.exp_tensor.items() if isinstance(expe[key], (basestring, int, float)))
             pt['expe'] = id_expe
-            _expe = Namespace(**expe)
+            _expe = ExpSpace(**expe)
 
             # Init Expe
             try:
