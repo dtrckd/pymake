@@ -633,11 +633,11 @@ class GenNetwork(ExpeFormat):
             probas = model.likelihood()[mask_index]
 
         # Just the ONE:1
-        idx_1 = (y_true == 1)
-        idx_0 = (y_true == 0)
-        size_1 = idx_1.sum()
-        y_true = np.hstack((y_true[idx_1], y_true[idx_0][:size_1]))
-        probas = np.hstack((probas[idx_1], probas[idx_0][:size_1]))
+        #idx_1 = (y_true == 1)
+        #idx_0 = (y_true == 0)
+        #size_1 = idx_1.sum()
+        #y_true = np.hstack((y_true[idx_1], y_true[idx_0][:size_1]))
+        #probas = np.hstack((probas[idx_1], probas[idx_0][:size_1]))
 
         fpr, tpr, thresholds = roc_curve(y_true, probas)
         roc_auc = auc(fpr, tpr)
@@ -686,7 +686,7 @@ class GenNetwork(ExpeFormat):
             if expe.write:
                 from private import out
                 fn = '%s_%s_%s' % ( _type, _type2, _ratio)
-                figs = {'roc_evolution_1': ExpSpace({'fig':fig, 'table':table, 'fn':fn})}
+                figs = {'roc_evolution': ExpSpace({'fig':fig, 'table':table, 'fn':fn})}
                 out.write_table(figs, ext='.md')
                 out.write_figs(expe, figs)
 
