@@ -450,11 +450,11 @@ class GramExp(object):
               Nb of experiments : %s
               Corpuses : %s
               Models : %s
-              ''' % (len(self), self.getCorpuses(), self.getModels()))
+              ''' % (len(self), self.getCorpuses(), self.getModels()), file=sys.stdout)
         exit(2)
 
     def simulate(self, halt=True, file=sys.stdout):
-        print('-'*30)
+        print('-'*30, file=file)
         print('PYMAKE Request %s : %d expe' % (self.exp_tensor.name(), len(self) ), file=file)
         print(self.exptable(), file=file)
         if halt:

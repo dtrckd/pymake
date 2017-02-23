@@ -1,8 +1,8 @@
 # Code Factoring
 
-@here
-* move .0. -> . resulrs
-* plot(integrale  dela surface roc en fonction de testset_ratio
+@efzefze
+    * decorator for tabulate ?
+    * tensor conf and meas\_... ?
 
 @init
 * if no _spec 'print help'
