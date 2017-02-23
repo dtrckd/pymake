@@ -56,5 +56,5 @@ if __name__ == '__main__':
         lines = [' '.join((' '.join(script), l)) for l in lines]
 
     zymake.simulate(halt=False, file=sys.stderr)
-    print( '\n'.join(lines))
+    print('\n'.join(lines), file=sys.stdout)
 

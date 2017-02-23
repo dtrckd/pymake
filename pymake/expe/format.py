@@ -128,7 +128,7 @@ class ExpDesign(dict, BaseObject):
             d = dict(l)
             for k, v in d.items():
                 if isinstance(v, basestring) and v in mapname:
-                    d[k] = mapname[v]
+                    d[k] = mapname[v].replace(' ', '').lower()
             return d
         else :
             return mapname.get(l, l)

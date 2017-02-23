@@ -6,14 +6,14 @@ md_fix := img/fix/*.md
 md_files := figs/*.md
 image_files := $(wildcard figs/*.png)
 latex_files := $(wildcard figs/*.tex)
-TARGET := expe_dev.tex
+TARGET := long_version/expe_dev.tex
 
 default: paper
 
 paper: figs
 	pushd $(pap_base)
 	pdflatex $(TARGET)
-	popd -
+	popd
 
 figs: latex move
 

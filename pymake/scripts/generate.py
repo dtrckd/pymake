@@ -102,7 +102,7 @@ class GenNetwork(ExpeFormat):
         if model is None:
             raise FileNotFoundError('No model for Expe at :  %s' % self.expe.output_path)
 
-        if expe._do[0] in ('burstiness','pvalue','homo'):
+        if expe._do[0] in ('burstiness','pvalue','homo', 'homo_mustach'):
             ### Generate data
             Y = []
             now = Now()
@@ -549,6 +549,83 @@ class GenNetwork(ExpeFormat):
                     fn = '%s_homo_%s' % (_spec.name(_model), _type)
                     out.write_table(table, _fn=fn, ext='.md')
 
+    @ExpeFormat.plot('model')
+    def homo_mustach(self,):
+        """ Hmophily mustach
+        """
+        if self.model is None: return
+        expe = self.expe
+        figs = []
+
+        Y = self._Y
+        N = Y[0].shape[0]
+        model = self.model
+
+
+        if not hasattr(self.gramexp, 'tables'):
+            corpuses = _spec.name(self.gramexp.getCorpuses())
+            models = self.gramexp.getModels()
+            tables = {}
+            corpuses = _spec.name(self.gramexp.getCorpuses())
+            for m in models:
+                sim = [ 'natural', 'latent']
+                Meas = ['links', 'non-links']
+                table = {'natural': {'links':[], 'non-links':[]},'latent': {'links':[], 'non-links':[]} }
+                tables[m] = table
+
+            self.gramexp.Meas = Meas
+            self.gramexp.tables = tables
+            table = tables[expe.model]
+        else:
+            table = self.gramexp.tables[expe.model]
+            Meas = self.gramexp.Meas
+
+
+        ### Global degree
+        d, dc, yerr = random_degree(Y)
+        sim_nat = model.similarity_matrix(sim='natural')
+        sim_lat = model.similarity_matrix(sim='latent')
+        step_tab = len(_spec.name(self.gramexp.getCorpuses()))
+
+        if not hasattr(self.gramexp.figs[expe.model], 'damax'):
+            damax = -np.inf
+        else:
+            damax = self.gramexp.figs[expe.model].damax
+        self.gramexp.figs[expe.model].damax = max(sim_nat.max(), sim_lat.max(), damax)
+        for it_dat, data in enumerate(Y):
+
+            #homo_object = data
+            #homo_object = model.likelihood()
+
+            table['natural']['links'].extend(sim_nat[data == 1].tolist())
+            table['natural']['non-links'].extend(sim_nat[data == 0].tolist())
+            table['latent']['links'].extend(sim_lat[data == 1].tolist())
+            table['latent']['non-links'].extend(sim_lat[data == 0].tolist())
+
+
+        if self._it == self.expe_size -1:
+            for _model, table in self.gramexp.tables.items():
+                ax = self.gramexp.figs[_model].fig.gca()
+
+                bp = ax.boxplot([table['natural']['links']    ], widths=0.5,  positions = [1])
+                bp = ax.boxplot([table['natural']['non-links']], widths=0.5,  positions = [2])
+                bp = ax.boxplot([table['latent']['links']     ], widths=0.5,  positions = [4])
+                bp = ax.boxplot([table['latent']['non-links'] ], widths=0.5,  positions = [5])
+
+                ax.set_ylabel('Similarity')
+                ax.set_xticks([1.5,4.5])
+                ax.set_xticklabels((_spec.name(_model)+'/natural', _spec.name(_model)+'/latent'), rotation=15)
+                ax.set_xlim(0,6)
+
+                nbox = 4
+                top = self.gramexp.figs[_model].damax
+                pos = [1,2,4,5]
+                upperLabels = ['links','non-links']*2
+                weights = ['light', 'ultralight']
+                for tick  in range(nbox):
+                    ax.text(pos[tick], top+top*0.015 , upperLabels[tick],
+                             horizontalalignment='center', size='x-small', weight=weights[tick%2])
+
     @ExpeFormat.plot('corpus', 'testset_ratio')
     def roc(self, _type='testset', _ratio=20):
         ''' AUC/ROC test report '''
@@ -594,7 +671,7 @@ class GenNetwork(ExpeFormat):
                 ax.legend(loc="lower right", prop={'size':10})
 
 
-    def roc_evolution(self, _type='testset', _type2='max', _ratio=20):
+    def roc_evolution(self, _type='testset', _type2='max', _ratio=20, _type3='errorbar'):
         ''' AUC difference between two models against testset_ratio
             * _type : learnset/testset
             * _type2 : max/min/mean
@@ -633,11 +710,11 @@ class GenNetwork(ExpeFormat):
             probas = model.likelihood()[mask_index]
 
         # Just the ONE:1
-        idx_1 = (y_true == 1)
-        idx_0 = (y_true == 0)
-        size_1 = idx_1.sum()
-        y_true = np.hstack((y_true[idx_1], y_true[idx_0][:size_1]))
-        probas = np.hstack((probas[idx_1], probas[idx_0][:size_1]))
+        #idx_1 = (y_true == 1)
+        #idx_0 = (y_true == 0)
+        #size_1 = idx_1.sum()
+        #y_true = np.hstack((y_true[idx_1], y_true[idx_0][:size_1]))
+        #probas = np.hstack((probas[idx_1], probas[idx_0][:size_1]))
 
         fpr, tpr, thresholds = roc_curve(y_true, probas)
         roc_auc = auc(fpr, tpr)
@@ -665,17 +742,28 @@ class GenNetwork(ExpeFormat):
             table_mean = table_mean[:,:, id_mmsb] - table_mean[:,:, id_ibp]
             table_std = table_std[:,:, id_mmsb] + table_std[:,:, id_ibp]
 
-            #table = table_mean + b' $\pm$ ' + table_std
-            table = table_mean
+            if _type2 != 'mean':
+                table_std = [None] * len(table_std)
 
             fig = plt.figure()
             corpuses = _spec.name(self.gramexp.getCorpuses())
             for i in range(len(corpuses)):
-                plt.errorbar(Meas, table_mean[i], fmt=_markers.next(), label=corpuses[i])
+                if _type3 == 'errorbar':
+                    plt.errorbar(list(map(int, Meas)), table_mean[i], yerr=table_std[i],
+                                 fmt=_markers.next(),
+                                 label=corpuses[i])
+                elif _type3 == 'boxplot':
+                    bplot = table[i,:,:,0] - table[i,:,:,1]
+                    plt.boxplot(bplot.T, labels=corpuses[i])
+                    fig.gca().set_xticklabels(Meas)
+
             plt.errorbar(Meas,[0]*len(Meas), linestyle='--', color='k')
             plt.legend(loc='upper left',prop={'size':7})
 
             # Table formatting
+            #table = table_mean + b' $\pm$ ' + table_std
+            table = table_mean
+
             corpuses = _spec.name(self.gramexp.getCorpuses())
             table = np.column_stack((_spec.name(corpuses), table))
             tablefmt = 'simple'
@@ -686,7 +774,7 @@ class GenNetwork(ExpeFormat):
             if expe.write:
                 from private import out
                 fn = '%s_%s_%s' % ( _type, _type2, _ratio)
-                figs = {'roc_evolution_1': ExpSpace({'fig':fig, 'table':table, 'fn':fn})}
+                figs = {'roc_evolution': ExpSpace({'fig':fig, 'table':table, 'fn':fn})}
                 out.write_table(figs, ext='.md')
                 out.write_figs(expe, figs)
 
