@@ -2,7 +2,7 @@
 
 from pymake import Expe, ExpTensor, Corpus, ExpDesign
 
-class Netw():
+class Netw(ExpDesign):
 
     _mapname = dict((
         ('propro'   , 'Protein')  ,
@@ -233,6 +233,6 @@ class Netw():
     )
 
 
-_spec = ExpDesign((k, getattr(Netw, k)) for k in dir(Netw) if not k.startswith('__') )
+_spec = Netw()
 
 

@@ -12,7 +12,7 @@ from argparse import RawDescriptionHelpFormatter
 
 from .gram import _Gram, ExpArgumentParser
 from pymake import basestring, ExpTensor, Expe, ExpSpace, ExpeFormat, Model, Corpus, ExpVector
-from pymake.frontend.frontend_io import make_forest_conf, make_forest_path
+from pymake.frontend.frontend_io import make_forest_conf, make_forest_path, make_output_path
 from pymake.expe.spec import _spec
 from pymake.plot import colored
 
@@ -426,6 +426,13 @@ class GramExp(object):
 
     def make_path(self, ftype, status=None, fullpath=None):
         return make_forest_path(self.lod, ftype, status, fullpath)
+
+    def reorder_lastvalid(self, _type='pk'):
+        for i, e in enumerate(self.lod):
+            if make_output_path(e, _type=_type, status='f'):
+                self.lod[-1], self.lod[i] = self.lod[i], self.lod[-1]
+                break
+        return
 
 
     def expname(self):

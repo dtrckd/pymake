@@ -7,6 +7,7 @@ from collections import OrderedDict, defaultdict
 from pymake.plot import colored, display, tabulate
 from decorator import decorator
 from functools import wraps
+from pymake import basestring
 
 import matplotlib.pyplot as plt
 
@@ -71,7 +72,16 @@ class BaseObject(object):
         return tabulate(self.items())
 
 class ExpDesign(dict, BaseObject):
-    _reserved_keywords = ['_mapname']
+    _reserved_keywords = ['_mapname', '_name', '_reserved_keywords']+dir(dict)+dir(BaseObject) # _* ?
+    def __init__(self,  *args, **kwargs):
+        dict.__init__(self, *args, **kwargs)
+        name = self.pop('_name', 'expDesign')
+        BaseObject.__init__(self, name)
+
+        for k in self.__dir__():
+            #_spec = ExpDesign((k, getattr(Netw, k)) for k in dir(Netw) if not k.startswith('__') )
+            if not k.startswith('__'):
+                self[k] = getattr(self, k)
 
     # no more complex.
     # @sortbytype
@@ -80,7 +90,7 @@ class ExpDesign(dict, BaseObject):
 
         Headers = OrderedDict((('Corpuses',Corpus),
                                ('Exp',(Expe, ExpTensor)),
-                               ('Unknown',str)))
+                               ('Unknown', str)))
         tables = [ [] for i in range(len(Headers))]
         for name, _type in glob_table:
             try:
@@ -104,7 +114,7 @@ class ExpDesign(dict, BaseObject):
                                 headers=[list(Headers.keys())[sec]]+['']*(col),
                                 tablefmt=fmt))
         sep = '\n'+'='*20+'\n'
-        return sep[1:]+sep.join(raw)
+        return '#'+self.__name__ +sep+sep.join(raw)
 
     def name(self, l):
         if '_mapname' in self:
@@ -114,6 +124,12 @@ class ExpDesign(dict, BaseObject):
 
         if isinstance(l, (set, list, tuple)):
             return [ mapname.get(i, i) for i in l ]
+        elif isinstance(l, (dict, ExpSpace)):
+            d = dict(l)
+            for k, v in d.items():
+                if isinstance(v, basestring) and v in mapname:
+                    d[k] = mapname[v]
+            return d
         else :
             return mapname.get(l, l)
 
@@ -148,9 +164,11 @@ class ExpTensor(OrderedDict, BaseObject):
                                headers=['Params','Values'])
 #\
 
+
 class ExpeFormat(object):
     def __init__(self, pt, expe, gramexp):
         from pymake.expe.spec import _spec
+        self.specname = _spec.name
         # Global
         self.expe_size = len(gramexp)
         self.gramexp = gramexp
@@ -167,8 +185,8 @@ class ExpeFormat(object):
         lgg.info(''.join([colored('Expe %d/%d', 'red'),
                           ' : %s -- %s -- N=%s -- K=%s']) % (
                               self._it+1, self.expe_size,
-                              _spec.name(expe.corpus),
-                              _spec.name(expe.model),
+                              self.specname(expe.corpus),
+                              self.specname(expe.model),
                               expe.N, expe.K,))
         lgg.info('---')
 
@@ -216,7 +234,7 @@ class ExpeFormat(object):
                     kernel = fun(*args, **kwargs)
 
                     # Set title and filename
-                    title = ' '.join('{{{0}}}'.format(w) for w  in groups).format(**expe)
+                    title = ' '.join('{{{0}}}'.format(w) for w in groups).format(**self.specname(expe))
                     expfig = self.gramexp.figs[expe[group]]
                     expfig.fn = '%s_%s' % (fun.__name__, title.replace(' ', '_'))
                     expfig.fig.gca().set_title(title)
@@ -260,6 +278,10 @@ class ExpeFormat(object):
             #import matplotlib; matplotlib.use('Agg')
             # killu
             pass
+
+        # Put a valid expe a the end.
+        gramexp.reorder_lastvalid()
+
         return
 
     @classmethod
@@ -269,8 +291,6 @@ class ExpeFormat(object):
         # * if @tabulate then ...
         #   etc..
         cls.display(gramexp.expe)
-
-
 
     def __call__(self):
         raise NotImplementedError
