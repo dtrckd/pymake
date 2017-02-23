@@ -140,7 +140,7 @@ def is_empty_file(filen):
     if not os.path.isfile(filen) or os.stat(filen).st_size == 0:
         return True
 
-    with open(filen, 'r') as f: first_line = f.readline()
+    with open(filen, 'rb') as f: first_line = f.readline()
     if first_line[0] in ('#', '%') and sum(1 for line in open(filen)) <= 1:
         # empy file
         return True
@@ -187,7 +187,7 @@ def make_forest_conf(dol_spec):
 
 def make_forest_path(lod, _type, status='f', full_path=False):
     """ Make a list of path from a spec/dict, the filename are
-        oredered need to be align with teh get_from_conf_file.
+        oredered need to be align with the get_from_conf_file.
 
         *args -> make_output_path
     """
