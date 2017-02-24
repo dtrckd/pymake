@@ -3,9 +3,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import sys, os
 from string import Template
 
+from .frontend import DataBase
 from pymake.util.utils import make_path
 from pymake.util.vocabulary import Vocabulary, parse_corpus
-from .frontend import DataBase
 
 sys.path.insert(1, os.path.join(os.path.dirname(__file__),'../../../gensim'))
 
@@ -275,7 +275,6 @@ class frontendText(DataBase):
    #     ############
    #     ### Load LDA
    #     load = config['load_model']
-   #     save = config['save_model']
    #     # Path for LDA model!
    #     bdir = '../PyNPB/data/'
    #     bdir = os.path.join(bdir,config.get('corpus'), config.get('bdir', ''))
@@ -285,9 +284,7 @@ class frontendText(DataBase):
 
    #     ##############
    #     ### Log Output
-   #     print
    #     lda.print_topics(K)
-   #     print
 
    #     ##############
    #     ### Prediction
@@ -333,7 +330,6 @@ class frontendText(DataBase):
    #         for d in corpus:
    #             print lda.get_document_topics(d, minimum_probability=0.01)
 
-   #     print
    #     print lda
    #     if type(corpus) is not list:
    #         print corpus

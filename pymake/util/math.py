@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+from numpy import ma
 import scipy as sp
 import networkx as nx
 from .utils import nxG
@@ -144,50 +145,50 @@ def adj_to_degree(y):
     #ba_c = nx.degree_centrality(G)
     return nx.degree(G)
 
-def degree_hist(_degree):
-    degree = _degree.values() if type(_degree) is dict else _degree
-    bac = dict(Counter(degree))
+def degree_hist(_degree, filter_zeros=False):
+    degree = list(_degree.values()) if type(_degree) is dict else _degree
 
-    #ba_x,ba_y = log_binning(bac,50)
-    d = np.array(list(bac.keys()))  # Degrees
-    dc = np.array(list(bac.values())) # Degree counts
+    max_c = np.max(degree)
+    d = np.arange(max_c+1)
+    dc = np.bincount(degree, minlength=max_c+1)
 
-    if d[0] == 0:
+    if len(d) == 0:
+        return [], []
+
+    if dc[0] > 0:
         lgg.debug('%d unconnected vertex' % dc[0])
-        d = d[1:]
-        dc = dc[1:]
+    d = d[1:]
+    dc = dc[1:]
 
 
-    if len(d) != 0:
-        d, dc = zip(*sorted(zip(d, dc)))
-    return np.round(d), np.round(dc)
+    if filter_zeros is True:
+        #d, dc = zip(*filter(lambda x:x[1] != 0, zip(d, dc)))
+        nzv = (dc != 0)
+        d = d[nzv]
+        dc = dc[nzv]
+
+    return d, dc
 
 def random_degree(Y, params=None):
     _X = []
     _Y = []
     N = Y[0].shape[0]
-    size = []
+    nb_uniq_degree = []
+    dc_list = []
     for y in Y:
         ba_c = adj_to_degree(y)
         d, dc = degree_hist(ba_c)
+        nb_uniq_degree.append(len(dc))
+        dc_list.append(dc)
+    dc_mat = ma.array(np.empty((N, max(nb_uniq_degree))), mask=True)
+    for i, degrees in enumerate(dc_list):
+        size = nb_uniq_degree[i]
+        dc_mat[i, :size] = degrees
 
-        _X.append(d)
-        _Y.append(dc)
-        size.append(len(_Y[-1]))
-
-    min_d = min(size)
-    for i, v in enumerate(_Y):
-        if len(v) > min_d:
-            _X[i] = _X[i][:min_d]
-            _Y[i] = _Y[i][:min_d]
-
-    X = np.array(_X)
-    Y = np.array(_Y)
-    x = X.mean(0)
-    y = Y.mean(0)
-    yerr = Y.std(0)
-    return np.round(x), np.round(y), yerr
-
+    y = dc_mat.mean(0)
+    yerr = dc_mat.std(0)
+    # 0 are filtered out in degree_hist
+    return np.arange(1, len(y)+1),  np.round(y), yerr
 
 def reorder_mat(y, clusters, reverse=True, labels=False):
     """Reorder the  matrix according the clusters membership

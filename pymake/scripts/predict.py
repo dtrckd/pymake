@@ -1,16 +1,15 @@
 #!/usr/bin/python3 -u
 # -*- coding: utf-8 -*-
 
-from frontend.manager import ModelManager, FrontendManager
-from frontend.frontendnetwork import frontendNetwork
-from util.utils import *
-from util.math import *
-from plot import *
-from expe.spec import _spec_; _spec = _spec_()
-from expe.format import *
-from util.argparser import argparser
+from pymake.frontend.manager import ModelManager, FrontendManager
+from pymake.frontend.frontendnetwork import frontendNetwork
+from pymake.expe.spec import _spec
+from pymake.expe.format import *
+from pymake.util.argparser import argparser
+from pymake.util.utils import *
+from pymake.util.math import *
+from pymake.plot import *
 
-from collections import Counter, defaultdict
 import itertools
 
 """ AUC-ROC analysis on test data
@@ -18,12 +17,11 @@ import itertools
 
 ####################################################
 ### Config
-config = defaultdict(lambda: False, dict(
-    load_data = True
-    write_to_file = False,
+config = dict(
+    write = False,
     gen_size      = 1000,
     epoch         = 10 , #20
-))
+)
 config.update(argparser.generate(''))
 
 alpha = 0.5
@@ -105,6 +103,4 @@ for corpus_name in Corpuses:
 
     display(False)
 
-if not config.get('write_to_file'):
-    display(True)
 

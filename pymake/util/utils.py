@@ -18,93 +18,17 @@ class Cycle(object):
         self.seq = seq
         self.it = np.nditer([seq])
     def next(self):
+        return self.__next__()
+    def __next__(self):
         try:
-            return self.it.next().item()
+            return next(self.it).item()
         except StopIteration:
             self.it.reset()
             # Exception on nditer when seq is empty (infinite recursivity)
             return self.next()
+
     def reset(self):
         return self.it.reset()
-
-# use https://github.com/kennethreitz/args
-def argParse(usage="Usage ?"):
-    argdict = defaultdict(lambda: False)
-    for i, arg in enumerate(sys.argv):
-        if arg in ('-np', '--no-print', '--printurl'):
-            argdict['noprint'] = True
-        elif arg in ('-w',):
-            argdict.update(write = True)
-        elif arg in ('-nv',):
-            argdict.update(verbose = logging.WARN)
-        elif arg in ('-v',):
-            argdict.update(verbose = logging.DEBUG)
-        elif arg in ('-vv',):
-            argdict.update(verbose = logging.CRITICAL)
-        elif arg in ('-p',):
-            argdict.update(predict = 1)
-        elif arg in ('-s',):
-            argdict['simul'] = arg
-        elif arg in ('-nld',):
-            argdict['load_data'] = False
-        elif arg in ('--seed',):
-            argdict['seed'] = 42
-        elif arg in ('-n', '--limit'):
-            # no int() because could be all.
-            _arg = sys.argv.pop(i+1)
-            argdict['N'] = _arg
-        elif arg in ('--alpha', '--hyper'):
-            _arg = sys.argv.pop(i+1)
-            argdict['hyper'] = _arg
-        elif arg in ('--hyper_prior', ):
-            _arg = []
-            while(sys.argv[i+1].isdigit()):
-                _arg.append(int(sys.argv.pop(i+1)))
-            argdict['hyper_prior'] = _arg
-        elif arg in ('--refdir',):
-            _arg = sys.argv.pop(i+1)
-            argdict['refdir'] = _arg
-        elif arg in ('--repeat',):
-            repeat = int(sys.argv.pop(i+1))
-            if repeat < 0:
-                _arg = ''
-            else:
-                _arg = str(repeat)
-            argdict['repeat'] = _arg
-        elif arg in ('-k',):
-            _arg = sys.argv.pop(i+1)
-            argdict['K'] =int(_arg)
-        elif arg in ('--homo',):
-            _arg = int(sys.argv.pop(i+1))
-            argdict['homo'] = _arg
-        elif arg in ('-i',):
-            _arg = int(sys.argv.pop(i+1))
-            argdict['iterations'] = _arg
-        elif arg in ('-c',):
-            _arg = sys.argv.pop(i+1)
-            argdict['corpus_name'] = _arg
-        elif arg in ('-m',):
-            _arg = sys.argv.pop(i+1)
-            argdict['model_name'] = _arg
-        elif arg in ('-d',):
-            _arg = sys.argv.pop(i+1)
-            argdict['bdir'] = _arg+'/'
-        elif arg in ('-r', '--random', 'random'):
-            _arg = sys.argv.pop(i+1)
-            argdict['corpus'] = _arg
-        elif arg in ('-g'):
-            argdict.update(random = False)
-        elif arg in ('--help','-h'):
-            print(usage)
-            exit(0)
-        else:
-            if i == 0:
-                argdict.setdefault('arg', False)
-                #argdict.setdefault('arg', 'no args')
-            else:
-                argdict.update({arg:arg})
-
-    return argdict
 
 def ask_sure_exit(question):
 
@@ -117,27 +41,10 @@ def ask_sure_exit(question):
         else:
             print("Enter either yes/no")
 
-def setup_logger(name, fmt, verbose, file=None):
-    #formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
-    #logging.basicConfig(format='Gensim : %(message)s', level=logging.DEBUG)
-    logging.basicConfig(format=fmt, level=verbose)
-
-    formatter = logging.Formatter(fmt=fmt)
-
-    handler = logging.StreamHandler()
-    handler.setFormatter(formatter)
-
-    logger = logging.getLogger(name)
-    logger.setLevel(verbose)
-    logger.addHandler(handler)
-
-    # prevent twice loggin
-    logger.propagate = False
-    return logger
-
-
 def Now():
     return  datetime.now()
+def nowDiff(last):
+    return datetime.now() - last
 def ellapsed_time(text, since):
     current = datetime.now()
     delta = current - since
@@ -285,8 +192,7 @@ def nxG(y):
         else:
             # Directed Graph
             typeG = nx.DiGraph()
-        G = nx.from_numpy_matrix(y, typeG)
+        G = nx.from_numpy_matrix(y, create_using=typeG)
     else:
         G = y
-
     return G

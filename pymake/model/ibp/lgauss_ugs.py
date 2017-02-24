@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, print_function, unicode_literals
 """
 @author: Ke Zhai (zhaike@cs.umd.edu)
 
@@ -312,7 +314,7 @@ if __name__ == '__main__':
     features = mat_vals['features']
     data = mat_vals['data']
 
-    print true_weights.shape, features.shape, data.shape
+    print( true_weights.shape, features.shape, data.shape)
 
     # set up the hyper-parameter for sampling alpha
     alpha_hyper_parameter = (1., 1.);
@@ -333,7 +335,7 @@ if __name__ == '__main__':
     #print ibp._Z, "\n", ibp._A
     ibp.sample(30);
 
-    print ibp._Z.sum(axis=0)
+    print( ibp._Z.sum(axis=0))
 
     # If matplotlib is installed, plot ground truth vs learned factors
     import matplotlib.pyplot as P

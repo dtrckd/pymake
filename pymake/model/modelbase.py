@@ -2,27 +2,21 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from datetime import datetime
-import logging
-lgg = logging.getLogger('root')
+import pickle
+from copy import deepcopy
+import re
 
 import numpy as np
+import scipy as sp
 from scipy.special import gammaln
 from numpy.random import dirichlet, gamma, poisson, binomial, beta
 
 from pymake.util.math import lognormalize, categorical
 
-try:
-    import sympy as sym
-    from sympy.functions.combinatorial.numbers import stirling
-except:
-    pass
 #import sppy
 
-try:
-    from pymake.util.compute_stirling import load_stirling
-    _stirling_mat = load_stirling()
-except:
-    lgg.error('strling.npy file not found, passing...')
+import logging
+lgg = logging.getLogger('root')
 
 
 #
@@ -39,12 +33,12 @@ class ModelBase(object):
     * Virtual methods for the desired propertie of models
     """
     default_settings = {
-        'snapshot_interval' : 100, # UNUSED
         'write' : False,
         'output_path' : 'tm-output',
         'csv_typo' : None,
         'fmt' : None,
-        'iterations' : 1
+        'iterations' : 1,
+        'snapshot_freq': 20,
     }
     def __init__(self, **kwargs):
         """ Model Initialization strategy:
@@ -101,7 +95,7 @@ class ModelBase(object):
             self._samples = []
 
     # try on output_path i/o error manage fname_i
-    def load_some(self, iter_max=None):
+    def load_some(self, iter_max=None, get=None):
         filen = self.fname_i
         with open(filen) as f:
             data = f.read()
@@ -111,6 +105,17 @@ class ModelBase(object):
             data = data[:iter_max]
         # Ignore Comments
         data = [re.sub("\s\s+" , " ", x.strip()) for l,x in enumerate(data) if not x.startswith(('#', '%'))]
+
+        if get is not None:
+            sep = ' '
+            # __future__ remove
+            try:
+                csv_typo = self.csv_typo
+            except:
+                csv_typo = '# it it_time likelihood likelihood_t K alpha gamma alpha_mean delta_mean alpha_var delta_var'
+            col_typo = csv_typo.split()
+            col = col_typo.index(get) - 1
+            data = [row.split(sep)[col] for row in data]
 
         #ll_y = [row.split(sep)[column] for row in data]
         #ll_y = np.ma.masked_invalid(np.array(ll_y, dtype='float'))
@@ -150,7 +155,15 @@ class ModelBase(object):
         if hasattr(self, 'theta') and hasattr(self, 'phi'):
             return self.theta, self.phi
         else:
-            return self.reduce_latent()
+            return self._reduce_latent()
+
+    def getK(self):
+        theta, _ = self.get_params()
+        return theta.shape[1]
+
+    def getN(self):
+        theta, _ = self.get_params()
+        return theta.shape[0]
 
     def purge(self):
         """ Remove variable that are non serializable. """
@@ -163,6 +176,44 @@ class ModelBase(object):
     def get_hyper(self):
         lgg.error('no method to get hyperparams')
         return
+
+    def save(self, silent=False):
+        fn = self.output_path + '.pk'
+        model = deepcopy(self)
+        model.purge()
+        to_remove = []
+        for k, v in model.__dict__.items():
+            if hasattr(v, 'func_name') and v.func_name == '<lambda>':
+                to_remove.append(k)
+            if str(v).find('<lambda>') >= 0:
+                # python3 hook, nothing better ?
+                to_remove.append(k)
+            #elif type(k) is defaultdict:
+            #    setattr(self.model, k, dict(v))
+
+        for k in to_remove:
+            try:
+                delattr(model, k)
+            except:
+                pass
+
+        if not silent:
+            lgg.info('Snapshotting Model : %s' % fn)
+        with open(fn, 'wb') as _f:
+            return pickle.dump(model, _f, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            try:
+                setattr(result, k, deepcopy(v, memo))
+            except:
+                #print('can\'t copy %s : %s' % (k, v))
+                continue
+        return result
 
     # Just for MCMC ?():
     def generate(self):
@@ -244,8 +295,11 @@ class GibbsSampler(ModelBase):
                 if i % self.thinning == 0:
                     self.samples.append([self._theta, self._phi])
 
-        print()
+            if self.write and i!=0 and i % self.iterations == self.snapshot_freq:
+                self.save(silent=True)
+
         ### Clean Things
+        print()
         self.samples = self.samples
         if not self.samples:
             self.samples.append([self._theta, self._phi])
@@ -260,6 +314,14 @@ class GibbsSampler(ModelBase):
             phi = self.phi
         likelihood = theta.dot(phi).dot(theta.T)
         return likelihood
+
+    def mask_probas(self, data):
+        mask = self.get_mask()
+        y_test = data[mask]
+        p_ji = self.likelihood(*self.get_params())
+        probas = p_ji[mask]
+        return y_test, probas
+
 
     @mmm
     def update_hyper(self, hyper):
@@ -302,11 +364,6 @@ class GibbsSampler(ModelBase):
     # Nasty hack to make serialisation possible
     @mmm
     def purge(self):
-        try:
-            self.s.mask = self.s.zsampler.likelihood.data_ma.mask
-        except:
-            pass
-
         self.s.zsampler.betasampler = None
         self.s.zsampler._nmap = None
         self.s.msampler = None
@@ -320,7 +377,7 @@ class GibbsSampler(ModelBase):
 
     # keep only the most representative dimension (number of topics) in the samples
     @mmm
-    def reduce_latent(self):
+    def _reduce_latent(self):
         theta, phi = list(map(list, zip(*self.samples)))
         ks = [ mat.shape[1] for mat in theta]
         bn = np.bincount(ks)
@@ -341,10 +398,62 @@ class GibbsSampler(ModelBase):
         return self.theta, self.phi
 
 
+    def predictMask(self, data, mask=True):
+        lgg.info('Reducing latent variables...')
+
+        if mask is True:
+            masked = self.get_mask()
+        else:
+            masked = mask
+
+        ### @Debug Ignore the Diagonnal
+        np.fill_diagonal(masked, False)
+
+        ground_truth = data[masked]
+
+        p_ji = self.likelihood(*self.get_params())
+        prediction = p_ji[masked]
+        prediction = sp.stats.bernoulli.rvs( prediction )
+        #prediction[prediction >= 0.5 ] = 1
+        #prediction[prediction < 0.5 ] = 0
+
+        ### Computing Precision
+        test_size = float(ground_truth.size)
+        good_1 = ((prediction + ground_truth) == 2).sum()
+        precision = good_1 / float(prediction.sum())
+        rappel = good_1 / float(ground_truth.sum())
+        g_precision = (prediction == ground_truth).sum() / test_size
+        mask_density = ground_truth.sum() / test_size
+
+        ### Finding Communities
+        lgg.info('Finding Communities...')
+        communities = self.communities_analysis(data)
+
+        res = {'Precision': precision,
+               'Recall': rappel,
+               'g_precision': g_precision,
+               'mask_density': mask_density,
+               'clustering':communities,
+               'K': self.K
+              }
+        return res
+
+
+try:
+    import sympy as sym
+    from sympy.functions.combinatorial.numbers import stirling
+except:
+    pass
+from pymake.util.compute_stirling import load_stirling
+
 class MSampler(object):
 
+    try:
+        stirling_mat = load_stirling()
+    except Exception as e:
+        lgg.error('stirling.npy file not found, passing...')
+
     def __init__(self, zsampler):
-        self.stirling_mat = _stirling_mat
         self.zsampler = zsampler
         self.get_log_alpha_beta = zsampler.get_log_alpha_beta
         self.count_k_by_j = zsampler.doc_topic_counts

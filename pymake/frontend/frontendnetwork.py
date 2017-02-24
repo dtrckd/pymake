@@ -28,6 +28,7 @@ def getClique(N=100, K=4):
     return C
 
 ### @Issue42: fronteNetwork should be imported fron frontend
+### =====> : resolve this with @class_method (from_hardrive etc...)
 
 class frontendNetwork(DataBase):
     """ Frontend for network data.
@@ -36,9 +37,9 @@ class frontendNetwork(DataBase):
 
     RANDOM_CORPUS = ('clique', 'alternate', 'BA')
 
-    def __init__(self, config=dict(), load=False):
+    def __init__(self, expe=dict(), load=False):
         self.bdir = 'networks'
-        super(frontendNetwork, self).__init__(config, load)
+        super(frontendNetwork, self).__init__(expe, load)
 
     def load_data(self, corpus_name=None, randomize=False):
         """ Load data according to different scheme,
@@ -60,7 +61,10 @@ class frontendNetwork(DataBase):
 
         self.update_data(data)
 
-        #np.fill_diagonal(self.data, 1)
+        # For Gof smothness
+        # error in degree_ check ?
+        np.fill_diagonal(self.data, 1)
+
         if randomize:
             self.shuffle_node()
         return self.data
@@ -71,7 +75,7 @@ class frontendNetwork(DataBase):
         """
 
         # DB integration ?
-        if corpus_name.startswith(('generator', 'Graph')):
+        if corpus_name.startswith(('generator', 'graph')):
             format = 'graph'
         elif corpus_name in ('bench1'):
             raise NotImplementedError()
@@ -94,21 +98,6 @@ class frontendNetwork(DataBase):
 
         return data
 
-    def getN(self):
-        if hasattr(self, 'N'):
-            return self.N
-
-        N = str(self.cfg['N'])
-        if N.isdigit():
-            N = int(N)
-        elif N.lower() in ('all', 'false', 'none'):
-            N = 'all'
-        else:
-            raise TypeError('Size of data no set (-n)')
-
-        self.N = N
-        return self.N
-
     def shuffle_node(self):
         """ Shuffle rows and columns of data """
         N, M = self.data.shape
@@ -127,9 +116,10 @@ class frontendNetwork(DataBase):
 
         if N == 'all':
             N = self.data.shape[0]
+        else:
+            N = int(N)
 
         # Can't get why modification inside self.nodes_list is not propagated ?
-        N = int(N)
         if randomize is True:
             nodes_list = [np.random.permutation(N), np.random.permutation(N)]
             self.reorder_node(nodes_list)
@@ -153,6 +143,14 @@ class frontendNetwork(DataBase):
         """ Construct a random mask.
             Random training set on 20% on Data / debug5 - debug11 -- Unbalanced
         """
+        percent_hole = float(percent_hole)
+        if percent_hole > 1:
+            percent_hole = percent_hole / 100.0
+        elif 0 <= percent_hole < 1:
+            pass
+        else:
+            raise ValueError('cross validation ration not understood : %s' % percent_hole)
+
         data = self.data
         if type(data) is np.ndarray:
             #self.data_mat = sp.sparse.csr_matrix(data)
@@ -216,14 +214,13 @@ class frontendNetwork(DataBase):
 
         if rnd == 'uniform':
             data = np.random.randint(0, 2, (N, N))
-            np.fill_diagonal(data, 1)
+            #np.fill_diagonal(data, 1)
         elif rnd.startswith('clique'):
             try :
                 K = int(rnd[len('clique'):])
             except ValueError:
                 K = 42
             data = getClique(N, K=K)
-            #G = nx.from_numpy_matrix(data, nx.Graph())
             #Data = nx.adjacency_matrix(G, np.random.permutation(range(N))).A
         elif rnd in ('BA', 'barabasi-albert'):
             data = nx.adjacency_matrix(nx.barabasi_albert_graph(N, m=13) ).A
@@ -244,12 +241,6 @@ class frontendNetwork(DataBase):
             raise NotImplementedError()
 
         return data
-
-    def update_data(self, data):
-        self.data = data
-        N, M = self.data.shape
-        self.N = N
-        self.nodes_list = [np.arange(N), np.arange(M)]
 
     def networkloader(self, corpus_name, format):
         """ Load pickle or parse data.
@@ -444,7 +435,7 @@ class frontendNetwork(DataBase):
 
     # used by (obsolete) zipf.py
     def communities_analysis(self):
-        from util.algo import adj_to_degree # Circular import bug inthetop
+        from pymake.util.algo import adj_to_degree # Circular import bug inthetop
         clusters = self.clusters
         if clusters is None:
             return None
@@ -490,15 +481,56 @@ class frontendNetwork(DataBase):
                 'block_hist': block_hist,
                 'size': len(block_hist)}
 
+
+    def getG(self):
+        if not hasattr(self, 'G'):
+            if self.is_symmetric():
+                # Undirected Graph
+                typeG = nx.Graph()
+            else:
+                # Directed Graph
+                typeG = nx.DiGraph()
+            self.G = nx.from_numpy_matrix(self.data, create_using=typeG)
+            #self.G = nx.from_scipy_sparse_matrix(self.data, typeG)
+        return self.G
+
+    def to_directed(self):
+        ''' Return self verion of graph wehre all links are flatened '''
+        if self.is_symmetric():
+            return self.getG()
+        else:
+            # nx to_undirected nedd a linkks in both side.
+            return nx.from_numpy_matrix(self.data, create_using=nx.Graph())
+
+    #
+    # Get Statistics
+    #
+
+    def nodes(self):
+        g = self.getG()
+        return g.number_of_nodes()
+
+    def edges(self):
+        g = self.getG()
+        return g.number_of_edges()
+
+    def diameter(self):
+        g = self.getG()
+        try:
+            diameter = nx.diameter(g)
+        except:
+            diameter = None
+        return diameter
+
     def density(self):
-        G = self.GG()
-        return nx.density(G)
+        g = self.getG()
+        return nx.density(g)
 
     def modularity(self):
         part =  self.get_partition()
         if not part:
             return None
-        g = self.GG()
+        g = self.getG()
         try:
             modul = pylouvain.modularity(part, g)
         except NameError:
@@ -507,45 +539,40 @@ class frontendNetwork(DataBase):
             modul = None
         return modul
 
-    #def louvain_feature(self):
-    #    get the louvain modularity
-    #    and the feature for local analysis
-
-    def diameter(self):
-        G = self.GG()
-        try:
-            diameter = nx.diameter(G)
-        except:
-            diameter = None
-        return diameter
-
-    def degree(self):
-        G = self.GG()
-        return nx.degree(G)
-
-    def degree_histogram(self):
-        G = self.GG()
-        return nx.degree_histogram(G)
-
     def clustering_coefficient(self):
-        G = self.GG()
+        g = self.getG()
         try:
-            cc = nx.average_clustering(G)
+            cc = nx.average_clustering(g)
         except:
             cc = None
         return cc
 
-    def GG(self):
-        if not hasattr(self, 'G'):
-            if self.is_symmetric():
-                # Undirected Graph
-                typeG = nx.Graph()
-            else:
-                # Directed Graph
-                typeG = nx.DiGraph()
-            self.G = nx.from_numpy_matrix(self.data, typeG)
-            #self.G = nx.from_scipy_sparse_matrix(self.data, typeG)
-        return self.G
+    def getN(self):
+        if hasattr(self, 'N'):
+            return self.N
+
+        N = str(self.expe['N'])
+        if N.isdigit():
+            N = int(N)
+        elif N.lower() in ('all', 'false', 'none'):
+            N = 'all'
+        else:
+            raise TypeError('Size of data no set (-n)')
+
+        self.N = N
+        return self.N
+
+    #def louvain_feature(self):
+    #    get the louvain modularity
+    #    and the feature for local analysis
+
+    def degree(self):
+        g = self.getG()
+        return nx.degree(g)
+
+    def degree_histogram(self):
+        g = self.getG()
+        return nx.degree_histogram(g)
 
     def get_nfeat(self):
         nfeat = self.data.max() + 1
@@ -554,6 +581,14 @@ class frontendNetwork(DataBase):
             nfeat = 2
         return nfeat
 
+    def get_params(self):
+        clusters = self.get_clusters()
+        K = max(clusters)+1
+        N = len(clusters)
+        theta = np.zeros((N,K))
+        theta[np.arange(N),clusters] = 1
+        return theta, None
+
     def get_clusters(self):
         return self.clusters
 
@@ -561,8 +596,8 @@ class frontendNetwork(DataBase):
         clusters = self.clusters or clusters
         if not clusters:
             return {}
-        K = len(clusters)
-        return dict(zip(*[np.arange(K), clusters]))
+        N = len(clusters)
+        return dict(zip(*[np.arange(N), clusters]))
 
     def clusters_len(self):
         clusters = self.get_clusters()
@@ -573,7 +608,12 @@ class frontendNetwork(DataBase):
 
     def get_data_prop(self):
         prop =  super(frontendNetwork, self).get_data_prop()
-        nnz = self.data.sum()
+
+        if self.is_symmetric():
+            nnz = np.triu(self.data).sum()
+        else:
+            nnz = self.data.sum()
+
         _nnz = self.data.sum(axis=1)
         d = {'instances': self.data.shape[1],
                'nnz': nnz,
@@ -592,7 +632,7 @@ class frontendNetwork(DataBase):
 
     def template(self, d):
         d['time'] = d.get('time', None)
-        netw_templ = '''###### $corpus_name
+        netw_templ = '''###### $corpus
         Building: $time minutes
         Nodes: $instances
         Links: $nnz
@@ -624,7 +664,9 @@ class frontendNetwork(DataBase):
             sim = np.dot(cluster.T,cluster)
         elif sim == 'comm':
             N = len(self.clusters)
-            sim = np.repeat(np.array(self.clusters)[np.newaxis], N, 0)
+            #sim = np.repeat(np.array(self.clusters)[np.newaxis], N, 0)
+            theta , _ = self.get_params()
+            sim = theta.dot(theta.T)
             sim = (sim == sim.T)*1
             sim[sim < 1] = -1
         elif sim == 'euclide_old':
@@ -690,7 +732,7 @@ class frontendNetwork(DataBase):
         card = N*(N-1)
 
         if model:
-            data, theta, phi = model.generate(N)
+            data  = model.generate(N)
             #y = np.triu(y) + np.triu(y, 1).T
             gram_matrix = model.similarity_matrix(sim=sim)
             delta_treshold = .1
@@ -752,7 +794,7 @@ class frontendNetwork(DataBase):
         N = self.data.shape[0]
         sim_source = self.similarity_matrix(sim='cos')
 
-        y, _, _ = model.generate(N)
+        y = model.generate(N)
         #y = np.triu(y) + np.triu(y, 1).T
         sim_learn = model.similarity_matrix(sim='cos')
 
