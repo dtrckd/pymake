@@ -3,20 +3,26 @@
 *.py[co]
 *.[ao]
 tags
-*.out
 *~
 *.session.vim
 *.byobu
 
-results/
+results/*
+!results/Makefile
+!results/backsync.sh
+!results/filter.py
+doc/html/
+doc/graph/
 
 data/*/*/**
 data/**/*.zip
 data/**/*.tgz
 data/**/*.gz
 
+pymake/scripts/private/
+
 stirling.pk
 stirling.npy
 pymake/ID
+pymake/TODO.md
 
-.seed.pk
