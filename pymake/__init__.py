@@ -5,6 +5,26 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 try: basestring = basestring # python2
 except NameError: basestring = (str, bytes) # python3
 
+import  os
+if os.environ.get('DISPLAY') is None:
+    import matplotlib; matplotlib.use('Agg')
+
+
+from pymake.expe.format import Expe, Corpus, Model, ExpSpace, ExpVector, ExpTensor, ExpeFormat, ExpDesign
+from pymake.expe.gramexp import GramExp
+from pymake.frontend.frontendtext import frontendText
+from pymake.frontend.frontendnetwork import frontendNetwork
+from pymake.frontend.manager import ModelManager, FrontendManager
+
+
+
+
+
+#
+# Erckelfault
+#
+
+''' PRELOAD LIB '''
 import importlib
 _MODULES = ['community',
             ('networkx', 'nx'),
@@ -12,7 +32,6 @@ _MODULES = ['community',
             ('scipy', 'sp'),
             ('matplotlib.pyplot', 'plt')
            ]
-
 
 for m in _MODULES:
     try:

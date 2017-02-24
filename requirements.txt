@@ -1,17 +1,17 @@
 numpy
 scipy
-scikit-learn
-matplotlib
-#plotly
 networkx 
+nltk
+matplotlib  #plotly
+scikit-learn ?
 sympy ?
 pystan ?
 pymc ?
 gensim ?
-nltk ?
-python-pygraphviz
-python-louvain
+python-pygraphviz?
+python-louvain ?
     pip install hg+https://bitbucket.org/taynaud/python-louvain
     hg clone https://bitbucket.org/taynaud/python-louvain
 args ?
 tabulate ?
+termcolors ?

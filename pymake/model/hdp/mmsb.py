@@ -14,7 +14,7 @@ from numpy.random import dirichlet, gamma, poisson, binomial, beta
 
 from pymake.model import GibbsSampler, MSampler, BetaSampler
 
-from pymake.util.math import lognormalize, categorical, sorted_perm, adj_to_degree
+from pymake.util.math import lognormalize, categorical, sorted_perm, adj_to_degree, gem
 #from util.algo import *
 
 # Implementation Mixed Membership Sochastic Blockmodel Stochastic
@@ -40,6 +40,9 @@ class Likelihood(object):
             -----
             * Diagonal is ignored here for prediction
         """
+        if data is None:
+            # @debug if data=None !
+            data = np.zeros((1,1))
 
         if nodes_list is None:
             self.nodes_list = [np.arange(data.shape[0]), np.arange(data.shape[1])]
@@ -57,7 +60,7 @@ class Likelihood(object):
         self.data_dims = self.get_data_dims()
         self.nnz = self.get_nnz()
         # Vocabulary size
-        self.nfeat = self.get_nfeat()
+        self.nfeat = self.get_nfeat() or 0
 
         # assert for coocurence matric
         #assert(self.data_mat.shape[1] == self.nfeat)
@@ -180,7 +183,7 @@ class ZSampler(object):
         self.K_init = K_init or 1
         self.alpha_0 = alpha_0
         self.likelihood = likelihood
-        self.symmetric_pt = (self.likelihood.symmetric&1) +1 # the increment for Gibbs iteration
+        self.symmetric_pt = self.likelihood.symmetric +1 # the increment for Gibbs iteration
         self._nmap = likelihood._nmap
         self.nodes_list = likelihood.nodes_list
         self.data_dims = self.likelihood.data_dims
@@ -566,6 +569,8 @@ class GibbsRun(GibbsSampler):
         #self.fmt = '%s %s %s %s %s %s %s %s %s %s %s'
         GibbsSampler.__init__(self, sampler, **kwargs)
 
+        self.mask = self.s.zsampler.likelihood.data_ma.mask
+        self.symmetric = self.s.zsampler.likelihood.symmetric
 
     def limit_k(self, N, directed=True):
         alpha, gmma, delta = self.get_hyper()
@@ -579,15 +584,15 @@ class GibbsRun(GibbsSampler):
         K = int(gmma * (digamma(m+gmma) - digamma(gmma)))
         return K
 
-    def generate(self, N, K=None, hyper=None, _type='predictive', directed=True):
-        self.update_hyper(hyper)
+    def generate(self, N=None, K=None, hyperparams=None, mode='predictive', symmetric=True, **kwargs):
+        self.update_hyper(hyperparams)
         alpha, gmma, delta = self.get_hyper()
-        N = int(N)
-        if _type == 'evidence' :
+        if mode == 'generative' :
+            N = int(N)
             if type(self.s) is NP_CGS:
                 # @todo: compute the variance for random simulation
                 # Number of table in the CRF
-                if directed is True:
+                if symmetric is True:
                     m = alpha * N * (digamma(N+alpha) - digamma(alpha))
                 else:
                     m = alpha * N * (digamma(2*N+alpha) - digamma(alpha))
@@ -605,12 +610,6 @@ class GibbsRun(GibbsSampler):
                         # Sometimes umprobable values !
                         alpha = gem(gmma, K)
                         i += 1
-            else:
-                K = int(K)
-                alpha = np.ones(K) * alpha
-                ##alpha = np.asarray([1.0 / (i + np.sqrt(K)) for i in xrange(K)])
-                #alpha /= alpha.sum()
-            #delta = self.s.zsampler.likelihood.delta
 
             # Generate Theta
             if i > 0:
@@ -621,16 +620,19 @@ class GibbsRun(GibbsSampler):
                 theta = multinomial(1, alpha, size=N)
             else:
                 theta = dirichlet(alpha, size=N)
+
             # Generate Phi
             phi = beta(delta[0], delta[1], size=(K,K))
-            if directed is True:
+            if symmetric is True:
                 phi = np.triu(phi) + np.triu(phi, 1).T
 
-        elif _type == 'predictive':
-            theta, phi = self.reduce_latent()
+            self.theta = theta
+            self.phi = phi
+        elif mode == 'predictive':
+            try: theta, phi = self.get_params()
+            except: return self.generate(N, K, hyperparams, 'generative', symmetric)
             K = theta.shape[1]
 
-        Y = np.empty((N,N))
         #pij[pij >= 0.5 ] = 1
         #pij[pij < 0.5 ] = 0
         #Y = pij
@@ -644,64 +646,14 @@ class GibbsRun(GibbsSampler):
         #        zj = categorical(theta[j])
         #        zi = categorical(theta[i])
         #        Y[j, i] = sp.stats.bernoulli.rvs(B[zj, zi])
-        self.theta = theta
-        self.phi = phi
-        self.K = K
-        return Y, theta, phi
-
-
-    # * Precision on masked data
-    # -- On Gen Y
-    # * Local preferential attachement
-    # * Global preferential attachement
-    def predict(self):
-        lgg.info('Reducing latent variables...')
-        theta, phi = self.reduce_latent()
-
-        ### Computing Precision
-        likelihood = self.s.zsampler.likelihood
-        masked = likelihood.data_ma.mask
-        ### @Debug Ignore the Diagonnal
-        np.fill_diagonal(masked, False)
-        ground_truth = likelihood.data_ma.data[masked]
-        data = likelihood.data_ma.data
-        test_size = float(ground_truth.size)
-
-        p_ji = self.likelihood(theta, phi)
-        prediction = p_ji[masked]
-        #prediction[prediction >= 0.5 ] = 1
-        #prediction[prediction < 0.5 ] = 0
-        prediction = sp.stats.bernoulli.rvs( prediction )
-
-        good_1 = ((prediction + ground_truth) == 2).sum()
-        precision = good_1 / float(prediction.sum())
-        rappel = good_1 / float(ground_truth.sum())
-        g_precision = (prediction == ground_truth).sum() / test_size
-        mask_density = ground_truth.sum() / test_size
-
-        ### Finding Communities
-        lgg.info('Finding Communities...')
-        communities = self.communities_analysis()
-
-        res = {'Precision': precision,
-               'Recall': rappel,
-               'g_precision': g_precision,
-               'mask_density': mask_density,
-               'clustering':communities,
-               'K': self.K
-              }
-        return res
-
-    def mask_probas(self, data):
-        mask = self.get_mask()
-        y_test = data[mask]
-        theta, phi = self.reduce_latent()
-        p_ji = theta.dot(phi).dot(theta.T)
-        probas = p_ji[mask]
-        return y_test, probas
+        return Y
 
     def get_mask(self):
-        return self.s.mask
+        # __future__ remove
+        try:
+            return self.mask
+        except:
+            return self.s.mask
 
     def get_clusters(self, K=None, skip=0):
         """ Return a vector of clusters membership of nodes.
@@ -758,13 +710,8 @@ class GibbsRun(GibbsSampler):
 
     #@wrapper !
     ### Degree by class (maxassignment)
-    def communities_analysis(self, data=None, clustering='modularity'):
-        if data is None:
-            likelihood = self.s.zsampler.likelihood
-            data = likelihood.data_ma.data
-            symmetric = likelihood.symmetric
-        else:
-            symmetric = True
+    def communities_analysis(self, data, clustering='modularity'):
+        symmetric = (data == data.T).all()
 
         if hasattr(self, clustering):
             f = getattr(self, clustering)
@@ -846,7 +793,7 @@ class GibbsRun(GibbsSampler):
                 'block_hist': block_hist,
                 'size': len(block_hist)}
 
-    def blockmodel_ties(self, data=None, remove_empty=True):
+    def blockmodel_ties(self, data, remove_empty=True):
         """ return ties based on a weighted average
             of the local degree ditribution """
 

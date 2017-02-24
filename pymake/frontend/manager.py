@@ -27,9 +27,9 @@ from pymake.model.ibp.ilfm_gs import IBPGibbsSampling
 from pymake.model import hdp, ibp
 sys.modules['hdp'] = hdp
 sys.modules['ibp'] = ibp
-import pymake.model
-sys.modules['models'] = pymake.model
-
+from pymake import model
+sys.modules['models'] = model
+sys.modules['model'] = model
 
 try:
     sys.path.insert(1, '../../gensim')
@@ -41,17 +41,22 @@ except:
 
 class FrontendManager(object):
     """ Utility Class who aims at mananing/Getting the datastructure at the higher level.
+
+        Parameters
+        ----------
+        get: return a frontend object.
+        load: return a frontend object where data are
+              loaded and filtered (sampled...) according to expe.
     """
     @staticmethod
-    def get(config, load=False):
-        """ Return: The frontend suited for the given configuration"""
-        corpus = config.get('corpus_name') or config.get('corpus') or config.get('random')
+    def get(expe, load=False):
+        """ Return: The frontend suited for the given expeuration"""
+
+        corpus = expe.get('corpus') or expe.get('random')
         corpus_typo = {
             'network': [
-                'clique', 'alternate', 'BA', # random
+                'clique', 'generator', 'graph', 'alternate', 'BA', # random
                 'facebook',
-                'generator',
-                'bench',
                 'fb_uc',
                 'manufacturing',
                 'propro',
@@ -75,25 +80,31 @@ class FrontendManager(object):
         for key, cps in corpus_typo.items():
             if corpus.startswith(tuple(cps)):
                 if key == 'text':
-                    frontend = frontendText(config, load=load)
+                    frontend = frontendText(expe, load=load)
                     break
                 elif key == 'network':
-                    frontend = frontendNetwork(config, load=load)
+                    frontend = frontendNetwork(expe, load=load)
                     break
 
         if frontend is None:
             raise ValueError('Unknown Corpus `%s\'!' % corpus)
         return frontend
 
+    @classmethod
+    def load(cls, expe):
+        fr = cls.get(expe, load=True)
+        fr.sample(expe.get('N'), randomize=False)
+        return fr
+
 
 # it is more a wrapper
 class ModelManager(object):
     """ Utility Class for Managing I/O and debugging Models
     """
-    def __init__(self, config=None, data=None, data_t=None):
-        self._init(config)
+    def __init__(self, expe=None, data=None, data_t=None):
+        self._init(expe)
 
-        if self.cfg.get('load_model'):
+        if self.expe.get('load_model'):
             return
         if not self.model_name:
             return
@@ -102,20 +113,23 @@ class ModelManager(object):
         if data is not None:
             self.model = self._get_model(data, data_t)
 
-    def _init(self, spec):
-        self.model_name = spec.get('model_name') or spec.get('model')
-        self.hyperparams = spec.get('hyperparams', dict())
-        self.output_path = spec.get('output_path')
-        self.inference_method = '?'
-        self.iterations = spec.get('iterations', 1)
+    def _init(self, expe):
 
-        self.write = spec.get('write', False)
+        self.model_name = expe.get('model')
+        self.hyperparams = expe.get('hyperparams', dict())
+        bdir, self.output_path = make_output_path(expe)
+        self.inference_method = '?'
+        self.iterations = expe.get('iterations', 1)
+
+        self.write = expe.get('write', False)
         # **kwargs
-        self.cfg = spec
+        self.expe = expe
 
     def _format_dataset(self, data, data_t):
+        if data is None:
+            return None, None
 
-        testset_ratio = self.cfg.get('testset_ratio')
+        testset_ratio = self.expe.get('testset_ratio')
 
         if 'text' in str(type(data)).lower():
             #if issubclass(type(data), DataBase):
@@ -175,6 +189,13 @@ class ModelManager(object):
         if hasattr(self.model, 'fit'):
             self.model.fit()
 
+        if self.write:
+            #self.save()
+            self.model.save()
+
+        return
+
+
     # frontend ? no, data stat should be elsewhere.
     # Accept new data for prediction (now is just test data)
     def predict(self, frontend=None):
@@ -187,9 +208,15 @@ class ModelManager(object):
         #if self.data_t == None and not hasattr(self.data, 'mask') :
         #    print('No testing data for prediction ?')
         #    return
+        #
+        #
 
         ### Prediction Measures
-        res = self.model.predict()
+        data = frontend.data
+
+        # if modelNetwork ...
+        res = self.model.predictMask(data)
+        #elif modelText
 
         ### Data Measure
         if frontend is not None:
@@ -198,10 +225,8 @@ class ModelManager(object):
 
         if self.write:
             frontend.save_json(res)
-            self.save()
         else:
             lgg.debug(res)
-
 
 
     # Base class for Gibbs, VB ... ?
@@ -210,16 +235,15 @@ class ModelManager(object):
         alpha = self.hyperparams.get('alpha',1)
         gmma = self.hyperparams.get('gmma',1)
 
-        hyper = self.cfg['hyper']
-        assortativity = self.cfg.get('homo')
-        hyper_prior = self.cfg.get('hyper_prior') # HDP hyper optimization
-        K = self.cfg['K']
+        hyper = self.expe['hyper']
+        assortativity = self.expe.get('homo')
+        hyper_prior = self.expe.get('hyper_prior') # HDP hyper optimization
+        K = self.expe['K']
 
         model_name = self.model_name
         likelihood = kwargs.get('likelihood')
         data = kwargs['data']
         data_t = kwargs.get('data_t')
-
 
         if 'mmsb' in model_name:
             kernel = mmsb
@@ -262,9 +286,9 @@ class ModelManager(object):
         sigma_w_hyper_parameter = None #(1., 1.)
         alpha = self.hyperparams.get('alpha',1)
 
-        alpha_hyper_parameter = self.cfg['hyper']
-        assortativity = self.cfg.get('homo')
-        K = self.cfg['K']
+        alpha_hyper_parameter = self.expe['hyper']
+        assortativity = self.expe.get('homo')
+        K = self.expe['K']
 
         model_name = self.model_name
         data = kwargs['data']
@@ -274,7 +298,7 @@ class ModelManager(object):
             metropolis_hastings_k_new = False
         else:
             metropolis_hastings_k_new = True
-            if self.cfg['homo'] == 2:
+            if self.expe['homo'] == 2:
                 raise NotImplementedError('Warning !: Metropolis Hasting not implemented with matrix normal. Exiting....')
 
         model = IBPGibbsSampling(assortativity,
@@ -294,7 +318,7 @@ class ModelManager(object):
         fname = self.output_path if self.write else None
         delta = self.hyperparams['delta']
         alpha = 'asymmetric'
-        K = self.cfg['K']
+        K = self.expe['K']
 
         data = kwargs['data']
         data_t = kwargs.get('data_t')
@@ -342,6 +366,25 @@ class ModelManager(object):
 
         np.savetxt('t.out', np.log(pp))
 
+    @staticmethod
+    def _load_model(fn):
+        if not os.path.isfile(fn) or os.stat(fn).st_size == 0:
+            lgg.error('No file for this model : %s' %fn)
+            lgg.debug('The following are available :')
+            for f in model_walker(os.path.dirname(fn), fmt='list'):
+                lgg.debug(f)
+            return None
+        lgg.info('Loading Model: %s' % fn)
+        with open(fn, 'rb') as _f:
+            try:
+                model =  pickle.load(_f)
+            except:
+                # python 2to3 bug
+                _f.seek(0)
+                model =  pickle.load(_f, encoding='latin1')
+        return model
+
+
     # Pickle class
     def save(self):
         fn = self.output_path + '.pk'
@@ -352,7 +395,6 @@ class ModelManager(object):
         #            pickle.dump(v, _f, protocol=pickle.HIGHEST_PROTOCOL )
         #        except:
         #            print 'not serializable here: %s, %s' % (u, v)
-        self.model._f = None
         self.model.purge()
         # |
         # |
@@ -373,47 +415,21 @@ class ModelManager(object):
             except:
                 pass
 
+        lgg.info('Saving Model : %s' % fn)
         with open(fn, 'wb') as _f:
             return pickle.dump(self.model, _f, protocol=pickle.HIGHEST_PROTOCOL)
 
-    # Debug classmethod and ecrasement d'object en jeux.
-    #@classmethod
-    def load(self, spec=None, init=False):
-        if spec:
-            self._init(spec)
+    @classmethod
+    def from_file(cls, fn):
+        return cls._load_model(fn)
 
+    @classmethod
+    def from_expe(cls, expe, init=False):
         if init is True:
-            model = self._get_model()
+            mm = cls(expe)
+            model = mm._get_model()
         else:
-            if spec == None:
-                fn = self.output_path + '.pk'
-            else:
-                fn = make_output_path(spec, 'pk')
-            if not os.path.isfile(fn) or os.stat(fn).st_size == 0:
-                print('No file for this model: %s' %fn)
-                print('The following are available:')
-                for f in model_walker(os.path.dirname(fn), fmt='list'):
-                    print(f)
-                return None
-            lgg.debug('opening file: %s' % fn)
-            with open(fn, 'rb') as _f:
-                lgg.info('loading model: %s' % fn)
-                try:
-                    model =  pickle.load(_f)
-                except:
-                    # python 2to3 bug
-                    _f.seek(0)
-                    model =  pickle.load(_f, encoding='latin1')
-        self.model = model
+            fn = make_output_path(expe, 'pk')
+            model = cls.from_file(fn)
         return model
-
-
-class ExpeManager(object):
-    """ Mange set of experiments
-        * Main loop consist of Corpuses and classe
-        * a Tensor ?
-    """
-    def __init(self):
-        pass
-
 

@@ -4,11 +4,11 @@
 import numpy as np
 import logging
 from tabulate import tabulate
-from collections import OrderedDict
+
+from pymake import ExpTensor, OrderedDict
 from frontend.frontend_io import *
 from util.utils import *
 from util.argparser import argparser
-from expe.spec import _spec_; _spec = _spec_()
 
 lgg = logging.getLogger('root')
 
@@ -17,16 +17,28 @@ USAGE = '''\
     expe_k [model]
 '''
 
-#TENSOR = _spec.EXPE_ICDM_R
-TENSOR = _spec.EXPE_ICDM_R_R
-
-expe_args = argparser.expe_tabulate(USAGE)
+expe_args = argparser.exp_tabulate(USAGE)
 
 ###################################################################
 # Data Forest config
-map_parameters = TENSOR
+#
+
+### Expe Forest
+map_parameters = ExpTensor((
+    ('data_type', ('networks',)),
+    #('corpus' , ('fb_uc', 'manufacturing')),
+    ('corpus' , ('Graph7', 'Graph12', 'Graph10', 'Graph4')),
+    ('debug'  , ('debug10', 'debug11')),
+    ('model'  , ('immsb', 'ibp')),
+    ('K'      , (5, 10, 15, 20)),
+    ('hyper'  , ('fix', 'auto')),
+    ('homo'   , (0, 1, 2)),
+    ('N'      , ('all',)),
+    #('repeat'   , (0, 1, 2, 4, 5)),
+))
+
 ### Seek experiments results
-target_files = make_forest_path(map_parameters, 'json')
+target_files = make_forest_path(map_parameters, 'json',  sep=None)
 ### Make Tensor Forest of results
 rez = forest_tensor(target_files, map_parameters)
 
@@ -34,20 +46,19 @@ rez = forest_tensor(target_files, map_parameters)
 # Experimentation
 #
 
-### Expe 1 settings
+### Expe 1 settings # Todo RegularExp
 # debug10, immsb
 expe_1 = OrderedDict((
     ('data_type', 'networks'),
     ('corpus', '*'),
-    #('debug' , 'debug101010') ,
-    ('debug' , 'debug111111') ,
+    ('debug' , 'debug10') ,
     ('model' , 'immsb')   ,
     ('K'     , '*')         ,
     ('hyper' , 'auto')     ,
     ('homo'  , 0) ,
     ('N'     , 'all')     ,
-    ('repeat', '*'),
-    ('measure', 8),
+    #('repeat', '*'),
+    ('measure', 7),
     ))
 expe_1.update(expe_args)
 

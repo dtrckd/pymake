@@ -1,23 +1,10 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, print_function, unicode_literals
 
-from collections import OrderedDict, defaultdict
-from pymake import basestring
+from pymake import Expe, ExpTensor, Corpus, ExpDesign
 
-class _spec_(object):
-    """ Global Variable for experiments settgins.
-        * Keep in mind that orderedDict here, are important, for tensor result construction
-          in order to print table (tabulate) of results.
+class Netw(ExpDesign):
 
-    """
-
-
-    """
-    =================
-    === Mapping  Dictionary
-    ================= """
-
-    _trans = dict((
+    _mapname = dict((
         ('propro'   , 'Protein')  ,
         ('blogs'    , 'Blogs')    ,
         ('euroroad' , 'Euroroad') ,
@@ -29,45 +16,35 @@ class _spec_(object):
         ('generator10'    , 'Network 3' ),
         ('generator4'     , 'Network 4' ),
         ('ibp'     , 'ilfm' ),
-        ('mmsb'     , 'immsb' ),
+        ('mmsb'    , 'immsb' ),
     ))
-    """
-    =================
-    === Networks Corpus
-    ================= """
+
+    # Networks Data
+    CORPUS_REAL_NET = Corpus(['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad'])
 
     ### Bursty
-    CORPUS_BURST_1     = ( 'generator3', 'generator11', 'generator12', 'generator7', 'generator14',)
+    CORPUS_BURST_1     = Corpus(['generator3', 'generator11', 'generator12', 'generator7', 'generator14'])
 
     ### Non Bursty
-    CORPUS_NBURST_1    = ( 'generator4', 'generator5', 'generator6', 'generator9', 'generator10',)
+    CORPUS_NBURST_1    = Corpus(['generator4', 'generator5', 'generator6', 'generator9', 'generator10'])
 
-    ### Expe ICDM
-    CORPUS_SYN_ICDM_1  = ( 'generator7', 'generator12', 'generator10', 'generator4')
-    CORPUS_REAL_ICDM_1 = ( 'manufacturing', 'fb_uc',)
+    CORPUS_SYN_ICDM  = Corpus(['generator7', 'generator12', 'generator10', 'generator4'])
+    CORPUS_REAL_ICDM = Corpus(['manufacturing', 'fb_uc',])
+    CORPUS_ALL_ICDM = CORPUS_SYN_ICDM + CORPUS_REAL_ICDM
+    CORPUS_REAL_PNAS = Corpus(['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro'])
+    CORPUS_ALL_PNAS = CORPUS_REAL_PNAS +  CORPUS_SYN_ICDM
+    pnas_short = Corpus([ 'blogs', 'manufacturing', 'generator7','generator4'])
 
-    CORPUS_ALL_3 = CORPUS_SYN_ICDM_1 + CORPUS_REAL_ICDM_1
+    # Text Corpus
+    # intruder ?
+    CORPUS_TEXT_ALL = Corpus(['kos', 'nips12', 'nips', 'reuter50', '20ngroups']) # lucene
 
-    CORPUS_REAL_V2 = ('blogs', 'emaileu', 'propro', 'euroroad')
-
-    CORPUS_NET_ALL = ('manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad')
-
-    """
-    =================
-    === Text Corpus
-    ================= """
-
-    CORPUS_TEXT_ALL = ['kos', 'nips12', 'nips', 'reuter50', '20ngroups'],
-
-    """
-    =================
-    === Expe Spec
-    ================= """
-    EXPE_ICDM = OrderedDict((
+    # Tensor Exp
+    EXPE_ICDM = ExpTensor((
         ('data_type', ('networks',)),
-        ('debug'  , ('debug10', 'debug11')),
+        ('refdir'  , ('debug10', 'debug11')),
         #('corpus' , ('fb_uc', 'manufacturing')),
-        ('corpus' , CORPUS_ALL_3),
+        ('corpus' , CORPUS_ALL_ICDM),
         ('model'  , ('immsb', 'ibp')),
         ('K'      , (5,10,15,20)),
         ('N'      , ('all',)),
@@ -76,36 +53,75 @@ class _spec_(object):
         #('repeat'   , (0, 1, 2,3, 4, 5)),
     ))
 
-    EXPE_ICDM_R = OrderedDict((
+    PNAS1 = ExpTensor ((
+        ('corpus', CORPUS_ALL_PNAS),
+        ('data_type'    , 'networks'),
+        ('refdir'        , 'debug111111') , # ign in gen
+        #('model'        , 'mmsb_cgs')   ,
+        ('model'        , ['immsb', 'ibp'])   ,
+        ('K'            , 10)        ,
+        ('N'            , 'all')     , # ign in gen
+        ('hyper'        , ['auto', 'fix'])    , # ign in gen
+        ('homo'         , 0)         , # ign in gen
+        ('repeat'      , 1)       ,
+        ('_bind'    , ['immsb.auto', 'ibp.fix']),
+        ('iterations', '200'),
+        ('_format', '{model}_{K}_{hyper}_{homo}_{N}')
+    ))
+
+    PNAS2 = ExpTensor ((
+        ('corpus', CORPUS_ALL_PNAS),
+        ('data_type'    , 'networks'),
+        ('refdir'        , 'pnas2') , # ign in gen
+        #('model'        , 'mmsb_cgs')   ,
+        ('model'        , ['immsb', 'ibp'])   ,
+        ('K'            , 10)        ,
+        ('N'            , 'all')     , # ign in gen
+        ('hyper'        , ['fix','auto'])    , # ign in gen
+        ('homo'         , 0)         , # ign in gen
+        ('repeat'      , 0)       ,
+        ('_bind'    , ['immsb.auto', 'ibp.fix', 'ibp.iterations.25', 'immsb.iterations.150']),
+        ('iterations', [25, 150]),
+        ('testset_ratio', [40, 60, 80]),
+        ('_format', '{model}_{K}_{hyper}_{homo}_{N}_{testset_ratio}')
+
+    ))
+
+    EXPE_ICDM_R = ExpTensor((
         ('data_type', ('networks',)),
         #('corpus' , ('fb_uc', 'manufacturing')),
-        ('corpus' , ('Graph7', 'Graph12', 'Graph10', 'Graph4')),
-        #('debug'  , ('debug10', 'debug11')),
-        ('debug'  , ('debug101010', 'debug111111')),
+        ('corpus' , CORPUS_SYN_ICDM),
+        #('refdir'  , ('debug10', 'debug11')),
+        ('refdir'  , ('debug101010', 'debug111111')),
         ('model'  , ('immsb', 'ibp')),
         ('K'      , (5, 10, 15, 20)),
         ('hyper'  , ('fix', 'auto')),
         ('homo'   , (0, 1, 2)),
         ('N'      , ('all',)),
         ('repeat'   , list(range(10))),
+        ('iterations', '200'),
+        ('_bind'    , ['immsb.auto', 'ibp.fix']),
     ))
 
-    EXPE_ICDM_R_R = OrderedDict((
+    EXPE_ICDM_R_R = ExpTensor((
         ('data_type', ('networks',)),
         ('corpus' , ('fb_uc', 'manufacturing')),
-        ('debug'  , ('debug101010', 'debug111111')),
+        ('refdir'  , ('debug101010', 'debug111111')),
         ('model'  , ('immsb', 'ibp')),
         ('K'      , (5, 10, 15, 20)),
         ('hyper'  , ('fix', 'auto')),
         ('homo'   , (0, 1, 2)),
         ('N'      , ('all',)),
         ('repeat'   , list(range(10))),
+        ('iterations', '200'),
+        ('_bind'    , ['immsb.auto', 'ibp.fix']),
     ))
 
+    # Single Expe
 
-    MODEL_FOR_CLUSTER_IBP = dict ((
+    MODEL_FOR_CLUSTER_IBP = Expe((
         ('data_type'    , 'networks'),
-        ('debug'        , 'debug11') ,
+        ('refdir'        , 'debug11') ,
         ('model'        , 'ibp')   ,
         ('K'            , 20)        ,
         ('N'            , 'all')     ,
@@ -113,9 +129,9 @@ class _spec_(object):
         ('homo'         , 0)         ,
         #('repeat'      , '*')       ,
     ))
-    MODEL_FOR_CLUSTER_IMMSB = dict ((
+    MODEL_FOR_CLUSTER_IMMSB = Expe((
         ('data_type'    , 'networks'),
-        ('debug'        , 'debug11') ,
+        ('refdir'        , 'debug11') ,
         ('model'        , 'immsb')   ,
         ('K'            , 20)        ,
         ('N'            , 'all')     ,
@@ -124,47 +140,26 @@ class _spec_(object):
         #('repeat'      , '*')       ,
     ))
 
-    NETWORKS_DD        = ('generator10', )
-    MODELS_DD = [ dict ((
-        ('data_type'    , 'networks'),
-        ('debug'        , 'debug10') ,
-        ('model'        , 'ibp')   ,
-        ('K'            , 10)        ,
-        ('N'            , 'all')     ,
-        ('hyper'        , 'auto')     ,
-        ('homo'         , 0)         ,
-        #('repeat'      , '*')       ,
-    ))]
 
-    MODELS_GENERATE_IBP = [dict ((
+    MODELS_GENERATE = ExpTensor ((
         ('data_type'    , 'networks'),
-        ('debug'        , 'debug11') ,
-        ('model'        , 'ibp')   ,
+        ('refdir'        , 'debug11') ,
+        ('model'        , ['immsb', 'ibp'])   ,
         ('K'            , 10)        ,
         ('N'            , 'all')     ,
-        ('hyper'        , 'fix')     ,
+        ('hyper'        , ['fix', 'auto'])     ,
         ('homo'         , 0)         ,
         #('repeat'      , '*')       ,
-    ))]
-    MODELS_GENERATE_IMMSB = [dict ((
-        ('data_type'    , 'networks'),
-        ('debug'        , 'debug11') ,
-        ('model'        , 'immsb')   ,
-        ('K'            , 10)        ,
-        ('N'            , 'all')     ,
-        ('hyper'        , 'auto')     ,
-        ('homo'         , 0)         ,
-        #('repeat'      , '*')       ,
-    ))]
-    MODELS_GENERATE = MODELS_GENERATE_IMMSB +  MODELS_GENERATE_IBP
+        ('_bind'    , ['immsb.auto', 'ibp.fix']),
+    ))
 
 
 #### Temp
 
-    EXPE_ALL_3_IBP = dict((
+    EXPE_ALL_ICDM_IBP = ExpTensor((
         ('data_type', ('networks',)),
-        ('debug'  , ('debug111111', 'debug101010')),
-        ('corpus' , CORPUS_ALL_3),
+        ('refdir'  , ('debug111111', 'debug101010')),
+        ('corpus' , CORPUS_ALL_ICDM),
         ('model'  , ('ibp',)),
         ('K'      , (5, 10, 15, 20)),
         ('N'      , ('all',)),
@@ -172,10 +167,10 @@ class _spec_(object):
         ('homo'   , (0,)),
         ('repeat'   , (6, 7, 8, 9)),
     ))
-    EXPE_ALL_3_IMMSB = dict((
+    EXPE_ALL_ICDM_IMMSB = ExpTensor((
         ('data_type', ('networks',)),
-        ('debug'  , ('debug111111', 'debug101010')),
-        ('corpus' , CORPUS_ALL_3),
+        ('refdir'  , ('debug111111', 'debug101010')),
+        ('corpus' , CORPUS_ALL_ICDM),
         ('model'  , ('immsb',)),
         ('K'      , (5, 10, 15, 20)),
         ('N'      , ('all',)),
@@ -186,10 +181,10 @@ class _spec_(object):
 
 
 
-    RUN_DD = dict((
+    RUN_DD = ExpTensor((
         ('data_type', ('networks',)),
         #('corpus' , ('fb_uc', 'manufacturing')),
-        ('debug' , ('test_temp',)),
+        ('refdir' , ('test_temp',)),
         ('corpus' , ('generator1',)),
         ('model'  , ('immsb', 'ibp')),
         ('K'      , (5,)),
@@ -198,12 +193,13 @@ class _spec_(object):
         ('homo'   , (0,)),
         ('hyper_prior', ('1 2 3 4', '10 2 10 2')),
         ('repeat'   , (0, 1, 2, 4, 5)),
+        ('_bind'    , ['immsb.auto', 'ibp.fix']),
     ))
 
-    EXPE_REAL_V2_IBP = dict((
+    EXPE_REAL_V2_IBP = ExpTensor((
         ('data_type', ('networks',)),
         ('corpus' , ( 'propro', 'blogs', 'euroroad', 'emaileu')),
-        ('debug'  , ('debug111111'),),
+        ('refdir'  , ('debug111111'),),
         ('model'  , ( 'ibp',)),
         ('K'      , ( 10,)),
         ('hyper'  , ('fix',)),
@@ -212,10 +208,10 @@ class _spec_(object):
         ('repeat'   , list(range(5))),
     ))
 
-    EXPE_REAL_V2_IMMSB = dict((
+    EXPE_REAL_V2_IMMSB = ExpTensor((
         ('data_type', ('networks',)),
         ('corpus' , ( 'propro', 'blogs', 'euroroad', 'emaileu')),
-        ('debug'  , ('debug111111',),),
+        ('refdir'  , ('debug111111',),),
         ('model'  , ( 'immsb',)),
         ('K'      , ( 10,)),
         ('hyper'  , ('auto',)),
@@ -224,10 +220,10 @@ class _spec_(object):
         ('repeat'   , list(range(5))),
     ))
 
-    RAGNRK = dict(
+    RAGNRK = ExpTensor(
         data_type = ['networks'],
         corpus = ['propro', 'blogs', 'euroroad', 'emaileu'],
-        debug  = ['ragnarok'],
+        refdir  = ['ragnarok'],
         model  = ['immsb'],
         K      = [10],
         hyper  = ['auto'],
@@ -236,23 +232,7 @@ class _spec_(object):
         repeat = list(range(2)),
     )
 
-    def __init__(self):
-        pass
 
-    def repr(self):
-        return [d for d in dir(self) if not d.startswith('__')]
+_spec = Netw()
 
-
-    def name(self, l):
-        if isinstance(l, (set, list, tuple)):
-            return [ self._trans[i] for i in l ]
-        elif isinstance(l, basestring):
-            try:
-                return self._trans[l]
-            except:
-                return l
-        else:
-            print (l)
-            print (type(l))
-            raise NotImplementedError
 

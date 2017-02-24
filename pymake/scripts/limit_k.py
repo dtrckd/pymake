@@ -7,11 +7,10 @@ from util.utils import *
 from util.math import *
 from plot import *
 from frontend.frontend_io import *
-from expe.spec import _spec_; _spec = _spec_()
+from expe.spec import _spec
 from expe.format import *
 from util.argparser import argparser
 
-from collections import Counter, defaultdict
 import itertools
 
 """ Density - Small world asymptotic analysis
@@ -19,13 +18,12 @@ import itertools
 
 ####################################################
 ### Config
-config = defaultdict(lambda: False, dict(
-    load_data = True
-    write_to_file = False,
+config = dict(
+    write = False,
     gen_size      = 1000,
-    generative    = 'evidence',
+    mode    = 'generative',
     epoch         = 10 , #20
-))
+)
 config.update(argparser.generate(''))
 
 # Corpuses
@@ -100,7 +98,7 @@ for corpus_name in Corpuses:
                 ttle = 'Class dynamics %s' % Model['model']
 
                 ### Density
-                #y, theta, phi = model.generate(N, _type=config['generative'])
+                #y, theta, phi = model.generate(N, mode=config['generative'])
                 #K[j] = float(y.sum()) / (N**2)
                 #ttle = 'density %s' % Model['model']
 
@@ -109,8 +107,5 @@ for corpus_name in Corpuses:
         plt.legend(loc="upper left", prop={'size':10})
         plt.title(ttle)
 
-        display(False)
 
-if not config.get('write_to_file'):
-    display(True)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from frontend.manager import ModelManager, FrontendManager
+from pymake import ModelManager, FrontendManager
 from frontend.frontendnetwork import frontendNetwork
 from frontend.frontend_io import *
 from expe.spec import _spec_; _spec = _spec_()
@@ -19,10 +19,10 @@ USAGE = '''\
     parallel ./generate.py -w -k {}  ::: $(echo 5 10 15 20)
 '''
 
-def_conf = defaultdict(lambda: False, dict(
-    write_to_file = False,
+def_conf = dict(
+    save_plot = False,
     do           = 'homo',
-))
+)
 def_conf.update(argparser.generate(USAGE))
 
 ####################################################
@@ -42,7 +42,6 @@ def exception_config(config):
 
 def_conf.update( {'load_data':False, # Need to compute feature and communities ground truth (no stored in pickle)
             'load_model': True, # Load model vs Gnerate random data
-            #'save_data': True,
            } )
 configs = make_forest_conf(spec)
 
@@ -91,7 +90,7 @@ for config in configs:
         K = theta.shape[1]
         d['K'] = K
 
-        if config.get('write_to_file'):
+        if config.get('save_plot'):
             try:
                 frontend.update_json(d)
             except Exception as e:

@@ -40,9 +40,9 @@ raw_model = model.create_model(data, num_people, num_groups, alpha, B)
 
 #---------------------------- Call MAP to initialize MCMC -------------------#
 #pymc.MAP(model_instance).fit(method='fmin_powell')
-print '---------- Finished Running MAP to Set MCMC Initial Values ----------'
+print('---------- Finished Running MAP to Set MCMC Initial Values ----------')
 #---------------------------- Run MCMC --------------------------------------#
-print '--------------------------- Starting MCMC ---------------------------'
+print('--------------------------- Starting MCMC ---------------------------')
 M = pymc.MCMC(raw_model, db='pickle', dbname='Disaster.pickle')
 M.sample(10,2, thin=2, verbose=0)
 

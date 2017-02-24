@@ -22,8 +22,6 @@ class Object(object):
         * return None for errorAtributes
         * memorize all input as attribute by default
     """
-    # @todo: catch attributeError on config, and print possibilities if possible
-    # (ie the method assciated to the key in the object in getattr ? --> tab completion)
 
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
@@ -61,32 +59,32 @@ class DataBase(object):
         (frontent)  ->   (choice)       -> (adapt preprocessing)
 
     """
-    ### @Debug :
-    #   * update config path !
-    #   * Separate attribute of the frontend: dataset / Learning / IHM ...
 
-    # review that:
-    #    * separate better load / save and preprocessing (input can be file or array...)
-    #    * view of file confif.... and path creation....
+    def __init__(self, expe, load=False):
 
-    def __init__(self, config, load=False):
-        if config.get('seed'):
-            #np.random.seed(config.get('seed'))
+        if expe.get('seed'):
+            #np.random.seed(expe.get('seed'))
             np.random.set_state(self.load('.seed'))
         self.seed = np.random.get_state()
-        self.save(self.seed, '.seed')
-        self.cfg = config
-        self._load_data = config.get('load_data')
-        self._save_data = config.get('save_data')
+        self.save(self.seed, '/tmp/pymake.seed', silent=True)
+        # Who is the master manager you do that ?
 
-        self.corpus_name = config.get('corpus_name') or config.get('corpus')
-        self.model_name = config.get('model_name')
+        # Load a .pk file for data(default: True if present)
+        # + it faset
+        # - some data features are not stored in .pk
+        self._load_data = expe.get('load_data', True)
+
+        # Save a .pk file of data
+        self._save_data = expe.get('save_data', False)
+
+        self.corpus_name = expe.get('corpus')
+        self.model_name = expe.get('model')
 
         # Specific / @issue Object ?
         # How to handld not-defined variable ?
         # What categorie for object ??
-        self.homo = int(config.get('homo', 0))
-        self.hyper_optimiztn = config.get('hyper')
+        self.homo = int(expe.get('homo', 0))
+        self.hyper_optimiztn = expe.get('hyper')
         self.clusters = None
         self.features = None
 
@@ -95,8 +93,12 @@ class DataBase(object):
         ########
         ### Update settings Operations
         ########
-        config['data_type'] = self.bdir
+        self.expe = expe
+        expe['data_type'] = self.bdir
         self.make_output_path()
+        # There is some dynamic settings
+        # Yes, use gramexp to setup path !!!
+        # K, others ?
 
         if load is True:
             self.load_data(randomize=False)
@@ -109,16 +111,17 @@ class DataBase(object):
         raise NotImplemented
 
     def make_output_path(self):
-        # Write Path (for models results)
-        self.basedir, self.output_path = make_output_path(self.cfg)
-        self.cfg['output_path'] = self.output_path
+        ''' Write Path (for models results) in global settings '''
+        self.basedir, self.output_path = make_output_path(self.expe)
+        # deprecated / outputapth it setup y gramexp
+        self.expe['output_path'] = self.output_path
 
     def update_spec(self, **spec):
         v = None
         if len(spec) == 1:
             k, v = list(spec.items())[0]
             setattr(self, k, v)
-        self.cfg.update(spec)
+        self.expe.update(spec)
         return v
 
     @staticmethod
@@ -130,35 +133,9 @@ class DataBase(object):
     def _get_corpus(self):
         raise NotImplementedError()
 
-    # convert ndarray to list.
-    def save_json(self, res):
-        """ Save a dictionnary in json"""
-        fn = self.output_path + '.json'
-        new_res = copy.copy(res)
-        for k, v  in new_res.items():
-            # Go at two level deeper, no more !
-            if type(v) is dict:
-                for kk, vv  in v.items():
-                    if hasattr(vv, 'tolist'):
-                        new_res[k][kk] = vv.tolist()
-            if hasattr(v, 'tolist'):
-                new_res[k] = v.tolist()
-        return json.dump(new_res, open(fn,'w'))
-    def get_json(self):
-        fn = self.output_path + '.json'
-        d = json.load(open(fn,'r'))
-        return d
-    def update_json(self, d):
-        fn = self.output_path + '.json'
-        res = json.load(open(fn,'r'))
-        res.update(d)
-        lgg.info('updating json: %s' % fn)
-        json.dump(res, open(fn,'w'))
-        return fn
-
     def get_data_prop(self):
         prop = defaultdict()
-        prop.update( {'corpus_name': self.corpus_name,
+        prop.update( {'corpus': self.corpus_name,
                 'instances' : self.data.shape[1] })
         return prop
 
@@ -176,6 +153,14 @@ class DataBase(object):
         #    self.data = sp.sparse.csr_matrix(data)
         #else:
         #    np.random.shuffle(self.data)
+        #
+        #
+    @staticmethod
+    def symmetrize(self, data=None):
+        if data is None:
+            return None
+        data = np.triu(data) + np.triu(data, 1).T
+        return
 
     def shuffle_features(self):
         raise NotImplemented
@@ -197,25 +182,48 @@ class DataBase(object):
 
     # Pickle class
     @staticmethod
-    def save(data, fn):
+    def save(data, fn, silent=False):
         fn = fn + '.pk'
+        if not silent:
+            lgg.info('Saving frData ; %s' % fn)
         with open(fn, 'wb') as _f:
             return pickle.dump(data, _f, protocol=pickle.HIGHEST_PROTOCOL)
 
     @staticmethod
     def load(fn):
         fn = fn + '.pk'
-        lgg.debug('opening file: %s' % fn)
+        lgg.info('Loading frData: %s' % fn)
         with open(fn, 'rb') as _f:
             return pickle.load(_f)
 
-    @staticmethod
-    def symmetrize(self, data=None):
-        if data is None:
-            return None
-        data = np.triu(data) + np.triu(data, 1).T
-        return
+    # convert ndarray to list.
+    def save_json(self, res):
+        """ Save a dictionnary in json"""
+        fn = self.output_path + '.json'
+        new_res = copy.copy(res)
+        for k, v  in new_res.items():
+            # Go at two level deeper, no more !
+            if type(v) is dict:
+                for kk, vv  in v.items():
+                    if hasattr(vv, 'tolist'):
+                        new_res[k][kk] = vv.tolist()
+            if hasattr(v, 'tolist'):
+                new_res[k] = v.tolist()
 
+        lgg.info('Saving json ; %s' % fn)
+        return json.dump(new_res, open(fn,'w'))
+    def get_json(self):
+        fn = self.output_path + '.json'
+        lgg.info('Loading json frData ; %s' % fn)
+        d = json.load(open(fn,'r'))
+        return d
+    def update_json(self, d):
+        fn = self.output_path + '.json'
+        res = json.load(open(fn,'r'))
+        res.update(d)
+        lgg.info('Updating json frData: %s' % fn)
+        json.dump(res, open(fn,'w'))
+        return fn
 
 
 

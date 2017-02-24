@@ -495,7 +495,7 @@ def print_topics(n_kv, term_mapping, top_words=10):
         for v in xrange(self._V):
             if display[:, v]:
                 output_str += vocab[v] + "\t"
-        print output_str
+        print( output_str)
 
 """
 run HDP on a synthetic corpus.
@@ -517,5 +517,5 @@ if __name__ == '__main__':
 
     gs.sample(100)
 
-    print gs._K
-    print gs._n_kv
+    print( gs._K)
+    print( gs._n_kv)
