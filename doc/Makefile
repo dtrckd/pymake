@@ -8,6 +8,7 @@ html:
 
 Engine='circo dot fdp neato nop nop1 nop2 osage patchwork sfdp twopi'
 graph:  
+	@mkdir -p graph/
 	@pushd graph/
 	pyreverse ../../pymake -A -S -p pymake
 	# convert .dot .png for all .dot...
