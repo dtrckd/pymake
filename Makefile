@@ -24,8 +24,8 @@ clean: clean_cython
 	find -name "*.pyc" | xargs rm -f
 	find -name "*.pyd" | xargs rm -f
 	find -name "*.pyo" | xargs rm -f
-	find -name "*.orig" | xargs rm -i
 	-@rm -rf build/
 	-@rm -rf dist/
 	-@rm -rf bhp.egg-info/
 
+clean_cython:
