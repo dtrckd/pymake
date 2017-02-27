@@ -34,6 +34,7 @@ class Netw(ExpDesign):
     CORPUS_REAL_PNAS = Corpus(['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro'])
     CORPUS_ALL_PNAS = CORPUS_REAL_PNAS +  CORPUS_SYN_ICDM
     pnas_short = Corpus([ 'blogs', 'manufacturing', 'generator7','generator4'])
+    pnas_rest = (CORPUS_REAL_NET + CORPUS_SYN_ICDM) - pnas_short
 
     # Text Corpus
     # intruder ?

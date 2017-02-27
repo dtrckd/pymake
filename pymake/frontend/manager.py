@@ -161,13 +161,13 @@ class ModelManager(object):
         kwargs = dict(data=data, data_t=data_t)
 
         if self.model_name in ('ilda', 'lda_cgs', 'immsb', 'mmsb_cgs'):
-            model = self.loadgibbs_1(**kwargs)
+            model = self.loadgibbs_dp(**kwargs)
+        elif self.model_name in ('ilfm', 'ibp', 'ibp_cgs'):
+            model = self.loadgibbs_ibp(**kwargs)
+            model.normalization_fun = lambda x : 1/(1 + np.exp(-x))
         elif self.model_name in ('lda_vb'):
             self.model_name = 'ldafullbaye'
             model = self.lda_gensim(**kwargs)
-        elif self.model_name in ('ilfm', 'ibp', 'ibp_cgs'):
-            model = self.loadgibbs_2(**kwargs)
-            model.normalization_fun = lambda x : 1/(1 + np.exp(-x))
         else:
             raise NotImplementedError()
 
@@ -190,7 +190,6 @@ class ModelManager(object):
             self.model.fit()
 
         if self.write:
-            #self.save()
             self.model.save()
 
         return
@@ -230,7 +229,7 @@ class ModelManager(object):
 
 
     # Base class for Gibbs, VB ... ?
-    def loadgibbs_1(self, **kwargs):
+    def loadgibbs_dp(self, **kwargs):
         delta = self.hyperparams.get('delta',1)
         alpha = self.hyperparams.get('alpha',1)
         gmma = self.hyperparams.get('gmma',1)
@@ -281,7 +280,7 @@ class ModelManager(object):
                                write=self.write,
                                data_t=data_t)
 
-    def loadgibbs_2(self, **kwargs):
+    def loadgibbs_ibp(self, **kwargs):
         sigma_w = 1.
         sigma_w_hyper_parameter = None #(1., 1.)
         alpha = self.hyperparams.get('alpha',1)
@@ -384,40 +383,6 @@ class ModelManager(object):
                 model =  pickle.load(_f, encoding='latin1')
         return model
 
-
-    # Pickle class
-    def save(self):
-        fn = self.output_path + '.pk'
-        ### Debug for non serializable variables
-        #for u, v in vars(self.model).items():
-        #    with open(f, 'w') as _f:
-        #        try:
-        #            pickle.dump(v, _f, protocol=pickle.HIGHEST_PROTOCOL )
-        #        except:
-        #            print 'not serializable here: %s, %s' % (u, v)
-        self.model.purge()
-        # |
-        # |
-        # HOW TO called thid method recursvely from..
-        to_remove = []
-        for k, v in self.model.__dict__.items():
-            if hasattr(v, 'func_name') and v.func_name == '<lambda>':
-                to_remove.append(k)
-            if str(v).find('<lambda>') >= 0:
-                # python3 hook, nothing better ?
-                to_remove.append(k)
-            #elif type(k) is defaultdict:
-            #    setattr(self.model, k, dict(v))
-
-        for k in to_remove:
-            try:
-                delattr(self.model, k)
-            except:
-                pass
-
-        lgg.info('Saving Model : %s' % fn)
-        with open(fn, 'wb') as _f:
-            return pickle.dump(self.model, _f, protocol=pickle.HIGHEST_PROTOCOL)
 
     @classmethod
     def from_file(cls, fn):
