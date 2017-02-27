@@ -56,11 +56,9 @@ class ModelBase(object):
 
         if self.output_path and self.write:
             import os
-            bdir = os.path.dirname(self.output_path)
-            fn = os.path.basename(self.output_path)
-            try: os.makedirs(bdir)
+            try: os.makedirs(os.path.dirname(self.output_path))
             except: pass
-            self.fname_i = bdir + '/inference-' + fn.split('.')[0]
+            self.fname_i = self.output_path + '.inf'
             self._f = open(self.fname_i, 'wb')
             self._f.write((self.csv_typo + '\n').encode('utf8'))
 

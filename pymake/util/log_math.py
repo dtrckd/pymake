@@ -1,5 +1,5 @@
-from math import log, exp;
-from random import random;
+from math import log, exp
+from random import random
 
 def log_add(log_a, log_b):
     if log_a < log_b:
@@ -25,7 +25,7 @@ def log_sample(dist):
         current += exp(dist[index])
         if current >= cutoff:
             return index
-    
+
     assert False, "Didn't choose anything: %f %f" % (cutoff, current)
 
 #Returns the gamma function of xx.
@@ -35,7 +35,7 @@ def log_sample(dist):
 #Copied from stats.py by strang@nmr.mgh.harvard.edu
 def lgammln(xx):
     coeff = [76.18009173, -86.50532033, 24.01409822, -1.231739516, 0.120858003e-2, -0.536382e-5]
-    
+
     x = xx - 1.0
     tmp = x + 5.5
     tmp = tmp - (x + 0.5) * log(tmp)
@@ -43,5 +43,5 @@ def lgammln(xx):
     for j in range(len(coeff)):
         x = x + 1
         ser = ser + coeff[j] / x
-        
+
     return - tmp + log(2.50662827465 * ser)

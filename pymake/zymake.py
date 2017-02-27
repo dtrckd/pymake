@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import sys, multiprocessing
 
 from pymake import GramExp
-from frontend.manager import ModelManager, FrontendManager
+from pymake.frontend.manager import ModelManager, FrontendManager
 from pymake.expe.spec import _spec
 
 

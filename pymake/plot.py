@@ -536,7 +536,7 @@ def plot_csv(target_dirs='', columns=0, sep=' ', separate=False, title=None, twi
             ylabel, label = tag_from_csv(column)
             ax1.set_ylabel(ylabel)
 
-            model_label = target_dir.split('/')[-1][len('inference-'):]
+            model_label = target_dir.split('/')[-1]
             #label = target_dir + ' ' + label
             label = target_dir.split('/')[-3] +' '+ model_label
             if model_label.startswith(('ilda', 'immsb')):

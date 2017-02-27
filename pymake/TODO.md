@@ -22,9 +22,6 @@ MODEL Specification:
     * zymake check/gen [spec]
     * zymake runcmd [spec] | parallel #parralisation
 
-* @expformat
-    * postprocess strategy(decorocator?) to write figs/table....
-
 ## IN DOIING
 * build_corpus and build_networks are identical : wrap in DataBase
 * rename inference-\* file to \*.inf files
