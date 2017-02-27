@@ -78,7 +78,7 @@ class ExpDesign(dict, BaseObject):
         name = self.pop('_name', 'expDesign')
         BaseObject.__init__(self, name)
 
-        for k in self.__dir__():
+        for k in dir(self):
             #_spec = ExpDesign((k, getattr(Netw, k)) for k in dir(Netw) if not k.startswith('__') )
             if not k.startswith('__'):
                 self[k] = getattr(self, k)
@@ -134,14 +134,16 @@ class ExpDesign(dict, BaseObject):
             return mapname.get(l, l)
 
 class ExpVector(list, BaseObject):
-    pass
-class Corpus(ExpVector):
     def __add__(self, other):
-        return Corpus(list.__add__(self, other))
+        return self.__class__(list.__add__(self, other))
+    def __sub__(self, other):
+        return self.__class__([item for item in self if item not in other])
+
+class Corpus(ExpVector):
+    pass
 
 class Model(ExpVector):
-    def __add__(self, other):
-        return Model(list.__add__(self, other))
+    pass
 
 class Expe(dict, BaseObject):
     pass

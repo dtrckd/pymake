@@ -3,7 +3,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from pymake import Expe, ModelManager, FrontendManager, GramExp
-from util.utils import Now, ellapsed_time
+from pymake.util.utils import Now, ellapsed_time
 import logging
 lgg = logging.getLogger('root')
 

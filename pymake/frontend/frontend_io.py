@@ -23,9 +23,9 @@ _STIRLING_PATH = LOCAL_BDIR + '/../pymake/util/'
     Corpus are load/saved using Pickle format in:
     * bdir/corpus_name.pk
     Models are load/saved using pickle/json/cvs in :
-    * bdir/debug/rept/model_name_parameters.pk <--> ModelManager
+    * bdir/debug/rept/model_name_parameters.pk   <--> ModelManager
     * bdir/debug/rept/model_name_parameters.json <--> DataBase
-    * bdir/debug/rept/inference-model_name_parameters <--> ModelBase
+    * bdir/debug/rept/model_name_parameters.inf  <--> ModelBase
 
     Filnemame is formatted as follow by default :
     fname_out = '%s_%s_%s_%s_%s' % (self.model_name,
@@ -154,11 +154,11 @@ def ext_status(filen, _type):
     elif _type == 'json':
         nf = filen + '.json'
     elif _type in ('inf', 'inference'):
-        nf = 'inference-' + filen
+        nf =  filen + '.inf'
     elif _type == 'all':
         nf = dict(pk=filen + '.pk',
                  json=filen + '.json',
-                 inference='inference-'+filen)
+                 inference=filen + '.inf')
     return nf
 
 from operator import mul
@@ -216,12 +216,12 @@ def tree_hook(key, value):
 def get_conf_from_file(target, mp):
     """ Return dictionary of property for an expe file.
         @mp: map parameters
-        format inference-model_K_hyper_N.
+        format model_K_hyper_N
         @template_file order important to align the dictionnary.
         """
     masterkeys = _MASTERKEYS.copy()
     template_file = masterkeys.keys()
-    ##template_file = 'networks/generator/Graph13/debug11/inference-immsb_10_auto_0_all'
+    ##template_file = 'networks/generator/Graph13/debug11/immsb_10_auto_0_all.*'
 
     # Relative path ignore
     if target.startswith(LOCAL_BDIR):
