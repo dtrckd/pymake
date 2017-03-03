@@ -3,6 +3,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
+import scipy as sp
 from numpy import ma
 from pymake import ExpTensor, ModelManager, FrontendManager, GramExp, ExpeFormat, ExpSpace
 from pymake.expe.spec import _spec
@@ -625,6 +626,12 @@ class GenNetwork(ExpeFormat):
                 for tick  in range(nbox):
                     ax.text(pos[tick], top+top*0.015 , upperLabels[tick],
                              horizontalalignment='center', size='x-small', weight=weights[tick%2])
+
+                print(_model)
+                t1 = sp.stats.ttest_ind(table['natural']['links'], table['natural']['non-links'])
+                t2 = sp.stats.ttest_ind(table['latent']['links'], table['latent']['non-links'])
+                print(t1)
+                print(t2)
 
     @ExpeFormat.plot('corpus', 'testset_ratio')
     def roc(self, _type='testset', _ratio=20):

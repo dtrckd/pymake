@@ -14,41 +14,56 @@ import matplotlib.pyplot as plt
 import logging
 lgg = logging.getLogger('root')
 
+from itertools import groupby
+import sys, importlib, pkgutil
+def _packages(module_name, attr_filter='__name__', max_depth=1, _depth=0, prefix=False):
+    ''' Import all submodules of a module, recursively. '''
+    if prefix is True:
+        prefix = module_name
 
-class ExpSpace(dict):
-    def __init__(self, *args, **kwargs):
-        super(ExpSpace, self).__init__(*args, **kwargs)
-        for arg in args:
-            if isinstance(arg, dict):
-                for k, v in arg.items():
-                    self[k] = v
+    packages = OrderedDict()
+    try:
+        module = importlib.import_module(module_name)
+    except ImportError as e:
+        lgg.debug('package unavailable : %s'%(module_name))
+        return packages
 
-        if kwargs:
-            for k, v in kwargs.items():
-                self[k] = v
+    for loader, name, is_pkg in pkgutil.walk_packages(module.__path__):
+        submodule_name = module_name + '.' + name
+        if is_pkg and _depth < max_depth:
+            next_depth = _depth + 1
+            packages.update(_packages(submodule_name, attr_filter, max_depth, next_depth, prefix))
+            continue
 
-    """dot.notation access to dictionary attributes"""
-    __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
-    def __getattr__(self, key):
         try:
-            return self[key]
-        except KeyError:
-            raise AttributeError(key)
+            submodule = importlib.import_module(submodule_name)
+        except ImportError as e:
+            lgg.debug('package unavailable : %s'%(submodule_name))
+            continue
 
-    # For Piclking
-    def __getstate__(self):
-        return self
-    def __setstate__(self, state):
-        self.update(state)
-        self.__dict__ = self
+        obj_list = dir(submodule)
+        idx = None
+        for n in [name, name.lower(), name.upper()]:
+            # Search for the object inside the submodule
+            try:
+                idx = obj_list.index(n)
+                break
+            except:
+                continue
 
+        if idx is None:
+            # no models here
+            continue
 
-### Base Object
-#
-# @todo integrate Frontend and Model to that workflow
-#
+        obj = getattr(submodule, obj_list[idx])
+        if hasattr(obj, attr_filter):
+            if prefix:
+                name = prefix +'.'+ name
+            # remove duplicate name
+            name = '.'.join([x[0] for x in groupby(name.split('.'))])
+            packages[name] = obj
 
+    return packages
 
 class BaseObject(object):
     '''' Notes : Avoid method conflict by ALWAYS settings this class in last
@@ -71,8 +86,82 @@ class BaseObject(object):
     def table(self):
         return tabulate(self.items())
 
+
+class ExpSpace(dict):
+    """ A dictionnary with dot notation access.
+        Used for the **expe** settings stream.
+    """
+    def __init__(self, *args, **kwargs):
+        super(ExpSpace, self).__init__(*args, **kwargs)
+        for arg in args:
+            if isinstance(arg, dict):
+                for k, v in arg.items():
+                    self[k] = v
+
+        if kwargs:
+            for k, v in kwargs.items():
+                self[k] = v
+
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+    def __getattr__(self, key):
+        try:
+            return self[key]
+        except KeyError:
+            raise AttributeError(key)
+
+    # For Piclking
+    def __getstate__(self):
+        return self
+    #def __setstate__(self, state):
+    #    self.update(state)
+    #    self.__dict__ = self
+
+class ExpVector(list, BaseObject):
+    ''' A List of elements of an ExpTensor. '''
+    def __add__(self, other):
+        return self.__class__(list.__add__(self, other))
+    def __sub__(self, other):
+        return self.__class__([item for item in self if item not in other])
+
+class Corpus(ExpVector):
+    pass
+    #@staticmethod
+    #def get_atoms():
+    #    return _packages('pymake...', attr_filter='fit')
+
+class Model(ExpVector):
+    @staticmethod
+    def get_atoms():
+        atoms =  _packages('pymake.model', attr_filter='fit')
+        atoms.update(_packages('mla', attr_filter='fit', prefix=True, max_depth=3))
+        atoms.update(_packages('sklearn.decomposition', attr_filter='fit', prefix='skld', max_depth=3))
+        return atoms
+
+class Expe(dict, BaseObject):
+    pass
+
+class ExpTensor(OrderedDict, BaseObject):
+    ''' Represent a set of Experiences (**expe**). '''
+    def __init__(self,  *args, **kwargs):
+        OrderedDict.__init__(self, *args, **kwargs)
+        name = self.pop('_name', 'expTensor')
+        BaseObject.__init__(self, name)
+
+    def update_from_dict(self, d):
+        for k, v in d.items():
+            if issubclass(type(v), ExpVector):
+                self[k] = v
+            else:
+                self[k] = [v]
+
+    def table(self, extra=[]):
+        return tabulate(extra+sorted(self.items(), key=lambda x:x[0]),
+                               headers=['Params','Values'])
+
 class ExpDesign(dict, BaseObject):
-    _reserved_keywords = ['_mapname', '_name', '_reserved_keywords']+dir(dict)+dir(BaseObject) # _* ?
+    ''' An Ensemble composed of ExpTensors and ExpVectors. '''
+    _reserved_keywords = ['_mapname', '_name', 'table_atoms',  '_reserved_keywords']+dir(dict)+dir(BaseObject) # _* ?
     def __init__(self,  *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
         name = self.pop('_name', 'expDesign')
@@ -89,7 +178,7 @@ class ExpDesign(dict, BaseObject):
         glob_table = sorted([ (k, v) for k, v in self.items() if k not in self._reserved_keywords ], key=lambda x:x[0])
 
         Headers = OrderedDict((('Corpuses',Corpus),
-                               ('Exp',(Expe, ExpTensor)),
+                               ('Exp',(ExpSpace, ExpTensor)),
                                ('Unknown', str)))
         tables = [ [] for i in range(len(Headers))]
         for name, _type in glob_table:
@@ -101,6 +190,34 @@ class ExpDesign(dict, BaseObject):
 
         raw = []
         for sec, table in enumerate(tables):
+            size = len(table)
+            if size == 0:
+                continue
+            col = int((size-0.1) // line)
+            junk = line % size
+            table += ['-']*junk
+            table = [table[j:line*(i+1)] for i,j in enumerate(range(0, size, line))]
+            table = np.char.array(table).astype("|S20")
+            fmt = 'simple'
+            raw.append(tabulate(table.T,
+                                headers=[list(Headers.keys())[sec]]+['']*(col),
+                                tablefmt=fmt))
+        sep = '\n'+'='*20+'\n'
+        return '#'+self.__name__ +sep+sep.join(raw)
+
+    def table_atoms(self, line=10):
+
+        Headers = OrderedDict((('Corpuses',Corpus),
+                               ('Models',(ExpSpace, ExpTensor)),
+                               ('Unknown', str)))
+
+        tables = [[], # corpus atoms...
+                  list(Model.get_atoms().keys()),
+        ]
+
+        raw = []
+        for sec, table in enumerate(tables):
+            table = sorted(table, key=lambda x:x[0])
             size = len(table)
             if size == 0:
                 continue
@@ -133,41 +250,9 @@ class ExpDesign(dict, BaseObject):
         else :
             return mapname.get(l, l)
 
-class ExpVector(list, BaseObject):
-    def __add__(self, other):
-        return self.__class__(list.__add__(self, other))
-    def __sub__(self, other):
-        return self.__class__([item for item in self if item not in other])
-
-class Corpus(ExpVector):
-    pass
-
-class Model(ExpVector):
-    pass
-
-class Expe(dict, BaseObject):
-    pass
-
-class ExpTensor(OrderedDict, BaseObject):
-    def __init__(self,  *args, **kwargs):
-        OrderedDict.__init__(self, *args, **kwargs)
-        name = self.pop('_name', 'expTensor')
-        BaseObject.__init__(self, name)
-
-    def update_from_dict(self, d):
-        for k, v in d.items():
-            if issubclass(type(v), ExpVector):
-                self[k] = v
-            else:
-                self[k] = [v]
-
-    def table(self, extra=[]):
-        return tabulate(extra+sorted(self.items(), key=lambda x:x[0]),
-                               headers=['Params','Values'])
-#\
-
 
 class ExpeFormat(object):
+    ''' A Base class for processing individuals experiments (**expe**). '''
     def __init__(self, pt, expe, gramexp):
         from pymake.expe.spec import _spec
         self.specname = _spec.name

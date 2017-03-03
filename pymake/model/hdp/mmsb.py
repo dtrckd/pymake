@@ -128,7 +128,7 @@ class Likelihood(object):
     # Interface to properly iterate over data
     def data_iter(self, randomize=True):
         if not hasattr(self, '_order'):
-            order = np.arange(len(self.data_dims)**2).reshape(self.data_ma.shape)
+            order = np.arange(self.data_ma.size).reshape(self.data_ma.shape)
             masked = order[self.data_ma.mask]
 
             if self.symmetric:
@@ -438,7 +438,7 @@ class ZSamplerParametric(ZSampler):
         if 'alpha' in ('symmetric', 'fix'):
             alpha = np.ones(K)*1/K
         elif 'alpha' in ('asymmetric', 'auto'):
-            alpha = np.asarray([1.0 / (i + np.sqrt(K)) for i in xrange(K)])
+            alpha = np.asarray([1.0 / (i + np.sqrt(K)) for i in range(K)])
             alpha /= alpha.sum()
         else:
             alpha = np.ones(K)*alpha_0
@@ -556,6 +556,7 @@ class CGS(object):
 
     def sample(self):
         return self.zsampler.sample()
+
 
 class GibbsRun(GibbsSampler):
 
@@ -818,5 +819,4 @@ class GibbsRun(GibbsSampler):
         bm = zip(label, hist)
         self.comm['block_ties'] = bm
         return bm
-
 

@@ -15,5 +15,8 @@ setuptools.setup(
     version='0.1',
     author='Adrien Dulac',
     packages=setuptools.find_packages(),
+    entry_points = {
+        'console_scripts': ['pymake=pymake.zymake'],
+    }
     #include_package_data=True,
 )

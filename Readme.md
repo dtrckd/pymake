@@ -6,6 +6,12 @@ Pymake is machine-friendly platform for making reproducible research. It provide
 
 This code is in a living development stage and yet unstable and this introduction needs to be completed.
 
+### Features wishes
+Those are ongoing development...
+* A database to share (push/fetch/search) Design of experimentation.
+* Better specification of the formal grammar of design of experimentation.
+* Better documentation.
+
 ### Usage
 Script to create the path and commands for a design of experiments :
 

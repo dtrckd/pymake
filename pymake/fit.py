@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from pymake import Expe, ModelManager, FrontendManager, GramExp
+from pymake import ExpSpace, ModelManager, FrontendManager, GramExp
 from pymake.util.utils import Now, ellapsed_time
 import logging
 lgg = logging.getLogger('root')
@@ -14,7 +14,7 @@ import scipy as sp
 if __name__ == '__main__':
 
     ### Experience Settings
-    g = GramExp(Expe(
+    g = GramExp(ExpSpace(
         corpus = 'clique2',
         model  = 'immsb',
         hyper       = 'auto',
@@ -28,7 +28,7 @@ if __name__ == '__main__':
     ))
 
     lgg.info(g.exp_tensor.table())
-    expe = g.lod[0]
+    expe = ExpSpace(g.lod[0])
 
     ### Load Data
     now = Now()
@@ -51,12 +51,12 @@ if __name__ == '__main__':
     #exit()
 
     ### Initializa Model
-    model = ModelManager(expe)
+    model = ModelManager(expe=expe, frontend=frontend)
     last_d = ellapsed_time('Init Model Time', last_d)
 
     ### Run Inference / Learning Model
     model.fit(frontend)
-    last_d = ellapsed_time('Inference Time: %s'%(model.output_path), last_d)
+    last_d = ellapsed_time('Inference Time: %s'%(expe.output_path), last_d)
 
     ### Predict Future
     # @debug remove frontend...
