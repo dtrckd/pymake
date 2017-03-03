@@ -10,14 +10,12 @@ if os.environ.get('DISPLAY') is None:
     import matplotlib; matplotlib.use('Agg')
 
 
-from pymake.expe.format import Expe, Corpus, Model, ExpSpace, ExpVector, ExpTensor, ExpeFormat, ExpDesign
+from pymake.expe.format import Corpus, Model, ExpSpace, ExpVector, ExpTensor, ExpeFormat, ExpDesign
 from pymake.expe.gramexp import GramExp
+
 from pymake.frontend.frontendtext import frontendText
 from pymake.frontend.frontendnetwork import frontendNetwork
 from pymake.frontend.manager import ModelManager, FrontendManager
-
-
-
 
 
 #

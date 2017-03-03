@@ -1,3 +1,5 @@
+PACKAGE := pymake
+
 default: install
 docs: 
 	@echo 'todo'
@@ -11,10 +13,11 @@ clean_datasets:
 	@echo 'toto'
 
 install:
-	python3 setup.py install --user
+	python3 setup.py install --user --record .$(PACKAGE).egg-info
 
-unistall:
-	pip3 uninstall bhp 
+uninstall:
+	# Do not remove empty dir...
+	cat .$(PACKAGE).egg-info | xargs rm -f
 
 build:
 	python3 setup.py build
@@ -24,8 +27,10 @@ clean: clean_cython
 	find -name "*.pyc" | xargs rm -f
 	find -name "*.pyd" | xargs rm -f
 	find -name "*.pyo" | xargs rm -f
-	find -name "*.orig" | xargs rm -i
+	#find -name "*.orig" | xargs rm -fi
 	-@rm -rf build/
 	-@rm -rf dist/
-	-@rm -rf bhp.egg-info/
+	-@rm -rf $(PACKAGE).egg-info/
+
+clean_cython:
 

@@ -11,7 +11,7 @@ from copy import deepcopy
 from argparse import RawDescriptionHelpFormatter
 
 from .gram import _Gram, ExpArgumentParser
-from pymake import basestring, ExpTensor, Expe, ExpSpace, ExpeFormat, Model, Corpus, ExpVector
+from pymake import basestring, ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, ExpVector
 from pymake.frontend.frontend_io import make_forest_conf, make_forest_path, make_output_path
 from pymake.expe.spec import _spec
 from pymake.plot import colored
@@ -20,6 +20,7 @@ import logging
 lgg = logging.getLogger('root')
 
 ''' Grammar Expe '''
+_version = 0.1
 
 class GramExp(object):
     ''' Create a mapping between different format of design of experiments.
@@ -85,12 +86,11 @@ class GramExp(object):
 
     def __init__(self, conf={}, usage=None, parser=None, parseargs=True):
         if parseargs is True:
-            kwargs = self.parseargsexpe(usage)
+            kwargs, self.argparser = self.parseargsexpe(usage)
             conf.update(kwargs)
         if parser is not None:
+            # merge parser an parsargs ?
             self.argparser = parser
-        else:
-            self.argparser = GramExp.get_parser()
 
         [conf.update({k:v}) for k,v in self._exp_default.items() if k not in conf]
         conf = deepcopy(conf)
@@ -99,7 +99,7 @@ class GramExp(object):
             self.exp_tensor.update_from_dict(conf)
         elif isinstance(conf, ExpTensor):
             self.exp_tensor = self.exp2tensor(conf)
-        elif isinstance(conf, (dict, Expe)):
+        elif isinstance(conf, (dict, ExpSpace)):
             # Assume Single Expe (type dict or Expe)
             if type(conf) is dict:
                 # @zymake ?
@@ -238,7 +238,7 @@ class GramExp(object):
             grammar.append((args, e))
             args = []
 
-        parser.add_argument('--version', action='version', version='%(prog)s 0.1')
+        parser.add_argument('--version', action='version', version='%(prog)s '+str(_version))
         [parser.add_argument(*r[0], **r[1]) for r in grammar]
 
         return parser
@@ -258,7 +258,7 @@ class GramExp(object):
 
         settings = dict((key,value) for key, value in vars(s).items() if value)
         GramExp.expVectorLookup(settings)
-        return settings
+        return settings, parser
 
     @classmethod
     def zymake(cls, request={}, usage=''):
@@ -266,14 +266,14 @@ class GramExp(object):
         ----------------
         Communicate with the data :
         ----------------
-         |   zymake -l         : (default) show available spec
+         |   zymake -l [atom]   : (default) show available spec
          |   zymake show SPEC  : show one spec details
          |   zymake cmd SPEC [fun][*args]   : generate command-line
          |   zymake burn SPEC [fun][*args][--script ...] : parallelize tasks
          |   zymake path SPEC Filetype(pk|json|inf) [status]
         ''' + '\n' + usage
 
-        s = GramExp.parseargsexpe(usage)
+        s, parser = GramExp.parseargsexpe(usage)
         request.update(s)
 
         ontology = dict(
@@ -308,10 +308,12 @@ class GramExp(object):
         #    request['_status'] = clargs.grouped['-status'].get(0)
         if request.get('do_list'):
             request['_do'] = 'list'
+        elif 'list' in do:
+            request['do_list'] = False
 
         if checksum != 0:
             raise ValueError('unknow argument: %s\n\nAvailable SPEC : %s' % (do, _spec.keys()))
-        return cls(request, usage=usage, parseargs=False)
+        return cls(request, usage=usage, parser=parser, parseargs=False)
 
     @classmethod
     def generate(cls, request={},  usage=''):
@@ -331,7 +333,8 @@ class GramExp(object):
         parser.add_argument('-g', '--generative', dest='_mode', action='store_const', const='generative')
         parser.add_argument('-p', '--predictive', dest='_mode', action='store_const', const='predictive')
 
-        s = GramExp.parseargsexpe(parser=parser)
+        s, parser = GramExp.parseargsexpe(parser=parser)
+
         request.update(s)
 
         do = request.get('_do') or ['_list']
@@ -345,7 +348,7 @@ class GramExp(object):
                 request['spec'] = _spec[a]
                 do.remove(a)
 
-        return cls(request, usage=usage, parseargs=False)
+        return cls(request, usage=usage, parser=parser, parseargs=False)
 
     @staticmethod
     def expVectorLookup(request):
@@ -443,6 +446,10 @@ class GramExp(object):
             extra += [('_bind', self._bind)]
         return self.exp_tensor.table(extra)
 
+
+    def help_short(self):
+        shelp = self.argparser.format_usage() + self.argparser.epilog
+        return shelp
 
     def simulate_short(self):
         ''' Simulation Output '''

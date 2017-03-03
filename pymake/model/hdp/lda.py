@@ -514,4 +514,3 @@ class GibbsRun(GibbsSampler):
         lgg.error('todo')
         pass
 
-

@@ -180,6 +180,9 @@ _Gram = [
     '--delta', dict(
         nargs='*', action=partial(exp_append, _t=float),
         help='Third hyperparameter.'),
+    '--chunk', dict(
+        nargs='*', action=partial(exp_append, _t=float),
+        help='Chunk size for online learning.'),
 
     #
     #
@@ -202,6 +205,6 @@ _Gram = [
         help='Rules to filter the Exp Request.'),
 
     '-l', '--list', dict(
-        action='store_true', dest='do_list',
+        const=True, dest='do_list', nargs='?',
         help='Request to print informations.'),
     ]

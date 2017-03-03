@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from pymake import Expe, ExpTensor, Corpus, ExpDesign
+from pymake import ExpSpace, ExpTensor, Corpus, ExpDesign
 
 class Netw(ExpDesign):
 
@@ -120,7 +120,7 @@ class Netw(ExpDesign):
 
     # Single Expe
 
-    MODEL_FOR_CLUSTER_IBP = Expe((
+    MODEL_FOR_CLUSTER_IBP = ExpSpace((
         ('data_type'    , 'networks'),
         ('refdir'        , 'debug11') ,
         ('model'        , 'ibp')   ,
@@ -130,7 +130,7 @@ class Netw(ExpDesign):
         ('homo'         , 0)         ,
         #('repeat'      , '*')       ,
     ))
-    MODEL_FOR_CLUSTER_IMMSB = Expe((
+    MODEL_FOR_CLUSTER_IMMSB = ExpSpace((
         ('data_type'    , 'networks'),
         ('refdir'        , 'debug11') ,
         ('model'        , 'immsb')   ,

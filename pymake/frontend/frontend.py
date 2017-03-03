@@ -107,6 +107,9 @@ class DataBase(object):
         #if data is not None:
         #    self.update_data(data)
 
+        # Obsolete
+        self.data_t = None
+
     def update_data(self):
         raise NotImplemented
 

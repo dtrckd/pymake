@@ -40,7 +40,14 @@ if __name__ == '__main__':
         zymake.simulate()
         exit()
     elif zyvar['_do'] == 'list':
-        print (_spec.table())
+        if zyvar.get('do_list') is True:
+            print (_spec.table())
+        elif zyvar.get('do_list') == 'atom':
+            print (_spec.table_atoms())
+        elif 'do_list' in zyvar and not zyvar['do_list'] :
+            print(zymake.help_short())
+        else:
+            print ('list what %s ?' % zyvar.get('do_list'))
         exit()
     else:
         raise NotImplementedError('zymake options unknow : %s' % zyvar)

@@ -7,6 +7,11 @@ tags
 *.session.vim
 *.byobu
 
+*.egg-info/
+*.egg-info
+/build/
+/dist/
+
 results/*
 !results/Makefile
 !results/backsync.sh

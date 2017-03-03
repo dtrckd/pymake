@@ -14,6 +14,7 @@ graph:
 	# convert .dot .png for all .dot...
 	#dot -Tpng -K@> > graph/...
 	@popd
+	./dot.sh
 
 clean:
 	-@rm -rf graph/*

@@ -7,14 +7,12 @@ from .frontend import DataBase
 from pymake.util.utils import make_path
 from pymake.util.vocabulary import Vocabulary, parse_corpus
 
-sys.path.insert(1, os.path.join(os.path.dirname(__file__),'../../../gensim'))
 
-try:
-    import gensim
-    from gensim.models import ldamodel, ldafullbaye
-    Models = { 'ldamodel': ldamodel, 'ldafullbaye': ldafullbaye, 'hdp': None}
-except:
-    pass
+#try:
+#    #sys.path.insert(1, os.path.join(os.path.dirname(__file__),'../../../gensim'))
+#    import gensim
+#except:
+#    pass
 
 
 class frontendText(DataBase):
