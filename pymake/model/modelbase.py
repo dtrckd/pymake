@@ -18,13 +18,7 @@ from pymake.util.math import lognormalize, categorical
 import logging
 lgg = logging.getLogger('root')
 
-
-#
-# TODO
-# * add Likelihood base class here.
-# * SVB
-#
-
+# Todo: rethink sampler and Likelihood class definition.
 
 class ModelBase(object):
     """"  Root Class for all the Models.
@@ -32,6 +26,7 @@ class ModelBase(object):
     * Suited for unserpervised model
     * Virtual methods for the desired propertie of models
     """
+    __abstractmethods__ = 'model'
     default_settings = {
         'write' : False,
         'output_path' : 'tm-output',
@@ -200,7 +195,6 @@ class ModelBase(object):
         with open(fn, 'wb') as _f:
             return pickle.dump(model, _f, protocol=pickle.HIGHEST_PROTOCOL)
 
-
     def __deepcopy__(self, memo):
         cls = self.__class__
         result = cls.__new__(cls)
@@ -258,7 +252,8 @@ class ModelBase(object):
               }
         return res
 
-
+    def fit(self):
+        raise NotImplementedError
     # Just for MCMC ?():
     def generate(self):
         raise NotImplementedError
@@ -279,6 +274,7 @@ class GibbsSampler(ModelBase):
         but for other (e.g IBP based), method has to be has to be overloaded...
         -> use a decorator @mmm to get latent variable ...
     '''
+    __abstractmethods__ = 'model'
     def __init__(self, sampler,  **kwargs):
         self.s = sampler
         super(GibbsSampler, self).__init__(**kwargs)
@@ -543,6 +539,8 @@ class BetaSampler(object):
 class SVB(ModelBase):
 
     '''online EM/SVB'''
+
+    __abstractmethods__ = 'model'
 
     def __init__(self, expe, frontend=None):
         super(SVB, self).__init__(**expe)

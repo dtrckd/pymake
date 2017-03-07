@@ -32,12 +32,13 @@ class immsb_scvb(SVB):
 
         # Stream Parameters
         chunk = self.expe.get('chunk', 10)
-        if chunk < 1:
+        self.chunk_size = chunk * self._len['N']
+        self.chunk_len = self._len['nnz']/self.chunk_size
+
+        if self.chunk_len < 1:
             self.chunk_size = self._len['nnz']
             self.chunk_len = 1
-        else:
-            self.chunk_size = chunk * self._len['N']
-            self.chunk_len = self._len['nnz']/self.chunk_size
+
         self.gradient_update_freq = self.chunk_size / 100
         #self.burnin = 1
         self.burnin = 10
@@ -63,10 +64,10 @@ class immsb_scvb(SVB):
         self.elbo = self.perplexity()
 
     def _update_gstep_phi(self, kappa=0.5):
-        self.gstep_phi =  (256 +self._timestep)**-kappa
+        self.gstep_phi =  (1 +self._timestep)**-kappa
 
     def _update_gstep_theta(self, kappa=0.5):
-        self.gstep_theta =  (256 +self._timestep)**-kappa
+        self.gstep_theta =  (1 +self._timestep)**-kappa
 
     def _random_ss_init(self, frontend):
         ''' Sufficient Statistics Initialization '''

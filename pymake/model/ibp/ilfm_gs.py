@@ -14,7 +14,7 @@ from scipy.sparse import lil_matrix
 sp_dot = csr_matrix.dot
 
 from .ibp import IBP
-from pymake.model import GibbsSampler
+from pymake.model.modelbase import GibbsSampler
 from pymake.util.algo import *
 
 # We will be taking log(0) = -Inf, so turn off this warning
@@ -39,7 +39,7 @@ This code was modified from the code originally written by Zhai Ke (kzhai@umd.ed
 W_diag = -2
 
 class IBPGibbsSampling(IBP, GibbsSampler):
-
+    __abstractmethods__ = 'model'
     def __init__(self, assortativity=False,
                  alpha_hyper_parameter=None,
                  sigma_w_hyper_parameter=None,

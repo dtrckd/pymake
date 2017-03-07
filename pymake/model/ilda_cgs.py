@@ -2,10 +2,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 
-from pymake.model.hdp.mmsb import GibbsRun, Likelihood, CGS, ZSamplerParametric
+from pymake.model.hdp.lda import GibbsRun, Likelihood, ZSampler, MSampler, BetaSampler, NP_CGS
 
-# @idem than lda_cgs
-class mmsb_cgs(GibbsRun):
+# @idem than immsb_cgs
+class ilda_cgs(GibbsRun):
     def __init__(self, expe, frontend):
 
         delta = expe.hyperparams.get('delta',1)
@@ -22,10 +22,14 @@ class mmsb_cgs(GibbsRun):
 
         likelihood = Likelihood(delta, data, assortativity=assortativity)
 
-        # Parametric case
-        jointsampler = CGS(ZSamplerParametric(alpha, likelihood, K, data_t=data_t))
+        # Nonparametric case
+        zsampler = ZSampler(alpha, likelihood, K_init=K, data_t=data_t)
+        msampler = MSampler(zsampler)
+        betasampler = BetaSampler(gmma, msampler)
+        jointsampler = NP_CGS(zsampler, msampler, betasampler,
+                              hyper=hyper, hyper_prior=hyper_prior)
 
-        super(mmsb_cgs, self).__init__(jointsampler,
+        super(ilda_cgs, self).__init__(jointsampler,
                                     iterations=expe.iterations,
                                     output_path=expe.output_path,
                                     write=expe.write,

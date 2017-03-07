@@ -56,11 +56,11 @@ def jsondict(d):
         return {str(k):v for k,v in d.items()}
     return d
 
-def parse_file_conf(fn):
+def parse_file_conf(fn, sep=':'):
     with open(fn) as f:
         parameters = f.read()
     parameters = filter(None, parameters.split('\n'))
-    parameters = dict((p[0], p[1]) for p  in (t.strip().split(':') for t in parameters))
+    parameters = dict((p[0].strip(), p[1].strip()) for p in (t.strip().split(sep) for t in parameters))
     for k, v in parameters.items():
         if  '.' in v:
             try:

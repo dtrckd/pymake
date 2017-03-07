@@ -4,6 +4,10 @@ from pymake import ExpSpace, ExpTensor, Corpus, ExpDesign
 
 class Netw(ExpDesign):
 
+    _name = 'Networks Design'
+    _package = {'model': ['pymake.model', 'mla', 'sklearn.decomposition']}
+
+    # Use for Name on figure and table
     _mapname = dict((
         ('propro'   , 'Protein')  ,
         ('blogs'    , 'Blogs')    ,
@@ -18,6 +22,7 @@ class Netw(ExpDesign):
         ('ibp'     , 'ilfm' ),
         ('mmsb'    , 'immsb' ),
     ))
+
 
     # Networks Data
     CORPUS_REAL_NET = Corpus(['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad'])
@@ -233,7 +238,5 @@ class Netw(ExpDesign):
         repeat = list(range(2)),
     )
 
-
-_spec = Netw()
 
 

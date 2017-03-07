@@ -12,10 +12,8 @@ import scipy as sp
 from scipy.special import digamma
 from numpy.random import dirichlet, gamma, poisson, binomial, beta
 
-from pymake.model import GibbsSampler, MSampler, BetaSampler
-
+from pymake.model.modelbase import GibbsSampler, MSampler, BetaSampler
 from pymake.util.math import lognormalize, categorical, sorted_perm, adj_to_degree, gem
-#from util.algo import *
 
 # Implementation Mixed Membership Sochastic Blockmodel Stochastic
 
@@ -559,7 +557,7 @@ class CGS(object):
 
 
 class GibbsRun(GibbsSampler):
-
+    __abstractmethods__ = 'model'
     def __init__(self, sampler,  data_t=None, **kwargs):
         self.burnin = kwargs.get('burnin',  0.05) # Ratio of iteration
         self.thinning = kwargs.get('thinning',  1)

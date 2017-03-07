@@ -48,10 +48,35 @@ class exp_append(argparse.Action):
                     exp_values.append(v)
                 else:
                     exp_values.append(self._type(v))
-                setattr(args, self.dest, ExpVector(exp_values))
+            setattr(args, self.dest, ExpVector(exp_values))
         except Exception as e:
             parser.error(e)
 
+class exp_uniq_append(argparse.Action):
+    def __init__(self, *args, **kwargs):
+        self._type = kwargs.pop('_t', str)
+        super(exp_uniq_append, self).__init__(*args, **kwargs)
+
+    def __call__(self, parser, args, values, option_string=None):
+        try:
+            _exp = getattr(args, self.dest) or []
+            exp_values = []
+            for v in values:
+                if v == '_null':
+                    exp_values.append(v)
+                else:
+                    exp_values.append(self._type(v))
+            _exp.extend([exp_values])
+            setattr(args, self.dest, ExpVector(_exp))
+        except Exception as e:
+            parser.error(e)
+
+
+class except_append(argparse.Action):
+    ''' Option that would not be added in making command line'''
+    def __call__(self, parser, namespace, values, option_string=None):
+        uniq_values = values
+        setattr(namespace, self.dest, uniq_values)
 
 def check_positive_integer(value):
     try:
@@ -76,7 +101,7 @@ _Gram = [
     #
 
     '--host', dict(
-        help='name to append in data/<bdir>/<refdir>/ for th output path.'),
+        help='Host database'),
 
     '-v', dict(
         nargs='?', action=VerboseAction, dest='verbose',
@@ -102,8 +127,8 @@ _Gram = [
         help='Write Fitted Model On disk.'),
 
     '--seed', dict(
-        nargs='?', const=42, type=int,
-        help='set seed value.'),
+        nargs='?', const=True, type=int,
+        help='set seed value. If no seed specified but flag given, it will save/load the current state.'),
 
     '--refdir', '--debug', dict(
         dest='refdir',
@@ -160,7 +185,7 @@ _Gram = [
         help='type of hyperparameters optimization [auto|fix|symmetric|asymmetric]'),
 
     '--hyper-prior','--hyper_prior', dict(
-        dest='hyper_prior', action='append', nargs='*',
+        dest='hyper_prior', action=exp_uniq_append, nargs='*',
         help='Set paramters of the hyper-optimization [auto|fix|symmetric|asymmetric]'),
 
     '--testset-ratio', dict(
@@ -198,10 +223,10 @@ _Gram = [
         help='Commands to pass to sub-machines.'),
 
     '--script', dict(
-        nargs='*',
+        nargs='*', action=except_append,
         help='Script request : name *args.'),
     '--bind', dict(
-        type=str, dest='_bind',
+        type=str, dest='_bind', action='append',
         help='Rules to filter the Exp Request.'),
 
     '-l', '--list', dict(

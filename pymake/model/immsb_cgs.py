@@ -4,6 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from pymake.model.hdp.mmsb import GibbsRun, Likelihood, ZSampler, MSampler, BetaSampler, NP_CGS
 
+# @idem than ilda_cgs
 class immsb_cgs(GibbsRun):
     def __init__(self, expe, frontend):
 
@@ -34,5 +35,4 @@ class immsb_cgs(GibbsRun):
                                     write=expe.write,
                                     data_t=data_t)
         self.update_hyper(expe.hyperparams)
-
 

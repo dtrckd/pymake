@@ -14,17 +14,7 @@ import pickle, json # presence of this module here + in .frontend not zen
 from .frontend import DataBase
 from .frontendtext import frontendText
 from .frontendnetwork import frontendNetwork
-from .frontend_io import *
-from pymake import Model
-
-# __future__ --> Purge
-#### @Debug/temp modules name changed in pickle model
-from pymake.model import hdp, ibp
-sys.modules['hdp'] = hdp
-sys.modules['ibp'] = ibp
-from pymake import model as _model
-sys.modules['models'] = _model
-sys.modules['model'] = _model
+from pymake import Model, Corpus, GramExp
 
 class FrontendManager(object):
     """ Utility Class who aims at mananing/Getting the datastructure at the higher level.
@@ -93,7 +83,7 @@ class ModelManager(object):
         self.fr = frontend
 
         self.hyperparams = expe.get('hyperparams', dict())
-        bdir, output_path = make_output_path(expe)
+        bdir, output_path = GramExp.make_output_path(expe)
         if not 'output_path' in  expe:
             expe['output_path'] = output_path
 
@@ -138,8 +128,7 @@ class ModelManager(object):
         # Not all model takes data (Automata ?)
         data, data_t = self._format_dataset(frontend, data_t)
 
-        models = Model.get_atoms()
-
+        models = Model.get_atoms(GramExp.Spec())
         if self.expe.model in models:
             model = models[self.expe.model](self.expe, self.fr)
         else:
@@ -211,10 +200,20 @@ class ModelManager(object):
 
     @staticmethod
     def _load_model(fn):
+
+        # __future__ --> Purge
+        #### @Debug/temp modules name changed in pickle model
+        from pymake.model import hdp, ibp
+        sys.modules['hdp'] = hdp
+        sys.modules['ibp'] = ibp
+        from pymake import model as _model
+        sys.modules['models'] = _model
+        sys.modules['model'] = _model
+
         if not os.path.isfile(fn) or os.stat(fn).st_size == 0:
             lgg.error('No file for this model : %s' %fn)
             lgg.debug('The following are available :')
-            for f in model_walker(os.path.dirname(fn), fmt='list'):
+            for f in GramExp.model_walker(os.path.dirname(fn), fmt='list'):
                 lgg.debug(f)
             return None
         lgg.info('Loading Model: %s' % fn)
@@ -238,7 +237,7 @@ class ModelManager(object):
             mm = cls(expe)
             model = mm._get_model()
         else:
-            fn = make_output_path(expe, 'pk')
+            fn = GramExp.make_output_path(expe, 'pk')
             model = cls.from_file(fn)
         return model
 

@@ -8,42 +8,35 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import sys, multiprocessing
 
 from pymake import GramExp
-from pymake.frontend.manager import ModelManager, FrontendManager
-from pymake.expe.spec import _spec
 
 
 ''' A Command line controler of Pymake '''
 
 
-def Zymake(spec):
-    commands = make_forest_conf(spec)
-    if len(commands) == 1:
-        frontend = FrontendManager.get(commands[0], load=True)
-        model = ModelManager(commands[0])
-        return frontend, model
-    else:
-        raise NotImplementedError('Multiple expe handle')
-
 if __name__ == '__main__':
 
     zymake = GramExp.zymake()
-    zyvar = zymake.expe
+    zyvar = zymake._conf
 
     ### Makes OUT Files
     if zyvar['_do'] == 'cmd':
         lines = zymake.make_commandline()
     elif zyvar['_do'] == 'path':
-        lines = zymake.make_path(zyvar['_ftype'], status=zyvar['_status'])
-    elif zyvar['_do'] == 'burn':
-        server = 'hertog, macks, fuzzy, zombie-dust, victory, racer, tiger'
+        lines = zymake.make_path(ftype=zyvar.get('_ftype', 'pk'), status=zyvar.get('_status'))
     elif zyvar['_do'] == 'show':
-        zymake.simulate()
-        exit()
+        lines = zymake.simulate()
+    elif zyvar['_do'] == 'exec':
+        lines = zymake.execute()
+    elif zyvar['_do'] == 'burn':
+        # @todo; parallelize Pymake()
+        raise NotImplementedError('What parallel strategy ?')
     elif zyvar['_do'] == 'list':
         if zyvar.get('do_list') is True:
-            print (_spec.table())
+            print (zymake.spectable())
         elif zyvar.get('do_list') == 'atom':
-            print (_spec.table_atoms())
+            print (zymake.atomtable())
+        elif zyvar.get('do_list') == 'atom_topos':
+            print (zymake.atomtable(_type='topos'))
         elif 'do_list' in zyvar and not zyvar['do_list'] :
             print(zymake.help_short())
         else:
@@ -52,15 +45,13 @@ if __name__ == '__main__':
     else:
         raise NotImplementedError('zymake options unknow : %s' % zyvar)
 
-
-    ### Makes figures on remote / parallelize
-    #num_cores = int(multiprocessing.cpu_count() / 4)
-    #results_files = Parallel(n_jobs=num_cores)(delayed(expe_figures)(i) for i in source_files)
-    ### ...and Retrieve the figure
+    if lines is None:
+        # catch signal ?
+        exit()
 
     if 'script' in zyvar:
-        script = zyvar['script']
-        lines = [' '.join((' '.join(script), l)) for l in lines]
+        script = ' '.join(zyvar['script'])
+        lines = [' '.join((script, l)) for l in lines]
 
     zymake.simulate(halt=False, file=sys.stderr)
     print('\n'.join(lines), file=sys.stdout)
