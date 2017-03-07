@@ -5,14 +5,14 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import numpy as np
 from numpy import ma
 from pymake import ExpTensor, ModelManager, FrontendManager, GramExp, ExpeFormat
-from pymake.expe.spec import _spec
 
 import logging
 lgg = logging.getLogger('root')
+_spec = GramExp.Spec()
 
 USAGE = """\
 ----------------
-Inspect data on disk, for questions :
+Inspect data on disk --or find the questions :
 ----------------
  |       or updating results
  |
@@ -45,7 +45,7 @@ Exp = ExpTensor ((
     ('delta', [(1, 5)]),
 ))
 
-class ExpeNetwork(ExpeFormat):
+class CheckNetwork(ExpeFormat):
 
     def init_fit_tables(self, _type, Y=[]):
         expe = self.expe
@@ -346,4 +346,4 @@ if __name__ == '__main__':
         spec = Exp
     )
 
-    GramExp.generate(config, USAGE).pymake(ExpeNetwork)
+    GramExp.generate(config, USAGE).pymake(CheckNetwork)

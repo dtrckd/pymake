@@ -8,7 +8,6 @@ tags
 *.byobu
 
 *.egg-info/
-*.egg-info
 /build/
 /dist/
 

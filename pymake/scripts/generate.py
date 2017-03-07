@@ -6,14 +6,14 @@ import numpy as np
 import scipy as sp
 from numpy import ma
 from pymake import ExpTensor, ModelManager, FrontendManager, GramExp, ExpeFormat, ExpSpace
-from pymake.expe.spec import _spec
 
 import logging
 lgg = logging.getLogger('root')
+_spec = GramExp.Spec()
 
 USAGE = '''\
 ----------------
-Generate data for answers :
+Generate data  --or find the answers :
 ----------------
  |
  |   methods
@@ -158,7 +158,7 @@ class GenNetwork(ExpeFormat):
             if not 'testset_ratio' in self.pt:
                 Meas = ['20']
             else:
-                Meas = self.gramexp.expe['testset_ratio']
+                Meas = self.gramexp.exp_tensor['testset_ratio']
             tables = ma.array(np.empty((len(corpuses), len(Meas),len(self.gramexp.get('repeat')), 2)), mask=True)
             self.gramexp.Meas = Meas
             self.gramexp.tables = tables

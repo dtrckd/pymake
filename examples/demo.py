@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 USAGE = '''build_model [-vhswp] [-k [rvalue] [-n N] [-d basedir] [-lall] [-l type] [-m model] [-c corpus] [-i iterations]
 '''
 
-from pymake.zymake import Zymake
+from pymake import GramExp
 
 if __name__ == '__main__':
 

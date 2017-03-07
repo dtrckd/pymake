@@ -4,17 +4,27 @@
     * decorator for tabulate ?
     * tensor conf and meas\_... ?
 
-@init
-* if no _spec 'print help'
-    * pmk init [project]
-    -> results
-    -> data
-    -> spec.py
-    -> simple.py
 
-MODEL Specification:
+@pyame [CMD]
+* init
+    * if no spec 'print help'
+        * pmk init [project]
+        -> results
+        -> data
+        -> spec
+        -> script
+* update
+    * update whoosh, model, corpus etc....
+
+@MODEL Specification:
 *  \_initialize  random init !!!!  cleanerinit of class for empty model....
 * ModelManager constructor from_model (object) (it calls \_load_model)
+* print help/signature from command_line (model/corpus)
+
+@ Corpus/Dataset : 
+* CorpusModules :load from package (sklearn) and disk (
+* Whoosh integration !!!
+* LDA on my own paper !
 
 * @pymake : different example
     * zymake stats [spec]
@@ -24,7 +34,6 @@ MODEL Specification:
 
 ## IN DOIING
 * build_corpus and build_networks are identical : wrap in DataBase
-* rename inference-\* file to \*.inf files
 * ILFM creat sampler and proper inhheritance form GibbsSampler.
 * @issue42
 
@@ -39,18 +48,9 @@ MODEL Specification:
 * import models -> import pymake.models ?
 
 
-
-# Baseline (to implement)
-
-* Baseline
-    * RESCAL -> prediction !?
-    * logit rescal
-    * m3F
-    * gradient descent
-    * neural networlk factorization
-
 How should be the backend to make big scale learning with database and search engine interface...
 * Spark/Hadoop interface... (hdfs = htable)
+* MPI / pymake integration ?
 
 # Measure Centrality :
 * proba que tout les lien à 0 soit liée ?  -- comparé à aux leader (ceux qui ont un haut degré)

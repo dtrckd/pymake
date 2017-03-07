@@ -2,7 +2,9 @@ PACKAGE := pymake
 
 default: install
 docs: 
-	@echo 'todo'
+	pushd doc/
+	make
+	pushd
 
 networks_datasets:
 	pushd data/networks 
@@ -13,11 +15,13 @@ clean_datasets:
 	@echo 'toto'
 
 install:
-	python3 setup.py install --user --record .$(PACKAGE).egg-info
+	#python3 setup.py install --user --record .$(PACKAGE).egg-info
+	python3 setup.py install --user
 
 uninstall:
 	# Do not remove empty dir...
-	cat .$(PACKAGE).egg-info | xargs rm -f
+	#cat .$(PACKAGE).egg-info | xargs rm -fv
+	pip3 uninstall $(PACKAGE)
 
 build:
 	python3 setup.py build

@@ -2,11 +2,12 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import re, os, json, logging
-from collections import defaultdict, OrderedDict
-import fnmatch
+from collections import OrderedDict
 import numpy as np
 
 lgg = logging.getLogger('root')
+
+''' This is Obsolote and will be merge into Gramexp module '''
 
 LOCAL_BDIR = '../../data/' # Last slash(/) necessary.
 if not os.path.exists(os.path.dirname(__file__)+'/'+LOCAL_BDIR+'networks/generator/Graph7/debug111111'):
@@ -17,23 +18,6 @@ if not os.path.exists(os.path.dirname(__file__)+'/'+LOCAL_BDIR+'networks/generat
         #exit()
 
 _STIRLING_PATH = LOCAL_BDIR + '/../pymake/util/'
-
-"""
-    #### I/O
-    Corpus are load/saved using Pickle format in:
-    * bdir/corpus_name.pk
-    Models are load/saved using pickle/json/cvs in :
-    * bdir/debug/rept/model_name_parameters.pk   <--> ModelManager
-    * bdir/debug/rept/model_name_parameters.json <--> DataBase
-    * bdir/debug/rept/model_name_parameters.inf  <--> ModelBase
-
-    Filnemame is formatted as follow by default :
-    fname_out = '%s_%s_%s_%s_%s' % (self.model_name,
-                                        self.K,
-                                        self.hyper_optimiztn,
-                                        self.homo,
-                                        self.N)
-"""
 
 ### directory/file tree reference
 # Default and New values
@@ -62,80 +46,6 @@ _Key_measures = [ 'g_precision', 'Precision', 'Recall', 'K',
 _New_Dims = [{'measure':len(_Key_measures)}]
 
 
-# Factorize the io; One argument / One options.
-# ALign file and args generation
-# support opt: list of str or int
-
-# @DEBUG: Align topic config and frontend_io
-# * plurial (s) vs whithout s...
-# * Make_output_path from materskeys with default value and handle complex tree logic!
-
-def model_walker(bdir, fmt='list'):
-    models_files = []
-    if fmt == 'list':
-        ### Easy formating
-        for root, dirnames, filenames in os.walk(bdir):
-            for filename in fnmatch.filter(filenames, '*.pk'):
-                models_files.append(os.path.join(root, filename))
-        return models_files
-    else:
-        ### More Complex formating
-        tree = { 'json': [],
-                'pk': [],
-                'inference': [] }
-        for filename in fnmatch.filter(filenames, '*.pk'):
-            if filename.startswith(('dico.','vocab.')):
-                dico_files.append(os.path.join(root, filename))
-            else:
-                corpus_files.append(os.path.join(root, filename))
-        raise NotImplementedError()
-    return tree
-
-# debug track filename
-def make_output_path(expe, _type=None, status=False):
-    """ Make a single output path from a expe/dict
-        @status: f finished
-        @type: pk, json or inference.
-    """
-
-    expe = defaultdict(lambda: None, expe)
-    filen = None
-    base = expe['data_type']
-    hook = expe.get('refdir', '')
-    c = expe.get('corpus')
-    if not c:
-        return None, None
-    if c.lower().startswith(('clique', 'graph', 'generator')):
-        c = c.replace('generator', 'Graph')
-        c = c.replace('graph', 'Graph')
-        c = 'generator/' + c
-
-    basedir = os.path.join(os.path.dirname(__file__), LOCAL_BDIR, base, c)
-
-    if 'repeat' in expe and ( expe['repeat'] is not None and expe['repeat'] is not False):
-        p = os.path.join(hook, str(expe['repeat']))
-    else:
-        p = os.path.join(hook)
-
-    if not expe['_format']:
-        _format = '{model}_{K}_{hyper}_{homo}_{N}'
-    else:
-        _format = expe['_format']
-    t = _format.format(**expe)
-
-    filen = os.path.join(basedir, p, t)
-
-    ext = ext_status(filen, _type)
-    if ext:
-        filen = ext
-    else:
-        filen = (basedir, filen)
-
-    if status is 'f' and is_empty_file(filen):
-        return  None
-    else:
-        return filen
-
 def is_empty_file(filen):
     if not os.path.isfile(filen) or os.stat(filen).st_size == 0:
         return True
@@ -160,47 +70,6 @@ def ext_status(filen, _type):
                  json=filen + '.json',
                  inference=filen + '.inf')
     return nf
-
-from operator import mul
-from itertools import product
-import functools
-def make_forest_conf(dol_spec):
-    """ Make a list of config/dict.
-        Convert a dict of list to a list of dict.
-    """
-    if len(dol_spec) == 0:
-        return []
-
-    len_l = [len(l) for l in dol_spec.values()]
-    _len = functools.reduce(mul, len_l )
-    keys = sorted(dol_spec)
-    lod = [dict(zip(keys, prod)) for prod in product(*(dol_spec[key] for key in keys))]
-
-    return lod
-    #targets = []
-    #for d in lod:
-    #    _d = defaultdict(lambda: False)
-    #    _d.update(d)
-    #    targets.append(_d)
-
-    #return targets
-
-def make_forest_path(lod, _type, status='f', full_path=False):
-    """ Make a list of path from a spec/dict, the filename are
-        oredered need to be align with the get_from_conf_file.
-
-        *args -> make_output_path
-    """
-    targets = []
-    for spec in lod:
-        filen = make_output_path(spec, _type, status=status)
-        if filen:
-            s = filen.find(LOCAL_BDIR)
-            pt = 0
-            if not full_path and s >= 0:
-                pt = s + len(LOCAL_BDIR)
-            targets.append(filen[pt:])
-    return targets
 
 
 # Obsolete !

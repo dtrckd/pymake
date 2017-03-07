@@ -8,75 +8,24 @@ from pymake.plot import colored, display, tabulate
 from decorator import decorator
 from functools import wraps
 from pymake import basestring
+import pymake as pmk
 
 import matplotlib.pyplot as plt
 
 import logging
 lgg = logging.getLogger('root')
 
-from itertools import groupby
-import sys, importlib, pkgutil
-def _packages(module_name, attr_filter='__name__', max_depth=1, _depth=0, prefix=False):
-    ''' Import all submodules of a module, recursively. '''
-    if prefix is True:
-        prefix = module_name
-
-    packages = OrderedDict()
-    try:
-        module = importlib.import_module(module_name)
-    except ImportError as e:
-        lgg.debug('package unavailable : %s'%(module_name))
-        return packages
-
-    for loader, name, is_pkg in pkgutil.walk_packages(module.__path__):
-        submodule_name = module_name + '.' + name
-        if is_pkg and _depth < max_depth:
-            next_depth = _depth + 1
-            packages.update(_packages(submodule_name, attr_filter, max_depth, next_depth, prefix))
-            continue
-
-        try:
-            submodule = importlib.import_module(submodule_name)
-        except ImportError as e:
-            lgg.debug('package unavailable : %s'%(submodule_name))
-            continue
-
-        obj_list = dir(submodule)
-        idx = None
-        for n in [name, name.lower(), name.upper()]:
-            # Search for the object inside the submodule
-            try:
-                idx = obj_list.index(n)
-                break
-            except:
-                continue
-
-        if idx is None:
-            # no models here
-            continue
-
-        obj = getattr(submodule, obj_list[idx])
-        if hasattr(obj, attr_filter):
-            if prefix:
-                name = prefix +'.'+ name
-            # remove duplicate name
-            name = '.'.join([x[0] for x in groupby(name.split('.'))])
-            packages[name] = obj
-
-    return packages
-
+# Not sure this one is necessary, or not here
 class BaseObject(object):
-    '''' Notes : Avoid method conflict by ALWAYS settings this class in last
-                 at class definitions.
-     '''
+    ''' Notes : Avoid method conflict by ALWAYS settings this class in last
+                at class definitions.
+    '''
     def __init__(self, name):
         # Le ruban est infini...
         #if name is None:
         #    print(traceback.extract_stack()[-2])
         #    fn,ln,func,text = traceback.extract_stack()[-2]
         #    name = text[:text.find('=')].strip()
-        #else:
-        #    name = '<undefined>'
         self.__name__ = name
 
     def name(self):
@@ -85,7 +34,6 @@ class BaseObject(object):
         return [(str(i), j) for i,j in enumerate(self)]
     def table(self):
         return tabulate(self.items())
-
 
 class ExpSpace(dict):
     """ A dictionnary with dot notation access.
@@ -125,21 +73,36 @@ class ExpVector(list, BaseObject):
         return self.__class__([item for item in self if item not in other])
 
 class Corpus(ExpVector):
-    pass
-    #@staticmethod
-    #def get_atoms():
-    #    return _packages('pymake...', attr_filter='fit')
+    @staticmethod
+    def get_atoms(spec):
+        # get some information about what package to use in _spec ...
+        atoms = pmk.frontend.get_packages('pymake.data')
+        return atoms
 
 class Model(ExpVector):
     @staticmethod
-    def get_atoms():
-        atoms =  _packages('pymake.model', attr_filter='fit')
-        atoms.update(_packages('mla', attr_filter='fit', prefix=True, max_depth=3))
-        atoms.update(_packages('sklearn.decomposition', attr_filter='fit', prefix='skld', max_depth=3))
+    def get_atoms(spec, _type='short'):
+        if _type == 'short':
+            shrink_module_name = True
+        elif _type == 'topos':
+            shrink_module_name = False
+
+        from pymake.util.loader import ModelsLoader
+        packages = spec._package.get('model',[])
+        if 'pymake.model' in packages:
+            atoms = ModelsLoader.get_packages(packages.pop(packages.index('pymake.model')), prefix='pmk')
+        else:
+            atoms = OrderedDict
+        for pkg in packages:
+            if len(pkg) > 8:
+                prefix = pkg[:3]
+                if '.' in pkg:
+                    prefix  += ''.join(map(lambda x:x[0], pkg.split('.')[1:]))
+            else:
+                prefix = True
+            atoms.update(ModelsLoader.get_packages(pkg,  prefix=prefix, max_depth=3, shrink_module_name=shrink_module_name))
         return atoms
 
-class Expe(dict, BaseObject):
-    pass
 
 class ExpTensor(OrderedDict, BaseObject):
     ''' Represent a set of Experiences (**expe**). '''
@@ -155,26 +118,48 @@ class ExpTensor(OrderedDict, BaseObject):
             else:
                 self[k] = [v]
 
+    def update_default_expe(self, d):
+        ''' update from a dict if non already present '''
+        for k, v in d.items():
+            if not k in self:
+                self.update_from_dict({k:v})
+
     def table(self, extra=[]):
         return tabulate(extra+sorted(self.items(), key=lambda x:x[0]),
                                headers=['Params','Values'])
 
 class ExpDesign(dict, BaseObject):
-    ''' An Ensemble composed of ExpTensors and ExpVectors. '''
-    _reserved_keywords = ['_mapname', '_name', 'table_atoms',  '_reserved_keywords']+dir(dict)+dir(BaseObject) # _* ?
+    ''' An Ensemble composed of ExpTensors and ExpVectors.
+
+        NOTE
+        ----
+        Speciale attribute meaning:
+            _mapname : dict
+                use when self.name is called to translate keywords
+            _alias : dict
+                command line alias
+            _model_package : list of str
+                where to get models
+            _corpus_package : list of str
+                where to get corpus
+    '''
     def __init__(self,  *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
-        name = self.pop('_name', 'expDesign')
-        BaseObject.__init__(self, name)
 
+        # Not a Ultimate solution to keep a flexibility when defining Exp Design
         for k in dir(self):
             #_spec = ExpDesign((k, getattr(Netw, k)) for k in dir(Netw) if not k.startswith('__') )
-            if not k.startswith('__'):
+            if not k.startswith('_'):
                 self[k] = getattr(self, k)
+        self._reserved_keywords = list(set([w for w in dir(self) if w.startswith('_')] + ['_reserved_keywords']+dir(dict)+dir(BaseObject)))
+        name = self.pop('_name', 'expDesign')
+
+        BaseObject.__init__(self, name)
+
 
     # no more complex.
     # @sortbytype
-    def table(self, line=10):
+    def _table(self):
         glob_table = sorted([ (k, v) for k, v in self.items() if k not in self._reserved_keywords ], key=lambda x:x[0])
 
         Headers = OrderedDict((('Corpuses',Corpus),
@@ -188,47 +173,35 @@ class ExpDesign(dict, BaseObject):
                 pos = len(Headers) - 1
             tables[pos].append(name)
 
-        raw = []
-        for sec, table in enumerate(tables):
-            size = len(table)
-            if size == 0:
-                continue
-            col = int((size-0.1) // line)
-            junk = line % size
-            table += ['-']*junk
-            table = [table[j:line*(i+1)] for i,j in enumerate(range(0, size, line))]
-            table = np.char.array(table).astype("|S20")
-            fmt = 'simple'
-            raw.append(tabulate(table.T,
-                                headers=[list(Headers.keys())[sec]]+['']*(col),
-                                tablefmt=fmt))
-        sep = '\n'+'='*20+'\n'
-        return '#'+self.__name__ +sep+sep.join(raw)
+        return self._table_(tables, headers=list(Headers.keys()))
 
-    def table_atoms(self, line=10):
+    def _table_atoms(self, _type='short'):
 
         Headers = OrderedDict((('Corpuses',Corpus),
                                ('Models',(ExpSpace, ExpTensor)),
                                ('Unknown', str)))
 
         tables = [[], # corpus atoms...
-                  list(Model.get_atoms().keys()),
+                  list(Model.get_atoms(self, _type).keys()),
         ]
 
+        return self._table_(tables, headers=list(Headers.keys()))
+
+    def _table_(self, tables, headers=[], max_line=10, max_row=30):
         raw = []
         for sec, table in enumerate(tables):
             table = sorted(table, key=lambda x:x[0])
             size = len(table)
             if size == 0:
                 continue
-            col = int((size-0.1) // line)
-            junk = line % size
+            col = int((size-0.1) // max_line)
+            junk = max_line % size
             table += ['-']*junk
-            table = [table[j:line*(i+1)] for i,j in enumerate(range(0, size, line))]
-            table = np.char.array(table).astype("|S20")
+            table = [table[j:max_line*(i+1)] for i,j in enumerate(range(0, size, max_line))]
+            table = np.char.array(table).astype('|S'+str(max_row))
             fmt = 'simple'
             raw.append(tabulate(table.T,
-                                headers=[list(Headers.keys())[sec]]+['']*(col),
+                                headers=[headers[sec]]+['']*(col),
                                 tablefmt=fmt))
         sep = '\n'+'='*20+'\n'
         return '#'+self.__name__ +sep+sep.join(raw)
@@ -252,13 +225,19 @@ class ExpDesign(dict, BaseObject):
 
 
 class ExpeFormat(object):
-    ''' A Base class for processing individuals experiments (**expe**). '''
+    ''' A Base class for processing individuals experiments (**expe**).
+
+        Notes
+        -----
+        The following attribute have a special meaning when subclassing:
+            * _default_expe : is updated by each single expe.
+
+    '''
     def __init__(self, pt, expe, gramexp):
-        from pymake.expe.spec import _spec
-        self.specname = _spec.name
         # Global
         self.expe_size = len(gramexp)
         self.gramexp = gramexp
+        self.specname = gramexp.getSpec().name
         # Local
         self.pt = pt
         self.expe = expe
@@ -361,7 +340,7 @@ class ExpeFormat(object):
         # * if @plot then dicplay
         # * if @tabulate then ...
         #   etc..
-        if 'save_plot' in gramexp.expe:
+        if 'save_plot' in gramexp.exp_tensor:
             #import matplotlib; matplotlib.use('Agg')
             # killu
             pass
@@ -377,7 +356,7 @@ class ExpeFormat(object):
         # * if @plot then dicplay
         # * if @tabulate then ...
         #   etc..
-        cls.display(gramexp.expe)
+        cls.display(gramexp.exp_tensor)
 
     def __call__(self):
         raise NotImplementedError

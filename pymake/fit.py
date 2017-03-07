@@ -7,9 +7,8 @@ from pymake.util.utils import Now, ellapsed_time
 import logging
 lgg = logging.getLogger('root')
 
-import numpy as np
-import scipy as sp
-#np.set_printoptions(threshold='nan')
+# Osolete script
+
 
 if __name__ == '__main__':
 
