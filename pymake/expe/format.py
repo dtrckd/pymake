@@ -111,18 +111,50 @@ class ExpTensor(OrderedDict, BaseObject):
         name = self.pop('_name', 'expTensor')
         BaseObject.__init__(self, name)
 
+    @classmethod
+    def from_expe(cls, expe):
+        ''' Return the tensor who is an Orderedict of iterable.
+            Assume conf is an exp. Non list value will be listified.
+
+            Parameters
+            ----------
+            expe : (ExpDesign, ExpSpace or dict)
+                A design of experiment.
+        '''
+        _conf = None
+        if 'spec' in expe:
+            _conf = expe.copy()
+            expe = _conf.pop('spec')
+
+        if not isinstance(expe, (cls, ExpSpace, dict)):
+            raise ValueError('Expe not understood: %s' % type(expe))
+
+        if issubclass(type(expe), Corpus):
+            tensor = cls(corpus=expe)
+        elif issubclass(type(expe), Model):
+            tensor = cls(model=expe)
+        elif not isinstance(expe, ExpTensor):
+            tensor = cls()
+            tensor.update_from_dict(expe)
+        else:
+            # ExpTensor or not implemented expVector
+            tensor = expe.copy()
+
+        for k, v in tensor.items():
+            if not issubclass(type(v), (list, set, tuple)):
+                tensor[k] = [v]
+
+        if _conf:
+            tensor.update_from_dict(_conf)
+
+        return tensor
+
     def update_from_dict(self, d):
         for k, v in d.items():
             if issubclass(type(v), ExpVector):
                 self[k] = v
             else:
                 self[k] = [v]
-
-    def update_default_expe(self, d):
-        ''' update from a dict if non already present '''
-        for k, v in d.items():
-            if not k in self:
-                self.update_from_dict({k:v})
 
     def table(self, extra=[]):
         return tabulate(extra+sorted(self.items(), key=lambda x:x[0]),
@@ -131,9 +163,9 @@ class ExpTensor(OrderedDict, BaseObject):
 class ExpDesign(dict, BaseObject):
     ''' An Ensemble composed of ExpTensors and ExpVectors.
 
-        NOTE
-        ----
-        Speciale attribute meaning:
+        NOTES
+        -----
+        Special attribute meaning:
             _mapname : dict
                 use when self.name is called to translate keywords
             _alias : dict
@@ -224,6 +256,10 @@ class ExpDesign(dict, BaseObject):
             return mapname.get(l, l)
 
 
+### Todo:
+#  try to read the decorator that were called for _[post|pre]process
+# * if @plot then display
+# * if @tabulate then ...
 class ExpeFormat(object):
     ''' A Base class for processing individuals experiments (**expe**).
 
@@ -335,28 +371,35 @@ class ExpeFormat(object):
         return decorator
 
     @classmethod
-    def preprocess(cls, gramexp):
-        # @here try to read the decorator that were called
-        # * if @plot then dicplay
-        # * if @tabulate then ...
-        #   etc..
-        if 'save_plot' in gramexp.exp_tensor:
-            #import matplotlib; matplotlib.use('Agg')
-            # killu
-            pass
+    def _preprocess(cls, gramexp):
+        ''' This method has **write** access to Gramexp '''
 
         # Put a valid expe a the end.
         gramexp.reorder_lastvalid()
 
-        return
+        # update exp_tensor in gramexp
+        if hasattr(cls, '_default_expe'):
+            _exp = ExpTensor.from_expe(cls._default_expe)
+            _exp.update(gramexp.exp_tensor)
+            gramexp.exp_setup(_exp)
+
+        return cls.preprocess(gramexp)
+
 
     @classmethod
-    def postprocess(cls, gramexp):
-        # @here try to read the decorator that were called
-        # * if @plot then dicplay
-        # * if @tabulate then ...
-        #   etc..
+    def _postprocess(cls, gramexp):
         cls.display(gramexp.exp_tensor)
+
+        return cls.postprocess(gramexp)
+
+    @classmethod
+    def preprocess(cls, gramexp):
+        # heere, do a wrapper ?
+        pass
+    @classmethod
+    def postprocess(cls, gramexp):
+        # heere, do a wrapper ?
+        pass
 
     def __call__(self):
         raise NotImplementedError

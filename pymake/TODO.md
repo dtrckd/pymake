@@ -1,11 +1,13 @@
-# Code Factoring
+# IN DOII NG
+* @pymake related : confilt in -do when invoking script from zymake, solution?! 
+    * lookup table for script (function) inside ExpeFormat !!!  (@whoosh related)
+* build_corpus and build_networks are identical : wrap in DataBase
+* expe_meas script
+* ILFM creat sampler and proper inhheritance form GibbsSampler.
+* @issue42
 
-@efzefze
-    * decorator for tabulate ?
-    * tensor conf and meas\_... ?
 
-
-@pyame [CMD]
+@pymake [CMD]
 * init
     * if no spec 'print help'
         * pmk init [project]
@@ -17,11 +19,11 @@
     * update whoosh, model, corpus etc....
 
 @MODEL Specification:
-*  \_initialize  random init !!!!  cleanerinit of class for empty model....
+*  \_initialize  random init !!!! do cleaner init of class for empty model....
 * ModelManager constructor from_model (object) (it calls \_load_model)
 * print help/signature from command_line (model/corpus)
 
-@ Corpus/Dataset : 
+@Corpus/Dataset : 
 * CorpusModules :load from package (sklearn) and disk (
 * Whoosh integration !!!
 * LDA on my own paper !
@@ -32,13 +34,9 @@
     * zymake check/gen [spec]
     * zymake runcmd [spec] | parallel #parralisation
 
-## IN DOIING
-* build_corpus and build_networks are identical : wrap in DataBase
-* ILFM creat sampler and proper inhheritance form GibbsSampler.
-* @issue42
 
-
-@structure
+@format_plot etc
+* decorator for tabulate in ExpFormat ?
 * plotManager (same scenario, axe, title, **kwargs**)
 * OBJECT ! change frontendNetwork to Graph(Object), it is clear ?! (implement morphism in Object for example. (issue42)
 
@@ -48,7 +46,7 @@
 * import models -> import pymake.models ?
 
 
-How should be the backend to make big scale learning with database and search engine interface...
+@bigdata How should be the backend to make big scale learning with database and search engine interface...
 * Spark/Hadoop interface... (hdfs = htable)
 * MPI / pymake integration ?
 

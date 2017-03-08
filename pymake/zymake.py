@@ -39,11 +39,14 @@ if __name__ == '__main__':
             print (zymake.atomtable(_type='topos'))
         elif 'do_list' in zyvar and not zyvar['do_list'] :
             print(zymake.help_short())
-        else:
             print ('list what %s ?' % zyvar.get('do_list'))
         exit()
     else:
         raise NotImplementedError('zymake options unknow : %s' % zyvar)
+
+    if zyvar.get('simulate'):
+        # same as show !
+        zymake.simulate()
 
     if lines is None:
         # catch signal ?

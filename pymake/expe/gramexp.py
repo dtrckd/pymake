@@ -15,7 +15,7 @@ import numpy as np
 from argparse import RawDescriptionHelpFormatter
 
 import pymake.expe.gram as gram
-from pymake import basestring, ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, ExpVector, ExpDesign
+from pymake import basestring, ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, ExpVector
 from pymake.plot import colored
 
 import pymake.util.loader as mloader
@@ -90,12 +90,7 @@ class GramExp(object):
 
     # Reserved by GramExp
     _reserved_keywords = ['spec', # for nested specification
-                         'exp' # to track expe walking # Unused
                          ]
-
-    # Avoid conflict between tasks
-    _forbiden_keywords = {'fit' : ['gen_size', 'epoch', '_do', '_mode', '_type'],
-                          'generate' : ['iterations']}
 
     _exp_default = {
         #'host'      : 'localhost',
@@ -116,40 +111,17 @@ class GramExp(object):
 
         [conf.update({k:v}) for k,v in self._exp_default.items() if k not in conf]
         conf = deepcopy(conf)
-        if 'spec' in conf:
-            self.exp_tensor = self.exp2tensor(conf.pop('spec'))
-            self.exp_tensor.update_from_dict(conf)
-        elif isinstance(conf, ExpTensor):
-            self.exp_tensor = self.exp2tensor(conf)
-        elif isinstance(conf, (dict, ExpSpace)):
-            # Assume Single Expe (type dict or Expe)
-            if type(conf) is dict:
-                # @zymake ?
-                lgg.debug('warning : type dict for expe settings may be deprecated.')
-            #self.exp_tensor = self.dict2tensor(conf)
-            self.exp_tensor = self.exp2tensor(conf)
-        else:
-            raise ValueError('exp/conf not understood: %s' % type(conf))
 
+        # Make main data structure
+        self.exp_tensor = ExpTensor.from_expe(conf)
         self.checkConf(conf)
         self.checkExp(self.exp_tensor)
-
-        # makes it contextual.
-        self._postprocess_exp()
-
-        # Make lod
-        self.lod = self.make_lod(self.exp_tensor)
-
-        # Global settings (unique argument)
-        self._conf = {k:v[0] for k,v in self.exp_tensor.items() if len(v) == 1}
+        self.exp_setup()
 
         # @logger One logger by Expe !
         self.setup_logger(fmt='%(message)s', level=conf.get('verbose'))
 
-        if conf.get('simulate'):
-            self.simulate()
-
-    def _postprocess_exp(self):
+    def _preprocess_exp(self):
         # @improvment: do filter from spec
 
         # Make Rules
@@ -182,34 +154,6 @@ class GramExp(object):
         for k, v in exp.items():
             if not issubclass(type(v), (list, tuple, set)):
                 raise ValueError('error, exp value should be iterable: %s' % k, v)
-
-    @staticmethod
-    # deprecated
-    def dict2tensor(conf):
-        ''' Return the tensor who is a Orderedict of iterable.
-            Assume unique expe. Every value will be listified.
-        '''
-        tensor = ExpTensor([(k, [v]) for k, v in conf.items()])
-        return tensor
-
-    @staticmethod
-    def exp2tensor(conf):
-        ''' Return the tensor who is an Orderedict of iterable.
-            Assume conf is an exp. Non list value will be listified.
-        '''
-        if issubclass(type(conf), Corpus):
-            tensor = ExpTensor(corpus=conf)
-        elif issubclass(type(conf), Model):
-            tensor = ExpTensor(model=conf)
-        elif not isinstance(conf, ExpTensor):
-            tensor = ExpTensor(conf)
-        else:
-            tensor = conf.copy()
-
-        for k, v in tensor.items():
-            if not issubclass(type(v), (list, set, tuple)):
-                tensor[k] = [v]
-        return tensor
 
 
     def make_lod(self, exp):
@@ -257,6 +201,19 @@ class GramExp(object):
         self.exp_tensor.update_from_dict(kwargs)
         for d in self.lod:
             d.update(kwargs)
+
+    def exp_setup(self, exp=None):
+        if exp is not None:
+            self.exp_tensor = exp
+
+        # makes it contextual.
+        self._preprocess_exp()
+
+        # Make lod
+        self.lod = self.make_lod(self.exp_tensor)
+
+        # Global settings (unique argument)
+        self._conf = {k:v[0] for k,v in self.exp_tensor.items() if len(v) == 1}
 
     def getConfig(self):
         # get global conf...
@@ -471,6 +428,7 @@ class GramExp(object):
 
         do = request.get('_do') or ['_list']
         if not isinstance(do, list):
+            # Obsolete ?
             do = [do]
             request['_do'] = do
 
@@ -485,7 +443,7 @@ class GramExp(object):
 
     @staticmethod
     def expVectorLookup(request):
-        ''' set exp from spec if present '''
+        ''' set exp from spec if presents '''
 
         # get list of scripts/*
         # get list of method
@@ -747,22 +705,19 @@ class GramExp(object):
         self.pymake(sandbox=Scripts[script_name])
 
     def pymake(self, sandbox=ExpeFormat):
-        ''' Walk Trough experiments.  '''
+        ''' Walk Trough experiments. '''
 
         if 'do_list' in self.exp_tensor:
             print('Available methods for %s: ' % (sandbox))
             print(*self.functable(sandbox) , sep='\n')
             exit(2)
 
-        sandbox.preprocess(self)
+        sandbox._preprocess(self)
+        if self._conf.get('simulate'):
+            self.simulate()
 
         for id_expe, expe in enumerate(self.lod):
-            if hasattr(sandbox, '_default_expe'):
-                _expe = sandbox._default_expe
-                _expe.update(expe)
-                self.exp_tensor.update_default_expe(sandbox._default_expe)
-            else:
-                _expe = ExpSpace(**expe)
+            _expe = ExpSpace(**expe)
 
             pt = dict((key, value.index(_expe[key])) for key, value in self.exp_tensor.items() if isinstance(_expe[key], (basestring, int, float)))
             pt['expe'] = id_expe
@@ -800,6 +755,6 @@ class GramExp(object):
                 traceback.print_exc()
                 exit()
 
-        return sandbox.postprocess(self)
+        return sandbox._postprocess(self)
 
 
