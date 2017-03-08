@@ -47,6 +47,14 @@ Exp = ExpTensor ((
 
 class CheckNetwork(ExpeFormat):
 
+    _default_expe = dict(
+        block_plot = False,
+        write = False,
+        _do           = ['zipf', 'source'],
+        spec = Exp
+    )
+
+
     def init_fit_tables(self, _type, Y=[]):
         expe = self.expe
         if not hasattr(self.gramexp, 'tables'):
@@ -74,6 +82,11 @@ class CheckNetwork(ExpeFormat):
     def zipf(self, clusters_org='source'):
         ''' Zipf Analysis
             Local/Global Preferential attachment effect analysis
+
+            Parameters
+            ----------
+            clusters_org: str
+                cluster origin if from either ['source'|'model']
         '''
         expe = self.expe
         frontend = FrontendManager.load(expe)
@@ -277,7 +290,7 @@ class CheckNetwork(ExpeFormat):
                 #    out.write_table(table, _fn=fn, ext='.md')
 
     @ExpeFormat.tabulate
-    def pvalue(self, **kwargs):
+    def pvalue(self):
         ''' Compute Goodness of fit statistics '''
         expe = self.expe
         frontend = FrontendManager.load(expe)
@@ -306,7 +319,7 @@ class CheckNetwork(ExpeFormat):
             print (tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
 
     @ExpeFormat.tabulate
-    def stats(self, frontend='frontend'):
+    def stats(self):
         ''' Show data stats '''
         expe = self.expe
         frontend = FrontendManager.load(expe)
@@ -338,12 +351,4 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2, colored, tabulate
 
-    config = dict(
-        block_plot = False,
-        write = False,
-        _do           = 'zipf', # homo/zipf/burstiness/pvalue
-        clusters_org = 'source', # source/model
-        spec = Exp
-    )
-
-    GramExp.generate(config, USAGE).pymake(CheckNetwork)
+    GramExp.generate(usage=USAGE).pymake(CheckNetwork)

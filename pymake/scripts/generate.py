@@ -46,6 +46,19 @@ Exp = ExpTensor ((
 ))
 
 class GenNetwork(ExpeFormat):
+
+    _default_expe = dict(
+        block_plot = False,
+        write  = False,
+        _do            = ['burstiness', 'global'],
+        _mode         = 'predictive',
+        gen_size      = 1000,
+        epoch         = 30 , #20
+        limit_gen   = 5, # Local superposition !!!
+        limit_class   = 30,
+        spec = Exp
+    )
+
     def __init__(self, *args, **kwargs):
         super(GenNetwork, self).__init__(*args, **kwargs)
         expe = self.expe
@@ -172,6 +185,11 @@ class GenNetwork(ExpeFormat):
     def burstiness(self, _type='all'):
         '''Zipf Analysis
            (global burstiness) + local burstiness + feature burstiness
+
+           Parameters
+           ----------
+           _type : str
+            type of burstiness to compute in ('global', 'local', 'feature', 'all')
         '''
         if self.model is None: return
         expe = self.expe
@@ -824,18 +842,6 @@ if __name__ == '__main__':
     from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2, random_degree, colored, draw_graph_circular, draw_graph_spectral, draw_graph_spring, tabulate, _markers
     import itertools
 
-    config = dict(
-        block_plot = False,
-        write  = False,
-        _do            = 'burstiness',
-        #generative    = 'generative',
-        _mode    = 'predictive',
-        gen_size      = 1000,
-        epoch         = 30 , #20
-        limit_gen   = 5, # Local superposition !!!
-        limit_class   = 30,
-        spec = Exp
-    )
 
-    GramExp.generate(config, USAGE).pymake(GenNetwork)
+    GramExp.generate(usage=USAGE).pymake(GenNetwork)
 

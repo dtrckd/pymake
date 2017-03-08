@@ -20,7 +20,7 @@ class Fit(ExpeFormat):
 
     _default_expe = ExpSpace(
         corpus = 'clique2',
-        model  = 'immsb',
+        model  = 'immsb_cgs',
         hyper       = 'auto',
         refdir      = 'debug',
         testset_ratio = 0.2,
@@ -31,9 +31,12 @@ class Fit(ExpeFormat):
         homo        = 0, # learn W in IBP
     )
 
+    @classmethod
+    def preprocess(cls, gramexp):
+        lgg.info(gramexp.exptable())
+
     def __call__(self):
         expe = self.expe
-        #lgg.info(expe.table())
         frontend = FrontendManager.load(expe)
 
         # @Debug: Obsolete / Inside model
