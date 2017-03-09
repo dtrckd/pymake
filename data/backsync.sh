@@ -1,8 +1,11 @@
 #!/bin/bash
 
-SSH='adulac@tiger'
+#SSH='adulac@tiger'
+#IN="/home/ama/adulac/workInProgress/networkofgraphs/process/pymake/data/"
 
-IN="/home/ama/adulac/workInProgress/networkofgraphs/process/pymake/data/"
+SSH='dulac@pitmanyor'
+IN="/home/dulac/Desktop/workInProgress/networkofgraphs/process/pymake/data/"
+
 OUT="./"
 T="networks"
 

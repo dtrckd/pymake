@@ -82,6 +82,7 @@ def tree_hook(key, value):
 
 
 # Obsolete !
+# Warning to split('_')
 def get_conf_from_file(target, mp):
     """ Return dictionary of property for an expe file.
         @mp: map parameters
@@ -186,12 +187,9 @@ def forest_tensor(target_files, map_parameters):
 
     not_finished = []
     info_file = []
-    print(rez.shape)
     for _f in target_files:
         prop = get_conf_from_file(_f, map_parameters)
         pt = np.empty(rez.ndim)
-
-        print(rez.ndim, prop)
 
         assert(len(pt) - len(new_dims) == len(prop))
         for k, v in prop.items():
