@@ -4,11 +4,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np
 from numpy import ma
-from pymake import ExpTensor, ModelManager, FrontendManager, GramExp, ExpeFormat, ExpSpace
+from pymake import ModelManager, FrontendManager, GramExp, ExpeFormat, ExpSpace
 
 import logging
 lgg = logging.getLogger('root')
-_spec = GramExp.Spec()
 
 USAGE = """\
 ----------------
@@ -19,8 +18,9 @@ Fit the data :
 class Fit(ExpeFormat):
 
     _default_expe = ExpSpace(
-        corpus = 'clique2',
-        model  = 'immsb_cgs',
+        data_type   = 'networks',
+        corpus      = 'clique2',
+        model       = 'immsb_cgs',
         hyper       = 'auto',
         refdir      = 'debug',
         testset_ratio = 0.2,

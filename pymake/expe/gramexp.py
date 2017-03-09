@@ -114,7 +114,6 @@ class GramExp(object):
 
         # Make main data structure
         self.exp_tensor = ExpTensor.from_expe(conf)
-        self.checkConf(conf)
         self.checkExp(self.exp_tensor)
         self.exp_setup()
 
@@ -140,16 +139,15 @@ class GramExp(object):
 
 
     @classmethod
-    def checkConf(cls, settings):
-        ''' check reserved keyword are absent from exp '''
-        for m in cls._reserved_keywords:
-            if m in settings:
-                raise ValueError('%m is a reserved keyword of gramExp.')
-        # @todo : verify  forbidden keywords
+    def checkExp(cls, exp):
+        ''' check format and rules of exp_tensor '''
 
-    @staticmethod
-    def checkExp(exp):
-        ''' check format of exp_tensor '''
+        # check reserved keyword are absent from exp
+        for m in cls._reserved_keywords:
+            if m in exp:
+                raise ValueError('%m is a reserved keyword of gramExp.')
+
+        # Format
         assert(isinstance(exp, ExpTensor))
         for k, v in exp.items():
             if not issubclass(type(v), (list, tuple, set)):
@@ -175,9 +173,9 @@ class GramExp(object):
                 values = list(d.values())
 
                 # only last dot separator
-                for i, e in enumerate(values):
+                for j, e in enumerate(values):
                     if type(e) is str:
-                        values[i] = e.split('.')[-1]
+                        values[j] = e.split('.')[-1]
 
                 if len(_bind) == 2:
                     # remove all occurence if this bind don't occur
@@ -201,6 +199,13 @@ class GramExp(object):
         self.exp_tensor.update_from_dict(kwargs)
         for d in self.lod:
             d.update(kwargs)
+
+    # @Debug self.lod is left untouched...
+    def remove(self, k):
+        if k in self._conf:
+            self._conf.pop(k)
+            if k in self.exp_tensor:
+                self.exp_tensor.pop(k)
 
     def exp_setup(self, exp=None):
         if exp is not None:
@@ -401,7 +406,7 @@ class GramExp(object):
             request['do_list'] = False
 
         if checksum != 0:
-            raise ValueError('unknow argument: %s\n\nAvailable SPEC : %s' % (do, _spec.keys()))
+            raise ValueError('unknow argument: %s\n\nAvailable SPEC : %s' % (do, sorted(_spec.keys())))
         return cls(request, usage=usage, parser=parser, parseargs=False)
 
     @classmethod
@@ -692,6 +697,8 @@ class GramExp(object):
         ''' Execute Exp Sequentially '''
         if 'script' in self._conf:
             script = self._conf.pop('script')
+            self.remove('script')
+            self.remove('_do')
         else:
             raise ValueError('Who need to specify a script. (--script)')
 
@@ -701,7 +708,8 @@ class GramExp(object):
         if not script_name in Scripts:
             raise ValueError('error: Unknown script: %s' % (script_name))
 
-        self.update(_do=script_args)
+        if script_args:
+            self.update(_do=script_args)
         self.pymake(sandbox=Scripts[script_name])
 
     def pymake(self, sandbox=ExpeFormat):

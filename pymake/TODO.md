@@ -1,6 +1,7 @@
 # IN DOII NG
 * @pymake related : confilt in -do when invoking script from zymake, solution?! 
     * lookup table for script (function) inside ExpeFormat !!!  (@whoosh related)
+    * -l script
 * build_corpus and build_networks are identical : wrap in DataBase
 * expe_meas script
 * ILFM creat sampler and proper inhheritance form GibbsSampler.

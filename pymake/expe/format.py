@@ -50,6 +50,9 @@ class ExpSpace(dict):
             for k, v in kwargs.items():
                 self[k] = v
 
+    def __copy__(self):
+        return self.__class__(**self)
+
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
     def __getattr__(self, key):
@@ -126,7 +129,7 @@ class ExpTensor(OrderedDict, BaseObject):
             _conf = expe.copy()
             expe = _conf.pop('spec')
 
-        if not isinstance(expe, (cls, ExpSpace, dict)):
+        if not issubclass(type(expe), (cls, ExpSpace, dict, ExpVector)):
             raise ValueError('Expe not understood: %s' % type(expe))
 
         if issubclass(type(expe), Corpus):
@@ -239,10 +242,11 @@ class ExpDesign(dict, BaseObject):
         return '#'+self.__name__ +sep+sep.join(raw)
 
     def name(self, l):
-        if '_mapname' in self:
-            mapname =  self['_mapname']
+        if getattr(self, '_mapname', None):
+            mapname =  self._mapname
         else:
             return l
+
 
         if isinstance(l, (set, list, tuple)):
             return [ mapname.get(i, i) for i in l ]
@@ -374,14 +378,15 @@ class ExpeFormat(object):
     def _preprocess(cls, gramexp):
         ''' This method has **write** access to Gramexp '''
 
-        # Put a valid expe a the end.
-        gramexp.reorder_lastvalid()
-
         # update exp_tensor in gramexp
         if hasattr(cls, '_default_expe'):
             _exp = ExpTensor.from_expe(cls._default_expe)
             _exp.update(gramexp.exp_tensor)
             gramexp.exp_setup(_exp)
+
+        # Put a valid expe a the end.
+        gramexp.reorder_lastvalid()
+
 
         return cls.preprocess(gramexp)
 

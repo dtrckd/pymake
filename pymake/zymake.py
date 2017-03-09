@@ -19,12 +19,13 @@ if __name__ == '__main__':
     zyvar = zymake._conf
 
     ### Makes OUT Files
+    lines = None
     if zyvar['_do'] == 'cmd':
         lines = zymake.make_commandline()
     elif zyvar['_do'] == 'path':
         lines = zymake.make_path(ftype=zyvar.get('_ftype', 'pk'), status=zyvar.get('_status'))
     elif zyvar['_do'] == 'show':
-        lines = zymake.simulate()
+        zymake.simulate()
     elif zyvar['_do'] == 'exec':
         lines = zymake.execute()
     elif zyvar['_do'] == 'burn':

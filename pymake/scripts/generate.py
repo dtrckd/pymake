@@ -33,17 +33,26 @@ Exp = ExpTensor ((
     ('data_type'    , 'networks'),
     ('refdir'        , 'debug111111') , # ign in gen
     #('model'        , 'mmsb_cgs')   ,
-    ('model'        , ['immsb', 'ibp'])   ,
+    ('model'        , ['immsb_cgs', 'ilfm_cgs'])   ,
     ('K'            , 10)        ,
     ('N'            , 'all')     , # ign in gen
     ('hyper'        , ['auto', 'fix'])    , # ign in gen
     ('homo'         , 0)         , # ign in gen
     ('repeat'      , 1)       ,
-    ('_bind'    , ['immsb.auto', 'ibp.fix']),
+    ('_bind'    , ['immsb_cgs.auto', 'ilfm_cgs.fix']),
     ('alpha', 1),
     ('gmma', 1),
     ('delta', [(1, 5)]),
 ))
+
+import itertools
+from pymake.util.algo import gofit, Louvain, Annealing
+from pymake.util.math import reorder_mat, sorted_perm, categorical, clusters_hist
+from pymake.util.utils import Now, nowDiff
+import matplotlib.pyplot as plt
+from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2, random_degree, colored, draw_graph_circular, draw_graph_spectral, draw_graph_spring, tabulate, _markers
+from pymake.scripts.private import out
+
 
 class GenNetwork(ExpeFormat):
 
@@ -55,7 +64,7 @@ class GenNetwork(ExpeFormat):
         gen_size      = 1000,
         epoch         = 30 , #20
         limit_gen   = 5, # Local superposition !!!
-        limit_class   = 30,
+        limit_class   = 15, # 30
         spec = Exp
     )
 
@@ -82,7 +91,7 @@ class GenNetwork(ExpeFormat):
         elif expe._mode == 'generative':
             N = expe.gen_size
             ### Generate data from a un-fitted model
-            if expe.model == 'ibp':
+            if 'ilfm' in expe.model:
                 keys_hyper = ('alpha','delta')
                 hyper = (expe.alpha, expe.delta)
             else:
@@ -93,11 +102,12 @@ class GenNetwork(ExpeFormat):
             model = ModelManager.from_expe(expe, init=True)
             #model.update_hyper(hyper)
 
-            if expe.model == 'ibp':
+            # Obsolete !
+            if 'ilfm' in expe.model:
                 title = 'N=%s, K=%s alpha=%s, lambda:%s'% ( N, expe.K, expe.alpha, expe.delta)
-            elif expe.model == 'immsb':
+            elif 'immsb' in expe.model:
                 title = 'N=%s, K=%s alpha=%s, gamma=%s, lambda:%s'% (N, expe.K, expe.alpha, expe.gmma, expe.delta)
-            elif expe.model == 'mmsb_cgs':
+            elif 'mmsb' in expe.model:
                 title = 'N=%s, K=%s alpha=%s, lambda:%s'% ( N, expe.K, expe.alpha, expe.delta)
             else:
                 raise NotImplementedError
@@ -213,7 +223,7 @@ class GenNetwork(ExpeFormat):
             theta, phi = model.get_params()
             Y = Y[:expe.limit_gen]
             now = Now()
-            if expe.model == 'immsb':
+            if 'mmsb' in expe.model:
                 ### Z assignement method #
                 ZZ = []
                 for _ in Y:
@@ -263,7 +273,7 @@ class GenNetwork(ExpeFormat):
 
                 degree_c = []
                 YY = []
-                if expe.model == 'immsb':
+                if 'mmsb' in expe.model:
                     for y, z in zip(Y, ZZ): # take the len of ZZ if < Y
                         y_c = np.zeros(y.shape)
                         phi_c = np.zeros(y.shape)
@@ -273,29 +283,30 @@ class GenNetwork(ExpeFormat):
                         #degree_c += adj_to_degree(y_c).values()
                         #yerr= None
                         YY.append(y_c)
-                elif expe.model == 'ibp': # or Corpus !
+                elif 'ilfm' in  expe.model: # or Corpus !
                     for y in Y:
                         YY.append((y * np.outer(theta[:,k], theta[:,l] )).astype(int))
 
                 d, dc, yerr = random_degree(YY)
                 if len(d) == 0: continue
+                title = self.specname(expe.corpus) + ' ' + self.specname(expe.model)
                 plot_degree_2((d,dc,yerr), logscale=True, colors=True, line=True,
-                             title='Local Preferential attachment (Stochastic Block)')
+                             title=title)
             figs.append(plt.gcf())
 
         ### Blockmodel Analysis
         lgg.info('Skipping Features burstiness')
         #plt.figure()
-        #if expe.model == "immsb":
-        #    # Class burstiness
+        #if 'mmsb' in expe.model:
+        #    # Features burstiness
         #    hist, label = clusters_hist(comm['clusters'])
         #    bins = len(hist)
         #    plt.bar(range(bins), hist)
         #    plt.xticks(np.arange(bins)+0.5, label)
         #    plt.xlabel('Class labels')
         #    plt.title('Blocks Size (max assignement)')
-        #elif expe.model == "ibp":
-        #    # Class burstiness
+        #elif 'ilfm' in expe.model:
+        #    # Features burstiness
         #    hist, label = sorted_perm(comm['block_hist'], reverse=True)
         #    bins = len(hist)
         #    plt.bar(range(bins), hist)
@@ -306,7 +317,6 @@ class GenNetwork(ExpeFormat):
         figs.append(plt.gcf())
 
         if expe.write:
-            from private import out
             out.write_figs(expe, figs, _fn=expe.model)
             return
 
@@ -351,7 +361,7 @@ class GenNetwork(ExpeFormat):
             theta, _phi = model.get_params()
             K = theta.shape[1]
             now = Now()
-            if expe.model == 'immsb':
+            if 'mmsb' in expe.model:
                 ZZ = []
                 for _ in Y:
                 #for _ in Y: # Do not reflect real local degree !
@@ -400,7 +410,7 @@ class GenNetwork(ExpeFormat):
 
                 degree_c = []
                 YY = []
-                if expe.model == 'immsb':
+                if 'mmsb' in expe.model:
                     for y, z in zip(Y, ZZ): # take the len of ZZ if < Y
                         y_c = y.copy()
                         phi_c = np.zeros(y.shape)
@@ -410,7 +420,7 @@ class GenNetwork(ExpeFormat):
                         #degree_c += adj_to_degree(y_c).values()
                         #yerr= None
                         YY.append(y_c)
-                elif expe.model == 'ibp':
+                elif 'ilfm' in expe.model:
                     for y in Y:
                         YY.append((y * np.outer(theta[:,k], theta[:,l])).astype(int))
 
@@ -441,7 +451,6 @@ class GenNetwork(ExpeFormat):
                 print()
                 print(table)
                 if expe.write:
-                    from private import out
                     fn = '%s_%s' % (_spec.name(_model), _type)
                     out.write_table(table, _fn=fn, ext='.md')
 
@@ -454,7 +463,7 @@ class GenNetwork(ExpeFormat):
             # move this in draw data
         elif expe._mode == 'generative':
             model = self.model
-            y = model.generate(**vars(expe))
+            y = model.generate(**expe)
 
         clustering = 'modularity'
         print('@heeere, push commmunities annalysis outside static method of frontendnetwork')
@@ -564,7 +573,6 @@ class GenNetwork(ExpeFormat):
                 print()
                 print(table)
                 if expe.write:
-                    from private import out
                     fn = '%s_homo_%s' % (_spec.name(_model), _type)
                     out.write_table(table, _fn=fn, ext='.md')
 
@@ -762,7 +770,7 @@ class GenNetwork(ExpeFormat):
             table_std = t
 
             # Measure is comparaison of two AUC.
-            id_mmsb = self.gramexp.exp_tensor['model'].index('immsb')
+            id_mmsb = self.gramexp.exp_tensor['model'].index('immsb_cgs') # GE.fuzz_index !!!
             id_ibp = 1 if id_mmsb == 0 else 0
             table_mean = table_mean[:,:, id_mmsb] - table_mean[:,:, id_ibp]
             table_std = table_std[:,:, id_mmsb] + table_std[:,:, id_ibp]
@@ -797,7 +805,6 @@ class GenNetwork(ExpeFormat):
             print()
             print(table)
             if expe.write:
-                from private import out
                 fn = '%s_%s_%s' % ( _type, _type2, _ratio)
                 figs = {'roc_evolution': ExpSpace({'fig':fig, 'table':table, 'fn':fn})}
                 out.write_table(figs, ext='.md')
@@ -835,13 +842,6 @@ class GenNetwork(ExpeFormat):
         plt.colorbar()
 
 if __name__ == '__main__':
-    from pymake.util.algo import gofit, Louvain, Annealing
-    from pymake.util.math import reorder_mat, sorted_perm, categorical, clusters_hist
-    from pymake.util.utils import Now, nowDiff
-    import matplotlib.pyplot as plt
-    from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2, random_degree, colored, draw_graph_circular, draw_graph_spectral, draw_graph_spring, tabulate, _markers
-    import itertools
-
 
     GramExp.generate(usage=USAGE).pymake(GenNetwork)
 

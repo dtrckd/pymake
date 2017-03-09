@@ -33,7 +33,7 @@ Exp = ExpTensor ((
     ('data_type'    , 'networks'),
     ('refdir'        , 'debug111111') , # ign in gen
     #('model'        , 'mmsb_cgs')   ,
-    ('model'        , 'immsb')   ,
+    ('model'        , 'immsb_cgs')   ,
     ('K'            , 10)        ,
     ('N'            , 'all')     , # ign in gen
     ('hyper'        , 'auto')    , # ign in gen
@@ -44,6 +44,12 @@ Exp = ExpTensor ((
     ('gmma', 1),
     ('delta', [(1, 5)]),
 ))
+
+from pymake.util.algo import gofit, Louvain, Annealing
+from pymake.util.math import reorder_mat, sorted_perm
+import matplotlib.pyplot as plt
+from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2, colored, tabulate
+from pymake.scripts.private import out
 
 class CheckNetwork(ExpeFormat):
 
@@ -118,16 +124,15 @@ class CheckNetwork(ExpeFormat):
         print()
 
         if expe.write:
-            from private import out
             out.write_zipf(expe, data_r)
             return
 
         ### Plot Adjacency matrix
         plt.figure()
-        plt.suptitle(_spec.name(expe.corpus))
         plt.subplot(1,2,1)
-        adjshow(data_r, title='Adjacency Matrix', fig=False)
+        adjshow(data_r, title=_spec.name(expe.corpus), fig=False)
         #plt.figtext(.15, .1, homo_text, fontsize=12)
+        #plt.suptitle(_spec.name(expe.corpus))
 
         ### Plot Degree
         plt.subplot(1,2,2)
@@ -253,9 +258,10 @@ class CheckNetwork(ExpeFormat):
                     Table[self.corpus_pos, i, it_k] = gof[v] #* y.sum() / TOT
                 it_k += 1
 
+        plt.suptitle(_spec.name(expe.corpus))
         figs.append(plt.gcf())
 
-        # Class burstiness
+        # Features burstiness
         plt.figure()
         hist, label = sorted_perm(block_hist, reverse=True)
         bins = len(hist)
@@ -266,7 +272,6 @@ class CheckNetwork(ExpeFormat):
         figs.append(plt.gcf())
 
         if expe.write:
-            from private import out
             out.write_figs(expe, figs)
 
         if self._it == self.expe_size -1:
@@ -285,7 +290,6 @@ class CheckNetwork(ExpeFormat):
                 print()
                 print(table)
                 #if expe.write:
-                #    from private import out
                 #    fn = '%s' % (clusters_org)
                 #    out.write_table(table, _fn=fn, ext='.md')
 
@@ -346,9 +350,5 @@ class CheckNetwork(ExpeFormat):
             print (tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
 
 if __name__ == '__main__':
-    from pymake.util.algo import gofit, Louvain, Annealing
-    from pymake.util.math import reorder_mat, sorted_perm
-    import matplotlib.pyplot as plt
-    from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2, colored, tabulate
 
     GramExp.generate(usage=USAGE).pymake(CheckNetwork)
