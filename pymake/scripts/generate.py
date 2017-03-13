@@ -26,25 +26,6 @@ Generate data  --or find the answers :
     generate --alpha 1 --gmma 1 -n 1000 --seed
 '''
 
-Corpuses = _spec['CORPUS_SYN_ICDM']
-
-Exp = ExpTensor ((
-    ('corpus', Corpuses),
-    ('data_type'    , 'networks'),
-    ('refdir'        , 'debug111111') , # ign in gen
-    #('model'        , 'mmsb_cgs')   ,
-    ('model'        , ['immsb_cgs', 'ilfm_cgs'])   ,
-    ('K'            , 10)        ,
-    ('N'            , 'all')     , # ign in gen
-    ('hyper'        , ['auto', 'fix'])    , # ign in gen
-    ('homo'         , 0)         , # ign in gen
-    ('repeat'      , 1)       ,
-    ('_bind'    , ['immsb_cgs.auto', 'ilfm_cgs.fix']),
-    ('alpha', 1),
-    ('gmma', 1),
-    ('delta', [(1, 5)]),
-))
-
 import itertools
 from pymake.util.algo import gofit, Louvain, Annealing
 from pymake.util.math import reorder_mat, sorted_perm, categorical, clusters_hist
@@ -65,7 +46,6 @@ class GenNetwork(ExpeFormat):
         epoch         = 30 , #20
         limit_gen   = 5, # Local superposition !!!
         limit_class   = 15, # 30
-        spec = Exp
     )
 
     def __init__(self, *args, **kwargs):
@@ -119,7 +99,6 @@ class GenNetwork(ExpeFormat):
 
         lgg.debug('Deprecated : get symmetric info from model.')
         expe.symmetric = frontend.is_symmetric()
-        self.expe = expe
         self.frontend = frontend
         self.model = model
 
@@ -213,7 +192,8 @@ class GenNetwork(ExpeFormat):
             # Global burstiness
             d, dc, yerr = random_degree(Y)
             fig = plt.figure()
-            plot_degree_2((d,dc,yerr), logscale=True, title=expe.title)
+            title = self.specname(expe.corpus) + ' ' + self.specname(expe.model)
+            plot_degree_2((d,dc,yerr), logscale=True, title=title)
 
             figs.append(plt.gcf())
 
@@ -298,7 +278,7 @@ class GenNetwork(ExpeFormat):
         lgg.info('Skipping Features burstiness')
         #plt.figure()
         #if 'mmsb' in expe.model:
-        #    # Features burstiness
+        #    # Feature burstiness
         #    hist, label = clusters_hist(comm['clusters'])
         #    bins = len(hist)
         #    plt.bar(range(bins), hist)
@@ -306,7 +286,7 @@ class GenNetwork(ExpeFormat):
         #    plt.xlabel('Class labels')
         #    plt.title('Blocks Size (max assignement)')
         #elif 'ilfm' in expe.model:
-        #    # Features burstiness
+        #    # Feature burstiness
         #    hist, label = sorted_perm(comm['block_hist'], reverse=True)
         #    bins = len(hist)
         #    plt.bar(range(bins), hist)
@@ -660,7 +640,7 @@ class GenNetwork(ExpeFormat):
                 print(t2)
 
     @ExpeFormat.plot('corpus', 'testset_ratio')
-    def roc(self, _type='testset', _ratio=20):
+    def roc(self, _type='testset', _ratio=100):
         ''' AUC/ROC test report '''
         from sklearn.metrics import roc_curve, auc, precision_recall_curve
         expe = self.expe
@@ -809,19 +789,6 @@ class GenNetwork(ExpeFormat):
                 figs = {'roc_evolution': ExpSpace({'fig':fig, 'table':table, 'fn':fn})}
                 out.write_table(figs, ext='.md')
                 out.write_figs(expe, figs)
-
-    @ExpeFormat.plot('corpus')
-    def plot_some(self, _type='likelihood'):
-        ''' likelihood/perplxity convergence report '''
-        expe = self.expe
-        model = self.model
-
-        ax = self.gramexp.figs[expe.corpus].fig.gca()
-
-        data = model.load_some(get='likelihood')
-        burnin = 5
-        ll_y = np.ma.masked_invalid(np.array(data, dtype='float'))
-        ax.plot(ll_y, label=_spec.name(expe.model))
 
     @ExpeFormat.plot
     def clustering(self):

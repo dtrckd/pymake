@@ -17,20 +17,6 @@ Fit the data :
 
 class Fit(ExpeFormat):
 
-    _default_expe = ExpSpace(
-        data_type   = 'networks',
-        corpus      = 'clique2',
-        model       = 'immsb_cgs',
-        hyper       = 'auto',
-        refdir      = 'debug',
-        testset_ratio = 0.2,
-        K           = 3,
-        N           = 42,
-        chunk       = 10000,
-        iterations  = 3,
-        homo        = 0, # learn W in IBP
-    )
-
     @classmethod
     def preprocess(cls, gramexp):
         lgg.info(gramexp.exptable())
@@ -51,5 +37,9 @@ class Fit(ExpeFormat):
         model.fit(frontend)
 
         # here if save -> predict
+        m = model.model.get_mask()
+
         model.predict(frontend=frontend)
 
+if __name__ == '__main__':
+    GramExp.generate().pymake(Fit)

@@ -146,7 +146,7 @@ class frontendNetwork(DataBase):
             Random training set on 20% on Data / debug5 - debug11 -- Unbalanced
         """
         percent_hole = float(percent_hole)
-        if percent_hole > 1:
+        if percent_hole >= 1:
             percent_hole = percent_hole / 100.0
         elif 0 <= percent_hole < 1:
             pass
@@ -609,7 +609,7 @@ class frontendNetwork(DataBase):
         data_dims = []
         for i in range(self.data_ma.shape[0]):
             data_dims.append(self.data_ma[i,:].count() + self.data_ma[:,i].count())
-        return data_dims
+        return np.array(data_dims, dtype=int)
 
     def has_selfloop(self):
         return self._selfloop

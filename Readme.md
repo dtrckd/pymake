@@ -12,7 +12,7 @@ This code is in a living development stage and yet unstable.
 * commandline toolkit for quick design and experience testing
 * browse design and test several models and corpus find in the
 literrature
-Those are ongoing development...
+Ongoing development :
 * A database to share (push/fetch/search) Design of experimentation.
 * Better specification of the formal grammar of design of experimentation.
 * Better documentation.

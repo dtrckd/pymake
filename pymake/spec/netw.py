@@ -146,6 +146,39 @@ class Netw(ExpDesign):
         #('repeat'      , '*')       ,
     ))
 
+    default_gen = ExpTensor ((
+        ('corpus', CORPUS_SYN_ICDM),
+        ('data_type'    , 'networks'),
+        ('refdir'        , 'debug111111') , # ign in gen
+        #('model'        , 'mmsb_cgs')   ,
+        ('model'        , ['immsb_cgs', 'ilfm_cgs'])   ,
+        ('K'            , 10)        ,
+        ('N'            , 'all')     , # ign in gen
+        ('hyper'        , ['auto', 'fix'])    , # ign in gen
+        ('homo'         , 0)         , # ign in gen
+        ('repeat'      , 1)       ,
+        ('_bind'    , ['immsb_cgs.auto', 'ilfm_cgs.fix']),
+        ('alpha', 1),
+        ('gmma', 1),
+        ('delta', [(1, 5)]),
+    ))
+    default_check = default_gen.copy()
+    default_check['model'] = 'immsb_cgs'
+
+    default_expe = ExpSpace(
+        data_type   = 'networks',
+        corpus      = 'clique2',
+        model       = 'immsb_cgs',
+        hyper       = 'auto',
+        refdir      = 'debug',
+        testset_ratio = 0.2,
+        K           = 4,
+        N           = 42,
+        chunk       = 10000,
+        iterations  = 3,
+        homo        = 0, # learn W in IBP
+    )
+
 
     MODELS_GENERATE = ExpTensor ((
         ('data_type'    , 'networks'),

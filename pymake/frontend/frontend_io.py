@@ -10,7 +10,8 @@ lgg = logging.getLogger('root')
 ''' This is Obsolote and will be merge into Gramexp module '''
 
 LOCAL_BDIR = '../../data/' # Last slash(/) necessary.
-if not os.path.exists(os.path.dirname(__file__)+'/'+LOCAL_BDIR+'networks/generator/Graph7/debug111111'):
+_force_local = False
+if not os.path.exists(os.path.dirname(__file__)+'/'+LOCAL_BDIR+'networks/generator/Graph7/debug111111') and _force_local:
     LOCAL_BDIR = '/media/dtrckd/TOSHIBA EXT/pymake/data/'
     if not os.path.exists(LOCAL_BDIR):
         LOCAL_BDIR = '/home/ama/adulac/workInProgress/networkofgraphs/process/pymake/data/'

@@ -72,8 +72,8 @@ class exp_uniq_append(argparse.Action):
             parser.error(e)
 
 
-class except_append(argparse.Action):
-    ''' Option that would not be added in making command line'''
+class unaggregate_append(argparse.Action):
+    ''' Option that would not be aggregated in making command line'''
     def __call__(self, parser, namespace, values, option_string=None):
         uniq_values = values
         setattr(namespace, self.dest, uniq_values)
@@ -206,8 +206,11 @@ _Gram = [
         nargs='*', action=partial(exp_append, _t=float),
         help='Third hyperparameter.'),
     '--chunk', dict(
-        nargs='*', action=partial(exp_append, _t=float),
+        nargs='*', action=partial(exp_append, _t=int),
         help='Chunk size for online learning.'),
+    '--burnin', dict(
+        nargs='*', action=partial(exp_append, _t=int),
+        help='Number of samples used for burnin period.'),
 
     #
     #
@@ -223,13 +226,13 @@ _Gram = [
         help='Commands to pass to sub-machines.'),
 
     '--script', dict(
-        nargs='*', action=except_append,
+        nargs='*', action=unaggregate_append,
         help='Script request : name *args.'),
     '--bind', dict(
         type=str, dest='_bind', action='append',
         help='Rules to filter the Exp Request.'),
 
     '-l', '--list', dict(
-        const=True, dest='do_list', nargs='?',
+        dest='do_list', const=True,  nargs='?', action=unaggregate_append,
         help='Request to print informations.'),
     ]
