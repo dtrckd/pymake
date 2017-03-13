@@ -24,26 +24,6 @@ Inspect data on disk --or find the questions :
      stats      : standard measure abd stats.
 """
 
-Corpuses = _spec['CORPUS_SYN_ICDM']
-
-#Model = _spec.MODEL_FOR_CLUSTER_IBP
-#Model = _spec.MODEL_FOR_CLUSTER_IMMSB
-Exp = ExpTensor ((
-    ('corpus', Corpuses),
-    ('data_type'    , 'networks'),
-    ('refdir'        , 'debug111111') , # ign in gen
-    #('model'        , 'mmsb_cgs')   ,
-    ('model'        , 'immsb_cgs')   ,
-    ('K'            , 10)        ,
-    ('N'            , 'all')     , # ign in gen
-    ('hyper'        , 'auto')    , # ign in gen
-    ('homo'         , 0)         , # ign in gen
-    ('repeat'      , 0)       ,
-    #
-    ('alpha', 1),
-    ('gmma', 1),
-    ('delta', [(1, 5)]),
-))
 
 from pymake.util.algo import gofit, Louvain, Annealing
 from pymake.util.math import reorder_mat, sorted_perm
@@ -57,7 +37,6 @@ class CheckNetwork(ExpeFormat):
         block_plot = False,
         write = False,
         _do           = ['zipf', 'source'],
-        spec = Exp
     )
 
 

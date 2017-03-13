@@ -122,20 +122,28 @@ class GramExp(object):
 
     def _preprocess_exp(self):
         # @improvment: do filter from spec
+        exp = self.exp_tensor
 
-        # Make Rules
-        if '_bind' in self.exp_tensor:
-            self._bind = self.exp_tensor.pop('_bind')
+        # Rules Filter
+        if '_bind' in exp:
+            self._bind = exp.pop('_bind')
             if not isinstance(self._bind, list):
                 self._bind = [self._bind]
         else:
-            self._bind = []
+            self._bind = getattr(self, '_bind', [])
 
         # Assume default module is pymake
-        models = self.exp_tensor.get('model', [])
+        models = exp.get('model', [])
         for i, m in enumerate(models):
             if not '.' in m:
                 models[i] = 'pmk.%s'%(m)
+
+        # Filter _null
+        for k in exp.copy():
+            if '_null' in exp.get(k, []):
+                exp.pop(k)
+                _null = getattr(self, '_null',[])
+                _null.append(k)
 
 
     @classmethod
@@ -156,11 +164,6 @@ class GramExp(object):
 
     def make_lod(self, exp):
         ''' Make a list of Expe from tensor, with filtering '''
-
-        # PREFILTERING
-        for k in exp.copy():
-            if '_null' in exp.get(k, []):
-                exp.pop(k)
 
         lod = self.make_forest_conf(exp)
 
@@ -192,11 +195,13 @@ class GramExp(object):
                     if a in values and _type(c) != d[b]:
                         itoremove.append(i)
 
-        return [d for i,d in enumerate(lod) if i not in itoremove]
+        lod = [d for i,d in enumerate(lod) if i not in itoremove]
+        return lod
 
     def update(self, **kwargs):
         self._conf.update(kwargs)
         self.exp_tensor.update_from_dict(kwargs)
+
         for d in self.lod:
             d.update(kwargs)
 
@@ -204,8 +209,11 @@ class GramExp(object):
     def remove(self, k):
         if k in self._conf:
             self._conf.pop(k)
-            if k in self.exp_tensor:
-                self.exp_tensor.pop(k)
+        if k in self.exp_tensor:
+            self.exp_tensor.pop(k)
+        for d in self.lod:
+            if k in d:
+                d.pop(k)
 
     def exp_setup(self, exp=None):
         if exp is not None:
@@ -236,7 +244,6 @@ class GramExp(object):
     def __len__(self):
         #return reduce(operator.mul, [len(v) for v in self.exp_tensor.values()], 1)
         return len(self.lod)
-
 
     @staticmethod
     def make_forest_conf(dol_spec):
@@ -377,6 +384,11 @@ class GramExp(object):
         )
         ont_values = sum([w for k, w in ontology.items() if k != 'spec'] , [])
 
+        if request.get('do_list'):
+            if 'script' in request:
+                pass
+            else:
+                request['_do'] = ['list']
         do = request.get('_do') or ['list']
         checksum = len(do)
         # No more Complex !
@@ -400,10 +412,6 @@ class GramExp(object):
         #if '-status' in clargs.grouped:
         #    # debug status of filr (path)
         #    request['_status'] = clargs.grouped['-status'].get(0)
-        if request.get('do_list'):
-            request['_do'] = 'list'
-        elif 'list' in do:
-            request['do_list'] = False
 
         if checksum != 0:
             raise ValueError('unknow argument: %s\n\nAvailable SPEC : %s' % (do, sorted(_spec.keys())))
@@ -431,7 +439,7 @@ class GramExp(object):
 
         request.update(s)
 
-        do = request.get('_do') or ['_list']
+        do = request.get('_do') or ['list']
         if not isinstance(do, list):
             # Obsolete ?
             do = [do]
@@ -612,6 +620,10 @@ class GramExp(object):
         logger.propagate = False
 
         return logger
+
+    @staticmethod
+    def sign_nargs(fun):
+        return sum([y.default is inspect._empty for x,y in inspect.signature(fun).parameters.items() if x != 'self'])
 
     @staticmethod
     def tb_expeformat(sandbox):

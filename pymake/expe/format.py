@@ -91,11 +91,11 @@ class Model(ExpVector):
             shrink_module_name = False
 
         from pymake.util.loader import ModelsLoader
-        packages = spec._package.get('model',[])
+        packages = spec._package.get('model',[]).copy()
         if 'pymake.model' in packages:
             atoms = ModelsLoader.get_packages(packages.pop(packages.index('pymake.model')), prefix='pmk')
         else:
-            atoms = OrderedDict
+            atoms = OrderedDict()
         for pkg in packages:
             if len(pkg) > 8:
                 prefix = pkg[:3]
@@ -348,7 +348,7 @@ class ExpeFormat(object):
                     # Save on last call
                     if self._it == self.expe_size -1:
                         if expe.write:
-                            from private import out
+                            from pymake.scripts.private import out
                             out.write_figs(expe, self.gramexp.figs)
 
                     return kernel

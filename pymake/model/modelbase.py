@@ -207,6 +207,17 @@ class ModelBase(object):
                 continue
         return result
 
+    def get_mask(self):
+        return self.mask
+
+    def mask_probas(self, data):
+        mask = self.get_mask()
+        y_test = data[mask]
+        p_ji = self.likelihood(*self.get_params())
+        probas = p_ji[mask]
+        return y_test, probas
+
+
     def predictMask(self, data, mask=True):
         lgg.info('Reducing latent variables...')
 
@@ -255,9 +266,14 @@ class ModelBase(object):
     def fit(self):
         raise NotImplementedError
     # Just for MCMC ?():
-    def generate(self):
-        raise NotImplementedError
     def predict(self):
+        raise NotImplementedError
+    def scores(self):
+        raise NotImplementedError
+
+    # get_params ~ transform ?sklearn
+
+    def generate(self):
         raise NotImplementedError
     def get_clusters(self):
         raise NotImplementedError
@@ -349,12 +365,8 @@ class GibbsSampler(ModelBase):
         likelihood = theta.dot(phi).dot(theta.T)
         return likelihood
 
-    def mask_probas(self, data):
-        mask = self.get_mask()
-        y_test = data[mask]
-        p_ji = self.likelihood(*self.get_params())
-        probas = p_ji[mask]
-        return y_test, probas
+    def scores(self):
+        return self.likelihood()
 
     @mmm
     def update_hyper(self, hyper):
@@ -543,6 +555,9 @@ class SVB(ModelBase):
     __abstractmethods__ = 'model'
 
     def __init__(self, expe, frontend=None):
+        self.csv_typo = '# it it_time likelihood likelihood_t K alpha gamma alpha_mean delta_mean alpha_var delta_var'
+        self.fmt = '%d %.4f %.8f %.8f %d'
+        #self.fmt = '%d %.4f %.8f %.8f %d %.8f %.8f %.4f %.4f %.4f %.4f'
         super(SVB, self).__init__(**expe)
         self.elbo = None
         self.limit_elbo_diff = 1e-3
@@ -556,29 +571,40 @@ class SVB(ModelBase):
     def _init_params(self, frontend):
         raise NotImplementedError
 
-    def get_mask(self):
-        return self.mask
-
     def data_iter(self, batch, randomize=True):
         raise NotImplementedError
 
+    def measures(self):
+        pp = self._pp
+        pp_t = 0
+        k = self._K
+
+        #measures = [pp, pp_t, k, alpha_0, gmma, alpha_mean, delta_mean, alpha_var, delta_var]
+        measures = [pp, pp_t, k]
+        return measures
+
     def fit(self):
-        ''' chunk is the number of row to threat in a minibach'''
+        ''' chunk is the number of row to threat in a minibach '''
 
         data_ma = self.fr.data_ma
         _abc = self.data_iter(data_ma)
+        time_it = 0
         for _id_mnb, minibatch in enumerate(np.array_split(_abc, self.chunk_len)):
         #for _id, minibatch in enumerate(np.array_split(data_ma, chunk)):
 
+
             # <try with multiple iterations here>
+            begin = datetime.now()
             self.sample(minibatch)
+            time_it = (datetime.now() - begin).total_seconds() / 60
             # </try>
 
-            # Get real ELBO instead of pp
-            nelbo = self.perplexity()
-            self.elbo_diff = nelbo - self.elbo
-            self.elbo = nelbo
-            lgg.info('mnibatch %d/%d,  ELBO: %s, elbo diff: %s' % (_id_mnb+1, self.chunk_len, self.elbo, self.elbo_diff))
+            self.update_elbo()
+            lgg.info('mnibatch %d/%d,  ELBO: %s, elbo diff: %s' % (_id_mnb, self.chunk_len, self.elbo, self.elbo_diff))
+            if self.expe.get('write'):
+                measures = [_id_mnb, time_it] + self.measures()
+                self.write_some(measures)
+        self.close()
 
     def sample(self, minibatch):
 
@@ -590,11 +616,8 @@ class SVB(ModelBase):
                 self.maximization(iter)
                 self.expectation(iter)
 
-            # Get real ELBO instead of pp
-            nelbo = self.perplexity()
-            self.elbo_diff = nelbo - self.elbo
-            self.elbo = nelbo
-            lgg.info('it %d,  ELBO: %s, elbo diff: %s' % (_id_burn, self.elbo, self.elbo_diff))
+            self.update_elbo()
+            lgg.debug('it %d,  ELBO: %s, elbo diff: %s' % (_id_burn, self.elbo, self.elbo_diff))
 
         self._purge_minibatch()
 
@@ -602,6 +625,13 @@ class SVB(ModelBase):
         #    print('ELBO get stuck during data iteration : Sampling useless, return ?!')
 
         return
+
+    def update_elbo(self):
+        ## Get real ELBO instead of pp
+        nelbo = self.perplexity()
+        self.elbo_diff = nelbo - self.elbo
+        self.elbo = nelbo
+        return self.elbo
 
     def get_elbo(self):
         raise NotImplementedError
@@ -615,14 +645,8 @@ class SVB(ModelBase):
     def _purge_minibatch(self):
         raise NotImplementedError
 
-    @mmm #frontend
-    def likelihood(self, theta=None, phi=None):
-        if theta is None:
-            theta = self.theta
-        if phi is None:
-            phi = self.phi
-        likelihood = theta.dot(phi).dot(theta.T)
-        return likelihood
+    def scores(self):
+        return self.likelihood()
 
     def purge(self):
         self.fr = None

@@ -2,6 +2,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys, os
+import inspect
 import logging
 lgg = logging.getLogger('root')
 
@@ -117,6 +118,16 @@ class ModelManager(object):
 
         return data, data_t
 
+    def is_model(self, m,  _type):
+        if _type == 'pymake':
+            pmk = inspect.signature(m).parameters.keys()
+            score = []
+            for wd in ('frontend', 'expe'):
+                score.append(wd in pmk)
+            return all(score)
+        else:
+            raise NotImplementedError
+
 
     def _get_model(self, frontend=None, data_t=None):
         ''' Get model wit lookup in the following order :
@@ -130,7 +141,12 @@ class ModelManager(object):
 
         models = Model.get_atoms(GramExp.Spec())
         if self.expe.model in models:
-            model = models[self.expe.model](self.expe, self.fr)
+            _model = models[self.expe.model]
+            if self.is_model(_model, 'pymake'):
+                model = _model(self.expe, self.fr)
+            else:
+                model = _model(**self.expe)
+
         else:
             raise NotImplementedError(self.expe.model)
 
@@ -149,7 +165,16 @@ class ModelManager(object):
             self.model = self._get_model(frontend)
 
         if hasattr(self.model, 'fit'):
-            self.model.fit()
+            fun = getattr(self.model, 'fit')
+            fnargs = GramExp.sign_nargs(fun)
+            if fnargs <= 0:
+                # pymake
+                fun()
+            elif fnargs == 1:
+                # sklearn type
+                fun(frontend.data)
+            else:
+                raise NotImplementedError('Pipeline to model got unknown sinature')
 
         if self.expe.write:
             self.model.save()

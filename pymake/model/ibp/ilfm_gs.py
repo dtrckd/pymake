@@ -57,7 +57,7 @@ class IBPGibbsSampling(IBP, GibbsSampler):
 
         self.burnin = kwargs.get('burnin',  0.05) # Ratio of iteration
         self.thinning = kwargs.get('thinning',  1)
-        self.csv_typo = '# it it_time loglikelihood_Y loglikelihood_test K alpha sigma Z_sum ratio_MH_F ratio_MH_W'
+        self.csv_typo = '# it it_time likelihood likelihood_t K alpha sigma Z_sum ratio_MH_F ratio_MH_W'
         self.fmt = '%d %.4f %.8f %.8f %d %.8f %.8f %d %.4f %.4f'
         IBP.__init__(self, alpha_hyper_parameter, metropolis_hastings_k_new)
         GibbsSampler.__init__(self, None,  **kwargs)

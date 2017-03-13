@@ -32,13 +32,13 @@ if __name__ == '__main__':
         # @todo; parallelize Pymake()
         raise NotImplementedError('What parallel strategy ?')
     elif zyvar['_do'] == 'list':
-        if zyvar.get('do_list') is True:
-            print (zymake.spectable())
-        elif zyvar.get('do_list') == 'atom':
+        if 'atom' in zyvar.get('do_list', []):
             print (zymake.atomtable())
-        elif zyvar.get('do_list') == 'atom_topos':
+        elif 'atom_topos' in zyvar.get('do_list',[]) :
             print (zymake.atomtable(_type='topos'))
-        elif 'do_list' in zyvar and not zyvar['do_list'] :
+        elif not zyvar.get('do_list',[]):
+            print (zymake.spectable())
+        else:
             print(zymake.help_short())
             print ('list what %s ?' % zyvar.get('do_list'))
         exit()

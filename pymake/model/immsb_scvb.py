@@ -32,16 +32,14 @@ class immsb_scvb(SVB):
 
         # Stream Parameters
         chunk = self.expe.get('chunk', 10)
+        self.burnin = self.expe.get('burnin', 1)
         self.chunk_size = chunk * self._len['N']
         self.chunk_len = self._len['nnz']/self.chunk_size
-
         if self.chunk_len < 1:
             self.chunk_size = self._len['nnz']
             self.chunk_len = 1
+        self.gradient_update_freq = self.chunk_size / 10
 
-        self.gradient_update_freq = self.chunk_size / 100
-        #self.burnin = 1
-        self.burnin = 10
         self._update_gstep_theta()
         self._update_gstep_phi()
 
@@ -63,36 +61,34 @@ class immsb_scvb(SVB):
 
         self.elbo = self.perplexity()
 
-    def _update_gstep_phi(self, kappa=0.5):
-        self.gstep_phi =  (1 +self._timestep)**-kappa
-
-    def _update_gstep_theta(self, kappa=0.5):
-        self.gstep_theta =  (1 +self._timestep)**-kappa
-
     def _random_ss_init(self, frontend):
         ''' Sufficient Statistics Initialization '''
         K = self._len['K']
         N = self._len['N']
         nfeat = self._len['nfeat']
+        dims = self._len['dims']
         zeros = self._len['zeros']
         ones = self._len['ones']
+        nnz = self._len['nnz']
 
-        N_theta_left = (2*N * np.random.dirichlet(np.ones(K), N)).astype(int)
-        N_theta_right = (2*N * np.random.dirichlet(np.ones(K), N)).astype(int)
+        N_theta_left = (dims[:, None] * np.random.dirichlet(np.ones(K)/2, N))
+        N_theta_right = (dims[:, None] * np.random.dirichlet(np.ones(K)/2, N))
 
-        N_phi = np.zeros((nfeat, K,K))
-        N_phi[0] = (zeros * np.random.dirichlet(np.ones(K*K))).astype(int).reshape(K,K)
-        N_phi[1] = (ones  * np.random.dirichlet(np.ones(K*K))).astype(int).reshape(K,K)
+        N_phi = np.empty((nfeat, K,K))
+        N_phi[0] = zeros * np.random.dirichlet(np.ones(K**2)).reshape(K,K)
+        N_phi[1] = ones * np.random.dirichlet(np.ones(K**2)).reshape(K,K)
 
         self.N_phi = N_phi
         self.N_theta_left = N_theta_left
         self.N_theta_right = N_theta_right
 
         # Temp Containers (for minibatch)
-        self._N_phi = np.zeros((nfeat, K,K), dtype=int)
+        self._N_phi = np.zeros((nfeat, K,K))
         self._N_phi_sum = self.N_phi.sum(0)
         self.hyper_phi_sum = self.hyper_phi.sum()
         self.hyper_theta_sum = self.hyper_theta.sum()
+
+        #self._qij = self.likelihood(*self.reduce_latent())
 
         return [N_phi, N_theta_left, N_theta_right]
 
@@ -106,6 +102,15 @@ class immsb_scvb(SVB):
 
     def update_hyper(self, hyper):
         pass
+
+    def _update_gstep_phi(self, kappa=0.75, tau=2**10):
+        #tau = self._len['K'] * np.log2(self._len['N'])
+        self.gstep_phi =  (tau + self._timestep)**-kappa
+
+    def _update_gstep_theta(self, kappa=0.75, tau=2**1):
+        #tau = self._len['K'] * np.log2(self._len['N'])
+        # Why when tau >2 objective decrease ???
+        self.gstep_theta =  (tau + self._timestep)**-kappa
 
     def data_iter(self, batch, randomize=True):
         data_ma = batch
@@ -130,12 +135,25 @@ class immsb_scvb(SVB):
     def get_elbo(self):
         return elbo
 
+    def likelihood(self, theta=None, phi=None):
+        if theta is None:
+            theta = self.theta
+        if phi is None:
+            phi = self.phi
+        likelihood = theta.dot(phi).dot(theta.T)
+        return likelihood
+
     def perplexity(self):
         pij = self.likelihood(*self._reduce_latent())
 
         p_ij = self.data_A * pij + self.data_B
         pp = np.log(pij).sum()
         pp = - pp / self._len['nnz']
+
+        # huh
+        self._K = pij.shape[0]
+        self._pp = pp
+
         return pp
 
     def _reduce_latent(self):
@@ -149,6 +167,7 @@ class immsb_scvb(SVB):
 
     def _reduce_one(self, i, j):
         xij = self._xij
+
         self.pik = self.N_theta_left[i] + self.hyper_theta
         self.pjk = self.N_theta_right[j] + self.hyper_theta
         pxk = self.N_phi[xij] + self.hyper_phi[xij]
@@ -171,37 +190,45 @@ class immsb_scvb(SVB):
         if self._id_burn < self.burnin-1:
             return
         self._update_global_gradient(i, j, qij, xij)
+        #self.samples = []
 
     def _update_local_gradient(self, i, j, qij):
         _len = self._len
 
-        #self.N_theta_left[i] = (1 - self.gstep_theta)*self.N_theta_left[i] + (self.gstep_theta* _len['dims'][i] * qij.sum(1)).astype(int)
-        #self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta* _len['dims'][j] * qij.sum(0)).astype(int)
-
-        pik = self.pik / (len(2*_len['dims']) + self.hyper_theta_sum)
-        pjk = self.pjk / (len(2*_len['dims']) + self.hyper_theta_sum)
-        self.N_theta_left[i] = (1 - self.gstep_theta)*self.N_theta_left[i] + (self.gstep_theta* _len['dims'][i] * pik).astype(int)
-        self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta* _len['dims'][j] * pjk).astype(int)
+        # Sum ?
+        #self.N_theta_left[i]  = (1 - self.gstep_theta)*self.N_theta_left[i]  + (self.gstep_theta * _len['dims'][i] * qij.sum(1))
+        #self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * _len['dims'][j] * qij.sum(0))
+        # or Mean ?
+        #self.N_theta_left[i]  = (1 - self.gstep_theta)*self.N_theta_left[i]  + (self.gstep_theta * _len['dims'][i] * qij.mean(1))
+        #self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * _len['dims'][j] * qij.mean(0))
+        # or Right  ?
+        pik = self.pik / (2*len(_len['dims']) + self.hyper_theta_sum)
+        pjk = self.pjk / (2*len(_len['dims']) + self.hyper_theta_sum)
+        self.N_theta_left[i]  = (1 - self.gstep_theta)*self.N_theta_left[i]  + (self.gstep_theta * _len['dims'][i] * pik)
+        self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * _len['dims'][j] * pjk)
 
     def _update_global_gradient(self, i, j, qij, xij):
         _len = self._len
+        #gij = _len['nnz'] # wrong pp ?
+        gij = {0:_len['zeros'], 1:_len['ones']}[xij]
 
         if self.gradient_update_freq <= 1:
-            self.N_phi[xij] = (1 - self.gstep_phi)*self.N_phi[xij] + self.gstep_phi* (_len['nnz'] * qij).astype(int)
+            self.N_phi[xij] = (1 - self.gstep_phi)*self.N_phi[xij] + self.gstep_phi* (gij * qij)
             self._N_phi_sum = self.N_phi.sum(0)
+            self.samples = []
         else:
-            self._N_phi[xij] += (_len['nnz'] * qij).astype(int)
+            self._N_phi[xij] += (gij * qij)
             if self._id_token % self.gradient_update_freq == 0:
                 self._purge_minibatch()
-            self._timestep += 1
-            self._update_gstep_theta()
-            self._update_gstep_phi()
+
 
     def _purge_minibatch(self):
         ''' Update the global gradient then purge containers'''
         if not self._is_container_empty():
-            self.N_phi = (1 - self.gstep_phi)*self.N_phi + self.gstep_phi*self._N_phi / self.gradient_update_freq
+            self.N_phi = (1 - self.gstep_phi)*self.N_phi + self.gstep_phi*self._N_phi / len(self.samples)
             self._N_phi_sum = self.N_phi.sum(0)
-            self._reset_containers()
-        else:
-            pass
+
+        self._timestep += 1
+        self._update_gstep_theta()
+        self._update_gstep_phi()
+        self._reset_containers()

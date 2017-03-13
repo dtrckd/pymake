@@ -51,19 +51,6 @@
 * Spark/Hadoop interface... (hdfs = htable)
 * MPI / pymake integration ?
 
-# Measure Centrality :
-* proba que tout les lien à 0 soit liée ?  -- comparé à aux leader (ceux qui ont un haut degré)
-
-* Mesure clulstering: 
-    * contingency table / cluster%precision rappel F mesure ?
-    * NMI (Mutuel Information Normalization)
-
-### community
-* equivalence struturelle (economie / partenariat)
-* algo formelle (une communauté c'est une clique, k-clique / percolation)
-* ensemble de neud fortement connecté, par rapport au reste du réseau.
-
--- voir **impossibilité theorem**
 
 ## Expe missing
 hyperprior testing

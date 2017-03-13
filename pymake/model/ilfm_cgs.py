@@ -16,7 +16,7 @@ class ilfm_cgs(IBPGibbsSampling):
         alpha_hyper_parameter = expe.hyper
         assortativity = expe.get('homo')
 
-        data = frontend.data
+        data = frontend.data_ma #####
         data_t = frontend.data_t
 
         #if '_cgs' in expe.model:
