@@ -112,13 +112,17 @@ class GramExp(object):
         [conf.update({k:v}) for k,v in self._exp_default.items() if k not in conf]
         conf = deepcopy(conf)
 
+        # in expt_setup...
+        self._default_spec = conf.get('spec', {})
+
+        # @logger One logger by Expe !
+        level = self.setup_logger(fmt='%(message)s', level=conf.get('verbose'))
+        conf.update(verbose=level)
+
         # Make main data structure
         self.exp_tensor = ExpTensor.from_expe(conf)
         self.checkExp(self.exp_tensor)
         self.exp_setup()
-
-        # @logger One logger by Expe !
-        self.setup_logger(fmt='%(message)s', level=conf.get('verbose'))
 
     def _preprocess_exp(self):
         # @improvment: do filter from spec
@@ -285,7 +289,8 @@ class GramExp(object):
         """
         expe = defaultdict(lambda: None, expe)
         filen = None
-        base = expe['data_type']
+        lgg.debug('heere, get data_type from loader corpus info !')
+        base = expe.get('data_type', 'networks')
         hook = expe.get('refdir', '')
         c = expe.get('corpus')
         if not c:
@@ -365,9 +370,9 @@ class GramExp(object):
         ----------------
         Communicate with the data :
         ----------------
-         |   zymake -l [atom]  : (default) show available spec
-         |   zymake show SPEC  : show one spec details
-         |   zymake cmd SPEC [fun][*args]   : generate command-line
+         |   zymake -l [expe(default)|atom|script] : (default) show available spec
+         |   zymake show SPEC : show one spec details
+         |   zymake cmd SPEC [fun][*args] : generate command-line
          |   zymake exec SPEC [fun][*args][--script ...] : execute tasks (default is fit)
          |   zymake burn SPEC [fun][*args][--script ...] : parallelize tasks
          |   zymake path SPEC Filetype(pk|json|inf) [status]
@@ -378,18 +383,24 @@ class GramExp(object):
 
         _spec = mloader.SpecLoader.default_spec()
         ontology = dict(
-            _do    = ['cmd', 'show', 'path', 'burn', 'list', 'exec'],
+            _do    = ['cmd', 'show', 'path', 'burn', 'exec'],
             spec   = _spec.keys(),
             _ftype = ['json', 'pk', 'inf']
         )
         ont_values = sum([w for k, w in ontology.items() if k != 'spec'] , [])
 
+        # Init _do value
+        if not request.get('_do'):
+            request['_do'] = []
+            if not request.get('do_list'):
+                request['do_list'] = []
+
+        # Hack for script/exec
         if request.get('do_list'):
             if 'script' in request:
-                pass
-            else:
-                request['_do'] = ['list']
-        do = request.get('_do') or ['list']
+                request['_do'] = ['exec']
+
+        do = request['_do']
         checksum = len(do)
         # No more Complex !
         for i, v in enumerate(do):
@@ -507,10 +518,10 @@ class GramExp(object):
                     # Assume every options of expe has a flags
                     continue
                 if a.dest in e and a.dest not in args_seen:
-                    if isinstance(a, (gram.except_append,)):
-                        # Assume except_append are removed from expe,
-                        # special traitment
-                        continue
+                    #if isinstance(a, (gram.unaggregate_append,)):
+                    #    # Assume except_append are removed from expe,
+                    #    # special traitment
+                    #    continue
                     if a.nargs == 0:
                         # standalone flags
                         store = e[a.dest]
@@ -560,6 +571,10 @@ class GramExp(object):
 
     def atomtable(self, _type='short'):
         return self._spec._table_atoms(_type=_type)
+
+    def scripttable(self):
+        t = mloader.ScriptsLoader.table()
+        return t
 
     def getSpec(self):
         return self._spec
@@ -619,7 +634,7 @@ class GramExp(object):
         # who results in logging things multiple times
         logger.propagate = False
 
-        return logger
+        return level
 
     @staticmethod
     def sign_nargs(fun):
@@ -638,6 +653,7 @@ class GramExp(object):
 
     @staticmethod
     def functable(obj):
+        ''' show method/doc associated to one class (in /scripts) '''
         lines = []
         for m in  GramExp.tb_expeformat(obj):
             name = m[0]
@@ -718,7 +734,13 @@ class GramExp(object):
         script_args = script[1:]
         Scripts = mloader.ScriptsLoader.get_packages()
         if not script_name in Scripts:
-            raise ValueError('error: Unknown script: %s' % (script_name))
+            method_by_cls = mloader.ScriptsLoader.lookup_methods()
+            if script_name in sum(method_by_cls.values(), []):
+                # check if it is method reference
+                script_args = [script_name] + script_args
+                script_name = next(k.lower() for (k,v) in method_by_cls.items() if script_name in v)
+            else:
+                raise ValueError('error: Unknown script: %s' % (script_name))
 
         if script_args:
             self.update(_do=script_args)

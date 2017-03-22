@@ -387,7 +387,8 @@ class ZSampler(object):
 
         # Recontruct Words-Topic matrix
         _phi = self.likelihood.word_topic_counts + np.tile(delta, (K, K, 1)).T
-        self._phi = (_phi / np.linalg.norm(_phi, axis=0))[1]
+        #self._phi = (_phi / np.linalg.norm(_phi, axis=0))[1]
+        self._phi = (_phi / _phi.sum(0))[1]
 
         return self._theta, self._phi
 
@@ -584,9 +585,9 @@ class GibbsRun(GibbsSampler):
         return K
 
     def generate(self, N=None, K=None, hyperparams=None, mode='predictive', symmetric=True, **kwargs):
-        self.update_hyper(hyperparams)
-        alpha, gmma, delta = self.get_hyper()
         if mode == 'generative' :
+            self.update_hyper(hyperparams)
+            alpha, gmma, delta = self.get_hyper()
             N = int(N)
             if type(self.s) is NP_CGS:
                 # @todo: compute the variance for random simulation

@@ -30,6 +30,9 @@ class Cycle(object):
     def reset(self):
         return self.it.reset()
 
+    def copy(self):
+        return self.__class__(self.seq)
+
 def ask_sure_exit(question):
 
     while True:

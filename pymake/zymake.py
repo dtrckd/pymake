@@ -18,6 +18,10 @@ if __name__ == '__main__':
     zymake = GramExp.zymake()
     zyvar = zymake._conf
 
+    if zyvar.get('simulate'):
+        # same as show !
+        zymake.simulate()
+
     ### Makes OUT Files
     lines = None
     if zyvar['_do'] == 'cmd':
@@ -31,30 +35,31 @@ if __name__ == '__main__':
     elif zyvar['_do'] == 'burn':
         # @todo; parallelize Pymake()
         raise NotImplementedError('What parallel strategy ?')
-    elif zyvar['_do'] == 'list':
+    else:
+
+        if not 'do_list' in zyvar:
+            raise ValueError('Unknown Options : %s' % zyvar)
+
         if 'atom' in zyvar.get('do_list', []):
             print (zymake.atomtable())
-        elif 'atom_topos' in zyvar.get('do_list',[]) :
+        elif 'atom_topos' in zyvar.get('do_list',[]):
             print (zymake.atomtable(_type='topos'))
-        elif not zyvar.get('do_list',[]):
+        elif 'script' in zyvar.get('do_list', []):
+            print(zymake.scripttable())
+        elif 'expe' in  zyvar.get('do_list',[]):
             print (zymake.spectable())
         else:
             print(zymake.help_short())
-            print ('list what %s ?' % zyvar.get('do_list'))
+            if zyvar['do_list']:
+                print ('Unknow options %s ?' % zyvar.get('do_list'))
         exit()
-    else:
-        raise NotImplementedError('zymake options unknow : %s' % zyvar)
-
-    if zyvar.get('simulate'):
-        # same as show !
-        zymake.simulate()
 
     if lines is None:
         # catch signal ?
         exit()
 
     if 'script' in zyvar:
-        script = ' '.join(zyvar['script'])
+        script = './zymake.py exec'
         lines = [' '.join((script, l)) for l in lines]
 
     zymake.simulate(halt=False, file=sys.stderr)

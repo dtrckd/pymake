@@ -38,6 +38,7 @@ class PackageWalker(object):
         self.module_name = module_name
         [setattr(self, k, kwargs.get(k, v)) for k,v in self._default_attr.items()]
 
+        self._cls_browse = {}
         self.packages = self._get_packages()
 
     def __repr__(self):
@@ -85,6 +86,7 @@ class PackageWalker(object):
 
     def submodule_hook_by_attr(self, submodule, prefix, name=None):
         _packages = pyclbr.readmodule(submodule.__name__)
+        self._cls_browse.update(_packages)
         packages = {}
         for cls_name, cls  in _packages.items():
             obj = getattr(submodule, cls_name)
@@ -102,6 +104,7 @@ class PackageWalker(object):
 
     def submodule_hook_by_class(self, submodule, prefix, name=None):
         _packages = pyclbr.readmodule(submodule.__name__)
+        self._cls_browse.update(_packages)
         packages = {}
         for cls_name, cls  in _packages.items():
             obj = getattr(submodule, cls_name)
@@ -207,4 +210,27 @@ class ScriptsLoader(PackageWalker):
             kwargs['class_filter'] = ExpeFormat
         return cls(module_name, **kwargs).packages
 
+    @classmethod
+    def lookup_methods(cls):
+        s = cls(module_name=get_global_settings()['default_scripts'], class_filter=ExpeFormat)
+        t = dict()
+        for k, v in s._cls_browse.items():
+            methods = list(v.methods.keys())
+            for m in methods.copy():
+                _m = getattr(s.packages[k.lower()], m)
+                if not inspect.isfunction(_m) and m != '__call__':
+                    methods.remove(m)
+                elif '__call__' == m:
+                    methods.remove('__call__')
+                    methods.append(v.name.lower())
+                elif m.startswith('__'):
+                    methods.remove(m)
+            t[v.name] = methods
+        return t
+
+    @classmethod
+    def table(cls):
+        from pymake.plot import tabulate
+        t = cls.lookup_methods()
+        return tabulate(t, headers='keys')
 

@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import traceback
 import numpy as np
 from collections import OrderedDict, defaultdict
-from pymake.plot import colored, display, tabulate
+from pymake.plot import colored, display, tabulate, _linestyle
 from decorator import decorator
 from functools import wraps
 from pymake import basestring
@@ -254,7 +254,7 @@ class ExpDesign(dict, BaseObject):
             d = dict(l)
             for k, v in d.items():
                 if isinstance(v, basestring) and v in mapname:
-                    d[k] = mapname[v].replace(' ', '').lower()
+                    d[k] = mapname[v]
             return d
         else :
             return mapname.get(l, l)
@@ -335,8 +335,9 @@ class ExpeFormat(object):
                         for c in self.gramexp.get(group, []):
                             figs[c] = ExpSpace()
                             figs[c].fig = plt.figure()
-                        self.gramexp.figs = figs
+                            figs[c].linestyle = _linestyle.copy()
 
+                        self.gramexp.figs = figs
                     kernel = fun(*args, **kwargs)
 
                     # Set title and filename

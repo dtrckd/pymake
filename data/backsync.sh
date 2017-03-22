@@ -1,15 +1,15 @@
 #!/bin/bash
 
-#SSH='adulac@tiger'
-#IN="/home/ama/adulac/workInProgress/networkofgraphs/process/pymake/data/"
+SSH='adulac@tiger'
+IN="/home/ama/adulac/workInProgress/networkofgraphs/process/pymake/data/"
 
-SSH='dulac@pitmanyor'
-IN="/home/dulac/Desktop/workInProgress/networkofgraphs/process/pymake/data/"
+#SSH='dulac@pitmanyor'
+#IN="/home/dulac/Desktop/workInProgress/networkofgraphs/process/pymake/data/"
 
 OUT="./"
 T="networks"
 
-Exclude="debug111111"
+#Exclude="debug111111"
 
 SIMUL="-n"
 OPTS="--update"
@@ -18,7 +18,7 @@ if [ "$1" == "-f" ]; then
     SIMUL=""; fi
 
 #rsync $SIMUL  -av -u --modify-window=2 --stats -m $OPTS \
-rsync $SIMUL $OPTS -vah --stats -m --exclude $Exclude \
+rsync $SIMUL $OPTS -vah --stats -m --exclude "$Exclude" \
     -e ssh  ${SSH}:${IN}/$T/ ${OUT}/$T
 
 echo

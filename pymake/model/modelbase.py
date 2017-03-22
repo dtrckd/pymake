@@ -583,16 +583,31 @@ class SVB(ModelBase):
         measures = [pp, pp_t, k]
         return measures
 
+    def _update_chunk_nnz(self, groups):
+        _nnz = []
+        frontend = self.fr
+        dama = self.fr.data_ma
+        for g in groups:
+            if frontend.is_symmetric():
+                count = 2* len(g)
+                #count =  len(g)
+            else:
+                count = len(g)
+            _nnz.append(count)
+
+        self._nnz_vector = _nnz
+
     def fit(self):
         ''' chunk is the number of row to threat in a minibach '''
 
         data_ma = self.fr.data_ma
         _abc = self.data_iter(data_ma)
+        chunk_groups = np.array_split(_abc, self.chunk_len)
+        self._update_chunk_nnz(chunk_groups)
         time_it = 0
-        for _id_mnb, minibatch in enumerate(np.array_split(_abc, self.chunk_len)):
-        #for _id, minibatch in enumerate(np.array_split(data_ma, chunk)):
+        for _id_mnb, minibatch in enumerate(chunk_groups):
 
-
+            self._nnz = self._nnz_vector[_id_mnb]
             # <try with multiple iterations here>
             begin = datetime.now()
             self.sample(minibatch)
@@ -604,6 +619,7 @@ class SVB(ModelBase):
             if self.expe.get('write'):
                 measures = [_id_mnb, time_it] + self.measures()
                 self.write_some(measures)
+
         self.close()
 
     def sample(self, minibatch):
@@ -616,8 +632,9 @@ class SVB(ModelBase):
                 self.maximization(iter)
                 self.expectation(iter)
 
-            self.update_elbo()
-            lgg.debug('it %d,  ELBO: %s, elbo diff: %s' % (_id_burn, self.elbo, self.elbo_diff))
+            if self._id_burn != self.burnin-1 and self.expe.verbose < 20:
+                self.update_elbo()
+                lgg.debug('it %d,  ELBO: %s, elbo diff: %s' % (_id_burn, self.elbo, self.elbo_diff))
 
         self._purge_minibatch()
 

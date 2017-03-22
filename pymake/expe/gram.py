@@ -206,7 +206,7 @@ _Gram = [
         nargs='*', action=partial(exp_append, _t=float),
         help='Third hyperparameter.'),
     '--chunk', dict(
-        nargs='*', action=partial(exp_append, _t=int),
+        nargs='*', action=partial(exp_append, _t=float),
         help='Chunk size for online learning.'),
     '--burnin', dict(
         nargs='*', action=partial(exp_append, _t=int),
@@ -220,6 +220,13 @@ _Gram = [
     #  * Special meaning arguments
     #
     #
+    #
+    '-g', '--generative',dict(
+        dest='_mode', action='store_const', const='generative'),
+    '-p', '--predictive', dict(
+        dest='_mode', action='store_const', const='predictive'),
+    #\#
+
 
     '_do', dict(
         nargs='*',
@@ -233,6 +240,6 @@ _Gram = [
         help='Rules to filter the Exp Request.'),
 
     '-l', '--list', dict(
-        dest='do_list', const=True,  nargs='?', action=unaggregate_append,
+        dest='do_list', const=['expe'],  nargs='?', action=unaggregate_append,
         help='Request to print informations.'),
     ]

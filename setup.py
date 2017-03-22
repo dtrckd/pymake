@@ -34,6 +34,7 @@ setuptools.setup(
     install_requires=install_requires,
     entry_points = {
         'console_scripts': ['pymake=pymake.zymake'],
-    }
-    #include_package_data=True,
+    },
+    package_data = {'pymake' : ['pymake.cfg']},
+    include_package_data=True,
 )
