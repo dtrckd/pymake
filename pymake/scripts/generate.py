@@ -34,6 +34,8 @@ import matplotlib.pyplot as plt
 from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2, random_degree, colored, draw_graph_circular, draw_graph_spectral, draw_graph_spring, tabulate, _markers
 from pymake.scripts.private import out
 
+import scipy as sp
+from sklearn.metrics import roc_curve, auc, precision_recall_curve
 
 class GenNetwork(ExpeFormat):
 
@@ -139,7 +141,7 @@ class GenNetwork(ExpeFormat):
             tables = {}
             for m in models:
                 if _type == 'local':
-                    table_shape = (len(corpuses), len(Meas), expe.K**2)
+                    table_shape = (len(corpuses), len(Meas),2* expe.K**2)
                     table = ma.array(np.empty(table_shape), mask=True)
                 elif _type == 'global':
                     table = np.empty((len(corpuses), len(Meas), len(Y)))
@@ -242,14 +244,16 @@ class GenNetwork(ExpeFormat):
 
             fig = plt.figure()
             for i, c in enumerate(k_perm):
-                if i > expe.limit_class:
-                    break
                 if len(c) == 2:
                     # Stochastic Equivalence (outer class)
                     k, l = c
                 else:
                     # Comunnities (inner class)
                     k = l = c.pop()
+                #if i > expe.limit_class:
+                #   break
+                if k != l:
+                    continue
 
                 degree_c = []
                 YY = []
@@ -378,8 +382,6 @@ class GenNetwork(ExpeFormat):
                 k_perm = itertools.product(range(theta.shape[1]) , repeat=2)
 
             for it_k, c in enumerate(k_perm):
-                if it_k > expe.limit_class:
-                    break
                 if len(c) == 2:
                     # Stochastic Equivalence (extra class bind
                     k, l = c
@@ -387,6 +389,10 @@ class GenNetwork(ExpeFormat):
                 else:
                     # Comunnities (intra class bind)
                     k = l = c.pop()
+                #if i > expe.limit_class:
+                #   break
+                if k != l:
+                    continue
 
                 degree_c = []
                 YY = []
@@ -437,24 +443,25 @@ class GenNetwork(ExpeFormat):
     @ExpeFormat.plot
     def draw(self):
         expe = self.expe
-        if expe._mode == 'predictive':
-            model = self.frontend
-            y = model.data
-            # move this in draw data
-        elif expe._mode == 'generative':
-            model = self.model
-            y = model.generate(**expe)
+        #if expe._mode == 'predictive':
+        #    model = self.frontend
+        #    y = model.data
+        #    # move this in draw data
+        #elif expe._mode == 'generative':
+        #    model = self.model
+        #    y = model.generate(**expe)
+        model = self.model
+        y = model.generate(**expe)
 
-        clustering = 'modularity'
-        print('@heeere, push commmunities annalysis outside static method of frontendnetwork')
-        comm = model.communities_analysis(data=y, clustering=clustering)
+        #clustering = 'modularity'
+        #print('@heeere, push commmunities annalysis outside static method of frontendnetwork')
+        #comm = model.communities_analysis(y, clustering=clustering)
+        #clusters = comm['clusters']
+        #draw_graph_spring(y, clusters)
+        #draw_graph_spectral(y, clusters)
+        #draw_graph_circular(y, clusters)
 
-        clusters = comm['clusters']
-
-        draw_graph_spring(y, clusters)
-        draw_graph_spectral(y, clusters)
-        draw_graph_circular(y, clusters)
-
+        adjshow(y, title=expe.model)
         #adjblocks(y, clusters=comm['clusters'], title='Blockmodels of Adjacency matrix')
         #adjshow(reorder_mat(y, comm['clusters']), 'test reordering')
         #draw_blocks(comm)
@@ -499,7 +506,6 @@ class GenNetwork(ExpeFormat):
 
         if _type == 'pearson':
             lgg.info('using `%s\' similarity' % _sim)
-            import scipy as sp
             # No variance for link expecation !!!
             Y = [Y[0]]
 
@@ -614,10 +620,10 @@ class GenNetwork(ExpeFormat):
             for _model, table in self.gramexp.tables.items():
                 ax = self.gramexp.figs[_model].fig.gca()
 
-                bp = ax.boxplot([table['natural']['links']    ], widths=0.5,  positions = [1])
-                bp = ax.boxplot([table['natural']['non-links']], widths=0.5,  positions = [2])
-                bp = ax.boxplot([table['latent']['links']     ], widths=0.5,  positions = [4])
-                bp = ax.boxplot([table['latent']['non-links'] ], widths=0.5,  positions = [5])
+                bp = ax.boxplot([table['natural']['links']    ], widths=0.5,  positions = [1], whis='range')
+                bp = ax.boxplot([table['natural']['non-links']], widths=0.5,  positions = [2], whis='range')
+                bp = ax.boxplot([table['latent']['links']     ], widths=0.5,  positions = [4], whis='range')
+                bp = ax.boxplot([table['latent']['non-links'] ], widths=0.5,  positions = [5], whis='range')
 
                 ax.set_ylabel('Similarity')
                 ax.set_xticks([1.5,4.5])
@@ -631,7 +637,7 @@ class GenNetwork(ExpeFormat):
                 weights = ['light', 'ultralight']
                 for tick  in range(nbox):
                     ax.text(pos[tick], top+top*0.015 , upperLabels[tick],
-                             horizontalalignment='center', size='x-small', weight=weights[tick%2])
+                             horizontalalignment='center', weight=weights[tick%2])
 
                 print(_model)
                 t1 = sp.stats.ttest_ind(table['natural']['links'], table['natural']['non-links'])
@@ -651,7 +657,8 @@ class GenNetwork(ExpeFormat):
         if not hasattr(expe, 'testset_ratio'):
             setattr(expe, 'testset_ratio', 20)
 
-        ax = self.gramexp.figs[expe.corpus].fig.gca()
+        frame = self.gramexp.figs[expe.corpus]
+        ax = frame.fig.gca()
 
         if _type == 'testset':
             y_true, probas = model.mask_probas(data)
@@ -661,6 +668,11 @@ class GenNetwork(ExpeFormat):
                 y_true = y_true[:n_d]
                 probas = probas[:n_d]
             else:
+                theta, phi = model.get_params()
+                print('theta', theta, theta.shape)
+                print('phi', phi, phi.shape)
+                print(expe.model, expe.corpus)
+                print(y_true.sum(), (y_true==0).sum(), probas)
                 pass
 
         elif _type == 'learnset':
@@ -671,7 +683,7 @@ class GenNetwork(ExpeFormat):
 
         fpr, tpr, thresholds = roc_curve(y_true, probas)
         roc_auc = auc(fpr, tpr)
-        ax.plot(fpr, tpr, label='ROC %s (area = %0.2f)' % (expe.model, roc_auc))
+        ax.plot(fpr, tpr, label='ROC %s (area = %0.2f)' % (_spec.name(expe.model), roc_auc), ls=frame.linestyle.next())
         self.noplot = True
 
         #precision, recall, thresholds = precision_recall_curve( y_true, probas)
@@ -683,7 +695,6 @@ class GenNetwork(ExpeFormat):
                 ax.plot([0, 1], [0, 1], linestyle='--', color='k', label='Luck')
                 ax.legend(loc="lower right", prop={'size':10})
 
-
     def roc_evolution(self, _type='testset', _type2='max', _ratio=20, _type3='errorbar'):
         ''' AUC difference between two models against testset_ratio
             * _type : learnset/testset
@@ -691,7 +702,6 @@ class GenNetwork(ExpeFormat):
             * _ratio : ration of the traning set to predict. If 100 _predictall will be true
 
         '''
-        from sklearn.metrics import roc_curve, auc, precision_recall_curve
         expe = self.expe
         model = self.model
         data = self.frontend.data
@@ -750,7 +760,7 @@ class GenNetwork(ExpeFormat):
             table_std = t
 
             # Measure is comparaison of two AUC.
-            id_mmsb = self.gramexp.exp_tensor['model'].index('immsb_cgs') # GE.fuzz_index !!!
+            id_mmsb = [i for i, s in enumerate(self.gramexp.exp_tensor['model']) if s.endswith('mmsb_cgs')][0]
             id_ibp = 1 if id_mmsb == 0 else 0
             table_mean = table_mean[:,:, id_mmsb] - table_mean[:,:, id_ibp]
             table_std = table_std[:,:, id_mmsb] + table_std[:,:, id_ibp]
@@ -771,7 +781,7 @@ class GenNetwork(ExpeFormat):
                     fig.gca().set_xticklabels(Meas)
 
             plt.errorbar(Meas,[0]*len(Meas), linestyle='--', color='k')
-            plt.legend(loc='upper left',prop={'size':7})
+            plt.legend(loc='lower left',prop={'size':7})
 
             # Table formatting
             #table = table_mean + b' $\pm$ ' + table_std

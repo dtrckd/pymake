@@ -18,28 +18,33 @@ class immsb_scvb(SVB):
     def _init_params(self, frontend):
         ### The time Limitations are @heere
         # frontend integration ?
+        self.__timestep = 0
         self._timestep = 0
         _len = {}
-        _len['nnz'] = frontend.ma_nnz()
-        _len['nfeat'] = frontend.get_nfeat()
         _len['K'] = self.expe.get('K')
         _len['N'] = frontend.getN()
-        _len['dims'] = frontend.ma_dims()
+        _len['nfeat'] = frontend.get_nfeat()
         data_ma = frontend.data_ma
-        _len['ones'] = frontend.data_ma[data_ma == 1].sum()
-        _len['zeros'] = frontend.data_ma[data_ma == 0].sum()
+        _len['nnz'] = frontend.ma_nnz()
+        _len['dims'] = frontend.ma_dims()
+        _len['ones'] = (data_ma == 1).sum()
+        _len['zeros'] = (data_ma == 0).sum()
         self._len = _len
 
         # Stream Parameters
         chunk = self.expe.get('chunk', 10)
         self.burnin = self.expe.get('burnin', 1)
+
         self.chunk_size = chunk * self._len['N']
         self.chunk_len = self._len['nnz']/self.chunk_size
+
         if self.chunk_len < 1:
             self.chunk_size = self._len['nnz']
             self.chunk_len = 1
         self.gradient_update_freq = self.chunk_size / 10
+        self.gradient_update_freq = -1
 
+        self._time_delta = 1
         self._update_gstep_theta()
         self._update_gstep_phi()
 
@@ -60,6 +65,7 @@ class immsb_scvb(SVB):
         self.data_B = np.ones(data_ma.shape) - data_ma
 
         self.elbo = self.perplexity()
+        print('__init__ ELBO %f' % self.elbo)
 
     def _random_ss_init(self, frontend):
         ''' Sufficient Statistics Initialization '''
@@ -71,12 +77,15 @@ class immsb_scvb(SVB):
         ones = self._len['ones']
         nnz = self._len['nnz']
 
-        N_theta_left = (dims[:, None] * np.random.dirichlet(np.ones(K)/2, N))
-        N_theta_right = (dims[:, None] * np.random.dirichlet(np.ones(K)/2, N))
+        N_theta_left = (dims[:, None] * np.random.dirichlet(np.ones(K), N))
+        N_theta_right = (dims[:, None] * np.random.dirichlet(np.ones(K), N))
 
-        N_phi = np.empty((nfeat, K,K))
-        N_phi[0] = zeros * np.random.dirichlet(np.ones(K**2)).reshape(K,K)
-        N_phi[1] = ones * np.random.dirichlet(np.ones(K**2)).reshape(K,K)
+        #N_phi = np.random.dirichlet([zeros, ones], K**2).T.reshape(2,K,K)
+        #N_phi = nnz / (K**2) *  np.random.dirichlet([1, 1], K**2).T.reshape(2,K,K)
+
+        N_phi = np.zeros((2,K,K))
+        N_phi[0] = np.random.dirichlet([0.5]*K**2).reshape(K,K) * zeros
+        N_phi[1] = np.random.dirichlet([0.5]*K**2).reshape(K,K) * ones
 
         self.N_phi = N_phi
         self.N_theta_left = N_theta_left
@@ -103,14 +112,14 @@ class immsb_scvb(SVB):
     def update_hyper(self, hyper):
         pass
 
-    def _update_gstep_phi(self, kappa=0.75, tau=2**10):
-        #tau = self._len['K'] * np.log2(self._len['N'])
-        self.gstep_phi =  (tau + self._timestep)**-kappa
-
-    def _update_gstep_theta(self, kappa=0.75, tau=2**1):
+    def _update_gstep_theta(self, kappa=0.55, tau=2**2):
         #tau = self._len['K'] * np.log2(self._len['N'])
         # Why when tau >2 objective decrease ???
-        self.gstep_theta =  (tau + self._timestep)**-kappa
+        self.gstep_theta = 1 / (tau + self._timestep)**kappa
+
+    def _update_gstep_phi(self, kappa=0.55, tau=2**2):
+        #tau = self._len['K'] * np.log2(self._len['N'])
+        self.gstep_phi =  1 / (tau + self._timestep)**kappa
 
     def data_iter(self, batch, randomize=True):
         data_ma = batch
@@ -161,7 +170,8 @@ class immsb_scvb(SVB):
         theta = (theta.T / theta.sum(axis=1)).T
 
         phi = self.N_phi + np.tile(self.hyper_phi, (self.N_phi.shape[1], self.N_phi.shape[2], 1)).T
-        phi = (phi / np.linalg.norm(phi, axis=0))[1]
+        #phi = (phi / np.linalg.norm(phi, axis=0))[1]
+        phi = (phi / phi.sum(0))[1]
 
         return theta, phi
 
@@ -171,7 +181,12 @@ class immsb_scvb(SVB):
         self.pik = self.N_theta_left[i] + self.hyper_theta
         self.pjk = self.N_theta_right[j] + self.hyper_theta
         pxk = self.N_phi[xij] + self.hyper_phi[xij]
+        ##
+        self.pxk = lognormalize(np.log(pxk) - np.log(self._N_phi_sum + self.hyper_phi_sum))
+        ##\#
         outer_kk = np.log(np.outer(self.pik, self.pjk)) + np.log(pxk) - np.log(self._N_phi_sum + self.hyper_phi_sum)
+        if self.fr.is_symmetric():
+            self.fr.symmetrize(outer_kk)
         return lognormalize(outer_kk)
 
     def maximization(self, iter):
@@ -179,6 +194,7 @@ class immsb_scvb(SVB):
         i,j = iter
         variational = self._reduce_one(i,j)
         self.samples.append(variational)
+        self._timestep += self._time_delta
 
     def expectation(self, iter):
         ''' Follow the White Rabbit '''
@@ -192,25 +208,30 @@ class immsb_scvb(SVB):
         self._update_global_gradient(i, j, qij, xij)
         #self.samples = []
 
+        #self.__timestep += 1
+        #self._timestep = np.log(self.__timestep)
+        self._timestep += 1
+
+
     def _update_local_gradient(self, i, j, qij):
         _len = self._len
 
         # Sum ?
-        #self.N_theta_left[i]  = (1 - self.gstep_theta)*self.N_theta_left[i]  + (self.gstep_theta * _len['dims'][i] * qij.sum(1))
-        #self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * _len['dims'][j] * qij.sum(0))
+        self.N_theta_left[i]  = (1 - self.gstep_theta)*self.N_theta_left[i]  + (self.gstep_theta * _len['dims'][i] * qij.sum(1))
+        self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * _len['dims'][j] * qij.sum(0))
         # or Mean ?
         #self.N_theta_left[i]  = (1 - self.gstep_theta)*self.N_theta_left[i]  + (self.gstep_theta * _len['dims'][i] * qij.mean(1))
         #self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * _len['dims'][j] * qij.mean(0))
         # or Right  ?
-        pik = self.pik / (2*len(_len['dims']) + self.hyper_theta_sum)
-        pjk = self.pjk / (2*len(_len['dims']) + self.hyper_theta_sum)
-        self.N_theta_left[i]  = (1 - self.gstep_theta)*self.N_theta_left[i]  + (self.gstep_theta * _len['dims'][i] * pik)
-        self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * _len['dims'][j] * pjk)
+        #pik = self.pik / (2*len(_len['dims']) + self.hyper_theta_sum)
+        #pjk = self.pjk / (2*len(_len['dims']) + self.hyper_theta_sum)
+        #self.N_theta_left[i]  = (1 - self.gstep_theta)*self.N_theta_left[i]  + (self.gstep_theta * _len['dims'][i] * pik)
+        #self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * _len['dims'][j] * pjk)
 
     def _update_global_gradient(self, i, j, qij, xij):
-        _len = self._len
-        #gij = _len['nnz'] # wrong pp ?
-        gij = {0:_len['zeros'], 1:_len['ones']}[xij]
+        gij = self._len['nnz'] # wrong pp ?
+        gij = self._nnz
+        #qij = self.pxk
 
         if self.gradient_update_freq <= 1:
             self.N_phi[xij] = (1 - self.gstep_phi)*self.N_phi[xij] + self.gstep_phi* (gij * qij)
@@ -221,14 +242,28 @@ class immsb_scvb(SVB):
             if self._id_token % self.gradient_update_freq == 0:
                 self._purge_minibatch()
 
-
     def _purge_minibatch(self):
-        ''' Update the global gradient then purge containers'''
+        ''' Update the global gradient then purge containers '''
         if not self._is_container_empty():
             self.N_phi = (1 - self.gstep_phi)*self.N_phi + self.gstep_phi*self._N_phi / len(self.samples)
             self._N_phi_sum = self.N_phi.sum(0)
 
-        self._timestep += 1
         self._update_gstep_theta()
         self._update_gstep_phi()
         self._reset_containers()
+
+
+    def generate(self, N=None, K=None, hyperparams=None, mode='predictive', symmetric=True, **kwargs):
+        #self.update_hyper(hyperparams)
+        #alpha, gmma, delta = self.get_hyper()
+
+        # predictive
+        try: theta, phi = self.get_params()
+        except: return self.generate(N, K, hyperparams, 'generative', symmetric)
+        K = theta.shape[1]
+
+        pij = self.likelihood(theta, phi)
+        pij = np.clip(pij, 0, 1)
+        Y = sp.stats.bernoulli.rvs(pij)
+
+        return Y

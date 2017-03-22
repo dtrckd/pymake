@@ -19,7 +19,6 @@ Plot utility :
 from pymake.scripts.private import out
 _spec = GramExp.Spec()
 
-
 class Plot(ExpeFormat):
 
     def __init__(self, *args, **kwargs):
@@ -39,6 +38,7 @@ class Plot(ExpeFormat):
         burnin = 5
         ll_y = np.ma.masked_invalid(np.array(data, dtype='float'))
         ax.plot(ll_y, label=_spec.name(expe.model))
+        ax.legend(loc='upper right',prop={'size':7})
 
 
 if __name__ == '__main__':

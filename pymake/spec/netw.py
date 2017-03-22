@@ -2,6 +2,9 @@
 
 from pymake import ExpSpace, ExpTensor, Corpus, ExpDesign
 
+import matplotlib.pyplot as plt
+plt.rc('font', size=11)  # controls default text sizes
+
 class Netw(ExpDesign):
 
     _name = 'Networks Design'
@@ -15,10 +18,12 @@ class Netw(ExpDesign):
         ('emaileu'  , 'Emaileu') ,
         ('manufacturing'  , 'Manufacturing'),
         ('fb_uc'          , 'UC Irvine' ),
-        ('generator7'     , 'Network 1' ),
-        ('generator12'    , 'Network 2' ),
-        ('generator10'    , 'Network 3' ),
-        ('generator4'     , 'Network 4' ),
+        ('generator7'     , 'Network1' ),
+        ('generator12'    , 'Network2' ),
+        ('generator10'    , 'Network3' ),
+
+        #('generator4'     , 'Network4' ),
+        ('generator4'     , 'Network2' ),
         ('pmk.ilfm_cgs'     , 'ILFM' ),
         ('pmk.immsb_cgs'     , 'IMMSB' ),
     ))
@@ -171,11 +176,11 @@ class Netw(ExpDesign):
         model       = 'immsb_cgs',
         hyper       = 'auto',
         refdir      = 'debug',
-        testset_ratio = 0.2,
+        testset_ratio = 20,
         K           = 4,
         N           = 42,
-        chunk       = 10000,
         iterations  = 3,
+        chunk       = 10,
         homo        = 0, # learn W in IBP
     )
 
@@ -230,7 +235,7 @@ class Netw(ExpDesign):
         ('N'      , ('all',)),
         ('hyper'  , ('auto',)),
         ('homo'   , (0,)),
-        ('hyper_prior', ('1 2 3 4', '10 2 10 2')),
+        ('hyper_prior', ('1 2 3 4', '20 2 10 2')),
         ('repeat'   , (0, 1, 2, 4, 5)),
         ('_bind'    , ['immsb_cgs.auto', 'ilfm_cgs.fix']),
     ))

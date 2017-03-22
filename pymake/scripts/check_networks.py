@@ -39,7 +39,6 @@ class CheckNetwork(ExpeFormat):
         _do           = ['zipf', 'source'],
     )
 
-
     def init_fit_tables(self, _type, Y=[]):
         expe = self.expe
         if not hasattr(self.gramexp, 'tables'):
@@ -75,7 +74,6 @@ class CheckNetwork(ExpeFormat):
         '''
         expe = self.expe
         frontend = FrontendManager.load(expe)
-        data_r = frontend.data
 
         #
         # Get the Class/Cluster and local degree information
@@ -92,33 +90,39 @@ class CheckNetwork(ExpeFormat):
             model = ModelManager.from_expe(expe)
             #clusters = model.get_clusters(K, skip=1)
             #clusters = model.get_communities(K)
-            clusters = Louvain.get_clusters(frontend.data)
+            clusters = Louvain.get_clusters(frontend.to_directed(), resolution=10)
+            if len(np.unique(clusters)) > 20 or True:
+                clusters = Annealing(frontend.data, iterations=200, C_init=5, grow_rate=0).search()
 
-        if clusters is not None:
-            print ('Reordering Adj matrix from `%s\':' % clusters_org)
-            print ('corpus: %s/%s, Clusters size: %s' % (expe.corpus, _spec.name(expe.corpus),  K))
-            data_r = reorder_mat(data_r, clusters)
-        else:
-            print( 'corpus: %s/%s, No Reordering !' % (expe.corpus, _spec.name(expe.corpus)))
-        print()
-
-        if expe.write:
-            out.write_zipf(expe, data_r)
+        if clusters is None:
+            lgg.error('No clusters here...passing')
             return
+        else:
+            block_hist = np.bincount(clusters)
+            K = len(block_hist)
+            lgg.info('%d Clusters from `%s\':' % (K, clusters_org))
+            data_r = reorder_mat(frontend.data, clusters)
 
+        np.fill_diagonal(data_r, 0)
+
+
+        from pymake.util.math import dilate
+        dlt = lambda x : dilate(x) if x.sum()/x.shape[0]**2 < 0.1 else x
         ### Plot Adjacency matrix
-        plt.figure()
-        plt.subplot(1,2,1)
-        adjshow(data_r, title=_spec.name(expe.corpus), fig=False)
+        fig, (ax1, ax2) = plt.subplots(1,2)
+        fig.tight_layout(pad=1.6)
+        adjshow(dlt(data_r), title=_spec.name(expe.corpus), ax=ax1)
         #plt.figtext(.15, .1, homo_text, fontsize=12)
         #plt.suptitle(_spec.name(expe.corpus))
 
         ### Plot Degree
-        plt.subplot(1,2,2)
-        plot_degree_poly(data_r)
+        plot_degree_poly(data_r, ax=ax2)
+
+        if expe.write:
+            out.write_figs(expe, [fig], suffix='dd')
 
     @ExpeFormat.plot
-    def burstiness(self, clusters_org='source'):
+    def burstiness(self, clusters_org='source', _type='local'):
         '''Zipf Analisis
            (global burstiness) + local burstiness + feature burstiness
         '''
@@ -168,7 +172,7 @@ class CheckNetwork(ExpeFormat):
 
         # Local burstiness
 
-        Table,Meas = self.init_fit_tables(_type='local')
+        Table,Meas = self.init_fit_tables(_type=_type)
 
         #
         # Get the Class/Cluster and local degree information
@@ -200,30 +204,34 @@ class CheckNetwork(ExpeFormat):
         #data_r, labels= reorder_mat(data, clusters, labels=True)
 
         # Just inner degree
-        #plt.figure()
-        f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, sharex=True)
+        f = plt.figure()
+        ax = f.gca()
+        #f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, sharex=True)
 
         # assume symmetric
         it_k = 0
         np.fill_diagonal(data, 0)
         for l in np.arange(K):
             for k in np.arange(K):
-                if k > l:
+                if k != l:
                     continue
 
                 ixgrid = np.ix_(clusters == k, clusters == l)
 
                 if k == l:
                     title = 'Inner degree'
-                    #y = data[ixgrid]
                     y = np.zeros(data.shape) # some zeros...
                     y[ixgrid] = data[ixgrid]
-                    ax = ax1
+                    #ax = ax1
                 else:
                     title = 'Outer degree'
                     y = np.zeros(data.shape) # some zeros...
                     y[ixgrid] = data[ixgrid]
-                    ax = ax2
+                    #ax = ax2
+
+                #
+                title = ''
+                #/#
 
                 d, dc = degree_hist(adj_to_degree(y))
                 if len(d) == 0: continue
@@ -314,6 +322,7 @@ class CheckNetwork(ExpeFormat):
         except AttributeError:
             corpuses = _spec.name(self.gramexp.getCorpuses())
             Meas = [ 'nodes', 'edges', 'density']
+            Meas += [ 'is_symmetric', 'modularity', 'clustering_coefficient']
             Table = np.empty((len(corpuses), len(Meas)))
             Table = np.column_stack((corpuses, Table))
             self.gramexp.Table = Table

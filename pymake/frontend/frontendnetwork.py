@@ -440,7 +440,7 @@ class frontendNetwork(DataBase):
         return community_distribution, local_attach, clusters
 
     # used by (obsolete) zipf.py
-    def communities_analysis(self):
+    def communities_analysis(self, *args, **kwargs):
         from pymake.util.algo import adj_to_degree # Circular import bug inthetop
         clusters = self.clusters
         if clusters is None:
