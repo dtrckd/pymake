@@ -349,7 +349,7 @@ class ExpeFormat(object):
                     # Save on last call
                     if self._it == self.expe_size -1:
                         if expe.write:
-                            from pymake.scripts.private import out
+                            from pymake.util import out
                             out.write_figs(expe, self.gramexp.figs)
 
                     return kernel

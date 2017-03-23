@@ -16,7 +16,7 @@ Plot utility :
 ----------------
 """
 
-from pymake.scripts.private import out
+from pymake.util import out
 _spec = GramExp.Spec()
 
 class Plot(ExpeFormat):

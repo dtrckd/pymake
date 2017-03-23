@@ -29,7 +29,7 @@ from pymake.util.algo import gofit, Louvain, Annealing
 from pymake.util.math import reorder_mat, sorted_perm
 import matplotlib.pyplot as plt
 from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2, colored, tabulate
-from pymake.scripts.private import out
+from pymake.util import out
 
 class CheckNetwork(ExpeFormat):
 
