@@ -21,6 +21,8 @@ Ongoing development :
 
 ### Install
     make install
+    # try it
+    pymake --help
 
 ### Usage
 Script to create the path and commands for a design of experiments :
@@ -41,7 +43,9 @@ Script to create the path and commands for a design of experiments :
 
 List design of experiments :
 
-    pymake list
+    pymake -l        # Current design
+    pymake -l script # Available scripts
+    pymake -l atom   # Available models
 
 Show one experiments :
 
