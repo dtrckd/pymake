@@ -442,19 +442,18 @@ class GibbsSampler(ModelBase):
         self.K = self.theta.shape[1]
         return self.theta, self.phi
 
-try:
-    import sympy as sym
-    from sympy.functions.combinatorial.numbers import stirling
-except:
-    pass
-from pymake.util.compute_stirling import load_stirling
-
+# lambda fail to find import if not global
+import sympy
+from sympy.functions.combinatorial.numbers import stirling
 class MSampler(object):
 
     try:
-        stirling_mat = load_stirling()
+        from pymake.util.compute_stirling import load_stirling
+        _stirling_mat = load_stirling()
+        stirling_mat = lambda _, x, y : stirling_mat[x, y]
     except Exception as e:
-        lgg.error('stirling.npy file not found, passing...')
+        lgg.error('stirling.npy file not found, using sympy instead (it will be 10 time slower !)')
+        stirling_mat = lambda _, x,y : np.asarray([float(sympy.log(stirling(x, i, kind=1)).evalf()) for i in y])
 
     def __init__(self, zsampler):
         self.zsampler = zsampler
@@ -520,8 +519,7 @@ class MSampler(object):
         alpha_beta_k = np.exp(log_alpha_beta_k)
 
         normalizer = gammaln(alpha_beta_k) - gammaln(alpha_beta_k + njdotk)
-        log_stir = self.stirling_mat[njdotk, possible_ms]
-        #log_stir = sym.log(stirling(njdotk, m, kind=1)).evalf() # so long.
+        log_stir = self.stirling_mat(njdotk, possible_ms)
 
         params = normalizer + log_stir + possible_ms*log_alpha_beta_k
 
