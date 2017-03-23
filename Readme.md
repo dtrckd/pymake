@@ -17,6 +17,9 @@ Ongoing development :
 * Better specification of the formal grammar of design of experimentation.
 * Better documentation.
 
+### Install
+    make install
+
 ### Usage
 Script to create the path and commands for a design of experiments :
 

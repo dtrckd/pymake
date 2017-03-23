@@ -172,13 +172,12 @@ def map_class2cluster_from_confusion(confu, map=None, cpt=0, minmax='max'):
         return map_class2cluster_from_confusion(confu, map, cpt)
 
 def make_path(bdir):
-    fn = os.path.basename(bdir)
     _bdir = os.path.dirname(bdir)
     if not os.path.exists(_bdir) and _bdir:
         os.makedirs(_bdir)
-    if not os.path.exists(fn) and fn:
-        #open(fn, 'a').close()
-        pass # do i need it
+    #fn = os.path.basename(bdir)
+    #if not os.path.exists(fn) and fn:
+    #    open(fn, 'a').close()
     return bdir
 
 
