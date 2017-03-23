@@ -1,1 +1,0 @@
-Mixed Membership Stochastic Blockmodel in stan

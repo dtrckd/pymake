@@ -1,17 +1,21 @@
 #!/usr/bin/env python
 import subprocess
+import matplotlib; matplotlib.use('Agg')
 
 _py = 'python'
 _py = 'python3'
 
-tests = ('fit',
-         'expe_meas',
-         'expe_k',
-         'check_networks homo',
-         'check_networks pvalue',
-         'generate',
-         'zymake'
-        )
+tests = (
+    'zymake',
+    'zymake show',
+    'zymake -l',
+    'zymake -l atom',
+    'fit -m immsb_cgs',
+    'scripts/check_networks pvalue',
+    'scripts/check_networks stats',
+    'scripts/generate homo',
+    'scripts/generate',
+)
 
 for t in tests:
 

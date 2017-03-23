@@ -12,10 +12,8 @@ import scipy as sp
 from scipy.special import digamma
 from numpy.random import dirichlet, gamma, poisson, binomial, beta
 
-from pymake.model import GibbsSampler, MSampler, BetaSampler
-
+from pymake.model.modelbase import GibbsSampler, MSampler, BetaSampler
 from pymake.util.math import lognormalize, categorical, sorted_perm, adj_to_degree, gem
-#from util.algo import *
 
 # Implementation Mixed Membership Sochastic Blockmodel Stochastic
 
@@ -128,7 +126,7 @@ class Likelihood(object):
     # Interface to properly iterate over data
     def data_iter(self, randomize=True):
         if not hasattr(self, '_order'):
-            order = np.arange(len(self.data_dims)**2).reshape(self.data_ma.shape)
+            order = np.arange(self.data_ma.size).reshape(self.data_ma.shape)
             masked = order[self.data_ma.mask]
 
             if self.symmetric:
@@ -389,7 +387,8 @@ class ZSampler(object):
 
         # Recontruct Words-Topic matrix
         _phi = self.likelihood.word_topic_counts + np.tile(delta, (K, K, 1)).T
-        self._phi = (_phi / np.linalg.norm(_phi, axis=0))[1]
+        #self._phi = (_phi / np.linalg.norm(_phi, axis=0))[1]
+        self._phi = (_phi / _phi.sum(0))[1]
 
         return self._theta, self._phi
 
@@ -438,7 +437,7 @@ class ZSamplerParametric(ZSampler):
         if 'alpha' in ('symmetric', 'fix'):
             alpha = np.ones(K)*1/K
         elif 'alpha' in ('asymmetric', 'auto'):
-            alpha = np.asarray([1.0 / (i + np.sqrt(K)) for i in xrange(K)])
+            alpha = np.asarray([1.0 / (i + np.sqrt(K)) for i in range(K)])
             alpha /= alpha.sum()
         else:
             alpha = np.ones(K)*alpha_0
@@ -557,14 +556,15 @@ class CGS(object):
     def sample(self):
         return self.zsampler.sample()
 
-class GibbsRun(GibbsSampler):
 
+class GibbsRun(GibbsSampler):
+    __abstractmethods__ = 'model'
     def __init__(self, sampler,  data_t=None, **kwargs):
         self.burnin = kwargs.get('burnin',  0.05) # Ratio of iteration
         self.thinning = kwargs.get('thinning',  1)
         self.comm = dict() # Empty dict to store communities and blockmodel structure
         self.data_t = data_t
-        self.csv_typo = '# it it_time entropy_train entropy_test K alpha gamma alpha_mean delta_mean alpha_var delta_var'
+        self.csv_typo = '# it it_time likelihood likelihood_t K alpha gamma alpha_mean delta_mean alpha_var delta_var'
         self.fmt = '%d %.4f %.8f %.8f %d %.8f %.8f %.4f %.4f %.4f %.4f'
         #self.fmt = '%s %s %s %s %s %s %s %s %s %s %s'
         GibbsSampler.__init__(self, sampler, **kwargs)
@@ -585,9 +585,9 @@ class GibbsRun(GibbsSampler):
         return K
 
     def generate(self, N=None, K=None, hyperparams=None, mode='predictive', symmetric=True, **kwargs):
-        self.update_hyper(hyperparams)
-        alpha, gmma, delta = self.get_hyper()
         if mode == 'generative' :
+            self.update_hyper(hyperparams)
+            alpha, gmma, delta = self.get_hyper()
             N = int(N)
             if type(self.s) is NP_CGS:
                 # @todo: compute the variance for random simulation
@@ -818,5 +818,4 @@ class GibbsRun(GibbsSampler):
         bm = zip(label, hist)
         self.comm['block_ties'] = bm
         return bm
-
 

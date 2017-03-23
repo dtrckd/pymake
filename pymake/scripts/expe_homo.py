@@ -83,8 +83,8 @@ ptx = make_tensor_expe_index(expe_1, map_parameters)
 
 ## Expe setting
 #ptx = np.index_exp[0, :, 0, 0, 0, 1, 0, :]
-print 'Expe 1:'
-print tabulate([expe_1.keys(), expe_1.values()])
+print ('Expe 1:')
+print (tabulate([expe_1.keys(), expe_1.values()]))
 # Headers
 headers = list(map_parameters['K'])
 h_mask = 'mask all' if '11' in expe_1['debug'] else 'mask sub1'
@@ -98,9 +98,9 @@ table = rez[ptx]
 
 try:
     table = np.column_stack((keys, table))
-except ValueError, e:
+except ValueError as e:
     lgg.warn('ValueError, assumming repeat mean variance reduction: %d repetition' % table.shape[2])
-    print table.shape
+    print(table.shape)
     #table_mean = np.char.array(table.mean(2))
     #table_std = np.char.array(table.std(2))
     table_mean = np.char.array(np.around(table.mean(2), decimals=3)).astype("|S20")
@@ -109,9 +109,9 @@ except ValueError, e:
     table = np.column_stack((keys, table))
 
 tablefmt = 'latex' # 'latex'
-print
-print tabulate(table, headers=headers, tablefmt=tablefmt, floatfmt='.3f')
-print '\t\t--> precision'
+print()
+print (tabulate(table, headers=headers, tablefmt=tablefmt, floatfmt='.3f'))
+print('\t\t--> precision')
 
 
 

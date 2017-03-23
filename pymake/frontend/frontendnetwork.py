@@ -36,6 +36,7 @@ class frontendNetwork(DataBase):
     """
 
     RANDOM_CORPUS = ('clique', 'alternate', 'BA')
+    _selfloop = True
 
     def __init__(self, expe=dict(), load=False):
         self.bdir = 'networks'
@@ -63,7 +64,8 @@ class frontendNetwork(DataBase):
 
         # For Gof smothness
         # error in degree_ check ?
-        np.fill_diagonal(self.data, 1)
+        if self.has_selfloop():
+            np.fill_diagonal(self.data, 1)
 
         if randomize:
             self.shuffle_node()
@@ -144,7 +146,7 @@ class frontendNetwork(DataBase):
             Random training set on 20% on Data / debug5 - debug11 -- Unbalanced
         """
         percent_hole = float(percent_hole)
-        if percent_hole > 1:
+        if percent_hole >= 1:
             percent_hole = percent_hole / 100.0
         elif 0 <= percent_hole < 1:
             pass
@@ -171,6 +173,10 @@ class frontendNetwork(DataBase):
             np.fill_diagonal(data_ma, ma.masked)
 
         return data_ma
+
+    def set_masked(self, percent_hole, diag_off=1):
+        self.data_ma = self.get_masked(percent_hole, diag_off)
+        return self.data_ma
 
     def get_masked_1(self, percent_hole, diag_off=1):
         ''' Construct Mask nased on the proportion of 1/links.
@@ -434,7 +440,7 @@ class frontendNetwork(DataBase):
         return community_distribution, local_attach, clusters
 
     # used by (obsolete) zipf.py
-    def communities_analysis(self):
+    def communities_analysis(self, *args, **kwargs):
         from pymake.util.algo import adj_to_degree # Circular import bug inthetop
         clusters = self.clusters
         if clusters is None:
@@ -581,6 +587,33 @@ class frontendNetwork(DataBase):
             nfeat = 2
         return nfeat
 
+    def get_nnz(self):
+        ''' len of tokens '''
+        size =  sp.special.binom(self.getN(), 2)
+        if not self.is_symmetric():
+            size *= 2
+
+        if self.has_selfloop():
+            size += sekf.getN()
+
+        return size
+
+    def ma_nnz(self):
+        return len(self.data_ma.compressed())
+
+    # Contains the index of nodes with who it interact.
+    # @debug no more true for bipartite networks
+    def ma_dims(self):
+        #data_dims = np.vectorize(len)(self.data)
+        #data_dims = [r.count() for r in self.data_ma]
+        data_dims = []
+        for i in range(self.data_ma.shape[0]):
+            data_dims.append(self.data_ma[i,:].count() + self.data_ma[:,i].count())
+        return np.array(data_dims, dtype=int)
+
+    def has_selfloop(self):
+        return self._selfloop
+
     def get_params(self):
         clusters = self.get_clusters()
         K = max(clusters)+1
@@ -629,6 +662,11 @@ class frontendNetwork(DataBase):
               }
         prop.update(d)
         return prop
+
+
+    def likelihood(self, theta, phi):
+        likelihood = theta.dot(phi).dot(theta.T)
+        return likelihood
 
     def template(self, d):
         d['time'] = d.get('time', None)

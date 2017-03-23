@@ -21,6 +21,7 @@ from pymake.util.ascii_code import X11_colors, plt_colors
 u_colors = Cycle(list(zip(*plt_colors))[1])
 _markers = Cycle([ '+', '*','x', 'o', '.', '1', 'p', '<', '>', 's' ])
 _colors = Cycle(['r', 'g','b','y','c','m','k'])
+_linestyle = Cycle(['solid' , 'dashed', 'dashdot', 'dotted'])
 
 import logging
 lgg = logging.getLogger('root')
@@ -412,14 +413,18 @@ def adjblocks(Y, clusters=None, title=''):
     plt.title(title)
     #plt.savefig(filename, fig=fig, facecolor='white', edgecolor='black')
 
-def adjshow(Y, title='', fig=True):
-    if fig is True:
+def adjshow(Y, title='', fig=True, ax=None):
+    if fig is True and ax is None:
         plt.figure()
-    plt.axis('off')
+    if ax is None:
+        # Note: difference betwwen ax and plt method are the get_ and set_ suffix
+        ax = plt.gca()
+
+    ax.axis('off')
     #cmap = 'Greys'
     cmap = plt.cm.hot
-    plt.imshow(Y, cmap=cmap, interpolation='None')
-    plt.title(title)
+    ax.imshow(Y, cmap=cmap, interpolation='None')
+    ax.set_title(title)
 
 def adjshow_4(Y,title=[], pixelspervalue=20):
     minvalue = np.amin(Y)
