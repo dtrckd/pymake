@@ -7,14 +7,13 @@ Pymake is machine-friendly platform for making reproducible research. It provide
 This code is in a living development stage and yet unstable.
 
 ### Features
-* Experience design specification by simple grammar.
-* support experience rules filtering
-* commandline toolkit for quick design and experience testing
-* browse design and test several models and corpus find in the
-literrature
+* Specification of design of experimentations with simple grammar,
+* commandline toolkit for quick design and experience testing,
+* Support experience rules filtering,
+* browse, design and test several models and corpus find in the literrature.
 Ongoing development :
-* A database to share (push/fetch/search) Design of experimentation.
-* Better specification of the formal grammar of design of experimentation.
+* A database to share (push/fetch/search) Design of experimentations,
+* Better specification of the formal grammar of design of experimentation,
 * Better documentation.
 
 ### Install
@@ -58,11 +57,11 @@ With gnu-parallel :
 
 ### Directory Tree
 
+* `pymake/` code source of the models and frontends.
 * `data/` contains dataset and learning output results,
 * `results/` contains analysis and report,
-* `pymake/` code source of the models and frontends.
 
-Data Lookup is coded in `util/frontend_io.py` and Output Data path specification are automatically adaptated from the design of experiments. Note that you can specify the format of the results of each expetiments with `--format options`, see examples.
+Data Lookup and Output Data path specification are automatically adaptated from the design of experiments. Note that you can specify the format of the results of each expetiments with `--format options`, see examples.
 
 The Results of experiments are stored in data/[specification].
 
