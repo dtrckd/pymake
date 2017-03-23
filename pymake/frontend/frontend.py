@@ -1,47 +1,17 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import pickle, json, copy
+import json, copy
 from itertools import chain
 from string import Template
 from collections import defaultdict
-import logging
-lgg = logging.getLogger('root')
 
 import numpy as np
 
-from .frontend_io import *
+from pymake import GramExp
 
-
-''' Actually this is more the Backend ...! '''
-
-
-class Object(object):
-    """ Implement a mathematical object manipulation philosophy,
-        WIth a high level view of object set as topoi.
-        * return None for errorAtributes
-        * memorize all input as attribute by default
-    """
-
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-
-    #def __getattr__(self, attr):
-    #    if type(attr) is not str:
-    #        lgg.error('Error attribute type: %s' % (attr))
-    #        return None
-
-    #    if hasattr(self,attr):
-    #        return getattr(self, attr)
-    #    else:
-    #        if hasattr(self, 'get_'+attr):
-    #            lgg.warning('get %s from class method get_' % (str(attr)))
-    #            f = self.getattr(self, 'get_'+attr)
-    #            return f()
-    #        else:
-    #            # find the name of the chil class on this catch
-    #            lgg.warning('attributes `%s\' is Non-Existent' % (str(attr)))
-    #            return None
+import logging
+lgg = logging.getLogger('root')
 
 class DataBase(object):
     """ Root Class for Frontend Manipulation over Corpuses and Models.
@@ -61,13 +31,6 @@ class DataBase(object):
     """
 
     def __init__(self, expe, load=False):
-
-        if expe.get('seed'):
-            #np.random.seed(expe.get('seed'))
-            np.random.set_state(self.load('.seed'))
-        self.seed = np.random.get_state()
-        self.save(self.seed, '/tmp/pymake.seed', silent=True)
-        # Who is the master manager you do that ?
 
         # Load a .pk file for data(default: True if present)
         # + it faset
@@ -107,13 +70,16 @@ class DataBase(object):
         #if data is not None:
         #    self.update_data(data)
 
+        # Obsolete
+        self.data_t = None
+
     def update_data(self):
         raise NotImplemented
 
     def make_output_path(self):
         ''' Write Path (for models results) in global settings '''
-        self.basedir, self.output_path = make_output_path(self.expe)
-        # deprecated / outputapth it setup y gramexp
+        self.basedir, self.output_path = GramExp.make_output_path(self.expe)
+        # deprecated / outputapth is setup in gramexp
         self.expe['output_path'] = self.output_path
 
     def update_spec(self, **spec):
@@ -180,21 +146,13 @@ class DataBase(object):
         #map(np.random.shuffle, bow)
         return bow
 
-    # Pickle class
     @staticmethod
     def save(data, fn, silent=False):
-        fn = fn + '.pk'
-        if not silent:
-            lgg.info('Saving frData ; %s' % fn)
-        with open(fn, 'wb') as _f:
-            return pickle.dump(data, _f, protocol=pickle.HIGHEST_PROTOCOL)
+        GramExp.save(data, fn, silent)
 
     @staticmethod
     def load(fn):
-        fn = fn + '.pk'
-        lgg.info('Loading frData: %s' % fn)
-        with open(fn, 'rb') as _f:
-            return pickle.load(_f)
+        return GramExp.load(fn)
 
     # convert ndarray to list.
     def save_json(self, res):
@@ -210,7 +168,7 @@ class DataBase(object):
             if hasattr(v, 'tolist'):
                 new_res[k] = v.tolist()
 
-        lgg.info('Saving json ; %s' % fn)
+        lgg.info('Saving json : %s' % fn)
         return json.dump(new_res, open(fn,'w'))
     def get_json(self):
         fn = self.output_path + '.json'
@@ -224,9 +182,5 @@ class DataBase(object):
         lgg.info('Updating json frData: %s' % fn)
         json.dump(res, open(fn,'w'))
         return fn
-
-
-
-
 
 

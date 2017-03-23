@@ -1,25 +1,33 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import sys
-from collections import OrderedDict
-from functools import reduce, wraps
+import sys, os
 import operator
-import inspect, traceback
+import fnmatch
+import pickle
+import inspect, traceback, importlib
+from collections import defaultdict
+from itertools import product
+from functools import reduce, wraps
 from copy import deepcopy
+import numpy as np
 
 from argparse import RawDescriptionHelpFormatter
 
-from .gram import _Gram, ExpArgumentParser
-from pymake import basestring, ExpTensor, Expe, ExpSpace, ExpeFormat, Model, Corpus, ExpVector
-from pymake.frontend.frontend_io import make_forest_conf, make_forest_path, make_output_path
-from pymake.expe.spec import _spec
+import pymake.expe.gram as gram
+from pymake import basestring, ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, ExpVector
 from pymake.plot import colored
+
+import pymake.util.loader as mloader
+
+from pymake.frontend.frontend_io import LOCAL_BDIR, ext_status, is_empty_file
 
 import logging
 lgg = logging.getLogger('root')
 
 ''' Grammar Expe '''
+_version = 0.1
+
 
 class GramExp(object):
     ''' Create a mapping between different format of design of experiments.
@@ -32,33 +40,47 @@ class GramExp(object):
         Methods
         -------
         __init__ : conf choice in :
-               * Expe -> One experiments
-               * ExpTensor -> Design of experiments
-               * Expe & spec in Expe -> Design of experiments with global value,
-                    either from conf or command-line args.
-                    conf value will udpdate all experiments first from command-line
-                    argument then from defaut values.
+           * Expe -> One experiments
+           * ExpTensor -> Design of experiments
+           * Expe & spec in Expe -> Design of experiments with global value,
+                either from conf or command-line args.
+                conf value will udpdate all experiments first from command-line
+                argument then from defaut values.
 
         Notes
         -----
 
         Design of Experiments can take three forms :
-            1. command-line arguments (see self.parsearg).
-                * use for parralization with Gnu parallel.
-            2. Expe : Uniq experiments specificattion,
-                * @Todo list of Expe
-            3. ExpTensor : Represente a tensor of experiments.
-               Each entry of the dict contains an iterable over specifications
-               for this entry. (see frontend.frontend_io)
-               * @Todo pass rule to filter experiments...
+        1. command-line arguments (see self.parsearg).
+            * use for parralization with Gnu parallel.
+        2. Expe : Uniq experiments specificattion,
+            * @Todo list of Expe
+        3. ExpTensor : Represente a tensor of experiments.
+           Each entry of the dict contains an iterable over specifications
+           for this entry. (see frontend.frontend_io)
+           * @Todo pass rule to filter experiments...
 
-        Expe* can contains **special** keywords and value :
-            * _bind rules ->  [a.b or a.b.c] --- a shoudld occur only with b,
-                        or for a, key b take only c.
-                List of rules of constraintson the design.
-            * if an attribute  take the value "_null",
-              then it will be removed from the Exp. This can be usefull when piping
-              ouptuf of pymake to some script to parallelize.
+        ### Expe Filtering
+        Expe can contains **special** keywords and value :
+        * _bind rules : List of rules of constraintsi on the design.
+            *  [a.b]  --- a shoudld occur only with b,
+            * [a.b.c] --- for a, key b take only c.
+            Warning : it does only check the last words when parameter are
+                      separated by a dot (.) as for model module for example.
+
+        * if an attribute  take the value "_null",
+          then it will be removed from the Exp. This can be usefull when piping
+          ouptuf of pymake to some script to parallelize.
+
+        ### I/O Concerns
+        An experiment typically write three kind of files :
+        Corpus are load/saved using Pickle format in:
+        * bdir/corpus_name.pk
+        Models are load/saved using pickle/json/cvs in :
+        * bdir/debug/rept/model_name_parameters.pk   <--> ModelManager
+        * bdir/debug/rept/model_name_parameters.json <--> DataBase
+        * bdir/debug/rept/model_name_parameters.inf  <--> ModelBase
+
     '''
     _examples = '''Examples:
         >> Text fitting
@@ -68,15 +90,10 @@ class GramExp(object):
 
     # Reserved by GramExp
     _reserved_keywords = ['spec', # for nested specification
-                         'exp' # to track expe walking # Unused
                          ]
 
-    # Avoid conflict between tasks
-    _forbiden_keywords = {'fit' : ['gen_size', 'epoch', '_do', '_mode', '_type'],
-                          'generate' : ['iterations']}
-
     _exp_default = {
-        'host'      : 'localhost',
+        #'host'      : 'localhost',
         'verbose'   : logging.INFO,
         'load_data' : True,
         'save_data' : False,
@@ -84,77 +101,75 @@ class GramExp(object):
     }
 
     def __init__(self, conf={}, usage=None, parser=None, parseargs=True):
+        self._spec = mloader.SpecLoader.default_spec()
         if parseargs is True:
-            kwargs = self.parseargsexpe(usage)
+            kwargs, self.argparser = self.parseargsexpe(usage)
             conf.update(kwargs)
         if parser is not None:
+            # merge parser an parsargs ?
             self.argparser = parser
-        else:
-            self.argparser = GramExp.get_parser()
 
         [conf.update({k:v}) for k,v in self._exp_default.items() if k not in conf]
         conf = deepcopy(conf)
-        if 'spec' in conf:
-            self.exp_tensor = self.exp2tensor(conf.pop('spec'))
-            self.exp_tensor.update_from_dict(conf)
-        elif isinstance(conf, ExpTensor):
-            self.exp_tensor = self.exp2tensor(conf)
-        elif isinstance(conf, (dict, Expe)):
-            # Assume Single Expe (type dict or Expe)
-            if type(conf) is dict:
-                # @zymake ?
-                lgg.debug('warning : type dict for expe settings may be deprecated.')
-            #self.exp_tensor = self.dict2tensor(conf)
-            self.exp_tensor = self.exp2tensor(conf)
-        else:
-            raise ValueError('exp/conf not understood: %s' % type(conf))
 
-        self.checkConf(conf)
+        # in expt_setup...
+        self._default_spec = conf.get('spec', {})
+
+        # @logger One logger by Expe !
+        level = self.setup_logger(fmt='%(message)s', level=conf.get('verbose'))
+        conf.update(verbose=level)
+
+        # Make main data structure
+        self.exp_tensor = ExpTensor.from_expe(conf)
         self.checkExp(self.exp_tensor)
+        self.exp_setup()
 
-        # Make Rules
-        if '_bind' in self.exp_tensor:
-            self._bind = self.exp_tensor.pop('_bind')
+    def _preprocess_exp(self):
+        # @improvment: do filter from spec
+        exp = self.exp_tensor
+
+        # Rules Filter
+        if '_bind' in exp:
+            self._bind = exp.pop('_bind')
             if not isinstance(self._bind, list):
                 self._bind = [self._bind]
         else:
-            self._bind = []
+            self._bind = getattr(self, '_bind', [])
 
-        # Make lod
-        self.lod = self.lodify(self.exp_tensor)
+        # Assume default module is pymake
+        models = exp.get('model', [])
+        for i, m in enumerate(models):
+            if not '.' in m:
+                models[i] = 'pmk.%s'%(m)
 
-        # global conf
-        self.expe = conf
+        # Filter _null
+        for k in exp.copy():
+            if '_null' in exp.get(k, []):
+                exp.pop(k)
+                _null = getattr(self, '_null',[])
+                _null.append(k)
 
-        # @logger One logger by Expe !
-        self.setup_logger(fmt='%(message)s', level=self.expe.get('verbose'))
-
-        if self.expe.get('simulate'):
-            self.simulate()
 
     @classmethod
-    def checkConf(cls, settings):
-        for m in cls._reserved_keywords:
-            if m in settings:
-                raise ValueError('%m is a reserved keyword of gramExp.')
-        # @todo : verify  forbidden keywords
+    def checkExp(cls, exp):
+        ''' check format and rules of exp_tensor '''
 
-    @staticmethod
-    def checkExp(exp):
+        # check reserved keyword are absent from exp
+        for m in cls._reserved_keywords:
+            if m in exp:
+                raise ValueError('%m is a reserved keyword of gramExp.')
+
+        # Format
         assert(isinstance(exp, ExpTensor))
         for k, v in exp.items():
             if not issubclass(type(v), (list, tuple, set)):
                 raise ValueError('error, exp value should be iterable: %s' % k, v)
 
-    def lodify(self, exp):
+
+    def make_lod(self, exp):
         ''' Make a list of Expe from tensor, with filtering '''
 
-        # PREFILTERING
-        for k in exp.copy():
-            if '_null' in exp.get(k, []):
-                exp.pop(k)
-
-        lod = make_forest_conf(exp)
+        lod = self.make_forest_conf(exp)
 
         # POSTFILTERING
         # Bind Rules
@@ -163,20 +178,59 @@ class GramExp(object):
             for rule in self._bind:
                 _bind = rule.split('.')
                 values = list(d.values())
+
+                # only last dot separator
+                for j, e in enumerate(values):
+                    if type(e) is str:
+                        values[j] = e.split('.')[-1]
+
                 if len(_bind) == 2:
-                    # remove all occurence of this
+                    # remove all occurence if this bind don't occur
+                    # simltaneous in each expe.
                     a, b = _bind
                     if a in values and not b in values:
                         itoremove.append(i)
                 elif len(_bind) == 3:
-                    # remove occurence of this specific key:value
-                    # Get the type of this key:value
+                    # remove occurence of this specific key:value if
+                    # it does not comply with this bind.
                     a, b, c = _bind
+                    # Get the type of this key:value.
                     _type = type(d[b])
                     if a in values and _type(c) != d[b]:
                         itoremove.append(i)
 
-        return [d for i,d in enumerate(lod) if i not in itoremove]
+        lod = [d for i,d in enumerate(lod) if i not in itoremove]
+        return lod
+
+    def update(self, **kwargs):
+        self._conf.update(kwargs)
+        self.exp_tensor.update_from_dict(kwargs)
+
+        for d in self.lod:
+            d.update(kwargs)
+
+    # @Debug self.lod is left untouched...
+    def remove(self, k):
+        if k in self._conf:
+            self._conf.pop(k)
+        if k in self.exp_tensor:
+            self.exp_tensor.pop(k)
+        for d in self.lod:
+            if k in d:
+                d.pop(k)
+
+    def exp_setup(self, exp=None):
+        if exp is not None:
+            self.exp_tensor = exp
+
+        # makes it contextual.
+        self._preprocess_exp()
+
+        # Make lod
+        self.lod = self.make_lod(self.exp_tensor)
+
+        # Global settings (unique argument)
+        self._conf = {k:v[0] for k,v in self.exp_tensor.items() if len(v) == 1}
 
     def getConfig(self):
         # get global conf...
@@ -196,39 +250,89 @@ class GramExp(object):
         return len(self.lod)
 
     @staticmethod
-    # deprecated
-    def dict2tensor(conf):
-        ''' Return the tensor who is a Orderedict of iterable.
-            Assume unique expe. Every value will be listified.
-        '''
-        tensor = ExpTensor([(k, [v]) for k, v in conf.items()])
-        return tensor
+    def make_forest_conf(dol_spec):
+        """ Make a list of config/dict.
+            Convert a dict of list to a list of dict.
+        """
+        if len(dol_spec) == 0:
+            return []
+
+        len_l = [len(l) for l in dol_spec.values()]
+        keys = sorted(dol_spec)
+        lod = [dict(zip(keys, prod)) for prod in product(*(dol_spec[key] for key in keys))]
+
+        return lod
 
     @staticmethod
-    def exp2tensor(conf):
-        ''' Return the tensor who is an Orderedict of iterable.
-            Assume conf is an exp. Non list value will be listified.
-        '''
-        if issubclass(type(conf), Corpus):
-            tensor = ExpTensor(corpus=conf)
-        elif issubclass(type(conf), Model):
-            tensor = ExpTensor(model=conf)
-        elif not isinstance(conf, ExpTensor):
-            tensor = ExpTensor(conf)
-        else:
-            tensor = conf
+    def make_forest_path(lod, _type, status='f', full_path=False):
+        """ Make a list of path from a spec/dict, the filename are
+            oredered need to be align with the get_from_conf_file.
 
-        for k, v in tensor.items():
-            if not issubclass(type(v), (list, set, tuple)):
-                tensor[k] = [v]
-        return tensor
+            *args -> make_output_path
+        """
+        targets = []
+        for spec in lod:
+            filen = GramExp.make_output_path(spec, _type, status=status)
+            if filen:
+                s = filen.find(LOCAL_BDIR)
+                pt = 0
+                if not full_path and s >= 0:
+                    pt = s + len(LOCAL_BDIR)
+                targets.append(filen[pt:])
+        return targets
+
+    @staticmethod
+    def make_output_path(expe, _type=None, status=None):
+        """ Make a single output path from a expe/dict
+            @status: f finished
+            @type: pk, json or inference.
+        """
+        expe = defaultdict(lambda: None, expe)
+        filen = None
+        lgg.debug('heere, get data_type from loader corpus info !')
+        base = expe.get('data_type', 'networks')
+        hook = expe.get('refdir', '')
+        c = expe.get('corpus')
+        if not c:
+            return None
+        if c.lower().startswith(('clique', 'graph', 'generator')):
+            c = c.replace('generator', 'Graph')
+            c = c.replace('graph', 'Graph')
+            c = 'generator/' + c
+
+        basedir = os.path.join(os.path.dirname(__file__), LOCAL_BDIR, base, c)
+
+        if 'repeat' in expe and ( expe['repeat'] is not None and expe['repeat'] is not False):
+            p = os.path.join(hook, str(expe['repeat']))
+        else:
+            p = os.path.join(hook)
+
+        if not expe['_format']:
+            _format = '{model}_{K}_{hyper}_{homo}_{N}'
+        else:
+            _format = expe['_format']
+        t = _format.format(**expe)
+
+        filen = os.path.join(basedir, p, t)
+
+        ext = ext_status(filen, _type)
+        if ext:
+            filen = ext
+        else:
+            filen = (basedir, filen)
+
+        if status is 'f' and is_empty_file(filen):
+            return  None
+        else:
+            return filen
+
 
     @staticmethod
     def get_parser(description=None, usage=None):
 
-        parser = ExpArgumentParser(description=description, epilog=usage,
-                                   formatter_class=RawDescriptionHelpFormatter)
-        g = _Gram
+        parser = gram.ExpArgumentParser(description=description, epilog=usage,
+                                        formatter_class=RawDescriptionHelpFormatter)
+        g = gram._Gram
         grammar = []
         args = []
         for e in g:
@@ -238,7 +342,7 @@ class GramExp(object):
             grammar.append((args, e))
             args = []
 
-        parser.add_argument('--version', action='version', version='%(prog)s 0.1')
+        parser.add_argument('--version', action='version', version='%(prog)s '+str(_version))
         [parser.add_argument(*r[0], **r[1]) for r in grammar]
 
         return parser
@@ -258,7 +362,7 @@ class GramExp(object):
 
         settings = dict((key,value) for key, value in vars(s).items() if value)
         GramExp.expVectorLookup(settings)
-        return settings
+        return settings, parser
 
     @classmethod
     def zymake(cls, request={}, usage=''):
@@ -266,24 +370,37 @@ class GramExp(object):
         ----------------
         Communicate with the data :
         ----------------
-         |   zymake -l         : (default) show available spec
-         |   zymake show SPEC  : show one spec details
-         |   zymake cmd SPEC [fun][*args]   : generate command-line
+         |   zymake -l [expe(default)|atom|script] : (default) show available spec
+         |   zymake show SPEC : show one spec details
+         |   zymake cmd SPEC [fun][*args] : generate command-line
+         |   zymake exec SPEC [fun][*args][--script ...] : execute tasks (default is fit)
          |   zymake burn SPEC [fun][*args][--script ...] : parallelize tasks
          |   zymake path SPEC Filetype(pk|json|inf) [status]
         ''' + '\n' + usage
 
-        s = GramExp.parseargsexpe(usage)
+        s, parser = GramExp.parseargsexpe(usage)
         request.update(s)
 
+        _spec = mloader.SpecLoader.default_spec()
         ontology = dict(
-            _do    = ['cmd', 'show', 'path', 'burn', 'list'],
+            _do    = ['cmd', 'show', 'path', 'burn', 'exec'],
             spec   = _spec.keys(),
             _ftype = ['json', 'pk', 'inf']
         )
         ont_values = sum([w for k, w in ontology.items() if k != 'spec'] , [])
 
-        do = request.get('_do') or ['list']
+        # Init _do value
+        if not request.get('_do'):
+            request['_do'] = []
+            if not request.get('do_list'):
+                request['do_list'] = []
+
+        # Hack for script/exec
+        if request.get('do_list'):
+            if 'script' in request:
+                request['_do'] = ['exec']
+
+        do = request['_do']
         checksum = len(do)
         # No more Complex !
         for i, v in enumerate(do):
@@ -306,12 +423,10 @@ class GramExp(object):
         #if '-status' in clargs.grouped:
         #    # debug status of filr (path)
         #    request['_status'] = clargs.grouped['-status'].get(0)
-        if request.get('do_list'):
-            request['_do'] = 'list'
 
         if checksum != 0:
-            raise ValueError('unknow argument: %s\n\nAvailable SPEC : %s' % (do, _spec.keys()))
-        return cls(request, usage=usage, parseargs=False)
+            raise ValueError('unknow argument: %s\n\nAvailable SPEC : %s' % (do, sorted(_spec.keys())))
+        return cls(request, usage=usage, parser=parser, parseargs=False)
 
     @classmethod
     def generate(cls, request={},  usage=''):
@@ -331,28 +446,32 @@ class GramExp(object):
         parser.add_argument('-g', '--generative', dest='_mode', action='store_const', const='generative')
         parser.add_argument('-p', '--predictive', dest='_mode', action='store_const', const='predictive')
 
-        s = GramExp.parseargsexpe(parser=parser)
+        s, parser = GramExp.parseargsexpe(parser=parser)
+
         request.update(s)
 
-        do = request.get('_do') or ['_list']
+        do = request.get('_do') or ['list']
         if not isinstance(do, list):
+            # Obsolete ?
             do = [do]
             request['_do'] = do
 
         # Update the spec is a new one is argified
+        _spec = mloader.SpecLoader.default_spec()
         for a in do:
             if a in _spec.keys() and issubclass(type(_spec[a]), ExpTensor):
                 request['spec'] = _spec[a]
                 do.remove(a)
 
-        return cls(request, usage=usage, parseargs=False)
+        return cls(request, usage=usage, parser=parser, parseargs=False)
 
     @staticmethod
     def expVectorLookup(request):
-        ''' set exp from spec if present '''
+        ''' set exp from spec if presents '''
 
         # get list of scripts/*
         # get list of method
+        _spec = mloader.SpecLoader.default_spec()
         ontology = dict(
             # Allowed multiple flags keywords
             check_spec = {'corpus':Corpus, 'model':Model},
@@ -399,10 +518,12 @@ class GramExp(object):
                     # Assume every options of expe has a flags
                     continue
                 if a.dest in e and a.dest not in args_seen:
-                    if isinstance(e[a.dest], (list, dict, tuple, set)):
-                        # Assume extra args, not relevant for expe commands
-                        continue
+                    #if isinstance(a, (gram.unaggregate_append,)):
+                    #    # Assume except_append are removed from expe,
+                    #    # special traitment
+                    #    continue
                     if a.nargs == 0:
+                        # standalone flags
                         store = e[a.dest]
                         if 'StoreTrue' in str(type(a)):
                             storetrue = True
@@ -413,7 +534,10 @@ class GramExp(object):
                         if storetrue and store:
                             command += [a.option_strings[0]]
                     else:
-                        command += [a.option_strings[0]] + [str(e[a.dest])]
+                        _arg = e[a.dest]
+                        if isinstance(_arg, (list, set, tuple)):
+                            _arg = ' '.join(_arg)
+                        command += [a.option_strings[0]] + [str(_arg)]
                         args_seen.append(a.dest)
 
             commands.append(command)
@@ -424,16 +548,15 @@ class GramExp(object):
         commands = [' '.join(c) for c in commands]
         return commands
 
-    def make_path(self, ftype, status=None, fullpath=None):
-        return make_forest_path(self.lod, ftype, status, fullpath)
+    def make_path(self, ftype=None, status=None, fullpath=None):
+        return self.make_forest_path(self.lod, ftype, status, fullpath)
 
     def reorder_lastvalid(self, _type='pk'):
         for i, e in enumerate(self.lod):
-            if make_output_path(e, _type=_type, status='f'):
+            if self.make_output_path(e, _type=_type, status='f'):
                 self.lod[-1], self.lod[i] = self.lod[i], self.lod[-1]
                 break
         return
-
 
     def expname(self):
         return self.exp_tensor.name()
@@ -443,6 +566,26 @@ class GramExp(object):
             extra += [('_bind', self._bind)]
         return self.exp_tensor.table(extra)
 
+    def spectable(self):
+        return self._spec._table()
+
+    def atomtable(self, _type='short'):
+        return self._spec._table_atoms(_type=_type)
+
+    def scripttable(self):
+        t = mloader.ScriptsLoader.table()
+        return t
+
+    def getSpec(self):
+        return self._spec
+
+    @staticmethod
+    def Spec():
+        return mloader.SpecLoader.default_spec()
+
+    def help_short(self):
+        shelp = self.argparser.format_usage() + self.argparser.epilog
+        return shelp
 
     def simulate_short(self):
         ''' Simulation Output '''
@@ -461,7 +604,6 @@ class GramExp(object):
             exit(2)
         else:
             return
-
 
     @staticmethod
     def setup_logger(fmt='%(message)s', level=logging.INFO, name='root'):
@@ -492,7 +634,11 @@ class GramExp(object):
         # who results in logging things multiple times
         logger.propagate = False
 
-        return logger
+        return level
+
+    @staticmethod
+    def sign_nargs(fun):
+        return sum([y.default is inspect._empty for x,y in inspect.signature(fun).parameters.items() if x != 'self'])
 
     @staticmethod
     def tb_expeformat(sandbox):
@@ -507,6 +653,7 @@ class GramExp(object):
 
     @staticmethod
     def functable(obj):
+        ''' show method/doc associated to one class (in /scripts) '''
         lines = []
         for m in  GramExp.tb_expeformat(obj):
             name = m[0]
@@ -516,23 +663,109 @@ class GramExp(object):
             lines.append(line)
         return lines
 
-    # @do parralize
-    def pymake(self, sandbox=ExpeFormat):
-        ''' Walk Trough experiments.  '''
+    @staticmethod
+    def load(fn, silent=False):
+        # Pickle class
+        fn = fn + '.pk'
+        if not silent:
+            lgg.info('Loading frData : %s' % fn)
+        with open(fn, 'rb') as _f:
+            return pickle.load(_f)
 
-        if 'do_list' in self.expe:
+    @staticmethod
+    def save(data, fn, silent=False):
+        # Pickle class
+        fn = fn + '.pk'
+        if not silent:
+            lgg.info('Saving frData : %s' % fn)
+        with open(fn, 'wb') as _f:
+            return pickle.dump(data, _f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    @staticmethod
+    def model_walker(bdir, fmt='list'):
+        models_files = []
+        if fmt == 'list':
+            ### Easy formating
+            for root, dirnames, filenames in os.walk(bdir):
+                for filename in fnmatch.filter(filenames, '*.pk'):
+                    models_files.append(os.path.join(root, filename))
+            return models_files
+        else:
+            ### More Complex formating
+            tree = { 'json': [],
+                    'pk': [],
+                    'inference': [] }
+            for filename in fnmatch.filter(filenames, '*.pk'):
+                if filename.startswith(('dico.','vocab.')):
+                    dico_files.append(os.path.join(root, filename))
+                else:
+                    corpus_files.append(os.path.join(root, filename))
+            raise NotImplementedError()
+        return tree
+
+
+    def expe_init(self, expe):
+        if not 'seed' in expe:
+            return
+
+        if expe.seed is True:
+            try:
+                np.random.set_state(self.load('/tmp/pymake.seed', silent=True))
+            except FileNotFoundError as e:
+                print('error: %s, Try a seed (--seed VALUE).' % (e))
+                exit()
+        else:
+            np.random.seed(expe.seed)
+
+        self._seed = np.random.get_state()
+        self.save(self._seed, '/tmp/pymake.seed', silent=True)
+
+
+    def execute(self):
+        ''' Execute Exp Sequentially '''
+        if 'script' in self._conf:
+            script = self._conf.pop('script')
+            self.remove('script')
+            self.remove('_do')
+        else:
+            raise ValueError('Who need to specify a script. (--script)')
+
+        script_name = script[0]
+        script_args = script[1:]
+        Scripts = mloader.ScriptsLoader.get_packages()
+        if not script_name in Scripts:
+            method_by_cls = mloader.ScriptsLoader.lookup_methods()
+            if script_name in sum(method_by_cls.values(), []):
+                # check if it is method reference
+                script_args = [script_name] + script_args
+                script_name = next(k.lower() for (k,v) in method_by_cls.items() if script_name in v)
+            else:
+                raise ValueError('error: Unknown script: %s' % (script_name))
+
+        if script_args:
+            self.update(_do=script_args)
+        self.pymake(sandbox=Scripts[script_name])
+
+    def pymake(self, sandbox=ExpeFormat):
+        ''' Walk Trough experiments. '''
+
+        if 'do_list' in self.exp_tensor:
             print('Available methods for %s: ' % (sandbox))
             print(*self.functable(sandbox) , sep='\n')
             exit(2)
 
-        sandbox.preprocess(self)
+        sandbox._preprocess(self)
+        if self._conf.get('simulate'):
+            self.simulate()
 
         for id_expe, expe in enumerate(self.lod):
-            pt = dict((key, value.index(expe[key])) for key, value in self.exp_tensor.items() if isinstance(expe[key], (basestring, int, float)))
-            pt['expe'] = id_expe
             _expe = ExpSpace(**expe)
 
+            pt = dict((key, value.index(_expe[key])) for key, value in self.exp_tensor.items() if isinstance(_expe[key], (basestring, int, float)))
+            pt['expe'] = id_expe
+
             # Init Expe
+            self.expe_init(_expe)
             try:
                 expbox = sandbox(pt, _expe, self)
             except FileNotFoundError as e:
@@ -564,6 +797,6 @@ class GramExp(object):
                 traceback.print_exc()
                 exit()
 
-        return sandbox.postprocess(self)
+        return sandbox._postprocess(self)
 
 

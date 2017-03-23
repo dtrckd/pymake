@@ -18,13 +18,7 @@ from pymake.util.math import lognormalize, categorical
 import logging
 lgg = logging.getLogger('root')
 
-
-#
-# TODO
-# * add Likelihood base class here.
-# * SVB
-#
-
+# Todo: rethink sampler and Likelihood class definition.
 
 class ModelBase(object):
     """"  Root Class for all the Models.
@@ -32,6 +26,7 @@ class ModelBase(object):
     * Suited for unserpervised model
     * Virtual methods for the desired propertie of models
     """
+    __abstractmethods__ = 'model'
     default_settings = {
         'write' : False,
         'output_path' : 'tm-output',
@@ -200,7 +195,6 @@ class ModelBase(object):
         with open(fn, 'wb') as _f:
             return pickle.dump(model, _f, protocol=pickle.HIGHEST_PROTOCOL)
 
-
     def __deepcopy__(self, memo):
         cls = self.__class__
         result = cls.__new__(cls)
@@ -213,19 +207,76 @@ class ModelBase(object):
                 continue
         return result
 
-    # Just for MCMC ?():
-    def generate(self):
+    def get_mask(self):
+        return self.mask
+
+    def mask_probas(self, data):
+        mask = self.get_mask()
+        y_test = data[mask]
+        p_ji = self.likelihood(*self.get_params())
+        probas = p_ji[mask]
+        return y_test, probas
+
+
+    def predictMask(self, data, mask=True):
+        lgg.info('Reducing latent variables...')
+
+        if mask is True:
+            masked = self.get_mask()
+        else:
+            masked = mask
+
+        ### @Debug Ignore the Diagonnal
+        np.fill_diagonal(masked, False)
+
+        ground_truth = data[masked]
+
+        p_ji = self.likelihood(*self.get_params())
+        prediction = p_ji[masked]
+        prediction = sp.stats.bernoulli.rvs( prediction )
+        #prediction[prediction >= 0.5 ] = 1
+        #prediction[prediction < 0.5 ] = 0
+
+        ### Computing Precision
+        test_size = float(ground_truth.size)
+        good_1 = ((prediction + ground_truth) == 2).sum()
+        precision = good_1 / float(prediction.sum())
+        rappel = good_1 / float(ground_truth.sum())
+        g_precision = (prediction == ground_truth).sum() / test_size
+        mask_density = ground_truth.sum() / test_size
+
+        ### Finding Communities
+        if hasattr(self, 'communities_analysis'):
+            lgg.info('Finding Communities...')
+            communities = self.communities_analysis(data)
+            K = self.K
+        else:
+            communities = None
+            K = self.expe.get('K')
+
+        res = {'Precision': precision,
+               'Recall': rappel,
+               'g_precision': g_precision,
+               'mask_density': mask_density,
+               'clustering':communities,
+               'K': K
+              }
+        return res
+
+    def fit(self):
         raise NotImplementedError
+    # Just for MCMC ?():
     def predict(self):
+        raise NotImplementedError
+    def scores(self):
+        raise NotImplementedError
+
+    # get_params ~ transform ?sklearn
+
+    def generate(self):
         raise NotImplementedError
     def get_clusters(self):
         raise NotImplementedError
-
-class SVB(object):
-    def __init__(self):
-        # Do iniherit from modelBase ?
-        pass
-
 
 def mmm(fun):
     # Todo / wrap latent variable routine
@@ -239,6 +290,7 @@ class GibbsSampler(ModelBase):
         but for other (e.g IBP based), method has to be has to be overloaded...
         -> use a decorator @mmm to get latent variable ...
     '''
+    __abstractmethods__ = 'model'
     def __init__(self, sampler,  **kwargs):
         self.s = sampler
         super(GibbsSampler, self).__init__(**kwargs)
@@ -304,7 +356,7 @@ class GibbsSampler(ModelBase):
         self.close()
         return
 
-    @mmm
+    @mmm #frontend
     def likelihood(self, theta=None, phi=None):
         if theta is None:
             theta = self.theta
@@ -313,13 +365,8 @@ class GibbsSampler(ModelBase):
         likelihood = theta.dot(phi).dot(theta.T)
         return likelihood
 
-    def mask_probas(self, data):
-        mask = self.get_mask()
-        y_test = data[mask]
-        p_ji = self.likelihood(*self.get_params())
-        probas = p_ji[mask]
-        return y_test, probas
-
+    def scores(self):
+        return self.likelihood()
 
     @mmm
     def update_hyper(self, hyper):
@@ -394,48 +441,6 @@ class GibbsSampler(ModelBase):
         self.phi = np.mean(phi, 0)
         self.K = self.theta.shape[1]
         return self.theta, self.phi
-
-
-    def predictMask(self, data, mask=True):
-        lgg.info('Reducing latent variables...')
-
-        if mask is True:
-            masked = self.get_mask()
-        else:
-            masked = mask
-
-        ### @Debug Ignore the Diagonnal
-        np.fill_diagonal(masked, False)
-
-        ground_truth = data[masked]
-
-        p_ji = self.likelihood(*self.get_params())
-        prediction = p_ji[masked]
-        prediction = sp.stats.bernoulli.rvs( prediction )
-        #prediction[prediction >= 0.5 ] = 1
-        #prediction[prediction < 0.5 ] = 0
-
-        ### Computing Precision
-        test_size = float(ground_truth.size)
-        good_1 = ((prediction + ground_truth) == 2).sum()
-        precision = good_1 / float(prediction.sum())
-        rappel = good_1 / float(ground_truth.sum())
-        g_precision = (prediction == ground_truth).sum() / test_size
-        mask_density = ground_truth.sum() / test_size
-
-        ### Finding Communities
-        lgg.info('Finding Communities...')
-        communities = self.communities_analysis(data)
-
-        res = {'Precision': precision,
-               'Recall': rappel,
-               'g_precision': g_precision,
-               'mask_density': mask_density,
-               'clustering':communities,
-               'K': self.K
-              }
-        return res
-
 
 try:
     import sympy as sym
@@ -543,3 +548,122 @@ class BetaSampler(object):
         lgg.info( 'Beta Dirichlet Prior: %s, alpha0: %.4f ' % (m_dotk_augmented, self.msampler.zsampler.alpha_0))
         self.dirichlet_params = m_dotk_augmented
 
+class SVB(ModelBase):
+
+    '''online EM/SVB'''
+
+    __abstractmethods__ = 'model'
+
+    def __init__(self, expe, frontend=None):
+        self.csv_typo = '# it it_time likelihood likelihood_t K alpha gamma alpha_mean delta_mean alpha_var delta_var'
+        self.fmt = '%d %.4f %.8f %.8f %d'
+        #self.fmt = '%d %.4f %.8f %.8f %d %.8f %.8f %.4f %.4f %.4f %.4f'
+        super(SVB, self).__init__(**expe)
+        self.elbo = None
+        self.limit_elbo_diff = 1e-3
+        self.fr = frontend
+        self.mask = self.fr.data_ma.mask
+        self.expe = expe
+
+        if frontend is not None:
+            self._init_params(frontend)
+
+    def _init_params(self, frontend):
+        raise NotImplementedError
+
+    def data_iter(self, batch, randomize=True):
+        raise NotImplementedError
+
+    def measures(self):
+        pp = self._pp
+        pp_t = 0
+        k = self._K
+
+        #measures = [pp, pp_t, k, alpha_0, gmma, alpha_mean, delta_mean, alpha_var, delta_var]
+        measures = [pp, pp_t, k]
+        return measures
+
+    def _update_chunk_nnz(self, groups):
+        _nnz = []
+        frontend = self.fr
+        dama = self.fr.data_ma
+        for g in groups:
+            if frontend.is_symmetric():
+                count = 2* len(g)
+                #count =  len(g)
+            else:
+                count = len(g)
+            _nnz.append(count)
+
+        self._nnz_vector = _nnz
+
+    def fit(self):
+        ''' chunk is the number of row to threat in a minibach '''
+
+        data_ma = self.fr.data_ma
+        _abc = self.data_iter(data_ma)
+        chunk_groups = np.array_split(_abc, self.chunk_len)
+        self._update_chunk_nnz(chunk_groups)
+        time_it = 0
+        for _id_mnb, minibatch in enumerate(chunk_groups):
+
+            self._nnz = self._nnz_vector[_id_mnb]
+            # <try with multiple iterations here>
+            begin = datetime.now()
+            self.sample(minibatch)
+            time_it = (datetime.now() - begin).total_seconds() / 60
+            # </try>
+
+            self.update_elbo()
+            lgg.info('mnibatch %d/%d,  ELBO: %s, elbo diff: %s' % (_id_mnb, self.chunk_len, self.elbo, self.elbo_diff))
+            if self.expe.get('write'):
+                measures = [_id_mnb, time_it] + self.measures()
+                self.write_some(measures)
+
+        self.close()
+
+    def sample(self, minibatch):
+
+        for _id_burn in range(self.burnin):
+            self._id_burn = _id_burn
+            for _id_token, iter in enumerate(minibatch):
+                self._id_token = _id_token
+                self._xij = self.fr.data_ma[tuple(iter)]
+                self.maximization(iter)
+                self.expectation(iter)
+
+            if self._id_burn != self.burnin-1 and self.expe.verbose < 20:
+                self.update_elbo()
+                lgg.debug('it %d,  ELBO: %s, elbo diff: %s' % (_id_burn, self.elbo, self.elbo_diff))
+
+        self._purge_minibatch()
+
+        #if self.elbo_diff < self.limit_elbo_diff:
+        #    print('ELBO get stuck during data iteration : Sampling useless, return ?!')
+
+        return
+
+    def update_elbo(self):
+        ## Get real ELBO instead of pp
+        nelbo = self.perplexity()
+        self.elbo_diff = nelbo - self.elbo
+        self.elbo = nelbo
+        return self.elbo
+
+    def get_elbo(self):
+        raise NotImplementedError
+
+    def maximization(self):
+        raise NotImplementedError
+
+    def expectation(self):
+        raise NotImplementedError
+
+    def _purge_minibatch(self):
+        raise NotImplementedError
+
+    def scores(self):
+        return self.likelihood()
+
+    def purge(self):
+        self.fr = None

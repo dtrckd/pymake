@@ -3,16 +3,17 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
+import scipy as sp
 from numpy import ma
 from pymake import ExpTensor, ModelManager, FrontendManager, GramExp, ExpeFormat, ExpSpace
-from pymake.expe.spec import _spec
 
 import logging
 lgg = logging.getLogger('root')
+_spec = GramExp.Spec()
 
 USAGE = '''\
 ----------------
-Generate data for answers :
+Generate data  --or find the answers :
 ----------------
  |
  |   methods
@@ -25,26 +26,30 @@ Generate data for answers :
     generate --alpha 1 --gmma 1 -n 1000 --seed
 '''
 
-Corpuses = _spec['CORPUS_SYN_ICDM']
+import itertools
+from pymake.util.algo import gofit, Louvain, Annealing
+from pymake.util.math import reorder_mat, sorted_perm, categorical, clusters_hist
+from pymake.util.utils import Now, nowDiff
+import matplotlib.pyplot as plt
+from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2, random_degree, colored, draw_graph_circular, draw_graph_spectral, draw_graph_spring, tabulate, _markers
+from pymake.util import out
 
-Exp = ExpTensor ((
-    ('corpus', Corpuses),
-    ('data_type'    , 'networks'),
-    ('refdir'        , 'debug111111') , # ign in gen
-    #('model'        , 'mmsb_cgs')   ,
-    ('model'        , ['immsb', 'ibp'])   ,
-    ('K'            , 10)        ,
-    ('N'            , 'all')     , # ign in gen
-    ('hyper'        , ['auto', 'fix'])    , # ign in gen
-    ('homo'         , 0)         , # ign in gen
-    ('repeat'      , 1)       ,
-    ('_bind'    , ['immsb.auto', 'ibp.fix']),
-    ('alpha', 1),
-    ('gmma', 1),
-    ('delta', [(1, 5)]),
-))
+import scipy as sp
+from sklearn.metrics import roc_curve, auc, precision_recall_curve
 
 class GenNetwork(ExpeFormat):
+
+    _default_expe = dict(
+        block_plot = False,
+        write  = False,
+        _do            = ['burstiness', 'global'],
+        _mode         = 'predictive',
+        gen_size      = 1000,
+        epoch         = 30 , #20
+        limit_gen   = 5, # Local superposition !!!
+        limit_class   = 15, # 30
+    )
+
     def __init__(self, *args, **kwargs):
         super(GenNetwork, self).__init__(*args, **kwargs)
         expe = self.expe
@@ -68,7 +73,7 @@ class GenNetwork(ExpeFormat):
         elif expe._mode == 'generative':
             N = expe.gen_size
             ### Generate data from a un-fitted model
-            if expe.model == 'ibp':
+            if 'ilfm' in expe.model:
                 keys_hyper = ('alpha','delta')
                 hyper = (expe.alpha, expe.delta)
             else:
@@ -79,11 +84,12 @@ class GenNetwork(ExpeFormat):
             model = ModelManager.from_expe(expe, init=True)
             #model.update_hyper(hyper)
 
-            if expe.model == 'ibp':
+            # Obsolete !
+            if 'ilfm' in expe.model:
                 title = 'N=%s, K=%s alpha=%s, lambda:%s'% ( N, expe.K, expe.alpha, expe.delta)
-            elif expe.model == 'immsb':
+            elif 'immsb' in expe.model:
                 title = 'N=%s, K=%s alpha=%s, gamma=%s, lambda:%s'% (N, expe.K, expe.alpha, expe.gmma, expe.delta)
-            elif expe.model == 'mmsb_cgs':
+            elif 'mmsb' in expe.model:
                 title = 'N=%s, K=%s alpha=%s, lambda:%s'% ( N, expe.K, expe.alpha, expe.delta)
             else:
                 raise NotImplementedError
@@ -95,7 +101,6 @@ class GenNetwork(ExpeFormat):
 
         lgg.debug('Deprecated : get symmetric info from model.')
         expe.symmetric = frontend.is_symmetric()
-        self.expe = expe
         self.frontend = frontend
         self.model = model
 
@@ -136,7 +141,7 @@ class GenNetwork(ExpeFormat):
             tables = {}
             for m in models:
                 if _type == 'local':
-                    table_shape = (len(corpuses), len(Meas), expe.K**2)
+                    table_shape = (len(corpuses), len(Meas),2* expe.K**2)
                     table = ma.array(np.empty(table_shape), mask=True)
                 elif _type == 'global':
                     table = np.empty((len(corpuses), len(Meas), len(Y)))
@@ -157,7 +162,7 @@ class GenNetwork(ExpeFormat):
             if not 'testset_ratio' in self.pt:
                 Meas = ['20']
             else:
-                Meas = self.gramexp.expe['testset_ratio']
+                Meas = self.gramexp.exp_tensor['testset_ratio']
             tables = ma.array(np.empty((len(corpuses), len(Meas),len(self.gramexp.get('repeat')), 2)), mask=True)
             self.gramexp.Meas = Meas
             self.gramexp.tables = tables
@@ -171,6 +176,11 @@ class GenNetwork(ExpeFormat):
     def burstiness(self, _type='all'):
         '''Zipf Analysis
            (global burstiness) + local burstiness + feature burstiness
+
+           Parameters
+           ----------
+           _type : str
+            type of burstiness to compute in ('global', 'local', 'feature', 'all')
         '''
         if self.model is None: return
         expe = self.expe
@@ -184,7 +194,8 @@ class GenNetwork(ExpeFormat):
             # Global burstiness
             d, dc, yerr = random_degree(Y)
             fig = plt.figure()
-            plot_degree_2((d,dc,yerr), logscale=True, title=expe.title)
+            title = self.specname(expe.corpus) + ' ' + self.specname(expe.model)
+            plot_degree_2((d,dc,yerr), logscale=True, title=title)
 
             figs.append(plt.gcf())
 
@@ -194,7 +205,7 @@ class GenNetwork(ExpeFormat):
             theta, phi = model.get_params()
             Y = Y[:expe.limit_gen]
             now = Now()
-            if expe.model == 'immsb':
+            if 'mmsb' in expe.model:
                 ### Z assignement method #
                 ZZ = []
                 for _ in Y:
@@ -233,18 +244,20 @@ class GenNetwork(ExpeFormat):
 
             fig = plt.figure()
             for i, c in enumerate(k_perm):
-                if i > expe.limit_class:
-                    break
                 if len(c) == 2:
                     # Stochastic Equivalence (outer class)
                     k, l = c
                 else:
                     # Comunnities (inner class)
                     k = l = c.pop()
+                #if i > expe.limit_class:
+                #   break
+                if k != l:
+                    continue
 
                 degree_c = []
                 YY = []
-                if expe.model == 'immsb':
+                if 'mmsb' in expe.model:
                     for y, z in zip(Y, ZZ): # take the len of ZZ if < Y
                         y_c = np.zeros(y.shape)
                         phi_c = np.zeros(y.shape)
@@ -254,29 +267,30 @@ class GenNetwork(ExpeFormat):
                         #degree_c += adj_to_degree(y_c).values()
                         #yerr= None
                         YY.append(y_c)
-                elif expe.model == 'ibp': # or Corpus !
+                elif 'ilfm' in  expe.model: # or Corpus !
                     for y in Y:
                         YY.append((y * np.outer(theta[:,k], theta[:,l] )).astype(int))
 
                 d, dc, yerr = random_degree(YY)
                 if len(d) == 0: continue
+                title = self.specname(expe.corpus) + ' ' + self.specname(expe.model)
                 plot_degree_2((d,dc,yerr), logscale=True, colors=True, line=True,
-                             title='Local Preferential attachment (Stochastic Block)')
+                             title=title)
             figs.append(plt.gcf())
 
         ### Blockmodel Analysis
         lgg.info('Skipping Features burstiness')
         #plt.figure()
-        #if expe.model == "immsb":
-        #    # Class burstiness
+        #if 'mmsb' in expe.model:
+        #    # Feature burstiness
         #    hist, label = clusters_hist(comm['clusters'])
         #    bins = len(hist)
         #    plt.bar(range(bins), hist)
         #    plt.xticks(np.arange(bins)+0.5, label)
         #    plt.xlabel('Class labels')
         #    plt.title('Blocks Size (max assignement)')
-        #elif expe.model == "ibp":
-        #    # Class burstiness
+        #elif 'ilfm' in expe.model:
+        #    # Feature burstiness
         #    hist, label = sorted_perm(comm['block_hist'], reverse=True)
         #    bins = len(hist)
         #    plt.bar(range(bins), hist)
@@ -287,7 +301,6 @@ class GenNetwork(ExpeFormat):
         figs.append(plt.gcf())
 
         if expe.write:
-            from private import out
             out.write_figs(expe, figs, _fn=expe.model)
             return
 
@@ -332,7 +345,7 @@ class GenNetwork(ExpeFormat):
             theta, _phi = model.get_params()
             K = theta.shape[1]
             now = Now()
-            if expe.model == 'immsb':
+            if 'mmsb' in expe.model:
                 ZZ = []
                 for _ in Y:
                 #for _ in Y: # Do not reflect real local degree !
@@ -369,8 +382,6 @@ class GenNetwork(ExpeFormat):
                 k_perm = itertools.product(range(theta.shape[1]) , repeat=2)
 
             for it_k, c in enumerate(k_perm):
-                if it_k > expe.limit_class:
-                    break
                 if len(c) == 2:
                     # Stochastic Equivalence (extra class bind
                     k, l = c
@@ -378,10 +389,14 @@ class GenNetwork(ExpeFormat):
                 else:
                     # Comunnities (intra class bind)
                     k = l = c.pop()
+                #if i > expe.limit_class:
+                #   break
+                if k != l:
+                    continue
 
                 degree_c = []
                 YY = []
-                if expe.model == 'immsb':
+                if 'mmsb' in expe.model:
                     for y, z in zip(Y, ZZ): # take the len of ZZ if < Y
                         y_c = y.copy()
                         phi_c = np.zeros(y.shape)
@@ -391,7 +406,7 @@ class GenNetwork(ExpeFormat):
                         #degree_c += adj_to_degree(y_c).values()
                         #yerr= None
                         YY.append(y_c)
-                elif expe.model == 'ibp':
+                elif 'ilfm' in expe.model:
                     for y in Y:
                         YY.append((y * np.outer(theta[:,k], theta[:,l])).astype(int))
 
@@ -422,31 +437,31 @@ class GenNetwork(ExpeFormat):
                 print()
                 print(table)
                 if expe.write:
-                    from private import out
                     fn = '%s_%s' % (_spec.name(_model), _type)
                     out.write_table(table, _fn=fn, ext='.md')
 
     @ExpeFormat.plot
     def draw(self):
         expe = self.expe
-        if expe._mode == 'predictive':
-            model = self.frontend
-            y = model.data
-            # move this in draw data
-        elif expe._mode == 'generative':
-            model = self.model
-            y = model.generate(**vars(expe))
+        #if expe._mode == 'predictive':
+        #    model = self.frontend
+        #    y = model.data
+        #    # move this in draw data
+        #elif expe._mode == 'generative':
+        #    model = self.model
+        #    y = model.generate(**expe)
+        model = self.model
+        y = model.generate(**expe)
 
-        clustering = 'modularity'
-        print('@heeere, push commmunities annalysis outside static method of frontendnetwork')
-        comm = model.communities_analysis(data=y, clustering=clustering)
+        #clustering = 'modularity'
+        #print('@heeere, push commmunities annalysis outside static method of frontendnetwork')
+        #comm = model.communities_analysis(y, clustering=clustering)
+        #clusters = comm['clusters']
+        #draw_graph_spring(y, clusters)
+        #draw_graph_spectral(y, clusters)
+        #draw_graph_circular(y, clusters)
 
-        clusters = comm['clusters']
-
-        draw_graph_spring(y, clusters)
-        draw_graph_spectral(y, clusters)
-        draw_graph_circular(y, clusters)
-
+        adjshow(y, title=expe.model)
         #adjblocks(y, clusters=comm['clusters'], title='Blockmodels of Adjacency matrix')
         #adjshow(reorder_mat(y, comm['clusters']), 'test reordering')
         #draw_blocks(comm)
@@ -491,7 +506,6 @@ class GenNetwork(ExpeFormat):
 
         if _type == 'pearson':
             lgg.info('using `%s\' similarity' % _sim)
-            import scipy as sp
             # No variance for link expecation !!!
             Y = [Y[0]]
 
@@ -545,7 +559,6 @@ class GenNetwork(ExpeFormat):
                 print()
                 print(table)
                 if expe.write:
-                    from private import out
                     fn = '%s_homo_%s' % (_spec.name(_model), _type)
                     out.write_table(table, _fn=fn, ext='.md')
 
@@ -607,10 +620,10 @@ class GenNetwork(ExpeFormat):
             for _model, table in self.gramexp.tables.items():
                 ax = self.gramexp.figs[_model].fig.gca()
 
-                bp = ax.boxplot([table['natural']['links']    ], widths=0.5,  positions = [1])
-                bp = ax.boxplot([table['natural']['non-links']], widths=0.5,  positions = [2])
-                bp = ax.boxplot([table['latent']['links']     ], widths=0.5,  positions = [4])
-                bp = ax.boxplot([table['latent']['non-links'] ], widths=0.5,  positions = [5])
+                bp = ax.boxplot([table['natural']['links']    ], widths=0.5,  positions = [1], whis='range')
+                bp = ax.boxplot([table['natural']['non-links']], widths=0.5,  positions = [2], whis='range')
+                bp = ax.boxplot([table['latent']['links']     ], widths=0.5,  positions = [4], whis='range')
+                bp = ax.boxplot([table['latent']['non-links'] ], widths=0.5,  positions = [5], whis='range')
 
                 ax.set_ylabel('Similarity')
                 ax.set_xticks([1.5,4.5])
@@ -624,10 +637,16 @@ class GenNetwork(ExpeFormat):
                 weights = ['light', 'ultralight']
                 for tick  in range(nbox):
                     ax.text(pos[tick], top+top*0.015 , upperLabels[tick],
-                             horizontalalignment='center', size='x-small', weight=weights[tick%2])
+                             horizontalalignment='center', weight=weights[tick%2])
+
+                print(_model)
+                t1 = sp.stats.ttest_ind(table['natural']['links'], table['natural']['non-links'])
+                t2 = sp.stats.ttest_ind(table['latent']['links'], table['latent']['non-links'])
+                print(t1)
+                print(t2)
 
     @ExpeFormat.plot('corpus', 'testset_ratio')
-    def roc(self, _type='testset', _ratio=20):
+    def roc(self, _type='testset', _ratio=100):
         ''' AUC/ROC test report '''
         from sklearn.metrics import roc_curve, auc, precision_recall_curve
         expe = self.expe
@@ -638,7 +657,8 @@ class GenNetwork(ExpeFormat):
         if not hasattr(expe, 'testset_ratio'):
             setattr(expe, 'testset_ratio', 20)
 
-        ax = self.gramexp.figs[expe.corpus].fig.gca()
+        frame = self.gramexp.figs[expe.corpus]
+        ax = frame.fig.gca()
 
         if _type == 'testset':
             y_true, probas = model.mask_probas(data)
@@ -648,6 +668,11 @@ class GenNetwork(ExpeFormat):
                 y_true = y_true[:n_d]
                 probas = probas[:n_d]
             else:
+                theta, phi = model.get_params()
+                print('theta', theta, theta.shape)
+                print('phi', phi, phi.shape)
+                print(expe.model, expe.corpus)
+                print(y_true.sum(), (y_true==0).sum(), probas)
                 pass
 
         elif _type == 'learnset':
@@ -658,7 +683,7 @@ class GenNetwork(ExpeFormat):
 
         fpr, tpr, thresholds = roc_curve(y_true, probas)
         roc_auc = auc(fpr, tpr)
-        ax.plot(fpr, tpr, label='ROC %s (area = %0.2f)' % (expe.model, roc_auc))
+        ax.plot(fpr, tpr, label='ROC %s (area = %0.2f)' % (_spec.name(expe.model), roc_auc), ls=frame.linestyle.next())
         self.noplot = True
 
         #precision, recall, thresholds = precision_recall_curve( y_true, probas)
@@ -670,7 +695,6 @@ class GenNetwork(ExpeFormat):
                 ax.plot([0, 1], [0, 1], linestyle='--', color='k', label='Luck')
                 ax.legend(loc="lower right", prop={'size':10})
 
-
     def roc_evolution(self, _type='testset', _type2='max', _ratio=20, _type3='errorbar'):
         ''' AUC difference between two models against testset_ratio
             * _type : learnset/testset
@@ -678,7 +702,6 @@ class GenNetwork(ExpeFormat):
             * _ratio : ration of the traning set to predict. If 100 _predictall will be true
 
         '''
-        from sklearn.metrics import roc_curve, auc, precision_recall_curve
         expe = self.expe
         model = self.model
         data = self.frontend.data
@@ -737,7 +760,7 @@ class GenNetwork(ExpeFormat):
             table_std = t
 
             # Measure is comparaison of two AUC.
-            id_mmsb = self.gramexp.exp_tensor['model'].index('immsb')
+            id_mmsb = [i for i, s in enumerate(self.gramexp.exp_tensor['model']) if s.endswith('mmsb_cgs')][0]
             id_ibp = 1 if id_mmsb == 0 else 0
             table_mean = table_mean[:,:, id_mmsb] - table_mean[:,:, id_ibp]
             table_std = table_std[:,:, id_mmsb] + table_std[:,:, id_ibp]
@@ -758,7 +781,7 @@ class GenNetwork(ExpeFormat):
                     fig.gca().set_xticklabels(Meas)
 
             plt.errorbar(Meas,[0]*len(Meas), linestyle='--', color='k')
-            plt.legend(loc='upper left',prop={'size':7})
+            plt.legend(loc='lower left',prop={'size':7})
 
             # Table formatting
             #table = table_mean + b' $\pm$ ' + table_std
@@ -772,24 +795,10 @@ class GenNetwork(ExpeFormat):
             print()
             print(table)
             if expe.write:
-                from private import out
                 fn = '%s_%s_%s' % ( _type, _type2, _ratio)
                 figs = {'roc_evolution': ExpSpace({'fig':fig, 'table':table, 'fn':fn})}
                 out.write_table(figs, ext='.md')
                 out.write_figs(expe, figs)
-
-    @ExpeFormat.plot('corpus')
-    def plot_some(self, _type='likelihood'):
-        ''' likelihood/perplxity convergence report '''
-        expe = self.expe
-        model = self.model
-
-        ax = self.gramexp.figs[expe.corpus].fig.gca()
-
-        data = model.load_some(get='likelihood')
-        burnin = 5
-        ll_y = np.ma.masked_invalid(np.array(data, dtype='float'))
-        ax.plot(ll_y, label=_spec.name(expe.model))
 
     @ExpeFormat.plot
     def clustering(self):
@@ -810,25 +819,6 @@ class GenNetwork(ExpeFormat):
         plt.colorbar()
 
 if __name__ == '__main__':
-    from pymake.util.algo import gofit, Louvain, Annealing
-    from pymake.util.math import reorder_mat, sorted_perm, categorical, clusters_hist
-    from pymake.util.utils import Now, nowDiff
-    import matplotlib.pyplot as plt
-    from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2, random_degree, colored, draw_graph_circular, draw_graph_spectral, draw_graph_spring, tabulate, _markers
-    import itertools
 
-    config = dict(
-        block_plot = False,
-        write  = False,
-        _do            = 'burstiness',
-        #generative    = 'generative',
-        _mode    = 'predictive',
-        gen_size      = 1000,
-        epoch         = 30 , #20
-        limit_gen   = 5, # Local superposition !!!
-        limit_class   = 30,
-        spec = Exp
-    )
-
-    GramExp.generate(config, USAGE).pymake(GenNetwork)
+    GramExp.generate(usage=USAGE).pymake(GenNetwork)
 

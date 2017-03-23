@@ -12,7 +12,7 @@ from scipy.special import digamma
 from numpy.random import dirichlet, gamma, poisson, binomial, beta
 
 from pymake.frontend.frontend import DataBase
-from pymake.model import GibbsSampler, MSampler, BetaSampler
+from pymake.model.modelbase import GibbsSampler, MSampler, BetaSampler
 
 from pymake.util.math import lognormalize, categorical
 
@@ -497,7 +497,7 @@ class CGS(object):
         return z
 
 class GibbsRun(GibbsSampler):
-
+    __abstractmethods__ = 'model'
     def __init__(self, sampler,  data_t=None, **kwargs):
 
         self.burnin = kwargs.get('burnin',  0.05) # Ratio of iteration
@@ -513,5 +513,4 @@ class GibbsRun(GibbsSampler):
     def predict(self):
         lgg.error('todo')
         pass
-
 

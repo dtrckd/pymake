@@ -8,52 +8,59 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import sys, multiprocessing
 
 from pymake import GramExp
-from pymake.frontend.manager import ModelManager, FrontendManager
-from pymake.expe.spec import _spec
 
 
 ''' A Command line controler of Pymake '''
 
 
-def Zymake(spec):
-    commands = make_forest_conf(spec)
-    if len(commands) == 1:
-        frontend = FrontendManager.get(commands[0], load=True)
-        model = ModelManager(commands[0])
-        return frontend, model
-    else:
-        raise NotImplementedError('Multiple expe handle')
-
 if __name__ == '__main__':
 
     zymake = GramExp.zymake()
-    zyvar = zymake.expe
+    zyvar = zymake._conf
+
+    if zyvar.get('simulate'):
+        # same as show !
+        zymake.simulate()
 
     ### Makes OUT Files
+    lines = None
     if zyvar['_do'] == 'cmd':
         lines = zymake.make_commandline()
     elif zyvar['_do'] == 'path':
-        lines = zymake.make_path(zyvar['_ftype'], status=zyvar['_status'])
-    elif zyvar['_do'] == 'burn':
-        server = 'hertog, macks, fuzzy, zombie-dust, victory, racer, tiger'
+        lines = zymake.make_path(ftype=zyvar.get('_ftype', 'pk'), status=zyvar.get('_status'))
     elif zyvar['_do'] == 'show':
         zymake.simulate()
-        exit()
-    elif zyvar['_do'] == 'list':
-        print (_spec.table())
-        exit()
+    elif zyvar['_do'] == 'exec':
+        lines = zymake.execute()
+    elif zyvar['_do'] == 'burn':
+        # @todo; parallelize Pymake()
+        raise NotImplementedError('What parallel strategy ?')
     else:
-        raise NotImplementedError('zymake options unknow : %s' % zyvar)
 
+        if not 'do_list' in zyvar:
+            raise ValueError('Unknown Options : %s' % zyvar)
 
-    ### Makes figures on remote / parallelize
-    #num_cores = int(multiprocessing.cpu_count() / 4)
-    #results_files = Parallel(n_jobs=num_cores)(delayed(expe_figures)(i) for i in source_files)
-    ### ...and Retrieve the figure
+        if 'atom' in zyvar.get('do_list', []):
+            print (zymake.atomtable())
+        elif 'atom_topos' in zyvar.get('do_list',[]):
+            print (zymake.atomtable(_type='topos'))
+        elif 'script' in zyvar.get('do_list', []):
+            print(zymake.scripttable())
+        elif 'expe' in  zyvar.get('do_list',[]):
+            print (zymake.spectable())
+        else:
+            print(zymake.help_short())
+            if zyvar['do_list']:
+                print ('Unknow options %s ?' % zyvar.get('do_list'))
+        exit()
+
+    if lines is None:
+        # catch signal ?
+        exit()
 
     if 'script' in zyvar:
-        script = zyvar['script']
-        lines = [' '.join((' '.join(script), l)) for l in lines]
+        script = './zymake.py exec'
+        lines = [' '.join((script, l)) for l in lines]
 
     zymake.simulate(halt=False, file=sys.stderr)
     print('\n'.join(lines), file=sys.stdout)

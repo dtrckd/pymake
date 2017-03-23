@@ -30,6 +30,9 @@ class Cycle(object):
     def reset(self):
         return self.it.reset()
 
+    def copy(self):
+        return self.__class__(self.seq)
+
 def ask_sure_exit(question):
 
     while True:
@@ -56,11 +59,11 @@ def jsondict(d):
         return {str(k):v for k,v in d.items()}
     return d
 
-def parse_file_conf(fn):
+def parse_file_conf(fn, sep=':'):
     with open(fn) as f:
         parameters = f.read()
     parameters = filter(None, parameters.split('\n'))
-    parameters = dict((p[0], p[1]) for p  in (t.strip().split(':') for t in parameters))
+    parameters = dict((p[0].strip(), p[1].strip()) for p in (t.strip().split(sep) for t in parameters))
     for k, v in parameters.items():
         if  '.' in v:
             try:
@@ -169,13 +172,12 @@ def map_class2cluster_from_confusion(confu, map=None, cpt=0, minmax='max'):
         return map_class2cluster_from_confusion(confu, map, cpt)
 
 def make_path(bdir):
-    fn = os.path.basename(bdir)
     _bdir = os.path.dirname(bdir)
     if not os.path.exists(_bdir) and _bdir:
         os.makedirs(_bdir)
-    if not os.path.exists(fn) and fn:
-        #open(fn, 'a').close()
-        pass # do i need it
+    #fn = os.path.basename(bdir)
+    #if not os.path.exists(fn) and fn:
+    #    open(fn, 'a').close()
     return bdir
 
 

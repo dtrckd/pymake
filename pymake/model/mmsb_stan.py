@@ -4,7 +4,7 @@ import cPickle
 
 # Hyper-parameters
 K = 3 # number of communities
-alpha = 0.1 * np.ones(K) # Dirichlet prior for membership mixture 
+alpha = 0.1 * np.ones(K) # Dirichlet prior for membership mixture
 block_structure = np.asarray([[0.8, 0.3, 0.2],
                               [0.2, 0.7, 0.3],
                               [0.1, 0.1, 0.6]])
@@ -27,12 +27,12 @@ for i in xrange(M):
 
     graph_views += [binary_graph]
 
-graph_views = np.asarray( graph_views )    
-                
+graph_views = np.asarray( graph_views )
+
 # Run MCMC
 def load_stan_model( model_name ):
     """
-    Load stan model from disk, 
+    Load stan model from disk,
     if not exist, compile the model from source code
     """
     try:
@@ -47,12 +47,12 @@ def load_stan_model( model_name ):
 
 
 
-def mmsb_single_view(idx):    
+def mmsb_single_view(idx):
     mmsb_model = load_stan_model("mix_membership_blockmodel")
     fit = mmsb_model.sampling( data = {'K': K, 'N': N, 'En': graph_views[idx],
                                        'alpha': alpha, 'Blk': block_structure},
                                chains = 4 )
-    
+
     # Show the result
     print(fit)
     mu = fit.extract(permuted = True)['mu']

@@ -1,17 +1,18 @@
+tabulate
+termcolors
 numpy
 scipy
 networkx 
 nltk
-matplotlib  #plotly
-scikit-learn ?
+matplotlib
+//plotly
+scikit-learn
+Whoosh
 sympy ?
 pystan ?
 pymc ?
 gensim ?
-python-pygraphviz?
+python-pygraphviz ?
 python-louvain ?
-    pip install hg+https://bitbucket.org/taynaud/python-louvain
-    hg clone https://bitbucket.org/taynaud/python-louvain
-args ?
-tabulate ?
-termcolors ?
+    // pip install hg+https://bitbucket.org/taynaud/python-louvain
+    // hg clone https://bitbucket.org/taynaud/python-louvain
