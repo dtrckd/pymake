@@ -10,15 +10,19 @@ This code is in a living development stage and yet unstable.
 * Specification of design of experimentations with simple grammar,
 * commandline toolkit for quick design and experience testing,
 * Support experience rules filtering,
+* Pipe experience for parallelization (see pymake cmd [expe]),
 * browse, design and test several models and corpus find in the literrature.
 
 Ongoing development :
+
 * A database to share (push/fetch/search) Design of experimentations,
 * Better specification of the formal grammar of design of experimentation,
 * Better documentation.
 
 ### Install
     make install
+    # try it
+    pymake --help
 
 ### Usage
 Script to create the path and commands for a design of experiments :
@@ -39,7 +43,9 @@ Script to create the path and commands for a design of experiments :
 
 List design of experiments :
 
-    pymake list
+    pymake -l        # Current design
+    pymake -l script # Available scripts
+    pymake -l atom   # Available models
 
 Show one experiments :
 
