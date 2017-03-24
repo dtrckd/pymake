@@ -8,7 +8,7 @@ matplotlib
 //plotly
 scikit-learn
 Whoosh
-sympy ?
+sympy
 pystan ?
 pymc ?
 gensim ?

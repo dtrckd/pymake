@@ -32,6 +32,8 @@ if __name__ == '__main__':
         zymake.simulate()
     elif zyvar['_do'] == 'exec':
         lines = zymake.execute()
+    elif zyvar['_do'] == 'notebook':
+        lines = zymake.notebook()
     elif zyvar['_do'] == 'burn':
         # @todo; parallelize Pymake()
         raise NotImplementedError('What parallel strategy ?')

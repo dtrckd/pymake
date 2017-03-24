@@ -1,10 +1,10 @@
 # Graph Visualization
 
-The reference of attribut ofr the dot grammar (eg graph.dot files) used by grapviz are defined here:
+The attribute reference for the dot grammar (eg graph.dot files) used by grapviz are defined here:
 * [http://www.graphviz.org/doc/info/attrs.html](http://www.graphviz.org/doc/info/attrs.html)		
 
 
-Example of amaking a graph using dot:
+Example of making a graph using dot:
     cat graph.dot
 	digraph {
     /* declare the node & style them */
