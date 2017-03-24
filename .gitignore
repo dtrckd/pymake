@@ -23,8 +23,6 @@ data/**/*.zip
 data/**/*.tgz
 data/**/*.gz
 
-pymake/scripts/private/
-
 stirling.pk
 stirling.npy
 pymake/ID
