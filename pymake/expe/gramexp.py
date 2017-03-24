@@ -746,6 +746,15 @@ class GramExp(object):
             self.update(_do=script_args)
         self.pymake(sandbox=Scripts[script_name])
 
+    def notebook(self):
+        from nbformat import v4 as nbf
+        nb = nbf.new_notebook()
+        text = ''
+        code = ''
+        nb['cells'] = [nbf.new_markdown_cell(text),
+                       nbf.new_code_cell(code) ]
+        return
+
     def pymake(self, sandbox=ExpeFormat):
         ''' Walk Trough experiments. '''
 

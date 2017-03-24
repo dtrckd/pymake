@@ -98,6 +98,7 @@ class PackageWalker(object):
                 name = prefix +'.'+ cls_name.lower()
             else:
                 name = cls_name.lower()
+
             packages[name] = obj
 
         return packages
