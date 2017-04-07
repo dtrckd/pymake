@@ -26,7 +26,7 @@ class Fit(ExpeFormat):
         frontend = FrontendManager.load(expe)
 
         # @Debug: Obsolete / Inside model
-        alpha = expe.get('alpha', .1)
+        alpha = expe.get('alpha', .5)
         gmma = expe.get('gmma', .5)
         delta = expe.get('delta', .5)
 

@@ -442,15 +442,20 @@ class GibbsSampler(ModelBase):
         self.K = self.theta.shape[1]
         return self.theta, self.phi
 
-# lambda fail to find import if not global
+# lambda fail to find import if _stirling if not
+# visible in the global scope.
 import sympy
 from sympy.functions.combinatorial.numbers import stirling
+try:
+    from pymake.util.compute_stirling import load_stirling
+    _stirling_mat = load_stirling()
+except Exception as e:
+    pass
+
 class MSampler(object):
 
     try:
-        from pymake.util.compute_stirling import load_stirling
-        _stirling_mat = load_stirling()
-        stirling_mat = lambda _, x, y : stirling_mat[x, y]
+        stirling_mat = lambda _, x, y : _stirling_mat[x, y]
     except Exception as e:
         lgg.error('stirling.npy file not found, using sympy instead (it will be 10 time slower !)')
         stirling_mat = lambda _, x,y : np.asarray([float(sympy.log(stirling(x, i, kind=1)).evalf()) for i in y])

@@ -22,14 +22,15 @@ _spec = GramExp.Spec()
 # a drawing class...
 #
 #
+#
+#
+from pymake.frontend.frontend_io import _FIGS_PATH
 
 def _name(n):
     return _spec.name(n).lower().replace(' ', '')
 
 def full_path(fn):
-    dn = os.path.dirname(__file__)
-    bdir = '../../results/figs/'
-    path = os.path.join(dn, bdir, _name(fn))
+    path = os.path.join(_FIGS_PATH, _name(fn))
     make_path(path)
     return path
 
@@ -49,17 +50,18 @@ def formatName(fun):
     return wrapper
 
 @formatName
-def write_figs(expe, figs, suffix=None, _fn=None, ext='.png'):
+def write_figs(expe, figs, _suffix=None, _fn=None, ext='.png'):
     if type(figs) is list:
         _fn = '' if _fn is None else _name(_fn)+'_'
         for i, f in enumerate(figs):
-            suffix = suffix if suffix else i
-            fn = ''.join([_fn, '%s_%s', ext]) % (expe.corpus, suffix)
+            suffix = '_'+ _suffix if _suffix and len(figs)>1 else ''
+            fn = ''.join([_fn, '%s_%s', ext]) % (expe.corpus, str(i) + suffix)
+            print('Writings figs: %s' % fn)
             f.savefig(full_path(fn));
-
     elif issubclass(type(figs), dict):
         for c, f in figs.items():
             fn = ''.join([f.fn , ext])
+            print('Writings figs: %s' % fn)
             f.fig.savefig(full_path(fn));
     else:
         print('ERROR : type of Figure unknow, passing')

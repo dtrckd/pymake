@@ -4,21 +4,16 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import re, os, json, logging
 from collections import OrderedDict
 import numpy as np
+from pymake.util.loader import get_global_settings
 
 lgg = logging.getLogger('root')
 
-''' This is Obsolote and will be merge into Gramexp module '''
+''' Tensor method nned to be merged with Gramexp '''
 
-LOCAL_BDIR = '../../data/' # Last slash(/) necessary.
-_force_local = False
-if not os.path.exists(os.path.dirname(__file__)+'/'+LOCAL_BDIR+'networks/generator/Graph7/debug111111') and _force_local:
-    LOCAL_BDIR = '/media/dtrckd/TOSHIBA EXT/pymake/data/'
-    if not os.path.exists(LOCAL_BDIR):
-        LOCAL_BDIR = '/home/ama/adulac/workInProgress/networkofgraphs/process/pymake/data/'
-        #print ('Error Data path: %s' % LOCAL_BDIR)
-        #exit()
 
-_STIRLING_PATH = LOCAL_BDIR + '/../pymake/util/'
+_STIRLING_PATH = get_global_settings()['project_stirling']
+_FIGS_PATH = get_global_settings()['project_figs']
+_DATA_PATH = get_global_settings()['project_data']
 
 ### directory/file tree reference
 # Default and New values
@@ -95,8 +90,8 @@ def get_conf_from_file(target, mp):
     ##template_file = 'networks/generator/Graph13/debug11/immsb_10_auto_0_all.*'
 
     # Relative path ignore
-    if target.startswith(LOCAL_BDIR):
-        target.replace(LOCAL_BDIR, '')
+    if target.startswith(_DATA_PATH):
+        target.replace(_DATA_PATH, '')
 
     path = target.lstrip('/').split('/')
 
@@ -206,7 +201,7 @@ def forest_tensor(target_files, map_parameters):
                 raise ValueError
             pt[rez_map.index(k)] = idx
 
-        f = os.path.join(os.path.dirname(__file__), LOCAL_BDIR, _f)
+        f = os.path.join(_DATA_PATH, _f)
         d = get_json(f)
         if not d:
             not_finished.append( '%s not finish...\n' % _f)

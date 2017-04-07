@@ -20,7 +20,7 @@ from pymake.plot import colored
 
 import pymake.util.loader as mloader
 
-from pymake.frontend.frontend_io import LOCAL_BDIR, ext_status, is_empty_file
+from pymake.frontend.frontend_io import _DATA_PATH, ext_status, is_empty_file
 
 import logging
 lgg = logging.getLogger('root')
@@ -274,10 +274,10 @@ class GramExp(object):
         for spec in lod:
             filen = GramExp.make_output_path(spec, _type, status=status)
             if filen:
-                s = filen.find(LOCAL_BDIR)
+                s = filen.find(_DATA_PATH)
                 pt = 0
                 if not full_path and s >= 0:
-                    pt = s + len(LOCAL_BDIR)
+                    pt = s + len(_DATA_PATH)
                 targets.append(filen[pt:])
         return targets
 
@@ -300,7 +300,7 @@ class GramExp(object):
             c = c.replace('graph', 'Graph')
             c = 'generator/' + c
 
-        basedir = os.path.join(os.path.dirname(__file__), LOCAL_BDIR, base, c)
+        basedir = os.path.join(os.path.dirname(__file__), _DATA_PATH, base, c)
 
         if 'repeat' in expe and ( expe['repeat'] is not None and expe['repeat'] is not False):
             p = os.path.join(hook, str(expe['repeat']))
