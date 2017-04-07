@@ -59,11 +59,11 @@ def jsondict(d):
         return {str(k):v for k,v in d.items()}
     return d
 
-def parse_file_conf(fn, sep=':'):
+def parse_file_conf(fn, sep=':', comments='#'):
     with open(fn) as f:
         parameters = f.read()
     parameters = filter(None, parameters.split('\n'))
-    parameters = dict((p[0].strip(), p[1].strip()) for p in (t.strip().split(sep) for t in parameters))
+    parameters = dict((p[0].strip(), p[1].strip()) for p in (t.strip().split(sep) for t in parameters if not t.strip().startswith('#')))
     for k, v in parameters.items():
         if  '.' in v:
             try:
@@ -77,43 +77,6 @@ def parse_file_conf(fn, sep=':'):
                 pass
     return parameters
 
-
-def getGraph(target='', **conf):
-    basedir = conf.get('filen', dirname(__file__) + '/../../data/networks/')
-    filen = basedir + target
-    f = open(filen, 'r')
-
-    data = []
-    N = 0
-    inside = [False, False]
-    for line in f:
-        if line.startswith('# Vertices') or inside[0]:
-            if not inside[0]:
-                inside[0] = True
-                continue
-            if line.startswith('#') or not line.strip() :
-                inside[0] = False
-            else:
-                # Parsing assignation
-                N += 1
-        elif line.startswith('# Edges') or inside[1]:
-            if not inside[1]:
-                inside[1] = True
-                continue
-            if line.startswith('#') or not line.strip() :
-                inside[1] = False
-            else:
-                # Parsing assignation
-                data.append( line.strip() )
-    f.close()
-    edges = [tuple(row.split(';')) for row in data]
-    g = np.zeros((N,N))
-    g[[e[0] for e in edges],  [e[1] for e in edges]] = 1
-    g[[e[1] for e in edges],  [e[0] for e in edges]] = 1
-    return g
-
-
-
 # Assign new values to an array according to a map list
 def set_v_to(a, map):
     new_a = a.copy()
@@ -121,7 +84,6 @@ def set_v_to(a, map):
         new_a[a==k] = c
 
     return new_a
-
 
 # Re-order the confusion matrix in order to map the cluster (columns) to the best (classes) according to purity
 # One class by topics !

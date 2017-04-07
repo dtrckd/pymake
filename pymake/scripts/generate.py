@@ -627,14 +627,15 @@ class GenNetwork(ExpeFormat):
 
                 ax.set_ylabel('Similarity')
                 ax.set_xticks([1.5,4.5])
-                ax.set_xticklabels((_spec.name(_model)+'/natural', _spec.name(_model)+'/latent'), rotation=15)
+                ax.set_xticklabels(('natural', 'latent'), rotation=0)
                 ax.set_xlim(0,6)
 
                 nbox = 4
                 top = self.gramexp.figs[_model].damax
                 pos = [1,2,4,5]
-                upperLabels = ['links','non-links']*2
-                weights = ['light', 'ultralight']
+                upperLabels = ['linked','    non-linked']*2
+                #weights = ['light', 'ultralight']
+                weights = ['normal', 'normal']
                 for tick  in range(nbox):
                     ax.text(pos[tick], top+top*0.015 , upperLabels[tick],
                              horizontalalignment='center', weight=weights[tick%2])
