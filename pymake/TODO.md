@@ -1,4 +1,5 @@
 # IN DOII NG
+* grepy __file__ and get basdir from pymake.cfg instead.
 * @pymake related : confilt in -do when invoking script from zymake, solution?! 
     * lookup table for script (function) inside ExpeFormat !!!  (@whoosh related)
     * -l script

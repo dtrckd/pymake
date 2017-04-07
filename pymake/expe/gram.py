@@ -110,6 +110,9 @@ _Gram = [
         nargs=0, action=VerboseAction, dest='verbose',
         help='Silent option'),
 
+    '-np', '--save_plot', dict(
+        action='store_true', help="don't block figure"),
+
     '-s', '--simulate',  dict(
         action='store_true',
         help='Offline simulation'),
