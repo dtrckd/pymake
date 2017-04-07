@@ -24,4 +24,4 @@ move: $(latex_files) $(image_files)
 	@cp -v $^ $(pap_base)/img/corpus/
 
 clean:
-	@rm  figs/*
+	@rm -vf  figs/*

@@ -2,8 +2,11 @@
 
 from pymake import ExpSpace, ExpTensor, Corpus, ExpDesign
 
+__plot_font_size = 14
+
+### PLOTLIB CONFIG
 import matplotlib.pyplot as plt
-plt.rc('font', size=11)  # controls default text sizes
+plt.rc('font', size=__plot_font_size)  # controls default text sizes
 
 class Netw(ExpDesign):
 

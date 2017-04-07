@@ -17,8 +17,9 @@ def is_abstract(cls):
     return isabc
 
 def get_global_settings():
-    dir =  os.path.dirname(os.path.realpath(__file__))
-    fn = os.path.join(dir, '..', 'pymake.cfg')
+    #dir =  os.path.dirname(os.path.realpath(__file__))
+    dir = os.getcwd()
+    fn = os.path.join(dir, 'pymake.cfg')
     return parse_file_conf(fn, sep='=')
 
 
@@ -43,7 +44,6 @@ class PackageWalker(object):
 
     def __repr__(self):
         return self.packages
-
 
     def _get_packages(self, module_name=None,  _depth=0):
         ''' recursive call with regards to depth parameter '''
