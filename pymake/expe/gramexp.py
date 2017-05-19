@@ -15,10 +15,10 @@ import numpy as np
 from argparse import RawDescriptionHelpFormatter
 
 import pymake.expe.gram as gram
-from pymake import basestring, ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, ExpVector
+from pymake import basestring, ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, Script, ExpVector
 from pymake.plot import colored
 
-import pymake.util.loader as mloader
+import pymake.frontend.frontend_io as mloader
 
 from pymake.frontend.frontend_io import _DATA_PATH, ext_status, is_empty_file
 
@@ -371,6 +371,7 @@ class GramExp(object):
         Communicate with the data :
         ----------------
          |   zymake -l [expe(default)|atom|script] : (default) show available spec
+         |   zymake update  : update the pymake index
          |   zymake show SPEC : show one spec details
          |   zymake cmd SPEC [fun][*args] : generate command-line
          |   zymake exec SPEC [fun][*args][--script ...] : execute tasks (default is fit)
@@ -383,8 +384,8 @@ class GramExp(object):
 
         _spec = mloader.SpecLoader.default_spec()
         ontology = dict(
-            _do    = ['cmd', 'show', 'path', 'burn', 'exec'],
-            spec   = _spec.keys(),
+            _do    = ['cmd', 'show', 'path', 'burn', 'exec', 'update'],
+            spec   = _spec._specs(),
             _ftype = ['json', 'pk', 'inf']
         )
         ont_values = sum([w for k, w in ontology.items() if k != 'spec'] , [])
@@ -393,7 +394,7 @@ class GramExp(object):
         if not request.get('_do'):
             request['_do'] = []
             if not request.get('do_list'):
-                request['do_list'] = []
+                request['do_list'] = None
 
         # Hack for script/exec
         if request.get('do_list'):
@@ -573,8 +574,7 @@ class GramExp(object):
         return self._spec._table_atoms(_type=_type)
 
     def scripttable(self):
-        t = mloader.ScriptsLoader.table()
-        return t
+        return Script.table()
 
     def getSpec(self):
         return self._spec
@@ -730,21 +730,25 @@ class GramExp(object):
         else:
             raise ValueError('Who need to specify a script. (--script)')
 
-        script_name = script[0]
-        script_args = script[1:]
-        Scripts = mloader.ScriptsLoader.get_packages()
-        if not script_name in Scripts:
-            method_by_cls = mloader.ScriptsLoader.lookup_methods()
-            if script_name in sum(method_by_cls.values(), []):
-                # check if it is method reference
-                script_args = [script_name] + script_args
-                script_name = next(k.lower() for (k,v) in method_by_cls.items() if script_name in v)
-            else:
-                raise ValueError('error: Unknown script: %s' % (script_name))
+        _script, script_args = Script.get(script[0], script[1:])
+
+        # Raw search
+        #script_name = script[0]
+        #script_args = script[1:]
+        #Scripts = mloader.ScriptsLoader.get_packages()
+        #if not script_name in Scripts:
+        #    method_by_cls = mloader.ScriptsLoader.lookup_methods()
+        #    if script_name in sum(method_by_cls.values(), []):
+        #        # check if it is a method reference
+        #        script_args = [script_name] + script_args
+        #        script_name = next(k.lower() for (k,v) in method_by_cls.items() if script_name in v)
+        #    else:
+        #        raise ValueError('error: Unknown script: %s' % (script_name))
 
         if script_args:
             self.update(_do=script_args)
-        self.pymake(sandbox=Scripts[script_name])
+        #self.pymake(sandbox=Scripts[script_name])
+        self.pymake(sandbox=_script)
 
     def notebook(self):
         from nbformat import v4 as nbf
@@ -754,6 +758,10 @@ class GramExp(object):
         nb['cells'] = [nbf.new_markdown_cell(text),
                        nbf.new_code_cell(code) ]
         return
+
+    def update_index(self):
+        from pymake.index.indexmanager import IndexManager as IX
+        IX.build_indexes()
 
     def pymake(self, sandbox=ExpeFormat):
         ''' Walk Trough experiments. '''

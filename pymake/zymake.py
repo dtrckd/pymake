@@ -13,7 +13,8 @@ from pymake import GramExp
 ''' A Command line controler of Pymake '''
 
 
-if __name__ == '__main__':
+
+def main():
 
     zymake = GramExp.zymake()
     zyvar = zymake._conf
@@ -34,6 +35,8 @@ if __name__ == '__main__':
         lines = zymake.execute()
     elif zyvar['_do'] == 'notebook':
         lines = zymake.notebook()
+    elif zyvar['_do'] == 'update':
+        zymake.update_index()
     elif zyvar['_do'] == 'burn':
         # @todo; parallelize Pymake()
         raise NotImplementedError('What parallel strategy ?')
@@ -42,13 +45,13 @@ if __name__ == '__main__':
         if not 'do_list' in zyvar:
             raise ValueError('Unknown Options : %s' % zyvar)
 
-        if 'atom' in zyvar.get('do_list', []):
+        if 'atom' == zyvar.get('do_list'):
             print (zymake.atomtable())
-        elif 'atom_topos' in zyvar.get('do_list',[]):
+        elif 'atom_topos' == zyvar.get('do_list'):
             print (zymake.atomtable(_type='topos'))
-        elif 'script' in zyvar.get('do_list', []):
+        elif 'script' == zyvar.get('do_list'):
             print(zymake.scripttable())
-        elif 'expe' in  zyvar.get('do_list',[]):
+        elif 'expe' ==  zyvar.get('do_list'):
             print (zymake.spectable())
         else:
             print(zymake.help_short())
@@ -66,4 +69,7 @@ if __name__ == '__main__':
 
     zymake.simulate(halt=False, file=sys.stderr)
     print('\n'.join(lines), file=sys.stdout)
+
+if __name__ == '__main__':
+    main()
 

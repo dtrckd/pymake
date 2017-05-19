@@ -243,6 +243,6 @@ _Gram = [
         help='Rules to filter the Exp Request.'),
 
     '-l', '--list', dict(
-        dest='do_list', const=['expe'],  nargs='?', action=unaggregate_append,
+        dest='do_list', const='expe',  nargs='?', action=unaggregate_append,
         help='Request to print informations.'),
     ]

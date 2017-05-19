@@ -11,7 +11,6 @@ plt.rc('font', size=__plot_font_size)  # controls default text sizes
 class Netw(ExpDesign):
 
     _name = 'Networks Design'
-    _package = {'model': ['pymake.model', 'mla', 'sklearn.decomposition']}
 
     # Use for Name on figure and table
     _mapname = dict((

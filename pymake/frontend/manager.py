@@ -139,16 +139,16 @@ class ModelManager(object):
         # Not all model takes data (Automata ?)
         data, data_t = self._format_dataset(frontend, data_t)
 
-        models = Model.get_atoms(GramExp.Spec())
-        if self.expe.model in models:
-            _model = models[self.expe.model]
-            if self.is_model(_model, 'pymake'):
-                model = _model(self.expe, self.fr)
-            else:
-                model = _model(**self.expe)
+        _model = Model.get(self.expe.model)
+        if not _model:
+            raise NotImplementedError(lgg.error('Model Unknown : %s' % (self.expe.model)))
 
+
+        ### Learn to match signature ?!?
+        if self.is_model(_model, 'pymake'):
+            model = _model(self.expe, self.fr)
         else:
-            raise NotImplementedError(self.expe.model)
+            model = _model(**self.expe)
 
         return model
 
@@ -161,7 +161,7 @@ class ModelManager(object):
             frontend : dataBase
         '''
 
-        if frontend is not None:
+        if not hasattr(self, 'model'):
             self.model = self._get_model(frontend)
 
         if hasattr(self.model, 'fit'):
