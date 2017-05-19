@@ -10,10 +10,11 @@ if os.environ.get('DISPLAY') is None:
     import matplotlib; matplotlib.use('Agg')
 
 
-from pymake.expe.format import Corpus, Model, ExpSpace, ExpVector, ExpTensor, ExpeFormat, ExpDesign
+# This line is long (0.3 seconds !)
+from pymake.expe.format import Corpus, Model, Script, ExpSpace, ExpVector, ExpTensor, ExpeFormat, ExpDesign
 from pymake.expe.gramexp import GramExp
 
-from pymake.util.loader import SpecLoader
+from pymake.frontend.frontend_io import SpecLoader
 __spec = SpecLoader._default_spec()
 
 from pymake.frontend.frontendtext import frontendText

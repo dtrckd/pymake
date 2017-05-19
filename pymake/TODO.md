@@ -1,8 +1,11 @@
 # IN DOII NG
-* grepy __file__ and get basdir from pymake.cfg instead.
+
+* -> catch type error in manager.get_model._model.__init,:
+        1. first find the number of required argument andt cut the expe surplus
+        2. find a way to pass the argument (index the singature) from singature **kwargs to command-line !!!
+
 * @pymake related : confilt in -do when invoking script from zymake, solution?! 
     * lookup table for script (function) inside ExpeFormat !!!  (@whoosh related)
-    * -l script
 * build_corpus and build_networks are identical : wrap in DataBase
 * expe_meas script
 * ILFM creat sampler and proper inhheritance form GibbsSampler.
