@@ -24,7 +24,7 @@ _colors = Cycle(['r', 'g','b','y','c','m','k'])
 _linestyle = Cycle(['solid' , 'dashed', 'dashdot', 'dotted'])
 
 import logging
-lgg = logging.getLogger('root')
+lgg = logging.getLogger('pymake_root')
 
 try:
     from termcolor import colored
@@ -358,8 +358,7 @@ except ImportError:
         import pydotplus
         from networkx.drawing.nx_pydot import graphviz_layout
     except ImportError:
-        lgg.debug("Networks needs Graphviz and either "
-                  "PyGraphviz or PyDotPlus")
+        lgg.debug("Networks needs Graphviz and either PyGraphviz or PyDotPlus")
 def draw_graph_circular(y, clusters='blue', ns=30):
     G = nxG(y)
     pos = graphviz_layout(G, prog='twopi', args='')

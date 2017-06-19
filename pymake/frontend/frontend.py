@@ -11,7 +11,7 @@ import numpy as np
 from pymake import GramExp
 
 import logging
-lgg = logging.getLogger('root')
+lgg = logging.getLogger('pymake_root')
 
 class DataBase(object):
     """ Root Class for Frontend Manipulation over Corpuses and Models.

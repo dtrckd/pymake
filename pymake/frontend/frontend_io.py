@@ -8,7 +8,7 @@ import json
 import numpy as np
 
 import logging
-lgg = logging.getLogger('root')
+lgg = logging.getLogger('pymake_root')
 
 from pymake.util.utils import get_global_settings
 from pymake import ExpDesign, ExpeFormat

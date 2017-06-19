@@ -313,7 +313,7 @@ class ExpeFormat(object):
     '''
     def __init__(self, pt, expe, gramexp):
         # Global
-        self.log = logging.getLogger('root')
+        self.log = logging.getLogger('pymake_root')
         self.expe_size = len(gramexp)
         self.gramexp = gramexp
         self.specname = gramexp.getSpec().name

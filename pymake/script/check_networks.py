@@ -7,7 +7,7 @@ from numpy import ma
 from pymake import ExpTensor, ModelManager, FrontendManager, GramExp, ExpeFormat
 
 import logging
-lgg = logging.getLogger('root')
+lgg = logging.getLogger('pymake_root')
 _spec = GramExp.Spec()
 
 USAGE = """\
