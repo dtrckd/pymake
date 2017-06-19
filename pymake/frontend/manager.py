@@ -138,15 +138,20 @@ class ModelManager(object):
 
         # Not all model takes data (Automata ?)
         data, data_t = self._format_dataset(frontend, data_t)
+        # @debug not used !
+        #
+        #if data is None:
+        #    frontend = frontendNetwork(self.expe)
+        #    frontend.data = np.array([[0],[0]])
+        #    frontend.data_ma = ma.array([[0],[0]])
 
         _model = Model.get(self.expe.model)
         if not _model:
             raise NotImplementedError(lgg.error('Model Unknown : %s' % (self.expe.model)))
 
-
         ### Learn to match signature ?!?
         if self.is_model(_model, 'pymake'):
-            model = _model(self.expe, self.fr)
+            model = _model(self.expe, frontend)
         else:
             model = _model(**self.expe)
 

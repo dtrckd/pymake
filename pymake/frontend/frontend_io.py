@@ -392,7 +392,7 @@ class SpecLoader(PackageWalker):
         * Lookup for ExpDesign subclass in the target module.
     '''
     def __init__(self):
-        module_name = get_global_settings('default_spec')
+        module_name = get_global_settings('_spec')
         class_filter = ExpDesign
         super(SpecLoader, self).__init__(module_name, class_filter=class_filter)
 
@@ -500,14 +500,14 @@ class ScriptsLoader(PackageWalker):
 
     @classmethod
     def get_packages(cls, **kwargs):
-        module_name = get_global_settings('default_script')
+        module_name = get_global_settings('_script')
         if not 'class_filter' in kwargs:
             kwargs['class_filter'] = ExpeFormat
         return cls(module_name, **kwargs).packages
 
     @classmethod
     def get_atoms(cls):
-        s = cls(module_name=get_global_settings('default_script'), class_filter=ExpeFormat)
+        s = cls(module_name=get_global_settings('_script'), class_filter=ExpeFormat)
         t = dict()
         for k, v in s._cls_browse.items():
             methods = list(v.methods.keys())

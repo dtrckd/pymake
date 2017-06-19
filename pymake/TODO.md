@@ -4,11 +4,11 @@
         1. first find the number of required argument andt cut the expe surplus
         2. find a way to pass the argument (index the singature) from singature **kwargs to command-line !!!
 
+* in pymake.cfg, add the contrib- settings
 * @pymake related : confilt in -do when invoking script from zymake, solution?! 
-    * lookup table for script (function) inside ExpeFormat !!!  (@whoosh related)
 * build_corpus and build_networks are identical : wrap in DataBase
 * expe_meas script
-* ILFM creat sampler and proper inhheritance form GibbsSampler.
+* ILFM create sampler and proper inhheritance form GibbsSampler.
 * @issue42
 
 
@@ -36,7 +36,6 @@
 * @pymake : different example
     * zymake stats [spec]
     * zymake **search** [spec]
-    * zymake check/gen [spec]
     * zymake runcmd [spec] | parallel #parralisation
 
 

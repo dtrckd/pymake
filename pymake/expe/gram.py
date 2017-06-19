@@ -147,7 +147,7 @@ _Gram = [
     #
     #  Expe Settings -- Context-Free
     #
-    #  * Are repatable
+    #  * Are repeatable
     #
     #
 

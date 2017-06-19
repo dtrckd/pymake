@@ -54,6 +54,7 @@ class GenNetwork(ExpeFormat):
         super(GenNetwork, self).__init__(*args, **kwargs)
         expe = self.expe
 
+        frontend = FrontendManager.load(expe)
         if expe._mode == 'predictive':
             ### Generate data from a fitted model
             model = ModelManager.from_expe(expe)
@@ -67,12 +68,16 @@ class GenNetwork(ExpeFormat):
                     model._mean_w = 0
                     expe.hyperparams = 0
 
-            frontend = FrontendManager.load(expe)
             N = frontend.getN()
             expe.title = None
         elif expe._mode == 'generative':
             N = expe.gen_size
             ### Generate data from a un-fitted model
+
+            expe.alpha = [0.1, 0.1]
+            expe.gmma = 1/2
+            expe.delta = [0.5,0.5]
+
             if 'ilfm' in expe.model:
                 keys_hyper = ('alpha','delta')
                 hyper = (expe.alpha, expe.delta)
@@ -244,7 +249,9 @@ class GenNetwork(ExpeFormat):
 
             fig = plt.figure()
             for i, c in enumerate(k_perm):
-                if len(c) == 2:
+                if isinstance(c,(np.int64, np.float64)):
+                    k = l = c
+                elif len(c) == 2:
                     # Stochastic Equivalence (outer class)
                     k, l = c
                 else:

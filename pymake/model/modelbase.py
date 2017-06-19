@@ -610,7 +610,7 @@ class SVB(ModelBase):
         time_it = 0
         for _id_mnb, minibatch in enumerate(chunk_groups):
 
-            self._nnz = self._nnz_vector[_id_mnb]
+            self.mnb_size = self._nnz_vector[_id_mnb]
             # <try with multiple iterations here>
             begin = datetime.now()
             self.sample(minibatch)
