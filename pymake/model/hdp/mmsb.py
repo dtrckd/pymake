@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import itertools
 import logging
-lgg = logging.getLogger('root')
+lgg = logging.getLogger('pymake_root')
 
 import numpy as np
 from numpy import ma

@@ -7,7 +7,7 @@ from pymake.util.utils import get_global_settings
 _DATA_PATH = get_global_settings('project_data')
 
 import logging
-lgg = logging.getLogger('root')
+lgg = logging.getLogger('pymake_root')
 
 # Indexer
 import whoosh as ws

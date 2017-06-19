@@ -26,7 +26,7 @@ from pymake.frontend.frontend_io import _DATA_PATH, ext_status, is_empty_file
 
 ''' Grammar Expe '''
 _version = 0.1
-lgg = logging.getLogger('root')
+lgg = logging.getLogger('pymake_root')
 
 # Custom formatter
 # From : https://stackoverflow.com/questions/14844970/modifying-logging-message-format-based-on-message-logging-level-in-python3
@@ -69,7 +69,7 @@ class MyLogFormatter(logging.Formatter):
         return result
 
 
-def setup_logger(level=logging.INFO, name='root'):
+def setup_logger(level=logging.INFO, name='pymake_root'):
     #formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
 
     if level == 1:

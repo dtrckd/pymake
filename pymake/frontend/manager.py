@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import sys, os
 import inspect
 import logging
-lgg = logging.getLogger('root')
+lgg = logging.getLogger('pymake_root')
 
 # Model Manager Utilities
 import numpy as np

@@ -10,7 +10,7 @@ from frontend.frontend_io import *
 from util.utils import *
 from util.argparser import argparser
 
-lgg = logging.getLogger('root')
+lgg = logging.getLogger('pymake_root')
 
 USAGE = '''\
 # Usage:
