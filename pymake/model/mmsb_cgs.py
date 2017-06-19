@@ -17,8 +17,11 @@ class mmsb_cgs(GibbsRun):
         hyper_prior = expe.get('hyper_prior') # HDP hyper optimization
         K = expe.K
 
-        data = frontend.data_ma #####
-        data_t = frontend.data_t
+        try:
+            data = frontend.data_ma #####
+            data_t = frontend.data_t
+        except:
+            data = data_t = None
 
         likelihood = Likelihood(delta, data, assortativity=assortativity)
 

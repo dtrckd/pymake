@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import traceback,  importlib
 import numpy as np
 from collections import OrderedDict, defaultdict
@@ -13,8 +14,6 @@ from pymake.index.indexmanager import IndexManager as IX
 
 import matplotlib.pyplot as plt
 
-import logging
-lgg = logging.getLogger('root')
 
 # Not sure this one is necessary, or not here
 class BaseObject(object):
@@ -314,6 +313,7 @@ class ExpeFormat(object):
     '''
     def __init__(self, pt, expe, gramexp):
         # Global
+        self.log = logging.getLogger('root')
         self.expe_size = len(gramexp)
         self.gramexp = gramexp
         self.specname = gramexp.getSpec().name
@@ -326,14 +326,14 @@ class ExpeFormat(object):
         self.corpus_pos = pt['corpus']
         self.model_pos = pt['model']
 
-        lgg.info('---')
-        lgg.info(''.join([colored('Expe %d/%d', 'red'),
+        self.log.info('---')
+        self.log.info(''.join([colored('Expe %d/%d', 'red'),
                           ' : %s -- %s -- N=%s -- K=%s']) % (
                               self._it+1, self.expe_size,
                               self.specname(expe.corpus),
                               self.specname(expe.model),
                               expe.N, expe.K,))
-        lgg.info('---')
+        self.log.info('---')
 
     @classmethod
     def display(cls, conf):

@@ -41,8 +41,6 @@ class immsb_scvb(SVB):
         if self.chunk_len < 1:
             self.chunk_size = self._len['nnz']
             self.chunk_len = 1
-        self.gradient_update_freq = self.chunk_size / 10
-        self.gradient_update_freq = -1
 
         self._time_delta = 1
         self._update_gstep_theta()
@@ -112,13 +110,13 @@ class immsb_scvb(SVB):
     def update_hyper(self, hyper):
         pass
 
-    def _update_gstep_theta(self, kappa=0.55, tau=2**2):
+    def _update_gstep_theta(self, kappa=0.9, tau=2**5):
+        ''' Gradient converge for kappa _in (0.5,1] '''
         #tau = self._len['K'] * np.log2(self._len['N'])
-        # Why when tau >2 objective decrease ???
+        # Why when tau > 2 objective decrease ???
         self.gstep_theta = 1 / (tau + self._timestep)**kappa
 
-    def _update_gstep_phi(self, kappa=0.55, tau=2**2):
-        #tau = self._len['K'] * np.log2(self._len['N'])
+    def _update_gstep_phi(self, kappa=0.9, tau=2**5):
         self.gstep_phi =  1 / (tau + self._timestep)**kappa
 
     def data_iter(self, batch, randomize=True):
@@ -228,27 +226,20 @@ class immsb_scvb(SVB):
         #self.N_theta_left[i]  = (1 - self.gstep_theta)*self.N_theta_left[i]  + (self.gstep_theta * _len['dims'][i] * pik)
         #self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * _len['dims'][j] * pjk)
 
-    def _update_global_gradient(self, i, j, qij, xij):
-        gij = self._len['nnz'] # wrong pp ?
-        gij = self._nnz
-        #qij = self.pxk
 
-        if self.gradient_update_freq <= 1:
-            self.N_phi[xij] = (1 - self.gstep_phi)*self.N_phi[xij] + self.gstep_phi* (gij * qij)
-            self._N_phi_sum = self.N_phi.sum(0)
-            self.samples = []
-        else:
-            self._N_phi[xij] += (gij * qij)
-            if self._id_token % self.gradient_update_freq == 0:
-                self._purge_minibatch()
+        self._update_gstep_theta()
+
+    def _update_global_gradient(self, i, j, qij, xij):
+        self._N_phi[xij] += qij
 
     def _purge_minibatch(self):
         ''' Update the global gradient then purge containers '''
         if not self._is_container_empty():
-            self.N_phi = (1 - self.gstep_phi)*self.N_phi + self.gstep_phi*self._N_phi / len(self.samples)
-            self._N_phi_sum = self.N_phi.sum(0)
+            self.N_phi = (1 - self.gstep_phi)*self.N_phi + self.gstep_phi * (self._len('nnz') / len(self.samples)) * self._N_phi
+            self.N_phi_sum = (1 - self.gstep_phi)*self.N_phi_sum + self.gstep_phi * (self._len('nnz') / len(self.samples)) * self._N_phi.sum(0)
+            # Is this line equivalent to the N_Phu_sum gradient ????
+            #self._N_phi_sum = self.N_phi.sum(0)
 
-        self._update_gstep_theta()
         self._update_gstep_phi()
         self._reset_containers()
 

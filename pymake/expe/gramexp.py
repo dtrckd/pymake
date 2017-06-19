@@ -2,6 +2,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys, os
+import logging
 import operator
 import fnmatch
 import pickle
@@ -22,11 +23,81 @@ import pymake.frontend.frontend_io as mloader
 
 from pymake.frontend.frontend_io import _DATA_PATH, ext_status, is_empty_file
 
-import logging
-lgg = logging.getLogger('root')
 
 ''' Grammar Expe '''
 _version = 0.1
+lgg = logging.getLogger('root')
+
+# Custom formatter
+# From : https://stackoverflow.com/questions/14844970/modifying-logging-message-format-based-on-message-logging-level-in-python3
+class MyLogFormatter(logging.Formatter):
+
+    critical_fmt  = "===>> CRITICAL: %(msg)s"
+    err_fmt  = "==> ERROR: %(msg)s"
+    dbg_fmt  = "%(msg)s"
+    info_fmt = "%(msg)s"
+
+    #default_fmt = '%(module): %(msg)s'
+    #default_fmt = '%(levelno)d: %(msg)s'
+    default_fmt = '%(msg)s'
+
+    def __init__(self, fmt=default_fmt):
+        super().__init__(fmt=fmt, datefmt=None, style='%')
+
+    def format(self, record):
+
+        # Save the original format configured by the user
+        # when the logger formatter was instantiated
+        format_orig = self._style._fmt
+
+        # Replace the original format with one customized by logging level
+        if record.levelno == logging.DEBUG:
+            self._style._fmt = MyLogFormatter.dbg_fmt
+
+        elif record.levelno == logging.INFO:
+            self._style._fmt = MyLogFormatter.info_fmt
+
+        elif record.levelno == logging.ERROR:
+            self._style._fmt = MyLogFormatter.err_fmt
+
+        # Call the original formatter class to do the grunt work
+        result = logging.Formatter.format(self, record)
+
+        # Restore the original format configured by the user
+        self._style._fmt = format_orig
+
+        return result
+
+
+def setup_logger(level=logging.INFO, name='root'):
+    #formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
+
+    if level == 1:
+        level = logging.DEBUG
+    elif level == 2:
+        print ('what level of verbosity heeere ?')
+        exit()
+    else:
+        # make a --silent option for juste error and critial log ?
+        level = logging.INFO
+
+    # Get logger
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+
+    # Format handler
+    handler = logging.StreamHandler(sys.stdout)
+    #handler.setFormatter(logging.Formatter(fmt=fmt))
+    handler.setFormatter(MyLogFormatter())
+
+    # Set Logger
+    logger.addHandler(handler)
+    # Prevent logging propagation of handler,
+    # who reults in logging things multiple times
+    logger.propagate = False
+
+    return logger
+
 
 
 class GramExp(object):
@@ -116,7 +187,7 @@ class GramExp(object):
         self._default_spec = conf.get('spec', {})
 
         # @logger One logger by Expe !
-        level = self.setup_logger(fmt='%(message)s', level=conf.get('verbose'))
+        level = setup_logger(level=conf.get('verbose'))
         conf.update(verbose=level)
 
         # Make main data structure
@@ -606,37 +677,6 @@ class GramExp(object):
             return
 
     @staticmethod
-    def setup_logger(fmt='%(message)s', level=logging.INFO, name='root'):
-        #formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
-
-        if level == 1:
-            level = logging.DEBUG
-        elif level == 2:
-            print ('what level of verbosity heeere ?')
-            exit(2)
-        elif level == -1:
-            level = logging.ERROR
-        elif level is None:
-            level = logging.INFO
-        else:
-            level = level
-
-        # Get logger
-        logger = logging.getLogger(name)
-        logger.setLevel(level)
-
-        # Format handler
-        handler = logging.StreamHandler()
-        handler.setFormatter(logging.Formatter(fmt=fmt))
-        logger.addHandler(handler)
-
-        # Prevent logging propagation of handler,
-        # who results in logging things multiple times
-        logger.propagate = False
-
-        return level
-
-    @staticmethod
     def sign_nargs(fun):
         return sum([y.default is inspect._empty for x,y in inspect.signature(fun).parameters.items() if x != 'self'])
 
@@ -706,9 +746,8 @@ class GramExp(object):
 
     def expe_init(self, expe):
         if not 'seed' in expe:
-            return
-
-        if expe.seed is True:
+            pass
+        elif expe.seed is True:
             try:
                 np.random.set_state(self.load('/tmp/pymake.seed', silent=True))
             except FileNotFoundError as e:

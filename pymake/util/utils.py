@@ -59,11 +59,11 @@ def jsondict(d):
         return {str(k):v for k,v in d.items()}
     return d
 
-def parse_file_conf(fn, sep=':', comments='#'):
+def parse_file_conf(fn, sep=':', comments=('#','%')):
     with open(fn) as f:
         parameters = f.read()
     parameters = filter(None, parameters.split('\n'))
-    parameters = dict((p[0].strip(), p[1].strip()) for p in (t.strip().split(sep) for t in parameters if not t.strip().startswith('#')))
+    parameters = dict((p[0].strip(), p[1].strip()) for p in (t.strip().split(sep) for t in parameters if not t.strip().startswith(comments)))
     for k, v in parameters.items():
         if  '.' in v:
             try:
@@ -184,8 +184,6 @@ def get_global_settings(key=None, default_dict=__default_config, cfg_name='pymak
                 _f.write(ctnt.encode('utf8'))
 
     config = parse_file_conf(cfg_file, sep='=')
-
-
 
     if not key:
         return config
