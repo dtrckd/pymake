@@ -7,7 +7,7 @@ from numpy import ma
 from pymake import ModelManager, FrontendManager, GramExp, ExpeFormat, ExpSpace
 
 import logging
-lgg = logging.getLogger('root')
+lgg = logging.getLogger('pymake_root')
 
 USAGE = """\
 ----------------

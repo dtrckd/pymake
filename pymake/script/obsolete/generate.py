@@ -9,7 +9,7 @@ from expe.spec import _spec_; _spec = _spec_()
 from expe import format
 
 import logging
-lgg = logging.getLogger('root')
+lgg = logging.getLogger('pymake_root')
 
 
 USAGE = '''\

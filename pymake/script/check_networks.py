@@ -7,7 +7,7 @@ from numpy import ma
 from pymake import ExpTensor, ModelManager, FrontendManager, GramExp, ExpeFormat
 
 import logging
-lgg = logging.getLogger('root')
+lgg = logging.getLogger('pymake_root')
 _spec = GramExp.Spec()
 
 USAGE = """\
@@ -119,7 +119,7 @@ class CheckNetwork(ExpeFormat):
         plot_degree_poly(data_r, ax=ax2)
 
         if expe.write:
-            out.write_figs(expe, [fig], suffix='dd')
+            out.write_figs(expe, [fig], _suffix='dd')
 
     @ExpeFormat.plot
     def burstiness(self, clusters_org='source', _type='local'):

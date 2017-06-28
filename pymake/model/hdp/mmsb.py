@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import itertools
 import logging
-lgg = logging.getLogger('root')
+lgg = logging.getLogger('pymake_root')
 
 import numpy as np
 from numpy import ma
@@ -52,6 +52,9 @@ class Likelihood(object):
             # Ignore Diagonal
             data = np.ma.array(data, mask=np.zeros(data.shape))
             np.fill_diagonal(data, ma.masked)
+
+        if data is None:
+            return
 
         self.data_ma = data
         self.symmetric = (data == data.T).all()
@@ -600,16 +603,17 @@ class GibbsRun(GibbsSampler):
                 # Number of class in the CRF
                 K = int(gmma * (digamma(m+gmma) - digamma(gmma)))
                 alpha = gem(gmma, K)
-                i = 0
-                while i<3:
-                    try:
-                        dirichlet(alpha, size=N)
-                        i=0
-                        break
-                    except ZeroDivisionError:
-                        # Sometimes umprobable values !
-                        alpha = gem(gmma, K)
-                        i += 1
+
+            i = 0
+            while i<3:
+                try:
+                    dirichlet(alpha, size=N)
+                    i=0
+                    break
+                except ZeroDivisionError:
+                    # Sometimes umprobable values !
+                    alpha = gem(gmma, K)
+                    i += 1
 
             # Generate Theta
             if i > 0:

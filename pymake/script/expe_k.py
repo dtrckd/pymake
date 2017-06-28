@@ -9,36 +9,25 @@ from pymake import ExpTensor, OrderedDict
 from frontend.frontend_io import *
 from util.utils import *
 from util.argparser import argparser
+from pymake.expe.spec import _spec
 
-lgg = logging.getLogger('root')
+lgg = logging.getLogger('pymake_root')
 
 USAGE = '''\
 # Usage:
     expe_k [model]
 '''
 
+#TENSOR = _spec.EXPE_ICDM_R
+TENSOR = _spec.EXPE_ICDM_R_R
+
 expe_args = argparser.exp_tabulate(USAGE)
 
 ###################################################################
 # Data Forest config
-#
-
-### Expe Forest
-map_parameters = ExpTensor((
-    ('data_type', ('networks',)),
-    #('corpus' , ('fb_uc', 'manufacturing')),
-    ('corpus' , ('Graph7', 'Graph12', 'Graph10', 'Graph4')),
-    ('debug'  , ('debug10', 'debug11')),
-    ('model'  , ('immsb', 'ibp')),
-    ('K'      , (5, 10, 15, 20)),
-    ('hyper'  , ('fix', 'auto')),
-    ('homo'   , (0, 1, 2)),
-    ('N'      , ('all',)),
-    #('repeat'   , (0, 1, 2, 4, 5)),
-))
-
+map_parameters = TENSOR
 ### Seek experiments results
-target_files = make_forest_path(map_parameters, 'json',  sep=None)
+target_files = make_forest_path(map_parameters, 'json')
 ### Make Tensor Forest of results
 rez = forest_tensor(target_files, map_parameters)
 
@@ -46,19 +35,20 @@ rez = forest_tensor(target_files, map_parameters)
 # Experimentation
 #
 
-### Expe 1 settings # Todo RegularExp
+### Expe 1 settings
 # debug10, immsb
 expe_1 = OrderedDict((
     ('data_type', 'networks'),
     ('corpus', '*'),
-    ('debug' , 'debug10') ,
+    #('debug' , 'debug101010') ,
+    ('debug' , 'debug111111') ,
     ('model' , 'immsb')   ,
     ('K'     , '*')         ,
     ('hyper' , 'auto')     ,
     ('homo'  , 0) ,
     ('N'     , 'all')     ,
-    #('repeat', '*'),
-    ('measure', 7),
+    ('repeat', '*'),
+    ('measure', 8),
     ))
 expe_1.update(expe_args)
 
@@ -100,7 +90,7 @@ try:
     table = np.column_stack((keys, table))
 except ValueError as e:
     lgg.warn('ValueError, assumming repeat mean variance reduction: %d repetition' % table.shape[2])
-    print(table.shape)
+    print (table.shape)
     #table_mean = np.char.array(table.mean(2))
     #table_std = np.char.array(table.std(2))
     table_mean = np.char.array(np.around(table.mean(2), decimals=3)).astype("|S20")
@@ -111,7 +101,7 @@ except ValueError as e:
 tablefmt = 'latex' # 'latex'
 print()
 print (tabulate(table, headers=headers, tablefmt=tablefmt, floatfmt='.3f'))
-print('\t\t--> precision')
+print ('\t\t--> precision')
 
 
 

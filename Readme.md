@@ -1,6 +1,6 @@
 # PYMAKE
 
-Pymake is machine-friendly platform for making reproducible research. It provides tools adapted for the creation of :
+Pymake is a machine-friendly platform for making reproducible research. It provides tools adapted for the creation of :
 * Complex and traceable design of experiments, as a **command-line** interface.
 * Models and workflows for Machine Learning, as a **framework**.
 
@@ -64,13 +64,19 @@ With gnu-parallel :
 
 ### Directory Tree
 
-* `pymake/` code source of the models and frontends.
-* `data/` contains dataset and learning output results,
+By default, pymake will use the configuration in the ~/.pymake directory. To create your own project use ```pymake init```. It is design to makes easy the creation and sharing of models and design of experimentation. The pymake arborescence has the following directory :
+
+* `model/` contains models -- selection with the ```-m``` options,
+* `data/` contains datasets (and saved results) -- selection with the ```-c``` options,
+* `script/` contains scripts for action, -- selection with the ```--script``` options
 * `results/` contains analysis and report,
+
 
 Data Lookup and Output Data path specification are automatically adaptated from the design of experiments. Note that you can specify the format of the results of each expetiments with `--format options`, see examples.
 
 The Results of experiments are stored in data/[specification].
+
+If new models or script are added in the project, you'll need to update the pymake index : ```pymake update```.
 
 
 ### Inference Scheme

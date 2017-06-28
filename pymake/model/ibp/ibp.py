@@ -6,7 +6,7 @@ import scipy as sp
 import scipy.stats as stats
 import math
 import logging
-lgg = logging.getLogger('root')
+lgg = logging.getLogger('pymake_root')
 
 """ This code was modified from the code
 originally written by Zhai Ke (kzhai@umd.edu)."""

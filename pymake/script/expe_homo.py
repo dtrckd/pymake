@@ -9,9 +9,8 @@ from pymake import ExpTensor, OrderedDict
 from frontend.frontend_io import *
 from util.utils import *
 from util.argparser import argparser
-from expe.spec import _spec
 
-lgg = logging.getLogger('root')
+lgg = logging.getLogger('pymake_root')
 
 USAGE = '''\
 # Usage:
@@ -22,10 +21,24 @@ expe_args = argparser.exp_tabulate(USAGE)
 
 ###################################################################
 # Data Forest config
-map_parameters = _spec_.EXPE_ICDM_R
-map_parameters['debug'] = 'hyper101'
+#
+
+### Expe Forest
+map_parameters = ExpTensor((
+    ('data_type', ('networks',)),
+    #('corpus' , ('fb_uc', 'manufacturing')),
+    ('corpus' , ('Graph7', 'Graph12', 'Graph10', 'Graph4')),
+    ('debug'  , ('debug10', 'debug11')),
+    ('model'  , ('immsb', 'ibp')),
+    ('K'      , (5, 10, 15, 20)),
+    ('hyper'  , ('fix', 'auto')),
+    ('homo'   , (0, 1, 2)),
+    ('N'      , ('all',)),
+    #('repeat'   , (0, 1, 2, 4, 5)),
+))
+
 ### Seek experiments results
-target_files = make_forest_path(map_parameters, 'json')
+target_files = make_forest_path(map_parameters, 'json',  sep=None)
 ### Make Tensor Forest of results
 rez = forest_tensor(target_files, map_parameters)
 
@@ -33,19 +46,19 @@ rez = forest_tensor(target_files, map_parameters)
 # Experimentation
 #
 
-### Expe 1 settings
+### Expe 1 settings # Todo RegularExp
 # debug10, immsb
 expe_1 = OrderedDict((
     ('data_type', 'networks'),
     ('corpus', '*'),
-    ('debug' , 'hyper101') ,
+    ('debug' , 'debug10') ,
     ('model' , 'immsb')   ,
-    ('K'     , 5)         ,
+    ('K'     , '*')         ,
     ('hyper' , 'auto')     ,
     ('homo'  , 0) ,
     ('N'     , 'all')     ,
-    ('repeat', '*'),
-    ('measure', ':4'),
+    #('repeat', '*'),
+    ('measure', 7),
     ))
 expe_1.update(expe_args)
 
@@ -73,8 +86,7 @@ ptx = make_tensor_expe_index(expe_1, map_parameters)
 print ('Expe 1:')
 print (tabulate([expe_1.keys(), expe_1.values()]))
 # Headers
-headers = [ 'global', 'precision', 'recall', 'K->']
-#headers = list(map_parameters['K'])
+headers = list(map_parameters['K'])
 h_mask = 'mask all' if '11' in expe_1['debug'] else 'mask sub1'
 h = expe_1['model'].upper() + ' / ' + h_mask
 headers.insert(0, h)
@@ -87,19 +99,19 @@ table = rez[ptx]
 try:
     table = np.column_stack((keys, table))
 except ValueError as e:
-    lgg.warn('ValueError, assumming repeat mean variance reduction: %d repetition' % table.shape[1])
-    table_mean = np.char.array(table.mean(1))
-    table_std = np.char.array(table.std(1))
-    #table_mean = np.char.array(np.around(table.mean(1), decimals=3))
-    #table_std = np.char.array(np.around(table.std(1), decimals=3))
-    #table = table_mean + ' \pm ' + table_std
-    table_mean[:, 3] = table_mean[:, 3] + ' p2m ' + table_std[:, 3]
-    table = table_mean
+    lgg.warn('ValueError, assumming repeat mean variance reduction: %d repetition' % table.shape[2])
+    print(table.shape)
+    #table_mean = np.char.array(table.mean(2))
+    #table_std = np.char.array(table.std(2))
+    table_mean = np.char.array(np.around(table.mean(2), decimals=3)).astype("|S20")
+    table_std = np.char.array(np.around(table.std(2), decimals=3)).astype("|S20")
+    table = table_mean + ' p2m ' + table_std
     table = np.column_stack((keys, table))
 
 tablefmt = 'latex' # 'latex'
 print()
 print (tabulate(table, headers=headers, tablefmt=tablefmt, floatfmt='.3f'))
+print('\t\t--> precision')
 
 
 
