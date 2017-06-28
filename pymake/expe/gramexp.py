@@ -2,6 +2,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys, os
+import logging
 import operator
 import fnmatch
 import pickle
@@ -15,18 +16,88 @@ import numpy as np
 from argparse import RawDescriptionHelpFormatter
 
 import pymake.expe.gram as gram
-from pymake import basestring, ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, ExpVector
+from pymake import basestring, ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, Script, ExpVector
 from pymake.plot import colored
 
-import pymake.util.loader as mloader
+import pymake.frontend.frontend_io as mloader
 
 from pymake.frontend.frontend_io import _DATA_PATH, ext_status, is_empty_file
 
-import logging
-lgg = logging.getLogger('root')
 
 ''' Grammar Expe '''
 _version = 0.1
+lgg = logging.getLogger('pymake_root')
+
+# Custom formatter
+# From : https://stackoverflow.com/questions/14844970/modifying-logging-message-format-based-on-message-logging-level-in-python3
+class MyLogFormatter(logging.Formatter):
+
+    critical_fmt  = "===>> CRITICAL: %(msg)s"
+    err_fmt  = "==> ERROR: %(msg)s"
+    dbg_fmt  = "%(msg)s"
+    info_fmt = "%(msg)s"
+
+    #default_fmt = '%(module): %(msg)s'
+    #default_fmt = '%(levelno)d: %(msg)s'
+    default_fmt = '%(msg)s'
+
+    def __init__(self, fmt=default_fmt):
+        super().__init__(fmt=fmt, datefmt=None, style='%')
+
+    def format(self, record):
+
+        # Save the original format configured by the user
+        # when the logger formatter was instantiated
+        format_orig = self._style._fmt
+
+        # Replace the original format with one customized by logging level
+        if record.levelno == logging.DEBUG:
+            self._style._fmt = MyLogFormatter.dbg_fmt
+
+        elif record.levelno == logging.INFO:
+            self._style._fmt = MyLogFormatter.info_fmt
+
+        elif record.levelno == logging.ERROR:
+            self._style._fmt = MyLogFormatter.err_fmt
+
+        # Call the original formatter class to do the grunt work
+        result = logging.Formatter.format(self, record)
+
+        # Restore the original format configured by the user
+        self._style._fmt = format_orig
+
+        return result
+
+
+def setup_logger(level=logging.INFO, name='pymake_root'):
+    #formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
+
+    if level == 1:
+        level = logging.DEBUG
+    elif level == 2:
+        print ('what level of verbosity heeere ?')
+        exit()
+    else:
+        # make a --silent option for juste error and critial log ?
+        level = logging.INFO
+
+    # Get logger
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+
+    # Format handler
+    handler = logging.StreamHandler(sys.stdout)
+    #handler.setFormatter(logging.Formatter(fmt=fmt))
+    handler.setFormatter(MyLogFormatter())
+
+    # Set Logger
+    logger.addHandler(handler)
+    # Prevent logging propagation of handler,
+    # who reults in logging things multiple times
+    logger.propagate = False
+
+    return logger
+
 
 
 class GramExp(object):
@@ -116,7 +187,7 @@ class GramExp(object):
         self._default_spec = conf.get('spec', {})
 
         # @logger One logger by Expe !
-        level = self.setup_logger(fmt='%(message)s', level=conf.get('verbose'))
+        level = setup_logger(level=conf.get('verbose'))
         conf.update(verbose=level)
 
         # Make main data structure
@@ -371,6 +442,7 @@ class GramExp(object):
         Communicate with the data :
         ----------------
          |   zymake -l [expe(default)|atom|script] : (default) show available spec
+         |   zymake update  : update the pymake index
          |   zymake show SPEC : show one spec details
          |   zymake cmd SPEC [fun][*args] : generate command-line
          |   zymake exec SPEC [fun][*args][--script ...] : execute tasks (default is fit)
@@ -383,8 +455,8 @@ class GramExp(object):
 
         _spec = mloader.SpecLoader.default_spec()
         ontology = dict(
-            _do    = ['cmd', 'show', 'path', 'burn', 'exec'],
-            spec   = _spec.keys(),
+            _do    = ['cmd', 'show', 'path', 'burn', 'exec', 'update'],
+            spec   = _spec._specs(),
             _ftype = ['json', 'pk', 'inf']
         )
         ont_values = sum([w for k, w in ontology.items() if k != 'spec'] , [])
@@ -393,7 +465,7 @@ class GramExp(object):
         if not request.get('_do'):
             request['_do'] = []
             if not request.get('do_list'):
-                request['do_list'] = []
+                request['do_list'] = None
 
         # Hack for script/exec
         if request.get('do_list'):
@@ -573,8 +645,7 @@ class GramExp(object):
         return self._spec._table_atoms(_type=_type)
 
     def scripttable(self):
-        t = mloader.ScriptsLoader.table()
-        return t
+        return Script.table()
 
     def getSpec(self):
         return self._spec
@@ -604,37 +675,6 @@ class GramExp(object):
             exit(2)
         else:
             return
-
-    @staticmethod
-    def setup_logger(fmt='%(message)s', level=logging.INFO, name='root'):
-        #formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
-
-        if level == 1:
-            level = logging.DEBUG
-        elif level == 2:
-            print ('what level of verbosity heeere ?')
-            exit(2)
-        elif level == -1:
-            level = logging.ERROR
-        elif level is None:
-            level = logging.INFO
-        else:
-            level = level
-
-        # Get logger
-        logger = logging.getLogger(name)
-        logger.setLevel(level)
-
-        # Format handler
-        handler = logging.StreamHandler()
-        handler.setFormatter(logging.Formatter(fmt=fmt))
-        logger.addHandler(handler)
-
-        # Prevent logging propagation of handler,
-        # who results in logging things multiple times
-        logger.propagate = False
-
-        return level
 
     @staticmethod
     def sign_nargs(fun):
@@ -706,9 +746,8 @@ class GramExp(object):
 
     def expe_init(self, expe):
         if not 'seed' in expe:
-            return
-
-        if expe.seed is True:
+            pass
+        elif expe.seed is True:
             try:
                 np.random.set_state(self.load('/tmp/pymake.seed', silent=True))
             except FileNotFoundError as e:
@@ -730,21 +769,25 @@ class GramExp(object):
         else:
             raise ValueError('Who need to specify a script. (--script)')
 
-        script_name = script[0]
-        script_args = script[1:]
-        Scripts = mloader.ScriptsLoader.get_packages()
-        if not script_name in Scripts:
-            method_by_cls = mloader.ScriptsLoader.lookup_methods()
-            if script_name in sum(method_by_cls.values(), []):
-                # check if it is method reference
-                script_args = [script_name] + script_args
-                script_name = next(k.lower() for (k,v) in method_by_cls.items() if script_name in v)
-            else:
-                raise ValueError('error: Unknown script: %s' % (script_name))
+        _script, script_args = Script.get(script[0], script[1:])
+
+        # Raw search
+        #script_name = script[0]
+        #script_args = script[1:]
+        #Scripts = mloader.ScriptsLoader.get_packages()
+        #if not script_name in Scripts:
+        #    method_by_cls = mloader.ScriptsLoader.lookup_methods()
+        #    if script_name in sum(method_by_cls.values(), []):
+        #        # check if it is a method reference
+        #        script_args = [script_name] + script_args
+        #        script_name = next(k.lower() for (k,v) in method_by_cls.items() if script_name in v)
+        #    else:
+        #        raise ValueError('error: Unknown script: %s' % (script_name))
 
         if script_args:
             self.update(_do=script_args)
-        self.pymake(sandbox=Scripts[script_name])
+        #self.pymake(sandbox=Scripts[script_name])
+        self.pymake(sandbox=_script)
 
     def notebook(self):
         from nbformat import v4 as nbf
@@ -754,6 +797,10 @@ class GramExp(object):
         nb['cells'] = [nbf.new_markdown_cell(text),
                        nbf.new_code_cell(code) ]
         return
+
+    def update_index(self):
+        from pymake.index.indexmanager import IndexManager as IX
+        IX.build_indexes()
 
     def pymake(self, sandbox=ExpeFormat):
         ''' Walk Trough experiments. '''

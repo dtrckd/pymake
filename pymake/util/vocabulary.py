@@ -7,6 +7,7 @@ from pymake import basestring
 try:
     import nltk
 except:
+    _NLTK_DISABLED = True
     pass
 
 import numpy as np
@@ -82,24 +83,35 @@ class Vocabulary(object):
 
     recover_list = {"wa":"was", "ha":"has"}
 
-    def __init__(self, exclude_stopwords=False):
+    def __init__(self, exclude_stopwords=False, lemmatize=True):
         self.vocas = []        # id to word
         self.token2id = dict() # word to id
         self.docfreq = []      # id to document frequency
         self.exclude_stopwords = exclude_stopwords
 
-        with open (os.path.join(os.path.dirname(__file__), 'stopwords.txt'), "r") as _f:
-            stopwords_list = _f.read().replace('\n', '').split()
-        stopwords_list += nltk.corpus.stopwords.words('english')
-        self.stopwords_list = set(stopwords_list)
-        self.wlemm = nltk.WordNetLemmatizer()
+        if exclude_stopwords:
+            with open (os.path.join(os.path.dirname(__file__), 'stopwords.txt'), "r") as _f:
+                stopwords_list = _f.read().replace('\n', '').split()
+            if not globals().get('_NLTK_DISABLED'):
+                stopwords_list += nltk.corpus.stopwords.words('english')
+            self.stopwords_list = set(stopwords_list)
+
+        if lemmatize:
+            if not globals().get('_NLTK_DISABLED'):
+                self.wlemm = nltk.WordNetLemmatizer()
+            else:
+                print ('Warning: no lemmatizer !')
 
     def is_stopword(self, w):
         return w in self.stopwords_list
 
     def lemmatize(self, w0):
+        if not hasattr(self, 'wlemm'):
+            #self.log.debug()
+            print('No lematization')
+            return w0
         w = self.wlemm.lemmatize(w0.lower())
-        if w in recover_list: return recover_list[w]
+        if w in self.recover_list: return self.recover_list[w]
         return w
 
     def token2id(self):

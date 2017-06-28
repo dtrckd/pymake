@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import traceback
+import logging
+import traceback,  importlib
 import numpy as np
 from collections import OrderedDict, defaultdict
 from pymake.plot import colored, display, tabulate, _linestyle
@@ -9,11 +10,10 @@ from decorator import decorator
 from functools import wraps
 from pymake import basestring
 import pymake as pmk
+from pymake.index.indexmanager import IndexManager as IX
 
 import matplotlib.pyplot as plt
 
-import logging
-lgg = logging.getLogger('root')
 
 # Not sure this one is necessary, or not here
 class BaseObject(object):
@@ -75,36 +75,71 @@ class ExpVector(list, BaseObject):
     def __sub__(self, other):
         return self.__class__([item for item in self if item not in other])
 
+
+class Script(BaseObject):
+    @staticmethod
+    def get(scriptname, arguments):
+
+        ix = IX(default_index='script')
+        topmethod = ix.getfirst(scriptname, field='scriptsurname')
+        if not topmethod:
+            topmethod = ix.getfirst(scriptname, field='method')
+            if not topmethod:
+                raise ValueError('error: Unknown script: %s' % (scriptname))
+            arguments = [scriptname] + arguments
+            #script_name = topmethod['scriptsurname']
+
+        module = importlib.import_module(topmethod['module'])
+        script = getattr(module, topmethod['scriptname'])
+        return script, arguments
+
+    @staticmethod
+    def table():
+        ix = IX()
+        t = {}
+        for elt in  ix.query(index='script', terms=True):
+            name = elt['scriptname']
+            methods = t.get(name, []) + [ elt['method'] ]
+            t[name] = methods
+        return tabulate(t, headers='keys')
+
 class Corpus(ExpVector):
     @staticmethod
-    def get_atoms(spec):
-        # get some information about what package to use in _spec ...
-        atoms = pmk.frontend.get_packages('pymake.data')
-        return atoms
+    def get():
+        pass
 
 class Model(ExpVector):
-    @staticmethod
-    def get_atoms(spec, _type='short'):
-        if _type == 'short':
-            shrink_module_name = True
-        elif _type == 'topos':
-            shrink_module_name = False
 
-        from pymake.util.loader import ModelsLoader
-        packages = spec._package.get('model',[]).copy()
-        if 'pymake.model' in packages:
-            atoms = ModelsLoader.get_packages(packages.pop(packages.index('pymake.model')), prefix='pmk')
-        else:
-            atoms = OrderedDict()
-        for pkg in packages:
-            if len(pkg) > 8:
-                prefix = pkg[:3]
-                if '.' in pkg:
-                    prefix  += ''.join(map(lambda x:x[0], pkg.split('.')[1:]))
-            else:
-                prefix = True
-            atoms.update(ModelsLoader.get_packages(pkg,  prefix=prefix, max_depth=3, shrink_module_name=shrink_module_name))
-        return atoms
+    @staticmethod
+    def get(model_name):
+        ix = IX(default_index='model')
+
+        _model =  None
+        docir = ix.getfirst(model_name, field='surname')
+        if docir:
+            mn = importlib.import_module(docir['module'])
+            _model = getattr(mn, docir['name'], None)
+        return _model
+
+    @staticmethod
+    def list_all(_type='short'):
+        ix = IX(default_index='model')
+        if _type == 'short':
+            res = ix.query(field='surname')
+        elif _type == 'topos':
+            _res = ix.query(field='surname', terms=True)
+            res = []
+            for elt in _res:
+                # beurk
+                if len(elt['category']) > 0:
+                    # means that len(surname.split('.')) > 1
+                    names = elt['surname'].split('.')
+                    topos = '.'.join(elt['category'].split())
+                    surname = '.'.join((names[0],  topos , names[1]))
+                else:
+                    surname = elt['surname']
+                res.append(surname)
+        return res
 
 
 class ExpTensor(OrderedDict, BaseObject):
@@ -186,11 +221,14 @@ class ExpDesign(dict, BaseObject):
             #_spec = ExpDesign((k, getattr(Netw, k)) for k in dir(Netw) if not k.startswith('__') )
             if not k.startswith('_'):
                 self[k] = getattr(self, k)
+        # @debug: add callable in reserved keyword
         self._reserved_keywords = list(set([w for w in dir(self) if w.startswith('_')] + ['_reserved_keywords']+dir(dict)+dir(BaseObject)))
         name = self.pop('_name', 'expDesign')
 
         BaseObject.__init__(self, name)
 
+    def _specs(self):
+        return [ k for k  in self.keys() if k not in self._reserved_keywords ]
 
     # no more complex.
     # @sortbytype
@@ -217,7 +255,7 @@ class ExpDesign(dict, BaseObject):
                                ('Unknown', str)))
 
         tables = [[], # corpus atoms...
-                  list(Model.get_atoms(self, _type).keys()),
+                  Model.list_all(_type),
         ]
 
         return self._table_(tables, headers=list(Headers.keys()))
@@ -275,6 +313,7 @@ class ExpeFormat(object):
     '''
     def __init__(self, pt, expe, gramexp):
         # Global
+        self.log = logging.getLogger('pymake_root')
         self.expe_size = len(gramexp)
         self.gramexp = gramexp
         self.specname = gramexp.getSpec().name
@@ -287,14 +326,14 @@ class ExpeFormat(object):
         self.corpus_pos = pt['corpus']
         self.model_pos = pt['model']
 
-        lgg.info('---')
-        lgg.info(''.join([colored('Expe %d/%d', 'red'),
+        self.log.info('---')
+        self.log.info(''.join([colored('Expe %d/%d', 'red'),
                           ' : %s -- %s -- N=%s -- K=%s']) % (
                               self._it+1, self.expe_size,
                               self.specname(expe.corpus),
                               self.specname(expe.model),
                               expe.N, expe.K,))
-        lgg.info('---')
+        self.log.info('---')
 
     @classmethod
     def display(cls, conf):
@@ -390,7 +429,6 @@ class ExpeFormat(object):
 
 
         return cls.preprocess(gramexp)
-
 
     @classmethod
     def _postprocess(cls, gramexp):

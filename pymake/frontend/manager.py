@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import sys, os
 import inspect
 import logging
-lgg = logging.getLogger('root')
+lgg = logging.getLogger('pymake_root')
 
 # Model Manager Utilities
 import numpy as np
@@ -138,17 +138,22 @@ class ModelManager(object):
 
         # Not all model takes data (Automata ?)
         data, data_t = self._format_dataset(frontend, data_t)
+        # @debug not used !
+        #
+        #if data is None:
+        #    frontend = frontendNetwork(self.expe)
+        #    frontend.data = np.array([[0],[0]])
+        #    frontend.data_ma = ma.array([[0],[0]])
 
-        models = Model.get_atoms(GramExp.Spec())
-        if self.expe.model in models:
-            _model = models[self.expe.model]
-            if self.is_model(_model, 'pymake'):
-                model = _model(self.expe, self.fr)
-            else:
-                model = _model(**self.expe)
+        _model = Model.get(self.expe.model)
+        if not _model:
+            raise NotImplementedError(lgg.error('Model Unknown : %s' % (self.expe.model)))
 
+        ### Learn to match signature ?!?
+        if self.is_model(_model, 'pymake'):
+            model = _model(self.expe, frontend)
         else:
-            raise NotImplementedError(self.expe.model)
+            model = _model(**self.expe)
 
         return model
 
@@ -161,7 +166,7 @@ class ModelManager(object):
             frontend : dataBase
         '''
 
-        if frontend is not None:
+        if not hasattr(self, 'model'):
             self.model = self._get_model(frontend)
 
         if hasattr(self.model, 'fit'):

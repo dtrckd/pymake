@@ -59,11 +59,11 @@ def jsondict(d):
         return {str(k):v for k,v in d.items()}
     return d
 
-def parse_file_conf(fn, sep=':', comments='#'):
+def parse_file_conf(fn, sep=':', comments=('#','%')):
     with open(fn) as f:
         parameters = f.read()
     parameters = filter(None, parameters.split('\n'))
-    parameters = dict((p[0].strip(), p[1].strip()) for p in (t.strip().split(sep) for t in parameters if not t.strip().startswith('#')))
+    parameters = dict((p[0].strip(), p[1].strip()) for p in (t.strip().split(sep) for t in parameters if not t.strip().startswith(comments)))
     for k, v in parameters.items():
         if  '.' in v:
             try:
@@ -133,10 +133,10 @@ def map_class2cluster_from_confusion(confu, map=None, cpt=0, minmax='max'):
         cpt += 1
         return map_class2cluster_from_confusion(confu, map, cpt)
 
-def make_path(bdir):
-    _bdir = os.path.dirname(bdir)
-    if not os.path.exists(_bdir) and _bdir:
-        os.makedirs(_bdir)
+def make_path(f):
+    bdir = os.path.dirname(f)
+    if not os.path.exists(bdir) and bdir:
+        os.makedirs(bdir)
     #fn = os.path.basename(bdir)
     #if not os.path.exists(fn) and fn:
     #    open(fn, 'a').close()
@@ -160,3 +160,39 @@ def nxG(y):
     else:
         G = y
     return G
+
+
+# Global settings
+__default_config = defaultdict(lambda: '?', dict(project_data = os.path.expanduser('~/.pymake/data'),
+                                                  project_figs = os.path.expanduser('~/.pymake/results/figs') ,
+                                                  default_spec = 'pymake.spec',
+                                                  default_script = 'pymake.script',
+                                                  default_model = 'pymake.model',
+                                                  default_corpus = '?')
+                               )
+def get_global_settings(key=None, default_dict=__default_config, cfg_name='pymake.cfg'):
+    #dir =  os.path.dirname(os.path.realpath(__file__))
+    dir = os.getcwd()
+    cfg_file = os.path.join(dir, cfg_name)
+
+    if not os.path.isfile(cfg_file):
+        cfg_file = os.path.join(os.path.expanduser('~') ,'.pymake', cfg_name)
+        if not os.path.isfile(cfg_file):
+            dir_cfg = make_path(cfg_file)
+            ctnt = '\n'.join(('{0} = {1}'.format(k,v) for k,v in  default_dict.items()))
+            with open(cfg_file, 'wb') as _f:
+                _f.write(ctnt.encode('utf8'))
+
+    config = parse_file_conf(cfg_file, sep='=')
+
+    if not key:
+        return config
+    elif key.startswith('_'):
+        res = []
+        for k in ['default'+key, 'contrib'+key]:
+            res += os.path.expanduser(config.get(k, default_dict[k])).split(',')
+        return list(map(str.strip, res))
+    else:
+        return os.path.expanduser(config.get(key, default_dict[key]))
+
+

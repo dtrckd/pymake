@@ -33,7 +33,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=install_requires,
     entry_points = {
-        'console_scripts': ['pymake=pymake.zymake'],
+        'console_scripts': ['pymake=pymake.zymake:main'],
     },
     package_data = {'pymake' : ['pymake.cfg']},
     include_package_data=True,
