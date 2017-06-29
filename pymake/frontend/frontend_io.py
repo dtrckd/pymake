@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import sys, os, re, importlib, pkgutil, pyclbr, inspect
+import sys, os, re, importlib, pkgutil, pyclbr, inspect, ast
 from collections import OrderedDict
 from itertools import groupby
 import json
@@ -47,6 +47,25 @@ _Key_measures = [ 'g_precision', 'Precision', 'Recall', 'K',
 
 _New_Dims = [{'measure':len(_Key_measures)}]
 
+def get_decorators(cls):
+    target = cls
+    decorators = {}
+
+    def visit_FunctionDef(node):
+        decorators[node.name] = []
+        for n in node.decorator_list:
+            name = ''
+            if isinstance(n, ast.Call):
+                name = n.func.attr if isinstance(n.func, ast.Attribute) else n.func.id
+            else:
+                name = n.attr if isinstance(n, ast.Attribute) else n.id
+
+            decorators[node.name].append(name)
+
+    node_iter = ast.NodeVisitor()
+    node_iter.visit_FunctionDef = visit_FunctionDef
+    node_iter.visit(ast.parse(inspect.getsource(target)))
+    return decorators
 
 def is_abstract(cls):
     ABCFLAG = '__abstractmethods__'
@@ -298,6 +317,9 @@ class PackageWalker(object):
         shrink_module_name = True,
     )
 
+    # Search also in the current repo.
+    sys.path.append(os.getenv('PWD')+'/..')
+
     def __init__(self, module_name, **kwargs):
         [setattr(self, k, kwargs.get(k, v)) for k,v in self._default_attr.items()]
 
@@ -319,7 +341,6 @@ class PackageWalker(object):
 
         packages = OrderedDict()
         try:
-            #sys.path.append(os.getcwd()) # don't work
             module = importlib.import_module(module_name)
         except ImportError as e:
             lgg.debug('package unavailable (%s) : %s' % (e, module_name))
@@ -377,6 +398,7 @@ class PackageWalker(object):
             # ExpDesign don't load without type() ?
             #if not issubclass(type(obj), self.class_filter) or is_abstract(obj):
                 continue
+
             if prefix:
                 name = prefix +'.'+ cls_name.lower()
             else:
@@ -493,8 +515,14 @@ class ScriptsLoader(PackageWalker):
 
             s = cls(module, class_filter=ExpeFormat)
 
+            ## get decorator for each class
+            #class2met2dec = {}
+            #for method, _class in classs.packages.items():
+            #    append decoratpr information to filter @atpymake
+
             for k, v in s._cls_browse.items():
                 methods = list(v.methods.keys())
+
                 for m in methods.copy():
                     _m = getattr(s.packages[k.lower()], m)
                     if not inspect.isfunction(_m) and m != '__call__':
