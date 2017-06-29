@@ -12,7 +12,7 @@ from .utils import *
 from .math import *
 
 import logging
-lgg = logging.getLogger('pymake_root')
+lgg = logging.getLogger('root')
 
 # Optimize Algothim (cython, etc) ?
 # frontend -- data copy -- integration ?

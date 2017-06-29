@@ -24,7 +24,7 @@ _colors = Cycle(['r', 'g','b','y','c','m','k'])
 _linestyle = Cycle(['solid' , 'dashed', 'dashdot', 'dotted'])
 
 import logging
-lgg = logging.getLogger('pymake_root')
+lgg = logging.getLogger('root')
 
 try:
     from termcolor import colored

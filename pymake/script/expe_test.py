@@ -11,7 +11,7 @@ from util.utils import *
 from util.argparser import argparser
 from expe.spec import _spec
 
-lgg = logging.getLogger('pymake_root')
+lgg = logging.getLogger('root')
 
 USAGE = '''\
 # Usage:

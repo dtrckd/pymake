@@ -6,8 +6,6 @@ import numpy as np
 from numpy import ma
 from pymake import ModelManager, FrontendManager, GramExp, ExpeFormat, ExpSpace
 
-import logging
-lgg = logging.getLogger('pymake_root')
 
 USAGE = """\
 ----------------
@@ -17,9 +15,6 @@ Fit the data :
 
 class Fit(ExpeFormat):
 
-    @classmethod
-    def preprocess(cls, gramexp):
-        lgg.info(gramexp.exptable())
 
     def __call__(self):
         expe = self.expe
