@@ -175,8 +175,7 @@ class GramExp(object):
     }
 
     def __init__(self, conf={}, usage=None, parser=None, parseargs=True):
-        #self._spec = mloader.SpecLoader.default_spec()
-        self._spec = mloader.SpecLoader.get_atoms()
+        self._spec = mloader.SpecLoader.default_spec()
         if parseargs is True:
             kwargs, self.argparser = self.parseargsexpe(usage)
             conf.update(kwargs)
@@ -364,11 +363,12 @@ class GramExp(object):
         expe = defaultdict(lambda: None, expe)
         filen = None
         lgg.debug('heere, get data_type from loader corpus info !')
-        base = expe.get('data_type', 'networks')
+        base = expe.get('data_type', 'pmk-temp')
         hook = expe.get('refdir', '')
         c = expe.get('corpus')
         if not c:
-            return None
+            c = ''
+            lgg.debug('warning: No Corpus given')
         if c.lower().startswith(('clique', 'graph', 'generator')):
             c = c.replace('generator', 'Graph')
             c = c.replace('graph', 'Graph')
