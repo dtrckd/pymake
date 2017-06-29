@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import sys, os
 import inspect
 import logging
-lgg = logging.getLogger('pymake_root')
+lgg = logging.getLogger('root')
 
 # Model Manager Utilities
 import numpy as np
@@ -84,7 +84,7 @@ class ModelManager(object):
         self.fr = frontend
 
         self.hyperparams = expe.get('hyperparams', dict())
-        bdir, output_path = GramExp.make_output_path(expe)
+        output_path = GramExp.make_output_path(expe)
         if not 'output_path' in  expe:
             expe['output_path'] = output_path
 

@@ -16,7 +16,7 @@ from pymake.util.math import lognormalize, categorical
 #import sppy
 
 import logging
-lgg = logging.getLogger('pymake_root')
+lgg = logging.getLogger('root')
 
 # Todo: rethink sampler and Likelihood class definition.
 

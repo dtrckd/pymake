@@ -15,7 +15,8 @@ from pymake.expe.format import Corpus, Model, Script, ExpSpace, ExpVector, ExpTe
 from pymake.expe.gramexp import GramExp
 
 from pymake.frontend.frontend_io import SpecLoader
-__spec = SpecLoader._default_spec()
+#__spec = SpecLoader._default_spec()
+__spec = SpecLoader.get_atoms()
 
 from pymake.frontend.frontendtext import frontendText
 from pymake.frontend.frontendnetwork import frontendNetwork

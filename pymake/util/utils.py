@@ -172,7 +172,8 @@ __default_config = defaultdict(lambda: '?', dict(project_data = os.path.expandus
                                )
 def get_global_settings(key=None, default_dict=__default_config, cfg_name='pymake.cfg'):
     #dir =  os.path.dirname(os.path.realpath(__file__))
-    dir = os.getcwd()
+    #dir = os.getcwd()
+    dir = os.getenv('PWD')
     cfg_file = os.path.join(dir, cfg_name)
 
     if not os.path.isfile(cfg_file):
@@ -186,13 +187,16 @@ def get_global_settings(key=None, default_dict=__default_config, cfg_name='pymak
     config = parse_file_conf(cfg_file, sep='=')
 
     if not key:
-        return config
+        settings =  config
     elif key.startswith('_'):
         res = []
         for k in ['default'+key, 'contrib'+key]:
             res += os.path.expanduser(config.get(k, default_dict[k])).split(',')
-        return list(map(str.strip, res))
+        settings =  list(map(str.strip, res))
     else:
-        return os.path.expanduser(config.get(key, default_dict[key]))
+        settings = os.path.expanduser(config.get(key, default_dict[key]))
+
+    #print(settings)
+    return settings
 
 
