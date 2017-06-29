@@ -311,9 +311,12 @@ class ExpeFormat(object):
             * _default_expe : is updated by each single expe.
 
     '''
+
+    log = logging.getLogger('root')
+    _logfile = False # for external integration
+
     def __init__(self, pt, expe, gramexp):
         # Global
-        self.log = logging.getLogger('pymake_root')
         self.expe_size = len(gramexp)
         self.gramexp = gramexp
         self.specname = gramexp.getSpec().name
@@ -427,21 +430,21 @@ class ExpeFormat(object):
         # Put a valid expe a the end.
         gramexp.reorder_lastvalid()
 
+        print(gramexp.exptable())
 
-        return cls.preprocess(gramexp)
+        return
 
     @classmethod
     def _postprocess(cls, gramexp):
         cls.display(gramexp.exp_tensor)
+        return
 
-        return cls.postprocess(gramexp)
 
-    @classmethod
-    def preprocess(cls, gramexp):
+    def preprocess(self):
         # heere, do a wrapper ?
         pass
-    @classmethod
-    def postprocess(cls, gramexp):
+
+    def postprocess(self):
         # heere, do a wrapper ?
         pass
 

@@ -7,7 +7,7 @@ import networkx as nx
 from .utils import nxG
 
 import logging
-lgg = logging.getLogger('pymake_root')
+lgg = logging.getLogger('root')
 
 ##########################
 ### Stochastic Process
