@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from datetime import datetime
 import itertools
 import logging
-lgg = logging.getLogger('pymake_root')
+lgg = logging.getLogger('root')
 
 import numpy as np
 import scipy as sp

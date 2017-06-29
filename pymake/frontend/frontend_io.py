@@ -8,7 +8,7 @@ import json
 import numpy as np
 
 import logging
-lgg = logging.getLogger('pymake_root')
+lgg = logging.getLogger('root')
 
 from pymake.util.utils import get_global_settings
 from pymake import ExpDesign, ExpeFormat
@@ -299,19 +299,17 @@ class PackageWalker(object):
     )
 
     def __init__(self, module_name, **kwargs):
-        self.module_name = module_name
         [setattr(self, k, kwargs.get(k, v)) for k,v in self._default_attr.items()]
 
         self._cls_browse = {}
-        self.packages = self._get_packages()
+        self.packages = self._get_packages(module_name)
 
     def __repr__(self):
         return self.packages
 
-    def _get_packages(self, module_name=None,  _depth=0):
+    def _get_packages(self, module_name,  _depth=0):
         ''' recursive call with regards to depth parameter '''
-        if module_name is None:
-            module_name = self.module_name
+
         if self.prefix is True:
             prefix = module_name
         elif self.prefix is False:
@@ -321,6 +319,7 @@ class PackageWalker(object):
 
         packages = OrderedDict()
         try:
+            #sys.path.append(os.getcwd()) # don't work
             module = importlib.import_module(module_name)
         except ImportError as e:
             lgg.debug('package unavailable (%s) : %s' % (e, module_name))
@@ -338,7 +337,6 @@ class PackageWalker(object):
                 lgg.debug('submodule unavailable (%s) : %s'%(e, submodule_name))
                 if 'algo' in str(e):
                     submodule = importlib.import_module(submodule_name)
-
                 continue
 
             spck = self.submodule_hook(submodule, prefix, name=name)
@@ -386,32 +384,6 @@ class PackageWalker(object):
             packages[name] = obj
 
         return packages
-
-class SpecLoader(PackageWalker):
-    ''' Load specification of design experimentation :
-        * Lookup for ExpDesign subclass in the target module.
-    '''
-    def __init__(self):
-        module_name = get_global_settings('_spec')
-        class_filter = ExpDesign
-        super(SpecLoader, self).__init__(module_name, class_filter=class_filter)
-
-    def submodule_hook(self, *args, **kwargs):
-        return super(SpecLoader, self).submodule_hook_by_class(*args, **kwargs)
-
-    @staticmethod
-    def _default_spec():
-        spec = importlib.import_module('pymake.spec.netw')
-        for m in dir(spec):
-            o = getattr(spec,m)
-            if issubclass(o, ExpDesign) and not o is ExpDesign:
-                return o()
-
-    @staticmethod
-    def default_spec():
-        import pymake
-        return getattr(pymake, '__spec')
-
 
 class ModelsLoader(PackageWalker):
     ''' Load models in a modules :
@@ -503,23 +475,91 @@ class ScriptsLoader(PackageWalker):
         module_name = get_global_settings('_script')
         if not 'class_filter' in kwargs:
             kwargs['class_filter'] = ExpeFormat
-        return cls(module_name, **kwargs).packages
+
+        if isinstance(module_name, list):
+            packs = {}
+            for m in module_name:
+                packs.update(cls(m, **kwargs).packages)
+            return packs
+        else:
+            return cls(module_name, **kwargs).packages
 
     @classmethod
     def get_atoms(cls):
-        s = cls(module_name=get_global_settings('_script'), class_filter=ExpeFormat)
         t = dict()
-        for k, v in s._cls_browse.items():
-            methods = list(v.methods.keys())
-            for m in methods.copy():
-                _m = getattr(s.packages[k.lower()], m)
-                if not inspect.isfunction(_m) and m != '__call__':
-                    methods.remove(m)
-                elif '__call__' == m:
-                    methods.remove('__call__')
-                    methods.append(v.name.lower())
-                elif m.startswith('__'):
-                    methods.remove(m)
-            t[v.name] = methods
+        modules = get_global_settings('_script')
+        modules = [modules] if type(modules) is str else modules
+        for module in modules:
+
+            s = cls(module, class_filter=ExpeFormat)
+
+            for k, v in s._cls_browse.items():
+                methods = list(v.methods.keys())
+                for m in methods.copy():
+                    _m = getattr(s.packages[k.lower()], m)
+                    if not inspect.isfunction(_m) and m != '__call__':
+                        methods.remove(m)
+                    elif '__call__' == m:
+                        methods.remove('__call__')
+                        methods.append(v.name.lower())
+                    elif m.startswith('__'):
+                        methods.remove(m)
+                t[v.name] = methods
         return t
+
+class SpecLoader(PackageWalker):
+    ''' Load specification of design experimentation :
+        * Lookup for ExpDesign subclass in the target module.
+    '''
+    # @obsolete
+    #def __init__(self):
+    #    module_name = get_global_settings('_spec')
+    #    class_filter = ExpDesign
+    #    super(SpecLoader, self).__init__(module_name, class_filter=class_filter)
+
+    def submodule_hook(self, *args, **kwargs):
+        return super(SpecLoader, self).submodule_hook_by_class(*args, **kwargs)
+
+    @staticmethod
+    def _default_spec():
+        #module_name = get_global_settings('_spec')
+        module_name = 'pymake.spec.netw'
+        spec = importlib.import_module(module_name)
+        for m in dir(spec):
+            o = getattr(spec,m)
+            if issubclass(o, ExpDesign) and not o is ExpDesign:
+                return o()
+
+    @staticmethod
+    def default_spec():
+        import pymake
+        return getattr(pymake, '__spec')
+
+    @classmethod
+    def get_atoms(cls):
+        expe_designs = []
+        modules = get_global_settings('_spec')
+        modules = [modules] if type(modules) is str else modules
+        for module in modules:
+
+            s = cls(module, class_filter=ExpeFormat)
+
+            for k, v in s._cls_browse.items():
+                spec = importlib.import_module(v.module)
+                for m in dir(spec):
+                    if m.startswith('__'):
+                        continue
+                    o = getattr(spec,m)
+                    if not inspect.isclass(o):
+                        continue
+                    if issubclass(o, ExpDesign) and not o is ExpDesign:
+                        expe_designs.append(o)
+
+        expdesign = ExpDesign()
+        for s in expe_designs:
+            expdesign.update(s())
+
+        return expdesign
+
+
 

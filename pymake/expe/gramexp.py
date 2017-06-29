@@ -26,14 +26,15 @@ from pymake.frontend.frontend_io import _DATA_PATH, ext_status, is_empty_file
 
 ''' Grammar Expe '''
 _version = 0.1
-lgg = logging.getLogger('pymake_root')
+lgg = logging.getLogger('root')
 
 # Custom formatter
 # From : https://stackoverflow.com/questions/14844970/modifying-logging-message-format-based-on-message-logging-level-in-python3
 class MyLogFormatter(logging.Formatter):
 
-    critical_fmt  = "===>> CRITICAL: %(msg)s"
-    err_fmt  = "==> ERROR: %(msg)s"
+    critical_fmt  = "====>>> CRITICAL: %(msg)s"
+    err_fmt  = "===>> ERROR: %(msg)s"
+    warn_fmt  = "==> Warning: %(msg)s"
     dbg_fmt  = "%(msg)s"
     info_fmt = "%(msg)s"
 
@@ -53,12 +54,14 @@ class MyLogFormatter(logging.Formatter):
         # Replace the original format with one customized by logging level
         if record.levelno == logging.DEBUG:
             self._style._fmt = MyLogFormatter.dbg_fmt
-
         elif record.levelno == logging.INFO:
             self._style._fmt = MyLogFormatter.info_fmt
-
+        elif record.levelno == logging.WARNING:
+            self._style._fmt = MyLogFormatter.warn_fmt
         elif record.levelno == logging.ERROR:
             self._style._fmt = MyLogFormatter.err_fmt
+        elif record.levelno == logging.CRITICAL:
+            self._style._fmt = MyLogFormatter.critical_fmt
 
         # Call the original formatter class to do the grunt work
         result = logging.Formatter.format(self, record)
@@ -69,7 +72,7 @@ class MyLogFormatter(logging.Formatter):
         return result
 
 
-def setup_logger(level=logging.INFO, name='pymake_root'):
+def setup_logger(level=logging.INFO, name='root'):
     #formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
 
     if level == 1:
@@ -172,7 +175,8 @@ class GramExp(object):
     }
 
     def __init__(self, conf={}, usage=None, parser=None, parseargs=True):
-        self._spec = mloader.SpecLoader.default_spec()
+        #self._spec = mloader.SpecLoader.default_spec()
+        self._spec = mloader.SpecLoader.get_atoms()
         if parseargs is True:
             kwargs, self.argparser = self.parseargsexpe(usage)
             conf.update(kwargs)
@@ -187,8 +191,7 @@ class GramExp(object):
         self._default_spec = conf.get('spec', {})
 
         # @logger One logger by Expe !
-        level = setup_logger(level=conf.get('verbose'))
-        conf.update(verbose=level)
+        setup_logger(level=conf.get('verbose'))
 
         # Make main data structure
         self.exp_tensor = ExpTensor.from_expe(conf)
@@ -389,8 +392,6 @@ class GramExp(object):
         ext = ext_status(filen, _type)
         if ext:
             filen = ext
-        else:
-            filen = (basedir, filen)
 
         if status is 'f' and is_empty_file(filen):
             return  None
@@ -482,7 +483,6 @@ class GramExp(object):
                     if ont == 'spec':
                         if v in ont_values:
                             lgg.error('warning: conflict between name of ExpDesign and GramExp ontology keywords ')
-                        ont = 'spec'
                         do.remove(v)
                         v = _spec[v]
                     request[ont] = v
@@ -832,6 +832,9 @@ class GramExp(object):
                 traceback.print_exc()
                 exit()
 
+            # Expe Preprocess
+            expbox.preprocess()
+
             # Setup handler
             if hasattr(_expe, '_do') and len(_expe._do) > 0:
                 # ExpFormat task ? decorator and autoamtic argument passing ....
@@ -852,6 +855,9 @@ class GramExp(object):
                 print(('Error during '+colored('%s', 'red')+' Expe.') % (do))
                 traceback.print_exc()
                 exit()
+
+            # Expe Postprocess
+            expbox.postprocess()
 
         return sandbox._postprocess(self)
 

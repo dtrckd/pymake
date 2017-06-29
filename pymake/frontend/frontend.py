@@ -11,7 +11,7 @@ import numpy as np
 from pymake import GramExp
 
 import logging
-lgg = logging.getLogger('pymake_root')
+lgg = logging.getLogger('root')
 
 class DataBase(object):
     """ Root Class for Frontend Manipulation over Corpuses and Models.
@@ -78,7 +78,7 @@ class DataBase(object):
 
     def make_output_path(self):
         ''' Write Path (for models results) in global settings '''
-        self.basedir, self.output_path = GramExp.make_output_path(self.expe)
+        self.output_path = GramExp.make_output_path(self.expe)
         # deprecated / outputapth is setup in gramexp
         self.expe['output_path'] = self.output_path
 

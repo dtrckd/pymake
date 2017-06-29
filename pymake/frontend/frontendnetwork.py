@@ -253,7 +253,8 @@ class frontendNetwork(DataBase):
             Format is understanding for parsing.
             """
         data = None
-        fn = os.path.join(self.basedir, corpus_name)
+        bdir = os.path.dirname(self.output_path)
+        fn = os.path.join(bdir, corpus_name)
         if self._load_data and os.path.isfile(fn+'.pk'):
             try:
                 data = self.load(fn)
@@ -262,12 +263,12 @@ class frontendNetwork(DataBase):
                 data = None
         if data is None:
             ext = format
-            fn = os.path.join(self.basedir, corpus_name +'.'+ ext)
+            fn = os.path.join(bdir, corpus_name +'.'+ ext)
             if ext == 'graph':
-                fn = os.path.join(self.basedir, 't0.graph')
+                fn = os.path.join(bdir, 't0.graph')
                 data = self.parse_dancer(fn)
             elif ext == 'edges':
-                fn = os.path.join(self.basedir, '0.edges')
+                fn = os.path.join(bdir, '0.edges')
                 data = self.parse_edges(fn)
                 # NotImplemented
             elif ext in ('txt'):
