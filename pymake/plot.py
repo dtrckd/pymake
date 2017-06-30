@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import re, os, json
 from multiprocessing import Process
-from tabulate import tabulate
 
 import numpy as np
 import networkx as nx
@@ -12,9 +11,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import colors as Colors
 
-from pymake.util.utils import * # Cycle
-from pymake.util.math import *
-from pymake.util.algo import *
+from pymake.util.utils import drop_zeros, nxG, Cycle
+from pymake.util.math import adj_to_degree, clusters_hist, degree_hist, draw_square, random_degree, reorder_mat
 
 
 from pymake.util.ascii_code import X11_colors, plt_colors
@@ -26,11 +24,6 @@ _linestyle = Cycle(['solid' , 'dashed', 'dashdot', 'dotted'])
 import logging
 lgg = logging.getLogger('root')
 
-try:
-    from termcolor import colored
-except ImportError:
-    lgg.debug('needs `termcolor\' modules for colors printing')
-    colored = lambda *x : x[0]
 
 def display(block=False):
     #p = Process(target=_display)

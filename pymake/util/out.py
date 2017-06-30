@@ -12,7 +12,7 @@ from tabulate import tabulate
 import matplotlib.pyplot as plt
 import numpy as np
 
-from pymake.util.utils import make_path
+from pymake.util.utils import make_path, basestring
 import os
 
 _spec = GramExp.Spec()
