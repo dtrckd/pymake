@@ -1,16 +1,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-# __future__
-try: basestring = basestring # python2
-except NameError: basestring = (str, bytes) # python3
-
 import  os
 if os.environ.get('DISPLAY') is None:
     import matplotlib; matplotlib.use('Agg')
 
 
-# This line is long (0.3 seconds !)
+# This lines take a while
 from pymake.expe.format import Corpus, Model, Script, ExpSpace, ExpVector, ExpTensor, ExpeFormat, ExpDesign
 from pymake.expe.gramexp import GramExp
 
@@ -21,6 +17,7 @@ __spec = SpecLoader.get_atoms()
 from pymake.frontend.frontendtext import frontendText
 from pymake.frontend.frontendnetwork import frontendNetwork
 from pymake.frontend.manager import ModelManager, FrontendManager
+
 
 
 #

@@ -16,8 +16,8 @@ import numpy as np
 from argparse import RawDescriptionHelpFormatter
 
 import pymake.expe.gram as gram
-from pymake import basestring, ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, Script, ExpVector
-from pymake.plot import colored
+from pymake import  ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, Script, ExpVector
+from pymake.util.utils import colored, basestring
 
 import pymake.frontend.frontend_io as mloader
 
@@ -174,8 +174,14 @@ class GramExp(object):
         'write'     : False,
     }
 
-    def __init__(self, conf={}, usage=None, parser=None, parseargs=True):
+    def __init__(self, conf, usage=None, parser=None, parseargs=True):
+        # @logger One logger by Expe ! # in preinit
+        setup_logger(level=conf.get('verbose'))
         self._spec = mloader.SpecLoader.default_spec()
+
+        if conf is None:
+            conf = {}
+
         if parseargs is True:
             kwargs, self.argparser = self.parseargsexpe(usage)
             conf.update(kwargs)
@@ -188,9 +194,6 @@ class GramExp(object):
 
         # in expt_setup...
         self._default_spec = conf.get('spec', {})
-
-        # @logger One logger by Expe !
-        setup_logger(level=conf.get('verbose'))
 
         # Make main data structure
         self.exp_tensor = ExpTensor.from_expe(conf)
@@ -744,6 +747,12 @@ class GramExp(object):
         return tree
 
 
+    @staticmethod
+    def get_cls_name(cls):
+        clss = str(cls).split()[1]
+        return clss.split('.')[-1].replace("'>", '')
+
+
     def expe_init(self, expe):
         if not 'seed' in expe:
             pass
@@ -810,7 +819,7 @@ class GramExp(object):
             print(*self.functable(sandbox) , sep='\n')
             exit(2)
 
-        sandbox._preprocess(self)
+        sandbox._preprocess_(self)
         if self._conf.get('simulate'):
             self.simulate()
 
@@ -833,7 +842,7 @@ class GramExp(object):
                 exit()
 
             # Expe Preprocess
-            expbox.preprocess()
+            expbox._preprocess()
 
             # Setup handler
             if hasattr(_expe, '_do') and len(_expe._do) > 0:
@@ -857,8 +866,8 @@ class GramExp(object):
                 exit()
 
             # Expe Postprocess
-            expbox.postprocess()
+            expbox._postprocess()
 
-        return sandbox._postprocess(self)
+        return sandbox._postprocess_(self)
 
 

@@ -5,14 +5,14 @@ import logging
 import traceback,  importlib
 import numpy as np
 from collections import OrderedDict, defaultdict
-from pymake.plot import colored, display, tabulate, _linestyle
 from decorator import decorator
 from functools import wraps
-from pymake import basestring
-import pymake as pmk
+
+from pymake.util.utils import colored, basestring
 from pymake.index.indexmanager import IndexManager as IX
 
-import matplotlib.pyplot as plt
+from tabulate import tabulate
+
 
 
 # Not sure this one is necessary, or not here
@@ -340,17 +340,19 @@ class ExpeFormat(object):
 
     @classmethod
     def display(cls, conf):
+        import matplotlib.pyplot as plt
         block = not conf.get('save_plot', False)
-        display(block=block)
+        plt.show(block=block)
 
     @staticmethod
     @decorator
     def plot_simple(fun, *args, **kwargs):
+        import matplotlib.pyplot as plt
         self = args[0]
         expe = self.expe
         kernel = fun(*args, **kwargs)
         if hasattr(expe, 'block_plot') and getattr(self, 'noplot', False) is not True:
-            display(block=expe.block_plot)
+            plt.show(block=expe.block_plot)
         return kernel
 
     @staticmethod
@@ -367,6 +369,8 @@ class ExpeFormat(object):
             def decorator(fun):
                 @wraps(fun)
                 def wrapper(*args, **kwargs):
+                    import matplotlib.pyplot as plt
+                    from pymake.plot import _linestyle
                     group = groups[0]
                     self = args[0]
                     expe = self.expe
@@ -418,7 +422,7 @@ class ExpeFormat(object):
         return decorator
 
     @classmethod
-    def _preprocess(cls, gramexp):
+    def _preprocess_(cls, gramexp):
         ''' This method has **write** access to Gramexp '''
 
         # update exp_tensor in gramexp
@@ -435,16 +439,16 @@ class ExpeFormat(object):
         return
 
     @classmethod
-    def _postprocess(cls, gramexp):
+    def _postprocess_(cls, gramexp):
         cls.display(gramexp.exp_tensor)
         return
 
 
-    def preprocess(self):
+    def _preprocess(self):
         # heere, do a wrapper ?
         pass
 
-    def postprocess(self):
+    def _postprocess(self):
         # heere, do a wrapper ?
         pass
 
