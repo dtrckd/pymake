@@ -819,7 +819,7 @@ class GramExp(object):
             print(*self.functable(sandbox) , sep='\n')
             exit(2)
 
-        sandbox._preprocess(self)
+        sandbox._preprocess_(self)
         if self._conf.get('simulate'):
             self.simulate()
 
@@ -842,7 +842,7 @@ class GramExp(object):
                 exit()
 
             # Expe Preprocess
-            expbox.preprocess()
+            expbox._preprocess()
 
             # Setup handler
             if hasattr(_expe, '_do') and len(_expe._do) > 0:
@@ -866,8 +866,8 @@ class GramExp(object):
                 exit()
 
             # Expe Postprocess
-            expbox.postprocess()
+            expbox._postprocess()
 
-        return sandbox._postprocess(self)
+        return sandbox._postprocess_(self)
 
 
