@@ -89,7 +89,7 @@ class IndexManager(object):
         method_by_cls = ScriptsLoader.get_atoms()
         writer = self.clean_index(model).writer()
         for scriptname, module in Scripts.items():
-            lgg.info('indexing %s' % (str(scriptname)+str(module)))
+            lgg.info('\tindexing %s' % (str(scriptname)+str(module)))
 
             # Loop is context/model dependant
             methods = method_by_cls[module.__name__]
@@ -111,7 +111,7 @@ class IndexManager(object):
         models = ModelsLoader.get_atoms()
         writer = self.clean_index(model).writer()
         for surname, module in models.items():
-            lgg.info('indexing %s' % (str(surname)+str(module)))
+            lgg.info('\tindexing %s' % (str(surname)+str(module)))
 
             # Loop is context/model dependant
             topos = ' '.join(set(module.__module__.split('.')[1:]))
