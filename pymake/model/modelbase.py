@@ -8,6 +8,7 @@ import re
 
 import numpy as np
 import scipy as sp
+import scipy.stats #sp.stats fails if not
 from scipy.special import gammaln
 from numpy.random import dirichlet, gamma, poisson, binomial, beta
 

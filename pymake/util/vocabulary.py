@@ -2,13 +2,8 @@
 
 import os, re
 from string import punctuation
-from pymake import basestring
+from pymake.util.utils import basestring
 
-try:
-    import nltk
-except:
-    _NLTK_DISABLED = True
-    pass
 
 import numpy as np
 import scipy as sp
@@ -84,6 +79,13 @@ class Vocabulary(object):
     recover_list = {"wa":"was", "ha":"has"}
 
     def __init__(self, exclude_stopwords=False, lemmatize=True):
+
+        try:
+            import nltk
+        except:
+            _NLTK_DISABLED = True
+            pass
+
         self.vocas = []        # id to word
         self.token2id = dict() # word to id
         self.docfreq = []      # id to document frequency
@@ -92,12 +94,12 @@ class Vocabulary(object):
         if exclude_stopwords:
             with open (os.path.join(os.path.dirname(__file__), 'stopwords.txt'), "r") as _f:
                 stopwords_list = _f.read().replace('\n', '').split()
-            if not globals().get('_NLTK_DISABLED'):
+            if not _NLTK_DISABLED:
                 stopwords_list += nltk.corpus.stopwords.words('english')
             self.stopwords_list = set(stopwords_list)
 
         if lemmatize:
-            if not globals().get('_NLTK_DISABLED'):
+            if not _NLTK_DISABLED:
                 self.wlemm = nltk.WordNetLemmatizer()
             else:
                 print ('Warning: no lemmatizer !')
