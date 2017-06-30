@@ -422,7 +422,7 @@ class ExpeFormat(object):
         return decorator
 
     @classmethod
-    def _preprocess(cls, gramexp):
+    def _preprocess_(cls, gramexp):
         ''' This method has **write** access to Gramexp '''
 
         # update exp_tensor in gramexp
@@ -439,16 +439,16 @@ class ExpeFormat(object):
         return
 
     @classmethod
-    def _postprocess(cls, gramexp):
+    def _postprocess_(cls, gramexp):
         cls.display(gramexp.exp_tensor)
         return
 
 
-    def preprocess(self):
+    def _preprocess(self):
         # heere, do a wrapper ?
         pass
 
-    def postprocess(self):
+    def _postprocess(self):
         # heere, do a wrapper ?
         pass
 

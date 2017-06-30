@@ -530,7 +530,7 @@ class ScriptsLoader(PackageWalker):
                     elif '__call__' == m:
                         methods.remove('__call__')
                         methods.append(v.name.lower())
-                    elif m.startswith('__'):
+                    elif m.startswith('_'):
                         methods.remove(m)
                 t[v.name] = methods
         return t
