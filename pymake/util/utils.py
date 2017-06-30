@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
-try: from builtins import input
-except ImportError: input = raw_input
 
 import sys, os
 from os.path import dirname
@@ -11,6 +9,19 @@ import logging
 
 import numpy as np
 import scipy as sp
+
+# __future__
+try: from builtins import input
+except ImportError: input = raw_input
+try: basestring = basestring # python2
+except NameError: basestring = (str, bytes) # python3
+
+
+try:
+    from termcolor import colored
+except ImportError:
+    #lgg.debug('needs `termcolor\' modules for colors printing')
+    colored = lambda *x : x[0]
 
 #from itertools import cycle
 class Cycle(object):

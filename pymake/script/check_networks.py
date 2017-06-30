@@ -28,8 +28,10 @@ Inspect data on disk --or find the questions :
 from pymake.util.algo import gofit, Louvain, Annealing
 from pymake.util.math import reorder_mat, sorted_perm
 import matplotlib.pyplot as plt
-from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2, colored, tabulate
+from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2
 from pymake.util import out
+from pymake.util.utils import colored
+from pymake.expe.format import tabulate
 
 class CheckNetwork(ExpeFormat):
 

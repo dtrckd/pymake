@@ -3,7 +3,7 @@
 
 import numpy as np
 import logging
-from tabulate import tabulate
+from pymake.expe.format import tabulate
 
 from collections import OrderedDict
 

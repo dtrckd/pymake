@@ -3,7 +3,7 @@
 
 import numpy as np
 import logging
-from tabulate import tabulate
+from pymake.expe.format import tabulate
 
 from pymake import ExpTensor, OrderedDict
 from frontend.frontend_io import *
