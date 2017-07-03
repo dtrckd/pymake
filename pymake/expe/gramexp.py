@@ -753,20 +753,30 @@ class GramExp(object):
         return clss.split('.')[-1].replace("'>", '')
 
 
-    def expe_init(self, expe):
-        if not 'seed' in expe:
-            pass
-        elif expe.seed is True:
-            try:
-                np.random.set_state(self.load('/tmp/pymake.seed', silent=True))
-            except FileNotFoundError as e:
-                print('error: %s, Try a seed (--seed VALUE).' % (e))
-                exit()
-        else:
-            np.random.seed(expe.seed)
+    def expe_init(self, expe, _seed_path='/tmp/pymake.seed'):
+        _seed = expe.get('seed')
 
-        self._seed = np.random.get_state()
-        self.save(self._seed, '/tmp/pymake.seed', silent=True)
+        if _seed is None:
+            seed = np.random.randint(0, 2**32)
+        elif type(_seed) is int:
+            seed = _seed
+        elif _seed is True:
+            seed = None
+            try:
+                np.random.set_state(self.load(_seed_path))
+            except FileNotFoundError as e:
+                self.log.error("Cannot initialize seed, %s file does not exist." % _seed_path)
+                self.save(np.random.get_state(), _seed_path, silent=True)
+                raise FileNotFoundError('%s file just created, try again !')
+
+        if seed:
+            # if no seed is given, it impossible ti get a seed from numpy
+            # https://stackoverflow.com/questions/32172054/how-can-i-retrieve-the-current-seed-of-numpys-random-number-generator
+            np.random.seed(seed)
+
+        self.save(np.random.get_state(), _seed_path, silent=True)
+        self._seed = seed
+        return seed
 
 
     def execute(self):
