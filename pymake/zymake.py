@@ -31,7 +31,7 @@ def main():
         lines = zymake.make_path(ftype=zyvar.get('_ftype', 'pk'), status=zyvar.get('_status'))
     elif zyvar['_do'] == 'show':
         zymake.simulate()
-    elif zyvar['_do'] == 'exec':
+    elif zyvar['_do'] ==  'run':
         lines = zymake.execute()
     elif zyvar['_do'] == 'notebook':
         lines = zymake.notebook()
@@ -64,7 +64,7 @@ def main():
         exit()
 
     if 'script' in zyvar:
-        script = './zymake.py exec'
+        script = './zymake.py run'
         lines = [' '.join((script, l)) for l in lines]
 
     zymake.simulate(halt=False, file=sys.stderr)
