@@ -449,7 +449,7 @@ class GramExp(object):
          |   zymake update  : update the pymake index
          |   zymake show SPEC : show one spec details
          |   zymake cmd SPEC [fun][*args] : generate command-line
-         |   zymake exec SPEC [fun][*args][--script ...] : execute tasks (default is fit)
+         |   zymake run SPEC [fun][*args][--script ...] : execute tasks (default is fit)
          |   zymake burn SPEC [fun][*args][--script ...] : parallelize tasks
          |   zymake path SPEC Filetype(pk|json|inf) [status]
         ''' + '\n' + usage
@@ -459,7 +459,7 @@ class GramExp(object):
 
         _spec = mloader.SpecLoader.default_spec()
         ontology = dict(
-            _do    = ['cmd', 'show', 'path', 'burn', 'exec', 'update'],
+            _do    = ['cmd', 'show', 'path', 'burn', 'run', 'update'],
             spec   = _spec._specs(),
             _ftype = ['json', 'pk', 'inf']
         )
@@ -474,7 +474,7 @@ class GramExp(object):
         # Hack for script/exec
         if request.get('do_list'):
             if 'script' in request:
-                request['_do'] = ['exec']
+                request['_do'] = ['run']
 
         do = request['_do']
         checksum = len(do)
