@@ -220,7 +220,10 @@ class ExpDesign(dict, BaseObject):
         for k in dir(self):
             #_spec = ExpDesign((k, getattr(Netw, k)) for k in dir(Netw) if not k.startswith('__') )
             if not k.startswith('_'):
-                self[k] = getattr(self, k)
+                v = getattr(self, k)
+                #if not callable(v): #  python >3.2
+                if not hasattr(v, '__call__'):
+                    self[k] = v
         # @debug: add callable in reserved keyword
         self._reserved_keywords = list(set([w for w in dir(self) if w.startswith('_')] + ['_reserved_keywords']+dir(dict)+dir(BaseObject)))
         name = self.pop('_name', 'expDesign')
