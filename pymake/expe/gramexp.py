@@ -500,7 +500,7 @@ class GramExp(object):
         #    request['_status'] = clargs.grouped['-status'].get(0)
 
         if checksum != 0:
-            raise ValueError('unknow argument: %s\n\nAvailable SPEC : %s' % (do, sorted(_spec.keys())))
+            raise ValueError('unknow argument: %s\n\nAvailable SPEC : %s' % (do, sorted(_spec._specs())))
         return cls(request, usage=usage, parser=parser, parseargs=False)
 
     @classmethod
