@@ -1,0 +1,7 @@
+
+class ${projectname}_model():
+
+    def fit(self):
+        pass
+
+

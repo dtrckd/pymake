@@ -37,6 +37,8 @@ def main():
         lines = zymake.notebook()
     elif zyvar['_do'] == 'update':
         zymake.update_index()
+    elif zyvar['_do'] == 'init':
+        zymake.init_folders()
     elif zyvar['_do'] == 'burn':
         # @todo; parallelize Pymake()
         raise NotImplementedError('What parallel strategy ?')

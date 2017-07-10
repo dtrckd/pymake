@@ -35,6 +35,6 @@ setuptools.setup(
     entry_points = {
         'console_scripts': ['pymake=pymake.zymake:main'],
     },
-    package_data = {'pymake' : ['pymake.cfg']},
+    package_data = {'pymake' : ['pymake.cfg', 'expe/*.template']},
     include_package_data=True,
 )

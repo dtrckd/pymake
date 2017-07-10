@@ -459,7 +459,7 @@ class GramExp(object):
 
         _spec = mloader.SpecLoader.default_spec()
         ontology = dict(
-            _do    = ['cmd', 'show', 'path', 'burn', 'run', 'update'],
+            _do    = ['cmd', 'show', 'path', 'burn', 'run', 'update', 'init'],
             spec   = _spec._specs(),
             _ftype = ['json', 'pk', 'inf']
         )
@@ -816,6 +816,36 @@ class GramExp(object):
         nb['cells'] = [nbf.new_markdown_cell(text),
                        nbf.new_code_cell(code) ]
         return
+
+    def init_folders(self):
+        from string import Template
+        from os.path import join
+        from pymake.util.utils import set_global_settings
+
+        pwd = os.getenv('PWD')
+        cwd = os.path.dirname(__file__)
+        folders = ['spec', 'script', 'model']
+        open(join(pwd, '__init__.py'), 'a').close()
+        spec = {'projectname':os.path.basename(pwd)}
+        settings = {}
+        for d in folders:
+            os.makedirs(d, exist_ok=True)
+            with open(join(cwd, '%s.template'%(d))) as _f:
+                template = Template(_f.read())
+
+            open(join(pwd, d,  '__init__.py'), 'a').close()
+            with open(join(pwd, d,  'template_%s.py'%(d)), 'a') as _f:
+                _f.write(template.substitute(spec))
+
+            if d in ['spec']:
+                settings.update({'default_%s'%(d):'.'.join((spec['projectname'], d))})
+            else:
+                settings.update({'contrib_%s'%(d):'.'.join((spec['projectname'], d))})
+
+        set_global_settings(settings)
+        print('update project: {projectname}'.format(**spec))
+        return self.update_index()
+
 
     def update_index(self):
         from pymake.index.indexmanager import IndexManager as IX

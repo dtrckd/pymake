@@ -181,7 +181,15 @@ __default_config = defaultdict(lambda: '?', dict(project_data = os.path.expandus
                                                   default_model = 'pymake.model',
                                                   default_corpus = '?')
                                )
-def get_global_settings(key=None, default_dict=__default_config, cfg_name='pymake.cfg'):
+def set_global_settings(settings, default_config=__default_config, cfg_name='pymake.cfg'):
+    _settings = default_config.copy()
+    _settings.update(settings)
+    ctnt = '\n'.join(('{0} = {1}'.format(k,v) for k,v in _settings.items()))
+    cfg_file = os.path.join(os.getenv('PWD') , cfg_name)
+    with open(cfg_file, 'wb') as _f:
+        return _f.write(ctnt.encode('utf8'))
+
+def get_global_settings(key=None, default_config=__default_config, cfg_name='pymake.cfg'):
     #dir =  os.path.dirname(os.path.realpath(__file__))
     #dir = os.getcwd()
     dir = os.getenv('PWD')
@@ -191,7 +199,7 @@ def get_global_settings(key=None, default_dict=__default_config, cfg_name='pymak
         cfg_file = os.path.join(os.path.expanduser('~') ,'.pymake', cfg_name)
         if not os.path.isfile(cfg_file):
             dir_cfg = make_path(cfg_file)
-            ctnt = '\n'.join(('{0} = {1}'.format(k,v) for k,v in  default_dict.items()))
+            ctnt = '\n'.join(('{0} = {1}'.format(k,v) for k,v in  default_config.items()))
             with open(cfg_file, 'wb') as _f:
                 _f.write(ctnt.encode('utf8'))
 
@@ -202,10 +210,10 @@ def get_global_settings(key=None, default_dict=__default_config, cfg_name='pymak
     elif key.startswith('_'):
         res = []
         for k in ['default'+key, 'contrib'+key]:
-            res += os.path.expanduser(config.get(k, default_dict[k])).split(',')
+            res += os.path.expanduser(config.get(k, default_config[k])).split(',')
         settings =  list(map(str.strip, res))
     else:
-        settings = os.path.expanduser(config.get(key, default_dict[key]))
+        settings = os.path.expanduser(config.get(key, default_config[key]))
 
     #print(settings)
     return settings
