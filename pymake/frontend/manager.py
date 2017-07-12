@@ -271,3 +271,14 @@ class ModelManager(object):
             model = cls.from_file(fn)
         return model
 
+    @classmethod
+    def from_name(cls, expe):
+        ''' Don't initialize the model (external facilities) '''
+        modelname = expe.model
+        _model =  Model.get(modelname)
+        if _model is None:
+            lgg.error('model unknown: %s' % modelname)
+            exit(3)
+        return _model
+
+
