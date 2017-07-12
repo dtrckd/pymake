@@ -329,16 +329,16 @@ class ExpeFormat(object):
 
         # to exploit / Vizu
         self._it = pt['expe']
-        self.corpus_pos = pt['corpus']
-        self.model_pos = pt['model']
+        self.corpus_pos = pt.get('corpus')
+        self.model_pos = pt.get('model')
 
         self.log.info('---')
         self.log.info(''.join([colored('Expe %d/%d', 'red'),
                           ' : %s -- %s -- N=%s -- K=%s']) % (
                               self._it+1, self.expe_size,
-                              self.specname(expe.corpus),
-                              self.specname(expe.model),
-                              expe.N, expe.K,))
+                              self.specname(expe.get('corpus')),
+                              self.specname(expe.get('model')),
+                              expe.get('N'), expe.get('K'),))
         self.log.info('---')
 
     @classmethod

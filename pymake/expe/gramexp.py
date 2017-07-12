@@ -842,9 +842,9 @@ class GramExp(object):
             with open(join(pwd, d,  'template_%s.py'%(d)), 'a') as _f:
                 _f.write(template.substitute(spec))
 
-            if d in ['spec']:
+            if d in ['spec', 'script']:
                 settings.update({'default_%s'%(d):'.'.join((spec['projectname'], d))})
-            else:
+            else: # share model
                 settings.update({'contrib_%s'%(d):'.'.join((spec['projectname'], d))})
 
         settings.update(project_data=join(pwd, 'data'))
