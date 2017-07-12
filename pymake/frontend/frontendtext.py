@@ -5,7 +5,7 @@ from string import Template
 
 from .frontend import DataBase
 from pymake.util.utils import make_path
-from pymake.util.vocabulary import Vocabulary, parse_corpus
+from pymake.util.vocabulary import Vocabulary
 
 
 #try:
@@ -117,12 +117,12 @@ class frontendText(DataBase):
             id2word = dict(gensim.corpora.dictionary.Dictionary.load_from_text(fname + '.dico'))
         else:
             prin('re-Building Corpus...')
-            raw_data, id2word = parse_corpus(target)
+            raw_data, id2word = Vocabulary.parse_corpus(target)
 
             # Corpus will be in bag of words format !
             if type(raw_data) is list:
                 voca = Vocabulary(exclude_stopwords=True)
-                data = [voca.doc_to_bow(doc) for doc in raw_data]
+                data = [voca.doc2bow(doc) for doc in raw_data]
                 data = gensim.matutils.corpus2csc(data, dtype=int).T # Would be faster with #doc #term #nnz
             else:
                 data = raw_data

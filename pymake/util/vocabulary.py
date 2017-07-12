@@ -8,75 +8,16 @@ from pymake.util.utils import basestring
 import numpy as np
 import scipy as sp
 
-def parse_document_f(d):
-    return [word.lower() for line in open(d).readlines() for word in re.sub("[^a-zA-Z]", " ", line).split()]
-
-def parse_document_l(d):
-    return [word.lower() for word in re.sub("[^a-zA-Z]", " ", d).split()]
-
-# if string in input
-#   * return a corpus as list of list of string.
-# Else
-#   * return a numpy array of cooc-matrix
-def parse_corpus(fname, bdir=""):
-    dico = None
-    if type(fname) is str:
-        if not os.path.exists(fname): raise EnvironmentError('%s ?' % fname)
-        if os.path.isdir(fname):
-            import fnmatch
-            bdir = fname
-            corpus_files = []
-            dico_files = []
-            for root, dirnames, filenames in os.walk(bdir):
-                for filename in fnmatch.filter(filenames, '*.txt'):
-                    if filename.startswith(('dico.','vocab.')):
-                        dico_files.append(os.path.join(root, filename))
-                    else:
-                        corpus_files.append(os.path.join(root, filename))
-
-            if len(corpus_files) == 1:
-                # Parse sparse matrix:  DOC_ID WORD_ID COUNT
-                with open(corpus_files[0],'r') as f:
-                    # Read the header information
-                    n_instances = int(f.readline())
-                    n_features = int(f.readline())
-                    n_nnz = int(f.readline())
-
-                    # Create cooc-matrix
-                    #data = sp.sparse.csr_matrix((n_instances, n_features))
-                    data = sp.sparse.lil_matrix((n_instances, n_features), dtype=int)
-                    for line in f:
-                        doc_id, word_id, count = list(map(int, line.split()))
-                        data[doc_id-1, word_id-1] = count
-                    data = data.tocsr()
-                # If dictionnary, return it
-                with open(dico_files[0],'r') as f:
-                    dico = {}
-                    for i, line in enumerate(f):
-                        word = line.split()
-                        assert(len(word) == 1)
-                        #dict((v,k) for k, v in self.token2id.iteritems())
-                        dico[i] = word[0]
-            else:
-                # Parse documents as each of them is a .txt file
-                data = [parse_document_f(f) for f in corpus_files]
-
-        #elif os.path.isfile(fname): ?
-    elif type(fname) is list:
-        # List of string as document
-        docs = fname
-        data = [parse_document_l(d) for d in docs]
-    else:
-        raise NotImplementedError('file input: %s' % fname)
-
-    return data, dico
-
-###########################################
-
 
 class Vocabulary(object):
 
     recover_list = {"wa":"was", "ha":"has"}
+
+    regex = {
+        'word' : re.compile(r'[a-zA-Z0-9_\-]+'),
+        'not_word' : re.compile(r'[^a-zA-Z0-9_\-]+'),
+        'separator' : re.compile(r'[\.\,\;\:\!\?\(\)\{\}\[\]\'\`]+'),
+    }
 
     def __init__(self, exclude_stopwords=False, lemmatize=True):
 
@@ -104,6 +45,7 @@ class Vocabulary(object):
             else:
                 print ('Warning: no lemmatizer !')
 
+
     def is_stopword(self, w):
         return w in self.stopwords_list
 
@@ -128,7 +70,7 @@ class Vocabulary(object):
 
     def term_to_id(self, term0):
         term = self.lemmatize(term0)
-        if not re.match(r'[a-z]+$', term): return None
+        if not self.regex['word'].match(term): return None
         if self.exclude_stopwords and self.is_stopword(term): return None
         try:
             term_id = self.token2id[term]
@@ -139,27 +81,15 @@ class Vocabulary(object):
             self.docfreq.append(0)
         return term_id
 
-    def doc_to_ids(self, doc):
-        l = []
-        words = dict()
+    def remove_stopwords(self, doc):
         doc = doc.split() if isinstance(doc, basestring) else doc
-        for term in doc:
-            try: term.encode('utf8')
-            except: continue
-            id = self.term_to_id(term)
-            if id != None:
-                l.append(id)
-                if not id in words:
-                    words[id] = 1
-                    self.docfreq[id] += 1 # It counts in how many documents a word appears. If it appears in only a few, remove it from the vocabulary using cut_low_freq()
-        if "close" in dir(doc): doc.close()
-        return l
+        return [w for w in doc if not self.is_stopword(w)]
 
     # Bag of words !
-    def doc_to_bow(self, doc):
+    def doc2bow(self, doc):
         l = dict()
         words = dict()
-        doc = doc.split() if isinstance(doc, basestring) else doc
+        doc = self.regex['separator'].sub(' ', doc).split() if isinstance(doc, basestring) else doc
         for term in doc:
             try: term.encode('utf8')
             except: continue
@@ -203,4 +133,72 @@ class Vocabulary(object):
 
     def is_stopword_id(self, id):
         return self.vocas[id] in self.stopwords_list
+
+    # if string in input
+    #   * return a corpus as list of list of string.
+    # Else
+    #   * return a numpy array of cooc-matrix
+    @classmethod
+    def parse_corpus(cls, fname, bdir=""):
+        dico = None
+        if type(fname) is str:
+            if not os.path.exists(fname): raise EnvironmentError('%s ?' % fname)
+            if os.path.isdir(fname):
+                import fnmatch
+                bdir = fname
+                corpus_files = []
+                dico_files = []
+                for root, dirnames, filenames in os.walk(bdir):
+                    for filename in fnmatch.filter(filenames, '*.txt'):
+                        if filename.startswith(('dico.','vocab.')):
+                            dico_files.append(os.path.join(root, filename))
+                        else:
+                            corpus_files.append(os.path.join(root, filename))
+
+                if len(corpus_files) == 1:
+                    # Parse sparse matrix:  DOC_ID WORD_ID COUNT
+                    with open(corpus_files[0],'r') as f:
+                        # Read the header information
+                        n_instances = int(f.readline())
+                        n_features = int(f.readline())
+                        n_nnz = int(f.readline())
+
+                        # Create cooc-matrix
+                        #data = sp.sparse.csr_matrix((n_instances, n_features))
+                        data = sp.sparse.lil_matrix((n_instances, n_features), dtype=int)
+                        for line in f:
+                            doc_id, word_id, count = list(map(int, line.split()))
+                            data[doc_id-1, word_id-1] = count
+                        data = data.tocsr()
+                    # If dictionnary, return it
+                    with open(dico_files[0],'r') as f:
+                        dico = {}
+                        for i, line in enumerate(f):
+                            word = line.split()
+                            assert(len(word) == 1)
+                            #dict((v,k) for k, v in self.token2id.iteritems())
+                            dico[i] = word[0]
+                else:
+                    # Parse documents as each of them is a .txt file
+                    data = [cls.parse_document_f(f) for f in corpus_files]
+
+            #elif os.path.isfile(fname): ?
+        elif type(fname) is list:
+            # List of string as document
+            docs = fname
+            data = [cls.parse_document_l(d) for d in docs]
+        else:
+            raise NotImplementedError('file input: %s' % fname)
+
+        return data, dico
+
+    @classmethod
+    def parse_document_f(cls, d):
+        return [word.lower() for line in open(d).readlines() for word in cls.regex['not_word'].sub(' ', line).split()]
+
+    @classmethod
+    def parse_document_l(cls, d):
+        return [word.lower() for word in cls.regex['not_word'].sub(' ', d).split()]
+
+
 
