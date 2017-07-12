@@ -315,7 +315,7 @@ if __name__ == "__main__":
     data = parse_raw_text(bdir)
     data = data[:50]
     voca = Vocabulary(exclude_stopwords=True)
-    corpus = [voca.doc_to_ids(doc) for doc in data]
+    corpus = [voca.doc2bow(doc) for doc in data]
     #corpus = np.array([np.random.poisson(1, k) for k in np.random.poisson(50, 20)])
     corpus = dict( (i,j) for i,j in enumerate(corpus) )
 

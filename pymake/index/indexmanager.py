@@ -4,7 +4,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os, shutil
 from pymake.util.utils import get_global_settings
 
-_DATA_PATH = get_global_settings('project_data')
 
 import logging
 lgg = logging.getLogger('root')
@@ -15,6 +14,8 @@ import whoosh as ws
 from whoosh.qparser import QueryParser
 
 class IndexManager(object):
+
+    _DATA_PATH = get_global_settings('project_data')
 
     _SCHEMA   = {'model' : ws.fields.Schema(name      = ws.fields.ID(stored = True),
                                             surname   = ws.fields.ID(stored = True),
@@ -36,11 +37,13 @@ class IndexManager(object):
         self._default_index = default_index
         self._ix = {} # Index store by key
 
-    def get_index_path(self, name):
-        return os.path.join(_DATA_PATH, self._index_basename, name + '/')
+    def get_index_path(self, name=None):
+        name = name or self._default_index
+        return os.path.join(self._DATA_PATH, self._index_basename, name + '/')
 
-    def clean_index(self, name, schema=None, **kwargs):
+    def clean_index(self, name=None, schema=None, **kwargs):
         ''' make the index `name\' according to its `schema\' '''
+        name = name or self._default_index
         index_path = self.get_index_path(name)
         if os.path.exists(index_path):
             shutil.rmtree(index_path)
@@ -55,11 +58,13 @@ class IndexManager(object):
 
         return self._ix[name]
 
-    def load_index(self, name):
+    def load_index(self, name=None):
+        name = name or self._default_index
         index_path = self.get_index_path(name)
         return ws.index.open_dir(index_path)
 
-    def get_index(self, name):
+    def get_index(self, name=None):
+        name = name or self._default_index
         if name in self._ix:
             return self._ix[name]
         elif os.path.exists(self.get_index_path(name)):

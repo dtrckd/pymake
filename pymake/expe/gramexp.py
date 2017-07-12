@@ -17,7 +17,7 @@ from argparse import RawDescriptionHelpFormatter
 
 import pymake.expe.gram as gram
 from pymake import  ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, Script, ExpVector
-from pymake.util.utils import colored, basestring
+from pymake.util.utils import colored, basestring, get_global_settings
 
 import pymake.frontend.frontend_io as mloader
 
@@ -823,6 +823,11 @@ class GramExp(object):
         from pymake.util.utils import set_global_settings
 
         pwd = os.getenv('PWD')
+        if os.path.isfile(join(pwd, 'pymake.cfg')):
+            print('pymake.cfg file already exists.')
+            exit(2)
+
+
         cwd = os.path.dirname(__file__)
         folders = ['spec', 'script', 'model']
         open(join(pwd, '__init__.py'), 'a').close()
@@ -842,6 +847,7 @@ class GramExp(object):
             else:
                 settings.update({'contrib_%s'%(d):'.'.join((spec['projectname'], d))})
 
+        settings.update(project_data=join(pwd, 'data'))
         set_global_settings(settings)
         print('update project: {projectname}'.format(**spec))
         return self.update_index()
@@ -910,4 +916,7 @@ class GramExp(object):
 
         return sandbox._postprocess_(self)
 
+    @property
+    def data_path(self):
+        return get_global_settings('project_data')
 
