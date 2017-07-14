@@ -83,7 +83,7 @@ class Vocabulary(object):
 
     def remove_stopwords(self, doc):
         doc = doc.split() if isinstance(doc, basestring) else doc
-        return ' '.join([w.decode('utf8') for w in doc if not self.is_stopword(w)])
+        return ' '.join([w for w in doc if not self.is_stopword(w)])
 
     # Bag of words !
     def doc2bow(self, doc):
@@ -91,8 +91,6 @@ class Vocabulary(object):
         words = dict()
         doc = self.regex['separator'].sub(' ', doc).split() if isinstance(doc, basestring) else doc
         for term in doc:
-            try: term.encode('utf8')
-            except: continue
             id = self.term_to_id(term)
             if id != None:
                 l[id] = l.get(id, 0) + 1

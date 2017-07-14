@@ -1,13 +1,11 @@
-tabulate
-termcolor
+Whoosh
+scikit-learn
 numpy
 scipy
 networkx 
 nltk
 matplotlib
 //plotly
-scikit-learn
-Whoosh
 sympy
 pystan ?
 pymc ?
@@ -16,3 +14,5 @@ python-pygraphviz ?
 python-louvain ?
     // pip install hg+https://bitbucket.org/taynaud/python-louvain
     // hg clone https://bitbucket.org/taynaud/python-louvain
+terminal
+tabulate

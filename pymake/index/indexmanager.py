@@ -1,17 +1,26 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os, shutil
-from pymake.util.utils import get_global_settings
+import os, shutil, logging
+from pymake.util.utils import get_global_settings, colored
 
 
-import logging
-lgg = logging.getLogger('root')
-
-# Indexer
 import whoosh as ws
-# Searcher
+import whoosh.highlight
 from whoosh.qparser import QueryParser
+
+
+class TerminalFormatter(ws.highlight.Formatter):
+
+    def format_token(self, text, token, replace=False):
+        # Use the get_text function to get the text corresponding to the
+        # token
+        tokentext = ws.highlight.get_text(text, token, replace)
+
+        # Return the text as you want it to appear in the highlighted
+        # string
+        return "%s" % colored(tokentext, 'bold')
+
 
 class IndexManager(object):
 
@@ -31,6 +40,8 @@ class IndexManager(object):
                                              content  = ws.fields.TEXT),
 
                 }
+
+    log = logging.getLogger('root')
 
     def __init__(self, default_index='model'):
         self._index_basename = 'ir_index/'
@@ -72,6 +83,22 @@ class IndexManager(object):
         else:
             return self.clean_index(name)
 
+    def get_writer(self, reset=False, online=None):
+        if reset:
+            ix = self.clean_index()
+        else:
+            ix = self.get_index()
+
+        if online:
+            import whoosh.writing
+            if online is True:
+                online = {}
+            period = online.get('period', 600)
+            limit = online.get('limit', 2)
+            return ws.writing.BufferedWriter(ix, period=period, limit=limit)
+        else:
+            return ix.writer()
+
     @classmethod
     def build_indexes(cls):
         ''' Update the system index '''
@@ -89,12 +116,12 @@ class IndexManager(object):
         ''' Update the schema of the Scripts index '''
         from pymake.frontend.frontend_io import ScriptsLoader
         model = 'script'
-        lgg.info('Building %s index...' % model)
+        self.log.info('Building %s index...' % model)
         Scripts = ScriptsLoader.get_packages()
         method_by_cls = ScriptsLoader.get_atoms()
         writer = self.clean_index(model).writer()
         for scriptname, module in Scripts.items():
-            lgg.info('\tindexing %s' % (str(scriptname)+str(module)))
+            self.log.info('\tindexing %s' % (str(scriptname)+str(module)))
 
             # Loop is context/model dependant
             methods = method_by_cls[module.__name__]
@@ -112,11 +139,11 @@ class IndexManager(object):
         ''' Update the schema of the Models index '''
         from pymake.frontend.frontend_io import ModelsLoader
         model = 'model'
-        lgg.info('Building %s index...' % model)
+        self.log.info('Building %s index...' % model)
         models = ModelsLoader.get_atoms()
         writer = self.clean_index(model).writer()
         for surname, module in models.items():
-            lgg.info('\tindexing %s' % (str(surname)+str(module)))
+            self.log.info('\tindexing %s' % (str(surname)+str(module)))
 
             # Loop is context/model dependant
             topos = ' '.join(set(module.__module__.split('.')[1:]))
@@ -131,19 +158,44 @@ class IndexManager(object):
 
 
     # @debug : online searcher
-    def search(self, query='',  field=None,  index=None, terms=False):
+    def _search(self, query='',  field=None,  index=None, terms=False, limit=None):
+        ''' query (exaxct mathch) search '''
         index = index or self._default_index
         ix = self.get_index(index)
         fieldin = field or 'content'
 
-        query = QueryParser(fieldin, ix.schema).parse(query)
+        qp = QueryParser(fieldin, ix.schema)
+        qp.add_plugin(ws.qparser.SingleQuotePlugin())
+        query = qp.parse(query, normalize=False)
         with ix.searcher() as searcher:
             if terms is True:
-                results = searcher.search(query, terms=True).matched_terms()
+                results = searcher.search(query, terms=True, limit=limit).matched_terms()
             else:
-                results = list(searcher.search(query).items())
+                results = list(searcher.search(query, limit=limit).items())
 
         return results
+
+    def search(self, query='',  field=None,  index=None, limit=None):
+        ''' OR search '''
+        index = index or self._default_index
+        limit = None if limit == 'all' else limit
+        ix = self.get_index(index)
+        fieldin = field or 'content'
+
+        qp = QueryParser(fieldin, ix.schema)
+        qp.add_plugin(ws.qparser.SingleQuotePlugin())
+        qp.add_plugin(ws.qparser.WildcardPlugin())
+        query = qp.parse(query)
+        with ix.searcher() as searcher:
+                results = searcher.search(query, limit=limit)
+
+                results.fragmenter = ws.highlight.SentenceFragmenter(maxchars=200, charlimit=100042)
+                #results.fragmenter = ws.highlight.ContextFragmenter(maxchars=200, surround=43)
+                results.formatter = TerminalFormatter()
+
+                for r in results:
+                    yield r
+
 
     def getbydocid(self, docid, index=None):
         ''' return the a document's stored fields in the index from docid '''
@@ -154,7 +206,8 @@ class IndexManager(object):
         return doc
 
     def getfirst(self, query='', field=None, index=None):
-        results = self.search(query, field, index)
+        query = "'" + query + "'"
+        results = self._search(query, field, index, limit=1)
 
         if not results:
             return None

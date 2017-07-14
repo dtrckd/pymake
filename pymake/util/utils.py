@@ -6,6 +6,7 @@ from os.path import dirname
 from datetime import datetime
 from collections import defaultdict
 import logging
+import hashlib
 
 import numpy as np
 import scipy as sp
@@ -18,9 +19,10 @@ except NameError: basestring = (str, bytes) # python3
 
 
 try:
-    from termcolor import colored
+    from terminal import colorize
+    colored = lambda *x : str(colorize(x[0], x[1]))
 except ImportError:
-    #lgg.debug('needs `termcolor\' modules for colors printing')
+    lgg.debug("needs `terminal' module for colors printing")
     colored = lambda *x : x[0]
 
 #from itertools import cycle
@@ -174,7 +176,7 @@ def nxG(y):
 
 
 # Global settings
-__default_config = defaultdict(lambda: '?', dict(project_data = os.path.expanduser('~/.pymake/data'),
+__default_config = defaultdict(lambda: '', dict(project_data = os.path.expanduser('~/.pymake/data'),
                                                   project_figs = os.path.expanduser('~/.pymake/results/figs') ,
                                                   default_spec = 'pymake.spec',
                                                   default_script = 'pymake.script',
@@ -211,11 +213,33 @@ def get_global_settings(key=None, default_config=__default_config, cfg_name='pym
         res = []
         for k in ['default'+key, 'contrib'+key]:
             res += os.path.expanduser(config.get(k, default_config[k])).split(',')
-        settings =  list(map(str.strip, res))
+        settings =  [e for e in map(str.strip, res) if e]
     else:
         settings = os.path.expanduser(config.get(key, default_config[key]))
 
     #print(settings)
     return settings
+
+def retrieve_git_info():
+    git_branch = subprocess.check_output(['git', 'rev-parse','--abbrev-ref' ,'HEAD']).strip().decode()
+    git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode()
+
+    return {'git_branch':git_branch, 'git_hash':git_hash}
+
+def hash_object(obj, algo='md5'):
+    """ Return a list of hash of the input object """
+    hashalgo = getattr(hashlib, algo)
+
+    """ Return a hash of the input """
+    if isinstance(obj, (np.ndarray, list, tuple)):
+        # array of int
+        hashed_obj = hashalgo(np.asarray(obj).tobytes()).hexdigest()
+    elif type(obj) is str:
+        hashed_obj = hashalgo(obj.encode("utf-8")).hexdigest()
+    else:
+        raise TypeError('Type of object unashable: %s' % (type(obj)))
+
+    return hashed_obj
+
 
 
