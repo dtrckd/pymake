@@ -15,7 +15,6 @@ import numpy as np
 
 from argparse import RawDescriptionHelpFormatter
 
-import pymake.expe.gram as gram
 from pymake import  ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, Script, ExpVector
 from pymake.util.utils import colored, basestring, get_global_settings
 
@@ -404,27 +403,38 @@ class GramExp(object):
 
     @staticmethod
     def get_parser(description=None, usage=None):
-
-        parser = gram.ExpArgumentParser(description=description, epilog=usage,
+        import pymake.expe.gram as _gram
+        parser = _gram.ExpArgumentParser(description=description, epilog=usage,
                                         formatter_class=RawDescriptionHelpFormatter)
-        g = gram._Gram
-        grammar = []
-        args = []
-        for e in g:
-            if not isinstance(e, dict):
-                args.append(e)
-                continue
-            grammar.append((args, e))
-            args = []
-
         parser.add_argument('--version', action='version', version='%(prog)s '+str(_version))
-        [parser.add_argument(*r[0], **r[1]) for r in grammar]
 
         return parser
 
-
     @staticmethod
-    def parseargsexpe(usage=None, args=None, parser=None):
+    def push_gramarg(parser, gram=None):
+        import pymake.expe.gram as _gram
+        if gram is None:
+            gram = _gram._Gram
+        else:
+            gram = importlib.import_module(gram)
+            gram = next( (getattr(gram, _list) for _list in dir(gram) if isinstance(getattr(gram, _list), list)), None)
+
+        grammar = []
+        args_ = []
+        for e in gram:
+            if not isinstance(e, dict):
+                args_.append(e)
+                continue
+            grammar.append((args_, e))
+            args_ = []
+
+        [parser.add_argument(*r[0], **r[1]) for r in grammar]
+        # check for duplicate
+
+
+
+    @classmethod
+    def parseargsexpe(cls, usage=None, args=None, parser=None):
         description = 'Specify an experimentation.'
         if not usage:
             usage = GramExp._examples
@@ -432,6 +442,13 @@ class GramExp(object):
         if parser is None:
             parser = GramExp.get_parser(description, usage)
         #s, remaining = parser.parse_known_args(args=args)
+
+        # Push pymake grmarg.
+        cls.push_gramarg(parser)
+        # third-party
+        gramarg = get_global_settings('gramarg')
+        if gramarg:
+            cls.push_gramarg(parser, gramarg)
 
         s = parser.parse_args(args=args)
 
