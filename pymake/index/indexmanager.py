@@ -83,11 +83,12 @@ class IndexManager(object):
         else:
             return self.clean_index(name)
 
-    def get_writer(self, reset=False, online=None):
+    def get_writer(self, reset=False, online=None, index=None):
+        index = index or self._default_index
         if reset:
-            ix = self.clean_index()
+            ix = self.clean_index(index)
         else:
-            ix = self.get_index()
+            ix = self.get_index(index)
 
         if online:
             import whoosh.writing
@@ -98,6 +99,11 @@ class IndexManager(object):
             return ws.writing.BufferedWriter(ix, period=period, limit=limit)
         else:
             return ix.writer()
+
+    def get_reader(self, index=None):
+        index = index or self._default_index
+        ix = self.get_index(index)
+        return ix.searcher()
 
     @classmethod
     def build_indexes(cls):
