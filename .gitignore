@@ -6,25 +6,32 @@ tags
 *~
 *.session.vim
 *.byobu
+pymake/ID
+pymake/TODO.md
 
+# Build
 *.egg-info/
+*.egg-info
 /build/
 /dist/
 
+# Doc
+doc/html/
+doc/graph/
+
+# Data
 results/*
 !results/Makefile
 !results/backsync.sh
 !results/filter.py
-doc/html/
-doc/graph/
-
 data/*/*/**
 data/**/*.zip
 data/**/*.tgz
 data/**/*.gz
 
+# Automatic generation
 stirling.pk
 stirling.npy
-pymake/ID
-pymake/TODO.md
-
+autobuild/
+ir_index/
+pdf_temp/

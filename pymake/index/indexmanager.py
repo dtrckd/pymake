@@ -220,6 +220,10 @@ class IndexManager(object):
         else:
             return self.getbydocid(results[0][0])
 
+    # not need to commit ?! /conflict forward...
+    #def delete_by_term(self, term, field):
+    #    writer.delete_by_term('hash', doc['hash'])
+
     def getbydocids(self, docids, index=None):
         ''' return the a list of document's stored fields in the index from docids '''
         index = index or self._default_index
