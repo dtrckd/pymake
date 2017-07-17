@@ -5,6 +5,7 @@ scipy
 networkx 
 nltk
 matplotlib
+beautifulsoup4
 //plotly
 sympy
 pystan ?

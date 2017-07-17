@@ -82,8 +82,13 @@ class Vocabulary(object):
         return term_id
 
     def remove_stopwords(self, doc):
-        doc = doc.split() if isinstance(doc, basestring) else doc
-        return ' '.join([w for w in doc if not self.is_stopword(w)])
+        if isinstance(doc, basestring):
+            doc = doc.split()
+        elif doc is None:
+            return None
+        else:
+            doc = doc
+        return ' '.join([w for w in doc if not self.is_stopword(w)]).strip()
 
     # Bag of words !
     def doc2bow(self, doc):
