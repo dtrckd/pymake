@@ -28,12 +28,12 @@ Ongoing development :
 We provide an example of a design workflow with pymake
 As an example of usage, we provide an **Search Engine** experience.
 
-In a pymake project there is 4 main component : 
+In a pymake project there is 4 main components : 
 
-* The data : The input of an experience
+* The data : The input of any experience,
 * A model : It represents our understanfing of the data,
-* A script : That operate with the data and models
-* A Specification (spec/design) : It is the specicification of the context of an experiments. In order words the parameters of an experience.
+* A script : Code that operate with the data and models,
+* A Specification (spec/design) : It is the specicification of the context of an experiment. In order words, the parameters of an experience.
 
 
 ### Documentation
@@ -49,7 +49,9 @@ In a pymake project there is 4 main component :
 
 ### Directory Structure
 
-By default, pymake will use the configuration in the ~/.pymake directory. To create your own project use `pymake init`. It is design to makes easy the creation and sharing of models and design of experimentation. The pymake arborescence has the following directory :
+By default, pymake will use the configuration in the ~/.pymake directory. To create your own project use `pymake init`. 
+It is designed to makes easy the creation and sharing of models and design of experimentations.
+The pymake arborescence has the following directory :
 
 * `model/` contains models -- selection with the `-m` options,
 * `script/` contains scripts for action, -- selection with the `--script` options
