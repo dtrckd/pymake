@@ -28,7 +28,7 @@ data/*/*/**
 data/**/*.zip
 data/**/*.tgz
 data/**/*.gz
-data/cermine/
+examples/docsearch/data
 
 # Automatic generation
 stirling.pk
