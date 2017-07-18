@@ -17,15 +17,19 @@ Ongoing development :
 
 * A database to share (push/fetch/search) Design of experimentations,
 * Better specification of the formal grammar of design of experimentation,
-* Better documentation.
+* Better documentation (or just a documentation).
+
 
 ### Install
-    git clone https://github.com/dtrckd/pymake
-    cd pymake && make install
+
+```
+git clone https://github.com/dtrckd/pymake
+cd pymake && make install
+```
 
 ### Learn by examples
 
-We provide an example of a design workflow with pymake
+We provide an example of a design workflow with pymake.
 As an example of usage, we provide an **Search Engine** experience.
 
 In a pymake project there is 4 main components : 
@@ -34,6 +38,28 @@ In a pymake project there is 4 main components :
 * A model : It represents our understanfing of the data,
 * A script : Code that operate with the data and models,
 * A Specification (spec/design) : It is the specicification of the context of an experiment. In order words, the parameters of an experience.
+----
+
+For a search engine, the experience is as follows : 
+* data : documents to search in, here it will be pdf documents (like articles for example),
+* model : A bm25 model, that assumes a information model of bag of word representation.
+* script : basically two scripts :
+    + a fit script that build  the index,
+    + a search script that return relevant documents.
+* A the default specication that resumes this. See script.a-script.\_default_expe
+
+Here are the instruction to run the experiment :
+
+
+```bash
+git clone https://github.com/dtrckd/pymake
+cd pymake && make install
+cd examples/docsearch/
+make setup
+pymake run --script fit --path path/to/your/pdfs/   # index your pdf documents, take a coffe
+pymake run --script search "your text search request"  # show relevant information
+```
+
 
 
 ### Documentation
