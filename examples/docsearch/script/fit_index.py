@@ -12,12 +12,13 @@ class fit(ExpeFormat):
     _default_expe = {'model' : 'docm.tfidf',
                      'path' : '~/Desktop/workInProgress/networkofgraphs/papers',
                      'reset' : False,
-                     'extract_structure' : True,
+                     'extract_structure' : False,
                     }
 
     def _preprocess(self):
         expe = self.expe
         output_path = self.gramexp.make_output_path(expe)
+        expe.path = expe.path if isinstance(expe.path, str) else ' '.join(expe.path)
         return
 
     def _postprocess(self):
