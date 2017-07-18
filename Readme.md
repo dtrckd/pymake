@@ -20,56 +20,41 @@ Ongoing development :
 * Better documentation.
 
 ### Install
-    make install
-    # try it
-    pymake --help
+    git clone https://github.com/dtrckd/pymake
+    cd pymake && make install
 
-### Usage
-Script to create the path and commands for a design of experiments :
+### Learn by examples
 
-    from pymake import Gramexp, Zymake
-    # Fit a Gaussian mixtures on a text corpus...
+We provide an example of a design workflow with pymake
+As an example of usage, we provide an **Search Engine** experience.
 
-    Expe_ID = dict(model = 'kmeans++',
-            K = 1e6,
-            corpus = '20ngroups',
-            vsm = 'tfidf',
-            repeat = range(10))
+In a pymake project there is 4 main component : 
 
-    # Only the first epoch/repeat here.
-    gram = Gramexp(Expe_ID)
-    model.fit(data)
-    model.predict()
-
-List design of experiments :
-
-    pymake -l        # Current design
-    pymake -l script # Available scripts
-    pymake -l atom   # Available models
-
-Show one experiments :
-
-    pymake show ExpeID
+* The data : The input of an experience
+* A model : It represents our understanfing of the data,
+* A script : That operate with the data and models
+* A Specification (spec/design) : It is the specicification of the context of an experiments. In order words the parameters of an experience.
 
 
-###### Run experiments
-With gnu-parallel :
+### Documentation
 
-    pymake cmd ExpeID --script fit | parallel [opt]  # to make run a list of experience in parallel
+(to complete)
+
+* pymake workflow
+* pymake cmd and grammar
+* ExpSpace and ExpTensor
+* pymake.cfg
+* Search and indexation
 
 
-######  Results Analysis
-    pymake exec ExpeID --script plot
+### Directory Structure
 
+By default, pymake will use the configuration in the ~/.pymake directory. To create your own project use `pymake init`. It is design to makes easy the creation and sharing of models and design of experimentation. The pymake arborescence has the following directory :
 
-### Directory Tree
-
-By default, pymake will use the configuration in the ~/.pymake directory. To create your own project use ```pymake init```. It is design to makes easy the creation and sharing of models and design of experimentation. The pymake arborescence has the following directory :
-
-* `model/` contains models -- selection with the ```-m``` options,
-* `data/` contains datasets (and saved results) -- selection with the ```-c``` options,
-* `script/` contains scripts for action, -- selection with the ```--script``` options
-* `results/` contains analysis and report,
+* `model/` contains models -- selection with the `-m` options,
+* `script/` contains scripts for action, -- selection with the `--script` options
+* `spec/` contains specification of (design) experiments, -- can be precised as an argument after the second argument of pymake.
+* `data/` contains datasets (and saved results) -- selection with the `-c` options,
 
 
 Data Lookup and Output Data path specification are automatically adaptated from the design of experiments. Note that you can specify the format of the results of each expetiments with `--format options`, see examples.
@@ -79,19 +64,3 @@ The Results of experiments are stored in data/[specification].
 If new models or script are added in the project, you'll need to update the pymake index : ```pymake update```.
 
 
-### Inference Scheme
-
-* Gibbs Samplers
-* Variationnal Bayes
-
-### Implemented Models
-* LDA (text)
-* MMSB (networks)
-* ILFM (networks)
-
-Notes : it includes nonparametric version using Hierarchical Dirichlet
-Process (HDP) and Beta Process (IBP).
-
-### Examples
-
-(to complete)
