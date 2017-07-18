@@ -11,6 +11,7 @@ cermine: $(cermine_files)
 
 $(cermine_files):
 	wget https://github.com/dtrckd/CERMINE/raw/master/build/cermine.zip
+	mkdir -p data
 	unzip cermine.zip -d data/cermine/
 	rm cermine.zip
 

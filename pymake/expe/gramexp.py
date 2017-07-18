@@ -864,7 +864,7 @@ class GramExp(object):
             else: # share model
                 settings.update({'contrib_%s'%(d):'.'.join((spec['projectname'], d))})
 
-        settings.update(project_data=join(pwd, 'data'))
+        settings.update(project_data='data')
         set_global_settings(settings)
         print('update project: {projectname}'.format(**spec))
         return self.update_index()
