@@ -28,10 +28,10 @@ data/*/*/**
 data/**/*.zip
 data/**/*.tgz
 data/**/*.gz
+data/cermine/
 
 # Automatic generation
 stirling.pk
 stirling.npy
 autobuild/
 ir_index/
-pdf_temp/
