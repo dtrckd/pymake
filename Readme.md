@@ -28,7 +28,7 @@ cd pymake && make install
 ### Learn by examples
 
 We provide an example of a design workflow with pymake.
-As an example of usage, we provide an **Search Engine** experience.
+As an example of usage, we provide a **Search Engine** experience.
 
 In a pymake project there is 4 main components :
 
@@ -62,6 +62,7 @@ Then a typical pymake usage :
 pymake run --script fit --path path/to/your/pdfs/   # index your pdf documents, take a coffe
 pymake run --script search "your text search request"  # show relevant information
 ```
+Or show only the first match :  `pymake run --script search "your text search request" --limit 1`
 
 To add new model, a new script, you need to write it in the dedicated folder following the base class implementations.
 

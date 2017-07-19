@@ -34,12 +34,14 @@ class IR(ExpeFormat):
             score = hit.score
 
             print('%d: '% (rank+1), colored(shortpath, 'green'), '%.1f' % score)
+            if 'title' in hit:
+                print('Title: %s: '% (colored(colored(hit['title'], 'bold'), 'red')))
             if expe.highlight:
                 text = extract_pdf(fullpath, page_limit=42)
                 if text:
                     fragments = hit.highlights('content', text=text, top=expe.number_highlight)
                     fragments = ' '.join(fragments.split())
-                    fragments = textwrap.fill(fragments, width=84, subsequent_indent=' '*4)
+                    fragments = textwrap.fill(' '*4+fragments, width=84, subsequent_indent=' '*4)
                     print(fragments)
                     print()
 
