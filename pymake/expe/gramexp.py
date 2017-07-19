@@ -13,7 +13,7 @@ from functools import reduce, wraps
 from copy import deepcopy
 import numpy as np
 
-from argparse import RawDescriptionHelpFormatter
+import argparse
 
 from pymake import  ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, Script, ExpVector
 from pymake.util.utils import colored, basestring, get_global_settings
@@ -405,7 +405,7 @@ class GramExp(object):
     def get_parser(description=None, usage=None):
         import pymake.expe.gram as _gram
         parser = _gram.ExpArgumentParser(description=description, epilog=usage,
-                                        formatter_class=RawDescriptionHelpFormatter)
+                                        formatter_class=argparse.RawDescriptionHelpFormatter)
         parser.add_argument('--version', action='version', version='%(prog)s '+str(_version))
 
         return parser
@@ -428,9 +428,15 @@ class GramExp(object):
             grammar.append((args_, e))
             args_ = []
 
-        [parser.add_argument(*r[0], **r[1]) for r in grammar]
+        #[parser.add_argument(*r[0], **r[1]) for r in grammar]
         # check for duplicate
-
+        for r in grammar:
+            try:
+                parser.add_argument(*r[0], **r[1])
+            except argparse.ArgumentError as e:
+                self.log.error(e)
+                print('Solve the argument confict to run pymake.')
+                exit(3)
 
 
     @classmethod

@@ -1,4 +1,5 @@
 PACKAGE := pymake
+# Assumes Python3
 
 default: install
 docs: 

@@ -18,8 +18,7 @@ class IR(ExpeFormat):
                     }
 
     def _preprocess(self):
-        if 'N' in self.expe:
-            self.expe.number_results = int(self.expe.N)
+        pass
 
     def format_results(self, results):
         ''' Show query  search results '''

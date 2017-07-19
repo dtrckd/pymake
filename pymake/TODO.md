@@ -1,27 +1,18 @@
-# IN DOII NG
+# IN DOIING
 
 * -> catch type error in manager.get_model._model.__init,:
         1. first find the number of required argument andt cut the expe surplus
         2. find a way to pass the argument (index the singature) from singature **kwargs to command-line !!!
 
-* in pymake.cfg, add the contrib- settings
 * @pymake related : confilt in -do when invoking script from zymake, solution?! 
 * build_corpus and build_networks are identical : wrap in DataBase
 * expe_meas script
 * ILFM create sampler and proper inhheritance form GibbsSampler.
 * @issue42
 
+@Frontend
+* merge vocabulary and frontendtext
 
-@pymake [CMD]
-* init
-    * if no spec 'print help'
-        * pmk init [project]
-        -> results
-        -> data
-        -> spec
-        -> script
-* update
-    * update whoosh, model, corpus etc....
 
 @MODEL Specification:
 *  \_initialize  random init !!!! do cleaner init of class for empty model....
@@ -32,11 +23,6 @@
 * CorpusModules :load from package (sklearn) and disk (
 * Whoosh integration !!!
 * LDA on my own paper !
-
-* @pymake : different example
-    * zymake stats [spec]
-    * zymake **search** [spec]
-    * zymake runcmd [spec] | parallel #parralisation
 
 
 @format_plot etc
@@ -54,7 +40,9 @@
 * Spark/Hadoop interface... (hdfs = htable)
 * MPI / pymake integration ?
 
+## Examples
+* own pdftotext ? quickest ? multi platform !?
 
 ## Expe missing
-hyperprior testing
+* isolate my expe (but keep general model AND frontend, and manager...)....hyperprior testing
 Model evolution with K as well as hyperprior nonparametric model
