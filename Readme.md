@@ -4,10 +4,8 @@ Pymake is a machine-friendly platform for making reproducible research. It provi
 * Complex and traceable design of experiments, as a **command-line** interface.
 * Models and workflows for Machine Learning, as a **framework**.
 
-This code is in a living development stage and yet unstable.
-
 ### Features
-* Specification of design of experimentations with simple grammar,
+* Specification of design of experimentations with a simple grammar,
 * commandline toolkit for quick design and experience testing,
 * Support experience rules filtering,
 * Pipe experience for parallelization (see pymake cmd [expe]),
@@ -32,7 +30,7 @@ cd pymake && make install
 We provide an example of a design workflow with pymake.
 As an example of usage, we provide an **Search Engine** experience.
 
-In a pymake project there is 4 main components : 
+In a pymake project there is 4 main components :
 
 * The data : The input of any experience,
 * A model : It represents our understanfing of the data,
@@ -40,7 +38,7 @@ In a pymake project there is 4 main components :
 * A Specification (spec/design) : It is the specicification of the context of an experiment. In order words, the parameters of an experience.
 ----
 
-For a search engine, the experience is as follows : 
+For our search engine experience, the context is as follows:
 * data : documents to search in, here it will be pdf documents (like articles for example),
 * model : A bm25 model, that assumes a information model of bag of word representation.
 * script : basically two scripts :
@@ -56,10 +54,27 @@ git clone https://github.com/dtrckd/pymake
 cd pymake && make install
 cd examples/docsearch/
 make setup
+```
+
+Then a typical pymake usage :
+
+```
 pymake run --script fit --path path/to/your/pdfs/   # index your pdf documents, take a coffe
 pymake run --script search "your text search request"  # show relevant information
 ```
 
+To add new model, a new script, you need to write it in the dedicated folder following the base class implementations.
+
+Then you can list some informations about pymake :
+
+* What model are there: `pymake -l atom`
+* What experience are there: `pymake -l expe`
+* What script are there: `pymake -l script`
+* Show signatures of methods in a script ('ir' script): `pymake -l --script ir`
+
+
+Note that pymake provides  mechanisms to save and track results for designing, analysing and reproducing complex experiments.
+This will be documented soon.
 
 
 ### Documentation
@@ -75,7 +90,7 @@ pymake run --script search "your text search request"  # show relevant informati
 
 ### Directory Structure
 
-By default, pymake will use the configuration in the ~/.pymake directory. To create your own project use `pymake init`. 
+By default, pymake will use the configuration in the ~/.pymake directory. To create your own project use `pymake init`.
 It is designed to makes easy the creation and sharing of models and design of experimentations.
 The pymake arborescence has the following directory :
 
@@ -90,5 +105,3 @@ Data Lookup and Output Data path specification are automatically adaptated from 
 The Results of experiments are stored in data/[specification].
 
 If new models or script are added in the project, you'll need to update the pymake index : ```pymake update```.
-
-
