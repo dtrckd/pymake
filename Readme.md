@@ -4,7 +4,7 @@ Pymake is a machine-friendly platform for making reproducible research. It provi
 * Complex and traceable design of experiments, as a **command-line** interface.
 * Models and workflows for Machine Learning, as a **framework**.
 
-### Features
+## Features
 * Specification of design of experimentations with a simple grammar,
 * commandline toolkit for quick design and experience testing,
 * Support experience rules filtering,
@@ -18,36 +18,26 @@ Ongoing development :
 * Better documentation (or just a documentation).
 
 
-### Install
+## Install
 
-```
+```bash
 git clone https://github.com/dtrckd/pymake
 cd pymake && make install
 ```
 
-### Learn by examples
+## Learn by examples
 
-We provide an example of a design workflow with pymake.
-As an example of usage, we provide a **Search Engine** experience.
+We provide an example of a design workflow with pymake by providing a **Search Engine** experience.
 
-In a pymake project there is 4 main components :
-
-* The data : The input of any experience,
-* A model : It represents our understanfing of the data,
-* A script : Code that operate with the data and models,
-* A Specification (spec/design) : It is the specicification of the context of an experiment. In order words, the parameters of an experience.
-----
-
-For our search engine experience, the context is as follows:
-* data : documents to search in, here it will be pdf documents (like articles for example),
-* model : A bm25 model, that assumes a information model of bag of word representation.
-* script : basically two scripts :
+The context of the experience is has follows :
+* **Data** : documents to search in, here it will be pdf documents (like articles for example),
+* **Model** : A bm25 model, that assumes a information model of bag of word representation.
+* **Script** : basically two scripts :
     + a fit script that build  the index,
     + a search script that return relevant documents.
-* A the default specication that resumes this. See script.a-script.\_default_expe
+* Eperience Parameters: A default **specification** is in  script.a-script.\_default_expe
 
-Here are the instruction to run the experiment :
-
+Here are the instructions to run the experiment :
 
 ```bash
 git clone https://github.com/dtrckd/pymake
@@ -58,7 +48,7 @@ make setup
 
 Then a typical pymake usage :
 
-```
+```bash
 pymake run --script fit --path path/to/your/pdfs/   # index your pdf documents, take a coffe
 pymake run --script search "your text search request"  # show relevant information
 ```
@@ -78,31 +68,48 @@ Note that pymake provides  mechanisms to save and track results for designing, a
 This will be documented soon.
 
 
-### Documentation
+## Documentation
 
 (to complete)
 
-* pymake workflow
-* pymake cmd and grammar
-* ExpSpace and ExpTensor
-* pymake.cfg
-* Search and indexation
+1. pymake workflow
+2. pymake.cfg
+3. pymake cmd and grammar
+4. ExpSpace and ExpTensor
+5. Search and indexation
 
+----
 
-### Directory Structure
+###### Workflow
+
+In a pymake project there is 4 main components (associated to 4 folders) :
+
+* Data (data/): The input of any experience,
+* Model(s) (model/): It represents our understanfing of the data,
+* Script(s) (script/): Code that operate with the data and models,
+* Specification(s) (spec/) : It is the specicification of the context of an experiment. In order words, the parameters of an experience.
+
+Along with those directory there is two system files :
+* pymake.cfg : at the root of a project (basically define a project) specify the default and contrib : data | model | script | spec, and other global options,
+* gramarg.py : define the command-line options for a project. 
+
+###### Directory Logics
 
 By default, pymake will use the configuration in the ~/.pymake directory. To create your own project use `pymake init`.
 It is designed to makes easy the creation and sharing of models and design of experimentations.
 The pymake arborescence has the following directory :
 
-* `model/` contains models -- selection with the `-m` options,
-* `script/` contains scripts for action, -- selection with the `--script` options
+* `model/` contains models -- every class with a `fit` method -- selection with the `-m` options,
+* `script/` contains scripts for action, -- evry class that inherit `pymake.ExpeFormat` -- -- selection with the `--script` options
 * `spec/` contains specification of (design) experiments, -- can be precised as an argument after the second argument of pymake.
 * `data/` contains datasets (and saved results) -- selection with the `-c` options,
 
+If new models or script are added in the project, you'll need to update the pymake index : `pymake update`.
+
+###### Saving and loading Data
+
+Pymake provide a mechanism in order to track data from a specification to another.
 
 Data Lookup and Output Data path specification are automatically adaptated from the design of experiments. Note that you can specify the format of the results of each expetiments with `--format options`, see examples.
 
 The Results of experiments are stored in data/[specification].
-
-If new models or script are added in the project, you'll need to update the pymake index : ```pymake update```.
