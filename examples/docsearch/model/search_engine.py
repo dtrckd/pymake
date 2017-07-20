@@ -24,10 +24,6 @@ def extract_pdf(pdf_file, page_limit=None):
     return text
 
 
-# TODO:
-#   * a method/command to update document by adding extracted content.
-#
-
 
 class tfidf(IndexManager):
     ''' Index documents.
