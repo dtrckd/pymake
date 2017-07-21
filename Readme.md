@@ -80,7 +80,7 @@ This will be documented soon.
 
 ----
 
-###### Workflow / Directory Structure
+##### Workflow / Directory Structure
 
 In a pymake project there is 4 main components, associated to 4 directories :
 
@@ -98,26 +98,30 @@ Along with those directory there is two system files :
 * gramarg.py : define the command-line options for a project. <!-- explaine the exp_append type -->
 
 
-###### Pyamke Commands
+##### Pymake Commands
 
 Create your own project:
+
     pymake init
 
-If new models or script are added in the project, you'll need to update the pymake index : 
+If new models or script are added in the project, you'll need to update the pymake index :
+
     pymake update
 
-Show/list things : 
+Show/list things :
+
     pymake -l atom   # show available models (don't ask me why is not -l model, we'll see that later!)
     pymake -l script # show available scripts
     pymake -l expe   # show available designs of experimentation                                                                                                                             
     pymake show expe_name # equivalent to: pymake expe_name --simulate|-s
 
 Run a experience :
+
     pymake run [expe_name] --script script_name [script options...]
 
-###### Track your data and results
+##### Track your data and results
 
-Pymake provide a mechanism in order to track data from a specification to another.
+Pymake provide a mechanism in order to track data from an experience specification to another.
 
 Data Lookup and Output Data path specification are automatically adapted from the design of experiments. Note that you can specify the format of the results of each experiments with `--format options`, see examples.
 
