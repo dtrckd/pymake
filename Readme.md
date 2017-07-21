@@ -9,7 +9,7 @@ Pymake is a machine-friendly platform for making reproducible research. It provi
 * commandline toolkit for quick design and experience testing,
 * Support experience rules filtering,
 * Pipe experience for parallelization (see pymake cmd [expe]),
-* browse, design and test several models and corpus find in the literrature.
+* browse, design and test several models and corpus find in the literature.
 
 Ongoing development :
 
@@ -35,7 +35,7 @@ The context of the experience is has follows :
 * **Script** : basically two scripts :
     + a fit script that build  the index,
     + a search script that return relevant documents.
-* Eperience Parameters: A default **specification** is in  script.a-script.\_default_expe
+* Experience Parameters: A default **specification** is in  script.a-script.\_default_expe
 
 Here are the instructions to run the experiment :
 
@@ -88,11 +88,11 @@ In a pymake project there is 4 main components, associated to 4 directories :
 
 * `data/`: The input of any experience,
     + contains datasets (and saved results) <!--  selection with the `-c` options and see frontendManager -->,
-* `model/`: It represents our understanfing of the data,
+* `model/`: It represents our understanding of the data,
     + contains models -- every class with a `fit` method <!-- selection with the `-m` options and see ModelManager -->,
 * `script/`: Code that operate with the data and models,
-    + contains scripts for actions, -- evry class that inherit `pymake.ExpeFormat` <!-- selection with the `-r` options -->
-* `spec/` : It is the specicifications of the context of an experiment. In order words, the parameters of an experience.
+    + contains scripts for actions, -- every class that inherit `pymake.ExpeFormat` <!-- selection with the `-r` options -->
+* `spec/` : It is the specifications of the context of an experiment. In order words, the parameters of an experience.
     + contains specification of (design) experiments, -- can be precised as an argument after the second argument of pymake.
 
 Along with those directory there is two system files :
@@ -121,6 +121,6 @@ Run a experience :
 
 Pymake provide a mechanism in order to track data from a specification to another.
 
-Data Lookup and Output Data path specification are automatically adaptated from the design of experiments. Note that you can specify the format of the results of each expetiments with `--format options`, see examples.
+Data Lookup and Output Data path specification are automatically adapted from the design of experiments. Note that you can specify the format of the results of each experiments with `--format options`, see examples.
 
 The Results of experiments are stored in data/[specification].
