@@ -70,43 +70,54 @@ This will be documented soon.
 
 ## Documentation
 
-(to complete)
 
-1. pymake workflow
-2. pymake.cfg
-3. pymake cmd and grammar
-4. ExpSpace and ExpTensor
-5. Search and indexation
+1. Workflow / directory structure
+2. pymake commands
+3. pymake.cfg
+3. ExpSpace and ExpTensor
+5. Track your data and results
+6. Search and indexation
+
+(to be completed)
 
 ----
 
-###### Workflow
+###### Workflow / Directory Structure
 
-In a pymake project there is 4 main components (associated to 4 folders) :
+In a pymake project there is 4 main components, associated to 4 directories :
 
-* Data (data/): The input of any experience,
-* Model(s) (model/): It represents our understanfing of the data,
-* Script(s) (script/): Code that operate with the data and models,
-* Specification(s) (spec/) : It is the specicification of the context of an experiment. In order words, the parameters of an experience.
+* `data/`: The input of any experience,
+    + contains datasets (and saved results) <!--  selection with the `-c` options and see frontendManager -->,
+* `model/`: It represents our understanfing of the data,
+    + contains models -- every class with a `fit` method <!-- selection with the `-m` options and see ModelManager -->,
+* `script/`: Code that operate with the data and models,
+    + contains scripts for actions, -- evry class that inherit `pymake.ExpeFormat` <!-- selection with the `-r` options -->
+* `spec/` : It is the specicifications of the context of an experiment. In order words, the parameters of an experience.
+    + contains specification of (design) experiments, -- can be precised as an argument after the second argument of pymake.
 
 Along with those directory there is two system files :
-* pymake.cfg : at the root of a project (basically define a project) specify the default and contrib : data | model | script | spec, and other global options,
-* gramarg.py : define the command-line options for a project. 
+* pymake.cfg : at the root of a project (basically define a project) specify the default and contrib : data | model | script | spec, and other global options, <!-- document each entry -->
+* gramarg.py : define the command-line options for a project. <!-- explaine the exp_append type -->
 
-###### Directory Logics
 
-By default, pymake will use the configuration in the ~/.pymake directory. To create your own project use `pymake init`.
-It is designed to makes easy the creation and sharing of models and design of experimentations.
-The pymake arborescence has the following directory :
+###### Pyamke Commands
 
-* `model/` contains models -- every class with a `fit` method -- selection with the `-m` options,
-* `script/` contains scripts for action, -- evry class that inherit `pymake.ExpeFormat` -- -- selection with the `--script` options
-* `spec/` contains specification of (design) experiments, -- can be precised as an argument after the second argument of pymake.
-* `data/` contains datasets (and saved results) -- selection with the `-c` options,
+Create your own project:
+    pymake init
 
-If new models or script are added in the project, you'll need to update the pymake index : `pymake update`.
+If new models or script are added in the project, you'll need to update the pymake index : 
+    pymake update
 
-###### Saving and loading Data
+Show/list things : 
+    pymake -l atom   # show available models (don't ask me why is not -l model, we'll see that later!)
+    pymake -l script # show available scripts
+    pymake -l expe   # show available designs of experimentation                                                                                                                             
+    pymake show expe_name # equivalent to: pymake expe_name --simulate|-s
+
+Run a experience :
+    pymake run [expe_name] --script script_name [script options...]
+
+###### Track your data and results
 
 Pymake provide a mechanism in order to track data from a specification to another.
 
