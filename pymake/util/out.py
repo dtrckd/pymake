@@ -50,7 +50,7 @@ def formatName(fun):
     return wrapper
 
 @formatName
-def write_figs(expe, figs, _suffix=None, _fn=None, ext='.png'):
+def write_figs(expe, figs, _suffix=None, _fn=None, ext='.pdf'):
     if type(figs) is list:
         _fn = '' if _fn is None else _name(_fn)+'_'
         for i, f in enumerate(figs):
