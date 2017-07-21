@@ -37,11 +37,9 @@ The context of the experience is has follows :
     + a search script that return relevant documents.
 * Experience Parameters: A default **specification** is in  script.a-script.\_default_expe
 
-Here are the instructions to run the experiment :
+Setup the experience (needed just once) :
 
 ```bash
-git clone https://github.com/dtrckd/pymake
-cd pymake && make install
 cd examples/docsearch/
 make setup
 ```
