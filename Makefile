@@ -1,11 +1,24 @@
 PACKAGE := pymake
 # Assumes Python3
+pip3_version := $(shell pip3 --version 2>/dev/null)
 
 default: install
+
 docs: 
 	pushd doc/
 	make
 	pushd
+
+install:
+ifdef pip3_version
+#python3 setup.py install --user --record .$(PACKAGE).egg-info
+		pip3 install --user -r requirements.txt
+		python3 setup.py install --user
+else
+		@echo "error: please install the \`pip3' package"
+		@exit 0
+endif
+
 
 networks_datasets:
 	pushd data/networks 
@@ -13,11 +26,7 @@ networks_datasets:
 	pushd
 
 clean_datasets:
-	@echo 'toto'
-
-install:
-	#python3 setup.py install --user --record .$(PACKAGE).egg-info
-	python3 setup.py install --user
+	@echo ''
 
 uninstall:
 	# Do not remove empty dir...
