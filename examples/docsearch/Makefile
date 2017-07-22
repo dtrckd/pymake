@@ -7,7 +7,7 @@ setup: dependancy cermine
 dependancy:
 	pip3 install --user beautifulsoup4
 	#sudo apt-get install poppler-utils
-	echo "Who will need the program called 'pdftotext` in the package `poppler-utils' (debian)."
+	echo "Who will need the program called \`pdftotext' in the package \`poppler-utils' (debian)."
 
 cermine: $(cermine_files)
 
