@@ -10,6 +10,7 @@ docs:
 	pushd
 
 install:
+# Dependancy: python3-tk
 ifdef pip3_version
 #python3 setup.py install --user --record .$(PACKAGE).egg-info
 		pip3 install --user -r requirements.txt
