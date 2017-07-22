@@ -19,7 +19,6 @@ else
 		@exit 0
 endif
 
-
 networks_datasets:
 	pushd data/networks 
 	python3 fetch_datasets.py
@@ -29,10 +28,7 @@ clean_datasets:
 	@echo ''
 
 uninstall:
-	# Do not remove empty dir...
-	#cat .$(PACKAGE).egg-info | xargs rm -fv
 	pip3 uninstall $(PACKAGE)
-	# Get the PATH, from globvar ?
 	rm -vf $(HOME)/.local/bin/pymake 
 
 build:
