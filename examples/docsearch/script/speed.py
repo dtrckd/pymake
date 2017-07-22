@@ -22,7 +22,7 @@ class Speed(ExpeFormat):
 
 
 
-    def search(self, *query):
+    def _search(self, *query):
         expe = self.expe
         _model = ModelManager.from_name(expe)
         model = _model(expe)

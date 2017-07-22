@@ -5,9 +5,11 @@ setup: dependancy cermine
 	pymake update
 
 dependancy:
-	pip3 install --user beautifulsoup4
+	pip3 install --user beautifulsoup4 nltk
 	#sudo apt-get install poppler-utils
 	echo "Who will need the program called \`pdftotext' in the package \`poppler-utils' (debian)."
+	python3 -c 'import nltk; nltk.download("stopwords")'
+
 
 cermine: $(cermine_files)
 
