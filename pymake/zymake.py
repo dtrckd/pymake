@@ -47,9 +47,9 @@ def main():
         if not 'do_list' in zyvar:
             raise ValueError('Unknown Options : %s' % zyvar)
 
-        if 'atom' == zyvar.get('do_list'):
+        if 'model' == zyvar.get('do_list'):
             print (zymake.atomtable())
-        elif 'atom_topos' == zyvar.get('do_list'):
+        elif 'model_topos' == zyvar.get('do_list'):
             print (zymake.atomtable(_type='topos'))
         elif 'script' == zyvar.get('do_list'):
             print(zymake.scripttable())

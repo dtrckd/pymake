@@ -9,7 +9,7 @@ tests = (
     'zymake',
     'zymake show',
     'zymake -l',
-    'zymake -l atom',
+    'zymake -l model',
     'fit -m immsb_cgs',
     'scripts/check_networks pvalue',
     'scripts/check_networks stats',
