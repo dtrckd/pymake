@@ -468,7 +468,7 @@ class GramExp(object):
         ----------------
         Communicate with the data :
         ----------------
-         |   zymake -l [expe(default)|atom|script] : (default) show available spec
+         |   zymake -l [expe(default)|model|script] : (default) show available spec
          |   zymake update  : update the pymake index
          |   zymake show SPEC : show one spec details
          |   zymake cmd SPEC [fun][*args] : generate command-line

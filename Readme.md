@@ -25,6 +25,8 @@ git clone https://github.com/dtrckd/pymake
 cd pymake && make install
 ```
 
+System dependencies : `python3-setuptools python3-pip pyhton3-tk`
+
 ## Learn by examples
 
 We provide an example of a design workflow with pymake by providing a **Search Engine** experience.
@@ -56,7 +58,7 @@ To add new model, a new script, you need to write it in the dedicated folder fol
 
 Then you can list some informations about pymake :
 
-* What model are there: `pymake -l atom`
+* What model are there: `pymake -l model`
 * What experience are there: `pymake -l expe`
 * What script are there: `pymake -l script`
 * Show signatures of methods in a script ('ir' script): `pymake -l --script ir`
@@ -110,7 +112,7 @@ If new models or script are added in the project, you'll need to update the pyma
 
 Show/list things :
 
-    pymake -l atom   # show available models (don't ask me why is not -l model, we'll see that later!)
+    pymake -l model   # show available models
     pymake -l script # show available scripts
     pymake -l expe   # show available designs of experimentation                                                                                                                             
     pymake show expe_name # equivalent to: pymake expe_name --simulate|-s
