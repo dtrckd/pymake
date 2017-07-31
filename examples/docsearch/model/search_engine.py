@@ -23,6 +23,24 @@ def extract_pdf(pdf_file, page_limit=None):
 
     return text
 
+def match_pattern(text, patterns):
+    ''' Return True if patterns match in text.
+        (not optimized, What fuzzy solution)
+
+        Parameters
+        ----------
+        pattern: str or list of str.
+        text: a string
+
+    '''
+    if not patterns:
+        return False
+
+    patterns = [patterns] if type(patterns) is str else patterns
+    for pattern in patterns:
+        if pattern in text:
+            return True
+    return False
 
 
 class tfidf(IndexManager):
@@ -63,6 +81,9 @@ class tfidf(IndexManager):
                     continue
 
                 fullpath = os.path.join(root, filename)
+                if match_pattern(fullpath, self.expe.get('exclude_path')):
+                    continue
+
                 yield fullpath
 
 
@@ -114,17 +135,17 @@ class tfidf(IndexManager):
         #titles = soup.findAll(re.compile(".*title.*"))
 
         # Main title
-        # max probable titrle from cermine
+        # max probable title from cermine
         front = soup.front
         front_titles = front.findAll(re.compile(".*title.*"))
-        print(front_titles)
+        #print(front_titles)
         main_title = ' '.join([o.string or '' for o in front_titles]).strip()
         structured['title'] = main_title
 
         # Institution, Journal, Year etc...
         pass
 
-        # Referecnces
+        # References
         pass
 
 
@@ -166,7 +187,9 @@ class tfidf(IndexManager):
                     #    writer.delete_by_term('hash', doc['hash'])
                     #    continue
                     # don't update document
-                    self.log.warning("Duplicate file detected: %s already in %s" % (shortpath, first_m['shortpath']))
+                    self.log.warning("Duplicate file detected: %s renaming to %s" % (first_m['shortpath'], shortpath))
+                    first_m['shortpath'] = shortpath
+                    writer.update_document(**first_m)
                     is_duplicated = True
                 else:
                     if self.expe.extract_structure:
