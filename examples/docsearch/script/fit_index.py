@@ -11,6 +11,7 @@ class fit(ExpeFormat):
 
     _default_expe = {'model' : 'docm.tfidf',
                      'path' : '~/Desktop/workInProgress/networkofgraphs/papers',
+                     'exclude_path' : ['/figures/', '/fig/', '/img/'],
                      'reset' : False,
                      'extract_structure' : False,
                     }
