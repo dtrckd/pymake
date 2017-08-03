@@ -22,6 +22,7 @@ try:
     from terminal import colorize
     colored = lambda *x : str(colorize(x[0], x[1]))
 except ImportError:
+    lgg = logging.getLogger('root')
     lgg.debug("needs `terminal' module for colors printing")
     colored = lambda *x : x[0]
 

@@ -1,12 +1,13 @@
 # PYMAKE
 
-Pymake is a machine-friendly platform for making reproducible research. It provides tools adapted for the creation of :
-* Complex and traceable design of experiments, as a **command-line** interface.
-* Models and workflows for Machine Learning, as a **framework**.
+Pymake is a platform for making reproducible research. It provides tools adapted to ease the creation, maintenance, tracking and sharing of experiments. It has two main paradigms :
+
+* Manage and navigate in your experiences, as a **command-line** interface.
+* Models and workflows for Machine Learning experiments, as a **framework**.
 
 ## Features
 * Specification of design of experimentations with a simple grammar,
-* commandline toolkit for quick design and experience testing,
+* command-line toolkit for quick design and experience testing,
 * Support experience rules filtering,
 * Pipe experience for parallelization (see pymake cmd [expe]),
 * browse, design and test several models and corpus find in the literature.
