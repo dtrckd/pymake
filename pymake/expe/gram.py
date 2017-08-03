@@ -140,7 +140,7 @@ _Gram = [
         nargs='?', const=True, type=int,
         help='set seed value. If no seed specified but flag given, it will save/load the current state.'),
 
-    '--refdir', '--debug', dict(
+    '--refdir', dict(
         dest='refdir',
         help='Name to append in data/<bdir>/<refdir>/ for th output path.'),
 

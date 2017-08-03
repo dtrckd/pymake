@@ -150,9 +150,9 @@ class GramExp(object):
         Corpus are load/saved using Pickle format in:
         * bdir/corpus_name.pk
         Models are load/saved using pickle/json/cvs in :
-        * bdir/debug/rept/model_name_parameters.pk   <--> ModelManager
-        * bdir/debug/rept/model_name_parameters.json <--> DataBase
-        * bdir/debug/rept/model_name_parameters.inf  <--> ModelBase
+        * bdir/refdir/rep/model_name_parameters.pk   <--> ModelManager
+        * bdir/refir/rep/model_name_parameters.json <--> DataBase
+        * bdir/refdir/rep/model_name_parameters.inf  <--> ModelBase
 
     '''
     _examples = '''Examples:
@@ -434,9 +434,14 @@ class GramExp(object):
             try:
                 parser.add_argument(*r[0], **r[1])
             except argparse.ArgumentError as e:
-                self.log.error(e)
-                print('Solve the argument confict to run pymake.')
-                exit(3)
+                err_mesg = " (it'll be overwritten)"
+                if r[0][0] in ('-v', '-s', '-w', '--seed'):
+                    # @debug, level here is not set yet, so his not active by default.
+                    # parsing difficulet becaus context sensitive (option (-v) impact how the options are interpreted)
+                    lgg.debug(str(e)+err_mesg)
+                else:
+                    lgg.error(str(e)+err_mesg)
+                #exit(3)
 
 
     @classmethod

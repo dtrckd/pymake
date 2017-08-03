@@ -25,13 +25,15 @@ def main():
 
     ### Makes OUT Files
     lines = None
+    line_prefix = ''
     if zyvar['_do'] == 'cmd':
         lines = zymake.make_commandline()
     elif zyvar['_do'] == 'path':
-        lines = zymake.make_path(ftype=zyvar.get('_ftype', 'pk'), status=zyvar.get('_status'))
+        lines = zymake.make_path(ftype=zyvar.get('_ftype', 'inf'), status=zyvar.get('_status'))
     elif zyvar['_do'] == 'show':
         zymake.simulate()
     elif zyvar['_do'] ==  'run':
+        line_prefix = './zymake.py run'
         lines = zymake.execute()
     elif zyvar['_do'] == 'notebook':
         lines = zymake.notebook()
@@ -66,8 +68,7 @@ def main():
         exit()
 
     if 'script' in zyvar:
-        script = './zymake.py run'
-        lines = [' '.join((script, l)) for l in lines]
+        lines = [' '.join((line_prefix, l)).strip() for l in lines]
 
     zymake.simulate(halt=False, file=sys.stderr)
     print('\n'.join(lines), file=sys.stdout)
