@@ -126,8 +126,35 @@ Run a experience :
 
 ##### Track your data and results
 
-Pymake provide a mechanism in order to track data from an experience specification to another.
+In order t  save and analyse your results, each unique experience need to be identified in a file. To do so we propose a mechanism to map settings/specification of an unique experience to a <filename>. Depending on what the developer want to write, the extension of this file can be modified. Pymake use three conventions : 
 
-Data Lookup and Output Data path specification are automatically adapted from the design of experiments. Note that you can specify the format of the results of each experiments with `--format options`, see examples.
+* <filename>.inf : csv file where each line contains the state of iterative process of an experiment,
+* <filename>.pk : to save complex object usually at the end of an experiments, to load it after for analysis/visualisation,
+* <filename>.json : to save information of an experiments ("database friendly").
 
-The Results of experiments are stored in data/[specification].
+###### formatting the filename -- _format
+
+The choice of the filename will depends on the settings of the experiments. In order to specify the format of the filename, there is the special settings `--format  str_fmt`. `str_fmt` is a string template for the filename, with braces delimiter to specify what settings will be replaced, example : 
+
+Suppose we have the following settings : 
+```
+settings = dict(name = 'myexpe',
+                size = 42,
+                key1 = 100,
+                key2 = 'johndoe'
+                _format = '{name}-{size}-{key1}_-_{key2}'
+        )
+```
+
+The filename for this unique experiment will be 'myexpe-42-100_-_johndoe'
+
+###### settings the path -- _refdir
+
+By default all experiments results files will be written in the same directory (specify in `pymake.cfg`). In order to give a special subdirectory name for an experiment, the settings `--refdir str` is a string that represents the subdirectory for results files of the experiments.
+
+###### Specifying what data to sage in .inf files.
+
+to complete...
+
+
+
