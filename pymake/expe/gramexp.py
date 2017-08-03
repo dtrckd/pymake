@@ -78,7 +78,7 @@ def setup_logger(level=logging.INFO, name='root'):
         level = logging.DEBUG
     elif level == 2:
         print ('what level of verbosity heeere ?')
-        exit()
+        exit(2)
     else:
         # make a --silent option for juste error and critial log ?
         level = logging.INFO
@@ -367,6 +367,8 @@ class GramExp(object):
         lgg.debug('heere, get data_type from loader corpus info !')
         base = expe.get('data_type', 'pmk-temp')
         hook = expe.get('refdir', '')
+
+        # Corpus is an historical exception and has its own subfolder.
         c = expe.get('corpus')
         if not c:
             c = ''
@@ -513,7 +515,7 @@ class GramExp(object):
                 if v in words:
                     if ont == 'spec':
                         if v in ont_values:
-                            lgg.error('warning: conflict between name of ExpDesign and GramExp ontology keywords ')
+                            lgg.error('=> Warning: conflict between name of ExpDesign and GramExp ontology keywords ')
                         do.remove(v)
                         v = _spec[v]
                     request[ont] = v
@@ -528,7 +530,8 @@ class GramExp(object):
         #    request['_status'] = clargs.grouped['-status'].get(0)
 
         if checksum != 0:
-            raise ValueError('unknow argument: %s\n\nAvailable SPEC : %s' % (do, sorted(_spec._specs())))
+            lgg.error('==> Error : unknow argument: %s\n\nAvailable SPEC : %s' % (do, sorted(_spec._specs())))
+            exit(10)
         return cls(request, usage=usage, parser=parser, parseargs=False)
 
     @classmethod
@@ -814,7 +817,8 @@ class GramExp(object):
             self.remove('script')
             self.remove('_do')
         else:
-            raise ValueError('Who need to specify a script. (--script)')
+            lgg.error('==> Error : Who need to specify a script. (--script)')
+            exit(10)
 
         _script, script_args = Script.get(script[0], script[1:])
 
@@ -853,7 +857,7 @@ class GramExp(object):
         pwd = os.getenv('PWD')
         if os.path.isfile(join(pwd, 'pymake.cfg')):
             print('pymake.cfg file already exists.')
-            exit(2)
+            exit(11)
 
 
         cwd = os.path.dirname(__file__)
@@ -891,7 +895,7 @@ class GramExp(object):
         if 'do_list' in self.exp_tensor:
             print('Available methods for %s: ' % (sandbox))
             print(*self.functable(sandbox) , sep='\n')
-            exit(2)
+            exit()
 
         sandbox._preprocess_(self)
         if self._conf.get('simulate'):
@@ -913,7 +917,7 @@ class GramExp(object):
             except Exception as e:
                 print(('Error during '+colored('%s', 'red')+' Initialization.') % (str(sandbox)))
                 traceback.print_exc()
-                exit()
+                exit(2)
 
             # Expe Preprocess
             expbox._preprocess()
@@ -937,7 +941,7 @@ class GramExp(object):
             except Exception as e:
                 print(('Error during '+colored('%s', 'red')+' Expe.') % (do))
                 traceback.print_exc()
-                exit()
+                exit(2)
 
             # Expe Postprocess
             expbox._postprocess()
