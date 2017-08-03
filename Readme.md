@@ -113,7 +113,7 @@ If new models or script are added in the project, you'll need to update the pyma
 
     pymake update
 
-Show/list things :
+List/Search information :
 
     pymake -l model   # show available models
     pymake -l script # show available scripts
@@ -123,6 +123,14 @@ Show/list things :
 Run a experience :
 
     pymake run [expe_name] --script script_name [script options...]
+
+Show Paths :
+
+    pymake path [expe_name] [script options...]
+
+Show individuals commands for asynchronously purpose :
+
+    pymake cmd [expe_name] [script options...]
 
 ##### Track your data and results
 
