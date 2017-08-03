@@ -12,21 +12,22 @@ Pymake is a platform for making reproducible research. It provides tools adapted
 * Pipe experience for parallelization (see pymake cmd [expe]),
 * browse, design and test several models and corpus find in the literature.
 
-Ongoing development :
+Perspectives :
 
-* A database to share (push/fetch/search) Design of experimentations,
-* Better specification of the formal grammar of design of experimentation,
-* Better documentation (or just a documentation).
+* A online repo to push/fetch/search in {design of experimentations || models || scripts},
+* Better documentation (or just a documentation, needs feedback!).
 
 
 ## Install
+
+
+System dependencies : `apt-get install python3-setuptools python3-pip pyhton3-tk`
+Numpy/scipy dependencies : `apt-get install libopenblas-dev gfortran`
 
 ```bash
 git clone https://github.com/dtrckd/pymake
 cd pymake && make install
 ```
-
-System dependencies : `python3-setuptools python3-pip pyhton3-tk`
 
 ## Learn by examples
 
