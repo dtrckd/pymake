@@ -495,16 +495,27 @@ class GramExp(object):
         )
         ont_values = sum([w for k, w in ontology.items() if k != 'spec'] , [])
 
-        # Init _do value
+        # Init _do value.
         if not request.get('_do'):
             request['_do'] = []
             if not request.get('do_list'):
                 request['do_list'] = None
 
-        # Hack for script/exec
-        if request.get('do_list'):
-            if 'script' in request:
+        # Special Case for CLI.
+        if 'script' in request:
+            if request.get('do_list'):
+                # if a listing is requested go through run.
+                # It'll be stop after signature printing
                 request['_do'] = ['run']
+
+            # check if no command is specified, and
+            # if 'script" is there, set 'run' command as default.
+            do = request['_do']
+            no_do = len(do) == 0
+            no_do_command = len(request['_do']) > 0 and not request['_do'][0] in ontology['_do']
+            if no_do or no_do_command:
+                request['_do'] = ['run'] + do
+
 
         do = request['_do']
         checksum = len(do)
