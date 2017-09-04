@@ -2,6 +2,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys, os
+import re
 import logging
 import operator
 import fnmatch
@@ -202,28 +203,63 @@ class GramExp(object):
     def _preprocess_exp(self):
         # @improvment: do filter from spec
         exp = self.exp_tensor
+        size_exp = np.prod([len(x) for x in exp.values()])
 
-        # Rules Filter
-        if '_bind' in exp:
-            self._bind = exp.pop('_bind')
+        self._check_bind(exp)
+        self._check_model_typo(exp)
+        self._check_null(exp)
+
+        if size_exp > 1 and 'write' in exp:
+            self._check_format(exp)
+
+
+    @staticmethod
+    def _check_model_typo(exp_tensor):
+        ''' Assume default module is pymake '''
+        models = exp_tensor.get('model', [])
+        for i, m in enumerate(models):
+            if not '.' in m:
+                models[i] = 'pmk.%s'%(m)
+
+    def _check_bind(self, exp_tensor):
+        ''' Rules Filter '''
+        if '_bind' in exp_tensor:
+            self._bind = exp_tensor.pop('_bind')
             if not isinstance(self._bind, list):
                 self._bind = [self._bind]
         else:
             self._bind = getattr(self, '_bind', [])
 
-        # Assume default module is pymake
-        models = exp.get('model', [])
-        for i, m in enumerate(models):
-            if not '.' in m:
-                models[i] = 'pmk.%s'%(m)
-
-        # Filter _null
-        for k in exp.copy():
-            if '_null' in exp.get(k, []):
-                exp.pop(k)
+    def _check_null(self, exp_tensor):
+        ''' Filter _null '''
+        for k in exp_tensor.copy():
+            if '_null' in exp_tensor.get(k, []):
+                exp_tensor.pop(k)
                 _null = getattr(self, '_null',[])
                 _null.append(k)
 
+    @staticmethod
+    def _check_format(exp_tensor):
+        ''' Check if all expVector are distinguishable in _format. '''
+        hidden_key = []
+        _format = exp_tensor.get('_format', [''])
+        if len(_format) > 1:
+            raise NotImplementedError('multiple _format not implemented')
+        else:
+            _format = _format[0]
+
+        format_settings = re.findall(r'{([^{}]*)}', _format)
+        for setting in exp_tensor:
+            if len(setting) > 1 and setting not in format_settings:
+                hidden_key.append(setting)
+
+        if hidden_key:
+            lgg.error('The following settings are not set in _format:')
+            print(' '+ '  '.join(hidden_key))
+            print('Possible conflicts in experience results outputs.')
+            print('Please correct {_format} key to fit the experience settings.')
+            print('Exiting...')
+            exit(2)
 
     @classmethod
     def checkExp(cls, exp):
@@ -807,7 +843,7 @@ class GramExp(object):
             try:
                 np.random.set_state(self.load(_seed_path))
             except FileNotFoundError as e:
-                self.log.error("Cannot initialize seed, %s file does not exist." % _seed_path)
+                lgg.error("Cannot initialize seed, %s file does not exist." % _seed_path)
                 self.save(np.random.get_state(), _seed_path, silent=True)
                 raise FileNotFoundError('%s file just created, try again !')
 
