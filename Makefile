@@ -2,7 +2,7 @@ PACKAGE := pymake
 # Assumes Python3
 pip3_version := $(shell pip3 --version 2>/dev/null)
 
-default: install
+default: install_short
 
 docs: 
 	pushd doc/
@@ -19,6 +19,10 @@ else
 		@echo "error: please install the \`pip3' package"
 		@exit 0
 endif
+
+install_short:
+	python3 setup.py install --user
+
 
 networks_datasets:
 	pushd data/networks 
