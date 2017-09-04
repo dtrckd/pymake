@@ -534,8 +534,6 @@ class GramExp(object):
         # Init _do value.
         if not request.get('_do'):
             request['_do'] = []
-            if not request.get('do_list'):
-                request['do_list'] = None
 
         # Special Case for CLI.
         if 'script' in request:
