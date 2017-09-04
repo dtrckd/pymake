@@ -158,7 +158,7 @@ _Gram = [
         nargs='*',
         help='Commands to pass to sub-machines.'),
 
-    '--script', dict(
+    '-x', '--script', dict(
         nargs='*', action=unaggregate_append,
         help='Script request : name *args.'),
     '--bind', dict(

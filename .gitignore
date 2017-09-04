@@ -6,8 +6,6 @@ tags
 *~
 *.session.vim
 *.byobu
-pymake/ID
-pymake/TODO.md
 
 # Build
 *.egg-info/
