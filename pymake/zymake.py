@@ -46,8 +46,8 @@ def main():
         raise NotImplementedError('What parallel strategy ?')
     else:
 
-        if not 'do_list' in zyvar:
-            raise ValueError('Unknown Options : %s' % zyvar)
+        if not 'do_list' in zyvar and zyvar['_do']:
+            raise ValueError('Unknown command : %s' % zyvar['_do'])
 
         if 'model' == zyvar.get('do_list'):
             print (zymake.atomtable())
@@ -59,7 +59,7 @@ def main():
             print (zymake.spectable())
         else:
             print(zymake.help_short())
-            if zyvar['do_list']:
+            if zyvar.get('do_list'):
                 print ('Unknow options %s ?' % zyvar.get('do_list'))
         exit()
 
