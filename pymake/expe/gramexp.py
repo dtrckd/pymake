@@ -250,7 +250,7 @@ class GramExp(object):
 
         format_settings = re.findall(r'{([^{}]*)}', _format)
         for setting in exp_tensor:
-            if len(setting) > 1 and setting not in format_settings:
+            if isinstance(setting, list) and len(setting) > 1 and setting not in format_settings:
                 hidden_key.append(setting)
 
         if hidden_key:
@@ -284,8 +284,8 @@ class GramExp(object):
 
         # POSTFILTERING
         # Bind Rules
-        itoremove = []
-        for i, d in enumerate(lod):
+        idtoremove = []
+        for expe_id, d in enumerate(lod):
             for rule in self._bind:
                 _bind = rule.split('.')
                 values = list(d.values())
@@ -300,7 +300,7 @@ class GramExp(object):
                     # simltaneous in each expe.
                     a, b = _bind
                     if a in values and not b in values:
-                        itoremove.append(i)
+                        idtoremove.append(expe_id)
                 elif len(_bind) == 3:
                     # remove occurence of this specific key:value if
                     # it does not comply with this bind.
@@ -308,9 +308,14 @@ class GramExp(object):
                     # Get the type of this key:value.
                     _type = type(d[b])
                     if a in values and _type(c) != d[b]:
-                        itoremove.append(i)
+                        idtoremove.append(expe_id)
 
-        lod = [d for i,d in enumerate(lod) if i not in itoremove]
+        lod = [d for i,d in enumerate(lod) if i not in idtoremove]
+
+        # add extra information in lod expes
+        for _id,  expe in enumerate(lod):
+            expe['expe_id'] = _id
+
         return lod
 
     def update(self, **kwargs):
@@ -422,10 +427,12 @@ class GramExp(object):
             p = os.path.join(hook)
 
         if not expe['_format']:
+            # upgrade to '{corpus}_{model}} or much better hash of the settings.
             _format = '{model}_{K}_{hyper}_{homo}_{N}'
         else:
             _format = expe['_format']
-        t = _format.format(**expe)
+
+        t = _format.format(**self.get_file_format(expe))
 
         filen = os.path.join(basedir, p, t)
 
@@ -437,6 +444,15 @@ class GramExp(object):
             return  None
         else:
             return filen
+
+    @staticmethod
+    def get_file_format(expe):
+        fmt_expe = expe.copy()
+        for k, v in expe.items():
+            if isinstance(v, (list, dict)):
+                fmt_expe[k] = 'expe_id' + expe['expe_id']
+        return fmt_expe
+
 
 
     @staticmethod
@@ -544,14 +560,14 @@ class GramExp(object):
 
             # check if no command is specified, and
             # if 'script" is there, set 'run' command as default.
-            do = request['_do']
+            do = request.get('_do', [])
             no_do = len(do) == 0
             no_do_command = len(request['_do']) > 0 and not request['_do'][0] in ontology['_do']
             if no_do or no_do_command:
                 request['_do'] = ['run'] + do
 
 
-        do = request['_do']
+        do = request.get('_do', [])
         checksum = len(do)
         # No more Complex !
         for i, v in enumerate(do):
