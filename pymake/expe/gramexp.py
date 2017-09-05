@@ -314,7 +314,7 @@ class GramExp(object):
 
         # add extra information in lod expes
         for _id,  expe in enumerate(lod):
-            expe['expe_id'] = _id
+            expe['_id_expe'] = _id
 
         return lod
 
@@ -407,7 +407,7 @@ class GramExp(object):
         filen = None
         lgg.debug('heere, get data_type from loader corpus info !')
         base = expe.get('data_type', 'pmk-temp')
-        hook = expe.get('refdir', '')
+        hook = expe.get('_refdir', '')
 
         # Corpus is an historical exception and has its own subfolder.
         c = expe.get('corpus')
@@ -452,7 +452,7 @@ class GramExp(object):
         # maybe due to **expe pass in argument ?
         for k, v in fmt_expe.items():
             if isinstance(v, (list, dict)):
-                fmt_expe[k] = 'expe_id' + str(expe['expe_id'])
+                fmt_expe[k] = '_id_expe' + str(expe['_id_expe'])
         return fmt_expe
 
 
