@@ -397,8 +397,8 @@ class GramExp(object):
                 targets.append(filen[pt:])
         return targets
 
-    @staticmethod
-    def make_output_path(expe, _type=None, status=None):
+    @classmethod
+    def make_output_path(cls, expe, _type=None, status=None):
         """ Make a single output path from a expe/dict
             @status: f finished
             @type: pk, json or inference.
@@ -432,7 +432,7 @@ class GramExp(object):
         else:
             _format = expe['_format']
 
-        t = _format.format(**self.get_file_format(expe))
+        t = _format.format(**cls.get_file_format(expe))
 
         filen = os.path.join(basedir, p, t)
 
@@ -448,9 +448,11 @@ class GramExp(object):
     @staticmethod
     def get_file_format(expe):
         fmt_expe = expe.copy()
-        for k, v in expe.items():
+        # iteration over {expe} trow a 'RuntimeError: dictionary changed size during iteration',
+        # maybe due to **expe pass in argument ?
+        for k, v in fmt_expe.items():
             if isinstance(v, (list, dict)):
-                fmt_expe[k] = 'expe_id' + expe['expe_id']
+                fmt_expe[k] = 'expe_id' + str(expe['expe_id'])
         return fmt_expe
 
 
