@@ -55,7 +55,7 @@ class Netw(ExpDesign):
     # Tensor Exp
     EXPE_ICDM = ExpTensor((
         ('data_type', ('networks',)),
-        ('refdir'  , ('debug10', 'debug11')),
+        ('_refdir'  , ('debug10', 'debug11')),
         #('corpus' , ('fb_uc', 'manufacturing')),
         ('corpus' , CORPUS_ALL_ICDM),
         ('model'  , ('immsb_cgs', 'ilfm_cgs')),
@@ -69,7 +69,7 @@ class Netw(ExpDesign):
     PNAS1 = ExpTensor ((
         ('corpus', CORPUS_ALL_PNAS),
         ('data_type'    , 'networks'),
-        ('refdir'        , 'debug111111') , # ign in gen
+        ('_refdir'        , 'debug111111') , # ign in gen
         #('model'        , 'mmsb_cgs')   ,
         ('model'        , ['immsb_cgs', 'ilfm_cgs'])   ,
         ('K'            , 10)        ,
@@ -85,7 +85,7 @@ class Netw(ExpDesign):
     PNAS2 = ExpTensor ((
         ('corpus', CORPUS_ALL_PNAS),
         ('data_type'    , 'networks'),
-        ('refdir'        , 'pnas2') , # ign in gen
+        ('_refdir'        , 'pnas2') , # ign in gen
         #('model'        , 'mmsb_cgs')   ,
         ('model'        , ['immsb_cgs', 'ilfm_cgs'])   ,
         ('K'            , 10)        ,
@@ -104,8 +104,8 @@ class Netw(ExpDesign):
         ('data_type', ('networks',)),
         #('corpus' , ('fb_uc', 'manufacturing')),
         ('corpus' , CORPUS_SYN_ICDM),
-        #('refdir'  , ('debug10', 'debug11')),
-        ('refdir'  , ('debug101010', 'debug111111')),
+        #('_refdir'  , ('debug10', 'debug11')),
+        ('_refdir'  , ('debug101010', 'debug111111')),
         ('model'  , ('immsb_cgs', 'ilfm_cgs')),
         ('K'      , (5, 10, 15, 20)),
         ('hyper'  , ('fix', 'auto')),
@@ -119,7 +119,7 @@ class Netw(ExpDesign):
     EXPE_ICDM_R_R = ExpTensor((
         ('data_type', ('networks',)),
         ('corpus' , ('fb_uc', 'manufacturing')),
-        ('refdir'  , ('debug101010', 'debug111111')),
+        ('_refdir'  , ('debug101010', 'debug111111')),
         ('model'  , ('immsb_cgs', 'ilfm_cgs')),
         ('K'      , (5, 10, 15, 20)),
         ('hyper'  , ('fix', 'auto')),
@@ -134,7 +134,7 @@ class Netw(ExpDesign):
 
     MODEL_FOR_CLUSTER_IBP = ExpSpace((
         ('data_type'    , 'networks'),
-        ('refdir'        , 'debug11') ,
+        ('_refdir'        , 'debug11') ,
         ('model'        , 'ilfm_cgs')   ,
         ('K'            , 20)        ,
         ('N'            , 'all')     ,
@@ -144,7 +144,7 @@ class Netw(ExpDesign):
     ))
     MODEL_FOR_CLUSTER_IMMSB = ExpSpace((
         ('data_type'    , 'networks'),
-        ('refdir'        , 'debug11') ,
+        ('_refdir'        , 'debug11') ,
         ('model'        , 'immsb_cgs')   ,
         ('K'            , 20)        ,
         ('N'            , 'all')     ,
@@ -156,7 +156,7 @@ class Netw(ExpDesign):
     default_gen = ExpTensor ((
         ('corpus', CORPUS_SYN_ICDM),
         ('data_type'    , 'networks'),
-        ('refdir'        , 'debug111111') , # ign in gen
+        ('_refdir'        , 'debug111111') , # ign in gen
         #('model'        , 'mmsb_cgs')   ,
         ('model'        , ['immsb_cgs', 'ilfm_cgs'])   ,
         ('K'            , 10)        ,
@@ -177,7 +177,7 @@ class Netw(ExpDesign):
         corpus      = 'clique2',
         model       = 'immsb_cgs',
         hyper       = 'auto',
-        refdir      = 'debug',
+        _refdir      = 'debug',
         testset_ratio = 20,
         K           = 4,
         N           = 42,
@@ -189,7 +189,7 @@ class Netw(ExpDesign):
 
     MODELS_GENERATE = ExpTensor ((
         ('data_type'    , 'networks'),
-        ('refdir'        , 'debug11') ,
+        ('_refdir'        , 'debug11') ,
         ('model'        , ['immsb_cgs', 'ilfm_cgs'])   ,
         ('K'            , 10)        ,
         ('N'            , 'all')     ,
@@ -204,7 +204,7 @@ class Netw(ExpDesign):
 
     EXPE_ALL_ICDM_IBP = ExpTensor((
         ('data_type', ('networks',)),
-        ('refdir'  , ('debug111111', 'debug101010')),
+        ('_refdir'  , ('debug111111', 'debug101010')),
         ('corpus' , CORPUS_ALL_ICDM),
         ('model'  , ('ilfm_cgs',)),
         ('K'      , (5, 10, 15, 20)),
@@ -215,7 +215,7 @@ class Netw(ExpDesign):
     ))
     EXPE_ALL_ICDM_IMMSB = ExpTensor((
         ('data_type', ('networks',)),
-        ('refdir'  , ('debug111111', 'debug101010')),
+        ('_refdir'  , ('debug111111', 'debug101010')),
         ('corpus' , CORPUS_ALL_ICDM),
         ('model'  , ('immsb_cgs',)),
         ('K'      , (5, 10, 15, 20)),
@@ -230,7 +230,7 @@ class Netw(ExpDesign):
     RUN_DD = ExpTensor((
         ('data_type', ('networks',)),
         #('corpus' , ('fb_uc', 'manufacturing')),
-        ('refdir' , ('test_temp',)),
+        ('_refdir' , ('test_temp',)),
         ('corpus' , ('generator1',)),
         ('model'  , ('immsb_cgs', 'ilfm_cgs')),
         ('K'      , (5,)),
@@ -245,7 +245,7 @@ class Netw(ExpDesign):
     EXPE_REAL_V2_IBP = ExpTensor((
         ('data_type', ('networks',)),
         ('corpus' , ( 'propro', 'blogs', 'euroroad', 'emaileu')),
-        ('refdir'  , ('debug111111'),),
+        ('_refdir'  , ('debug111111'),),
         ('model'  , ( 'ilfm_cgs',)),
         ('K'      , ( 10,)),
         ('hyper'  , ('fix',)),
@@ -257,7 +257,7 @@ class Netw(ExpDesign):
     EXPE_REAL_V2_IMMSB = ExpTensor((
         ('data_type', ('networks',)),
         ('corpus' , ( 'propro', 'blogs', 'euroroad', 'emaileu')),
-        ('refdir'  , ('debug111111',),),
+        ('_refdir'  , ('debug111111',),),
         ('model'  , ( 'immsb_cgs',)),
         ('K'      , ( 10,)),
         ('hyper'  , ('auto',)),
@@ -269,7 +269,7 @@ class Netw(ExpDesign):
     RAGNRK = ExpTensor(
         data_type = ['networks'],
         corpus = ['propro', 'blogs', 'euroroad', 'emaileu'],
-        refdir  = ['ragnarok'],
+        _refdir  = ['ragnarok'],
         model  = ['immsb_cgs'],
         K      = [10],
         hyper  = ['auto'],

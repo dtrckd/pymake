@@ -141,7 +141,7 @@ _Gram = [
         help='set seed value. If no seed specified but flag given, it will save/load the current state.'),
 
     '--refdir', dict(
-        dest='refdir',
+        dest='_refdir',
         help='Name to append in data/<bdir>/<refdir>/ for th output path.'),
 
     '--format', dict(
