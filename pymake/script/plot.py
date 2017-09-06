@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import numpy as np
 from numpy import ma
 from pymake import ModelManager, FrontendManager, GramExp, ExpeFormat, ExpSpace
+import matplotlib.pyplot as plt
 
 import logging
 lgg = logging.getLogger('root')
@@ -40,6 +41,18 @@ class Plot(ExpeFormat):
         ax.plot(ll_y, label=_spec.name(expe.model))
         ax.legend(loc='upper right',prop={'size':7})
 
+    @ExpeFormat.plot
+    def plot_unique(self, _type='likelihood'):
+        ''' likelihood/perplexity convergence report '''
+        expe = self.expe
+        model = self.model
+
+
+        data = model.load_some(get='likelihood')
+        burnin = 5
+        ll_y = np.ma.masked_invalid(np.array(data, dtype='float'))
+        plt.plot(ll_y, label=_spec.name(expe.model))
+        plt.legend(loc='upper right',prop={'size':7})
 
 if __name__ == '__main__':
     GramExp.generate().pymake(Plot)
