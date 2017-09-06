@@ -58,6 +58,23 @@ def ask_sure_exit(question):
         else:
             print("Enter either yes/no")
 
+def get_dest_opt_filled(parser):
+    ''' Return the {dest} name of the options filled in the command line
+
+        Parameters
+        ----------
+        parser : ArgParser
+
+        Returns
+        -------
+        set of string
+    '''
+
+    opts_in = [opt for opt in sys.argv if opt.startswith('-')]
+    opt2dest_dict = dict( (opt, act.dest) for act in parser._get_optional_actions() for opt in act.option_strings )
+    dests_in = set([opt2dest_dict[opt] for opt in opts_in])
+    return dests_in
+
 def Now():
     return  datetime.now()
 def nowDiff(last):

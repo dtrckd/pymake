@@ -34,7 +34,7 @@ map_parameters = ExpTensor((
     ('hyper'  , ('fix', 'auto')),
     ('homo'   , (0, 1, 2)),
     ('N'      , ('all',)),
-    #('repeat'   , (0, 1, 2, 4, 5)),
+    #('_repeat'   , (0, 1, 2, 4, 5)),
 ))
 
 ### Seek experiments results
@@ -57,7 +57,7 @@ expe_1 = OrderedDict((
     ('hyper' , 'auto')     ,
     ('homo'  , 0) ,
     ('N'     , 'all')     ,
-    #('repeat', '*'),
+    #('_repeat', '*'),
     ('measure', 7),
     ))
 expe_1.update(expe_args)

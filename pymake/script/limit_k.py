@@ -43,7 +43,7 @@ Models = [{'model':'immsb'}]
 #    ('N'            , 'all')     , # ign in gen
 #    ('hyper'        , 'auto')    , # ign in ge
 #    ('homo'         , 0)         , # ign in ge
-#    #('repeat'      , '*')       ,
+#    #('_repeat'      , '*')       ,
 #))]
 
 for m in Models:

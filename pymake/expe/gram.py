@@ -117,20 +117,9 @@ _Gram = [
         nargs=0, action=VerboseAction, dest='verbose',
         help='Silent option'),
 
-    '-np', '--save_plot', dict(
-        action='store_true', help="don't block figure"),
-
     '-s', '--simulate',  dict(
         action='store_true',
         help='Offline simulation'),
-
-    '-nld','--no-load-data', dict(
-        dest='load_data', action='store_false',
-        help='Try to load pickled frontend data'),
-
-    '--save-fr-data', dict(
-        dest='save_data', action='store_true',
-        help='Picked the frontend data.'),
 
     '-w', '--write', dict(
         action='store_true',
@@ -149,6 +138,7 @@ _Gram = [
         help='File format for saving results and models.'),
 
 
+
     #  Context-sensitive
     #
     #  * Special meaning arguments
@@ -161,11 +151,16 @@ _Gram = [
     '-x', '--script', dict(
         nargs='*', action=unaggregate_append,
         help='Script request : name *args.'),
+
     '--bind', dict(
         type=str, dest='_bind', action='append',
         help='Rules to filter the Exp Request.'),
 
+    '--repeat', dict(
+        nargs='*', dest='_repeat', action=exp_append, #type=check_positive_integer,
+        help='Index of tn nth repetitions/randomization of an design of experiments. Impact the outpout path as data/<bdir>/<refdir>/<repeat>/...'),
+
     '-l', '--list', dict(
-        dest='do_list', const='expe',  nargs='?', action=unaggregate_append,
+        nargs='?', dest='do_list', const='expe', action=unaggregate_append,
         help='Request to print informations.'),
     ]

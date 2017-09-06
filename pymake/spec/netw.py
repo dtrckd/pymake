@@ -63,7 +63,7 @@ class Netw(ExpDesign):
         ('N'      , ('all',)),
         ('hyper'  , ('fix', 'auto')),
         ('homo'   , (0,)),
-        #('repeat'   , (0, 1, 2,3, 4, 5)),
+        #('_repeat'   , (0, 1, 2,3, 4, 5)),
     ))
 
     PNAS1 = ExpTensor ((
@@ -76,7 +76,7 @@ class Netw(ExpDesign):
         ('N'            , 'all')     , # ign in gen
         ('hyper'        , ['auto', 'fix'])    , # ign in gen
         ('homo'         , 0)         , # ign in gen
-        ('repeat'      , 1)       ,
+        ('_repeat'      , 1)       ,
         ('_bind'    , ['immsb_cgs.auto', 'ilfm_cgs.fix']),
         ('iterations', '200'),
         ('_format', '{model}_{K}_{hyper}_{homo}_{N}')
@@ -92,7 +92,7 @@ class Netw(ExpDesign):
         ('N'            , 'all')     , # ign in gen
         ('hyper'        , ['fix','auto'])    , # ign in gen
         ('homo'         , 0)         , # ign in gen
-        ('repeat'      , 0)       ,
+        ('_repeat'      , 0)       ,
         ('_bind'    , ['immsb_cgs.auto', 'ilfm_cgs.fix', 'ilfm_cgs.iterations.25', 'immsb_cgs.iterations.150']),
         ('iterations', [25, 150]),
         ('testset_ratio', [40, 60, 80]),
@@ -111,7 +111,7 @@ class Netw(ExpDesign):
         ('hyper'  , ('fix', 'auto')),
         ('homo'   , (0, 1, 2)),
         ('N'      , ('all',)),
-        ('repeat'   , list(range(10))),
+        ('_repeat'   , list(range(10))),
         ('iterations', '200'),
         ('_bind'    , ['immsb_cgs.auto', 'ilfm_cgs.fix']),
     ))
@@ -125,7 +125,7 @@ class Netw(ExpDesign):
         ('hyper'  , ('fix', 'auto')),
         ('homo'   , (0, 1, 2)),
         ('N'      , ('all',)),
-        ('repeat'   , list(range(10))),
+        ('_repeat'   , list(range(10))),
         ('iterations', '200'),
         ('_bind'    , ['immsb_cgs.auto', 'ilfm_cgs.fix']),
     ))
@@ -140,7 +140,7 @@ class Netw(ExpDesign):
         ('N'            , 'all')     ,
         ('hyper'        , 'fix')     ,
         ('homo'         , 0)         ,
-        #('repeat'      , '*')       ,
+        #('_repeat'      , '*')       ,
     ))
     MODEL_FOR_CLUSTER_IMMSB = ExpSpace((
         ('data_type'    , 'networks'),
@@ -150,7 +150,7 @@ class Netw(ExpDesign):
         ('N'            , 'all')     ,
         ('hyper'        , 'auto')     ,
         ('homo'         , 0)         ,
-        #('repeat'      , '*')       ,
+        #('_repeat'      , '*')       ,
     ))
 
     default_gen = ExpTensor ((
@@ -163,7 +163,7 @@ class Netw(ExpDesign):
         ('N'            , 'all')     , # ign in gen
         ('hyper'        , ['auto', 'fix'])    , # ign in gen
         ('homo'         , 0)         , # ign in gen
-        ('repeat'      , 1)       ,
+        ('_repeat'      , 1)       ,
         ('_bind'    , ['immsb_cgs.auto', 'ilfm_cgs.fix']),
         ('alpha', 1),
         ('gmma', 1),
@@ -195,7 +195,7 @@ class Netw(ExpDesign):
         ('N'            , 'all')     ,
         ('hyper'        , ['fix', 'auto'])     ,
         ('homo'         , 0)         ,
-        #('repeat'      , '*')       ,
+        #('_repeat'      , '*')       ,
         ('_bind'    , ['immsb_cgs.auto', 'ilfm_cgs.fix']),
     ))
 
@@ -211,7 +211,7 @@ class Netw(ExpDesign):
         ('N'      , ('all',)),
         ('hyper'  , ('fix',)),
         ('homo'   , (0,)),
-        ('repeat'   , (6, 7, 8, 9)),
+        ('_repeat'   , (6, 7, 8, 9)),
     ))
     EXPE_ALL_ICDM_IMMSB = ExpTensor((
         ('data_type', ('networks',)),
@@ -222,7 +222,7 @@ class Netw(ExpDesign):
         ('N'      , ('all',)),
         ('hyper'  , ('auto',)),
         ('homo'   , (0,)),
-        ('repeat'   , (6, 7, 8, 9)),
+        ('_repeat'   , (6, 7, 8, 9)),
     ))
 
 
@@ -238,7 +238,7 @@ class Netw(ExpDesign):
         ('hyper'  , ('auto',)),
         ('homo'   , (0,)),
         ('hyper_prior', ('1 2 3 4', '20 2 10 2')),
-        ('repeat'   , (0, 1, 2, 4, 5)),
+        ('_repeat'   , (0, 1, 2, 4, 5)),
         ('_bind'    , ['immsb_cgs.auto', 'ilfm_cgs.fix']),
     ))
 
@@ -251,7 +251,7 @@ class Netw(ExpDesign):
         ('hyper'  , ('fix',)),
         ('homo'   , (0,)),
         ('N'      , ('all',)),
-        ('repeat'   , list(range(5))),
+        ('_repeat'   , list(range(5))),
     ))
 
     EXPE_REAL_V2_IMMSB = ExpTensor((
@@ -263,7 +263,7 @@ class Netw(ExpDesign):
         ('hyper'  , ('auto',)),
         ('homo'   , (0,)),
         ('N'      , ('all',)),
-        ('repeat'   , list(range(5))),
+        ('_repeat'   , list(range(5))),
     ))
 
     RAGNRK = ExpTensor(
@@ -275,7 +275,7 @@ class Netw(ExpDesign):
         hyper  = ['auto'],
         homo   = [0],
         N      = [10],
-        repeat = list(range(2)),
+        _repeat = list(range(2)),
     )
 
 
