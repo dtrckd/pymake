@@ -465,7 +465,7 @@ class ExpeFormat(object):
 
     @classmethod
     def _postprocess_(cls, gramexp):
-        cls.display(gramexp.exp_tensor)
+        cls.display(gramexp._conf)
         return
 
 
