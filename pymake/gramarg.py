@@ -6,6 +6,8 @@ _gram = [
     #
     #  * Are repeatable
 
+
+
     '--epoch', dict(
         nargs='*', action=partial(exp_append, _t=int),
         help='number for averaginf generative process'),
@@ -33,10 +35,6 @@ _gram = [
     '-i','--iterations', dict(
         nargs='*', action=partial(exp_append, _t=int),
         help='Max number of iterations for the optimization.'),
-
-    '--repeat', dict(
-        nargs='*', action=exp_append, #type=check_positive_integer,
-        help='Index of tn nth repetitions/randomization of an design of experiments. Impact the outpout path as data/<bdir>/<refdir>/<repeat>/...'),
 
     '--hyper',  dict(
         dest='hyper', nargs='*', action=exp_append,
@@ -70,9 +68,23 @@ _gram = [
         nargs='*', action=partial(exp_append, _t=int),
         help='Number of samples used for burnin period.'),
 
+
+    # System
+    '-nld','--no-load-data', dict(
+        dest='load_data', action='store_false',
+        help='Try to load pickled frontend data'),
+
+    '--save-fr-data', dict(
+        dest='save_data', action='store_true',
+        help='Picked the frontend data.'),
+
+    '-np', '--save_plot', dict(
+        action='store_true', help="don't block figure"),
+
     '-g', '--generative',dict(
         dest='_mode', action='store_const', const='generative'),
     '-p', '--predictive', dict(
         dest='_mode', action='store_const', const='predictive'),
+
 
 ]

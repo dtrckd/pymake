@@ -8,7 +8,7 @@ from collections import OrderedDict, defaultdict
 from decorator import decorator
 from functools import wraps
 
-from pymake.util.utils import colored, basestring
+from pymake.util.utils import colored, basestring, get_dest_opt_filled
 from pymake.index.indexmanager import IndexManager as IX
 
 from tabulate import tabulate
@@ -150,7 +150,7 @@ class ExpTensor(OrderedDict, BaseObject):
         BaseObject.__init__(self, name)
 
     @classmethod
-    def from_expe(cls, expe):
+    def from_expe(cls, expe, parser=None):
         ''' Return the tensor who is an Orderedict of iterable.
             Assume conf is an exp. Non list value will be listified.
 
@@ -171,24 +171,46 @@ class ExpTensor(OrderedDict, BaseObject):
             tensor = cls(corpus=expe)
         elif issubclass(type(expe), Model):
             tensor = cls(model=expe)
-        elif not isinstance(expe, ExpTensor):
+        elif isinstance(expe, ExpTensor):
+            # ExpSpace or dict or  not implemented ExpVector
+            tensor = expe.copy()
+        elif isinstance(expe, (dict, ExpSpace)):
             tensor = cls()
             tensor.update_from_dict(expe)
         else:
-            # ExpTensor or not implemented expVector
-            tensor = expe.copy()
+            raise NotImplementedError('input type of ExpVector unknow %s' % (expe))
 
         for k, v in tensor.items():
             if not issubclass(type(v), (list, set, tuple)):
                 tensor[k] = [v]
 
         if _conf:
-            tensor.update_from_dict(_conf)
+            tensor.update_from_dict(_conf, parser=parser)
 
         return tensor
 
-    def update_from_dict(self, d):
+    def update_from_dict(self, d, parser=None):
+        ''' Update a tensor from a dict
+
+            Parameters
+            ----------
+            d : dict
+                the dict that uptate the tensor
+            from_argv : bool
+                if True, the is assumed to come from an CLI argparser. if the following conds are true :
+                    * the settings in {d} are specified in the CLI (@check already filtererd in GramExp.parseargs)
+                    * the settings in {d} is not in the CLI, and not in self.
+        '''
+
+        if parser is not None:
+            dests_filled = get_dest_opt_filled(parser)
+
         for k, v in d.items():
+
+            if parser is not None:
+                if not k in dests_filled and k in self :
+                    continue
+
             if issubclass(type(v), ExpVector):
                 self[k] = v
             else:

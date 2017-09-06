@@ -41,7 +41,7 @@ Spec = ExpTensor ((
     ('N'            , 'all')     , # ign in gen
     ('hyper'        , 'auto')    , # ign in gen
     ('homo'         , 0)         , # ign in gen
-    ('repeat'      , '')       ,
+    ('_repeat'      , '')       ,
     #
     ('alpha', 1),
     ('gmma', 1),
@@ -59,7 +59,7 @@ config = dict(
     #### Path Spec
     #debug         = 'debug11'
     debug         = 'debug111111',
-    repeat        = 0,
+    _repeat        = 0,
     spec = Spec
 )
 

@@ -44,12 +44,12 @@ Models = _spec.MODELS_GENERATE
 #    ('N'            , 'all')     , # ign in gen
 #    ('hyper'        , 'auto')    , # ign in ge
 #    ('homo'         , 0)         , # ign in ge
-#    #('repeat'      , '*')       ,
+#    #('_repeat'      , '*')       ,
 #))]
 
 for m in Models:
     m['debug'] = 'debug111111'
-    m['repeat'] = 5
+    m['_repeat'] = 5
 
 if config.get('K'):
     for m in Models:

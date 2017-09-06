@@ -169,7 +169,7 @@ class GenNetwork(ExpeFormat):
                 Meas = ['20']
             else:
                 Meas = self.gramexp.exp_tensor['testset_ratio']
-            tables = ma.array(np.empty((len(corpuses), len(Meas),len(self.gramexp.get('repeat')), 2)), mask=True)
+            tables = ma.array(np.empty((len(corpuses), len(Meas),len(self.gramexp.get('_repeat')), 2)), mask=True)
             self.gramexp.Meas = Meas
             self.gramexp.tables = tables
         else:
@@ -751,7 +751,7 @@ class GenNetwork(ExpeFormat):
         fpr, tpr, thresholds = roc_curve(y_true, probas)
         roc_auc = auc(fpr, tpr)
 
-        table[self.corpus_pos, self.testset_ratio_pos, self.pt['repeat'], self.model_pos] = roc_auc
+        table[self.corpus_pos, self.testset_ratio_pos, self.pt['_repeat'], self.model_pos] = roc_auc
 
         #precision, recall, thresholds = precision_recall_curve( y_true, probas)
         #plt.plot(precision, recall, label='PR curve; %s' % (expe.model ))

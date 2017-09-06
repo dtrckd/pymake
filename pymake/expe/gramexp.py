@@ -192,11 +192,11 @@ class GramExp(object):
         [conf.update({k:v}) for k,v in self._exp_default.items() if k not in conf]
         conf = deepcopy(conf)
 
-        # in expt_setup...
-        self._default_spec = conf.get('spec', {})
+        # Set expTensor init.
+        self._user_spec = conf.get('spec', {})
 
         # Make main data structure
-        self.exp_tensor = ExpTensor.from_expe(conf)
+        self.exp_tensor = ExpTensor.from_expe(conf, parser=self.argparser)
         self.checkExp(self.exp_tensor)
         self.exp_setup()
 
@@ -421,8 +421,8 @@ class GramExp(object):
 
         basedir = os.path.join(os.path.dirname(__file__), _DATA_PATH, base, c)
 
-        if 'repeat' in expe and ( expe['repeat'] is not None and expe['repeat'] is not False):
-            p = os.path.join(hook, str(expe['repeat']))
+        if '_repeat' in expe and ( expe['_repeat'] is not None and expe['_repeat'] is not False):
+            p = os.path.join(hook, str(expe['_repeat']))
         else:
             p = os.path.join(hook)
 
@@ -519,7 +519,8 @@ class GramExp(object):
 
         s = parser.parse_args(args=args)
 
-        settings = dict((key,value) for key, value in vars(s).items() if value)
+        # Assume None value are non-filled options
+        settings = dict((key,value) for key, value in vars(s).items() if value is not None)
         GramExp.expVectorLookup(settings)
         return settings, parser
 

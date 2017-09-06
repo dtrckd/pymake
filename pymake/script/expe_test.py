@@ -44,7 +44,7 @@ expe_1 = OrderedDict((
     ('hyper' , 'auto')     ,
     ('homo'  , 0) ,
     ('N'     , 'all')     ,
-    ('repeat', '*'),
+    ('_repeat', '*'),
     ('measure', ':4'),
     ))
 expe_1.update(expe_args)
