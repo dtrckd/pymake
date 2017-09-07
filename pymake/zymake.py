@@ -19,7 +19,7 @@ def main():
     zymake = GramExp.zymake()
     zyvar = zymake._conf
 
-    if zyvar.get('simulate'):
+    if zyvar.get('simulate') and not zyvar['_do'] in ['run', 'runpara']:
         # same as show !
         zymake.simulate()
 

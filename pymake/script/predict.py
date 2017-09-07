@@ -36,7 +36,7 @@ Corpuses += _spec.CORPUS_REAL_ICDM_1
 Models = _spec.MODELS_GENERATE
 
 #Models = [dict ((
-#    ('data_type'    , 'networks'),
+#    ('_data_type'    , 'networks'),
 #    ('debug'        , 'debug11') , # ign in gen
 #    #('model'        , 'mmsb_cgs')   ,
 #    ('model'        , 'immsb')   ,

@@ -38,7 +38,7 @@ rez = forest_tensor(target_files, map_parameters)
 ### Expe 1 settings
 # debug10, immsb
 expe_1 = OrderedDict((
-    ('data_type', 'networks'),
+    ('_data_type', 'networks'),
     ('corpus', '*'),
     #('debug' , 'debug101010') ,
     ('debug' , 'debug111111') ,

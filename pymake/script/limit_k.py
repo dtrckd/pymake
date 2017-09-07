@@ -35,7 +35,7 @@ Models = _spec.MODELS_GENERATE
 Corpuses = ('generator7',)
 Models = [{'model':'immsb'}]
 #Models = [dict ((
-#    ('data_type'    , 'networks'),
+#    ('_data_type'    , 'networks'),
 #    ('debug'        , 'debug11') , # ign in gen
 #    #('model'        , 'mmsb_cgs')   ,
 #    ('model'        , 'immsb')   ,

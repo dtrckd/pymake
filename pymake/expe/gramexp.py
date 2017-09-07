@@ -138,10 +138,11 @@ class GramExp(object):
         ### Expe Filtering
         Expe can contains **special** keywords and value :
         * _bind rules : List of rules of constraintsi on the design.
-            *  [a.b]  --- a shoudld occur only with b,
-            * [a.b.c] --- for a, key b take only c.
+            + [a.b]  --- a(value) shoudld occur only with b(value), (ie 'lda.fast_init')
+            + [a.b.c] --- with a(value), key b(key) take only c (value), (ie 'lda.iterations.100')
+
             Warning : it does only check the last words when parameter are
-                      separated by a dot (.) as for model module for example.
+                      separated by a dot (.) as for model module (name pmk.lda !) for example.
 
         * if an attribute  take the value "_null",
           then it will be removed from the Exp. This can be usefull when piping
@@ -163,9 +164,17 @@ class GramExp(object):
         >> Network fitting :
         fit.py -m immsb -c alternate -n 100 -i 10'''
 
+    # has special semantics
+    _special_keywords = [ 'refdir', '_base_type',
+                         '_format', '_csv_typo',
+                         '_repeat',
+                        ] # output_path => pmk-basedire/{base_type}/{refdir}/{repeat}/${format}:${csv_typo}
+
     # Reserved by GramExp
-    _reserved_keywords = ['spec', # for nested specification
+    # shloud ne in special ?
+    _reserved_keywords = ['_spec', # for nested specification
                          ]
+
 
     _exp_default = {
         #'host'      : 'localhost',
@@ -194,7 +203,7 @@ class GramExp(object):
         conf = deepcopy(conf)
 
         # Set expTensor init.
-        self._user_spec = conf.get('spec', {})
+        self._user_spec = conf.get('_spec', {})
 
         # Make main data structure
         self.exp_tensor = ExpTensor.from_expe(conf, parser=self.argparser)
@@ -277,6 +286,13 @@ class GramExp(object):
             if not issubclass(type(v), (list, tuple, set)):
                 raise ValueError('error, exp value should be iterable: %s' % k, v)
 
+
+    def make_tensor(self, lod):
+        exp_tensor = ExpTensor()
+        for d in lod:
+            exp_tensor.push_dict(d)
+
+        return exp_tensor
 
     def make_lod(self, exp):
         ''' Make a list of Expe from tensor, with filtering '''
@@ -406,8 +422,8 @@ class GramExp(object):
         """
         expe = defaultdict(lambda: None, expe)
         filen = None
-        lgg.debug('heere, get data_type from loader corpus info !')
-        base = expe.get('data_type', 'pmk-temp')
+        lgg.debug('heere, get _data_type from loader corpus info !')
+        base = expe.get('_data_type', 'pmk-temp')
         hook = expe.get('_refdir', '')
 
         # Corpus is an historical exception and has its own subfolder.
@@ -546,10 +562,10 @@ class GramExp(object):
         _spec = mloader.SpecLoader.default_spec()
         ontology = dict(
             _do    = ['cmd', 'show', 'path', 'burn', 'run', 'update', 'init', 'runpara'],
-            spec   = _spec._specs(),
+            _spec   = _spec._specs(),
             _ftype = ['json', 'pk', 'inf']
         )
-        ont_values = sum([w for k, w in ontology.items() if k != 'spec'] , [])
+        ont_values = sum([w for k, w in ontology.items() if k != '_spec'] , [])
 
         # Init _do value.
         if not request.get('_do'):
@@ -583,7 +599,7 @@ class GramExp(object):
                 for ont, words in ontology.items():
                     # Walktrough the ontology to find arg meaning
                     if v in words:
-                        if ont == 'spec':
+                        if ont == '_spec':
                             if v in ont_values:
                                 lgg.error('=> Warning: conflict between name of ExpDesign and GramExp ontology keywords ')
                             do.remove(v)
@@ -594,7 +610,7 @@ class GramExp(object):
 
         request['_run_indexs'] = run_indexs
 
-        if request.get('spec') and len(do) == 0:
+        if request.get('_spec') and len(do) == 0:
             request['_do'] = 'show'
 
 
@@ -635,7 +651,7 @@ class GramExp(object):
         _spec = mloader.SpecLoader.default_spec()
         for a in do:
             if a in _spec.keys() and issubclass(type(_spec[a]), ExpTensor):
-                request['spec'] = _spec[a]
+                request['_spec'] = _spec[a]
                 do.remove(a)
 
         return cls(request, usage=usage, parser=parser, parseargs=False)
@@ -681,6 +697,15 @@ class GramExp(object):
                 conf['model'] = arg
         return cls(conf, usage=usage)
 
+    def make_commandline(self):
+        commands = self.make_commands()
+        commands = [' '.join(c) for c in commands]
+        return commands
+
+    def make_path(self, ftype=None, status=None, fullpath=None):
+        return self.make_forest_path(self.lod, ftype, status, fullpath)
+
+
     def make_commands(self):
         lod = self.lod
         commands = []
@@ -717,14 +742,6 @@ class GramExp(object):
 
             commands.append(command)
         return commands
-
-    def make_commandline(self):
-        commands = self.make_commands()
-        commands = [' '.join(c) for c in commands]
-        return commands
-
-    def make_path(self, ftype=None, status=None, fullpath=None):
-        return self.make_forest_path(self.lod, ftype, status, fullpath)
 
     def reorder_lastvalid(self, _type='pk'):
         for i, e in enumerate(self.lod):
@@ -768,14 +785,14 @@ class GramExp(object):
               Corpuses : %s
               Models : %s
               ''' % (len(self), self.getCorpuses(), self.getModels()), file=sys.stdout)
-        exit(2)
+        exit()
 
     def simulate(self, halt=True, file=sys.stdout):
         print('-'*30, file=file)
         print('PYMAKE Request %s : %d expe' % (self.exp_tensor.name(), len(self) ), file=file)
         print(self.exptable(), file=file)
         if halt:
-            exit(2)
+            exit()
         else:
             return
 
@@ -886,6 +903,7 @@ class GramExp(object):
             indexs = range(len(self))
 
         self.lod = [self.lod[i] for i in indexs]
+        self.exp_tensor = self.make_tensor(self.lod)
 
         if 'script' in self._conf:
             script = self._conf.pop('script')
@@ -928,12 +946,14 @@ class GramExp(object):
 
         for index in indexs:
             cmdlines.append( basecmd.replace('runpara', 'run %s'%index, 1) )
+
         if net:
             NDL = '$HOME/src/config/configure/nodeslist'
             PWD = '/home/ama/adulac/workInProgress/networkofgraphs/process/pymake/pymake'
             cmd = ['parallel', '-u', '--sshloginfile', NDL, '--workdir', PWD, '-C', "' '", '--eta', '--progress', '--env', 'OMP_NUM_THREADS', '{}']
         else:
-            cmd = ['parallel', '-u', '-C', "' '", '--eta', '--progress', ':::', '%s'%('\n'.join(cmdlines))]
+            n_cores = str(self._conf.get('_cores', 0))
+            cmd = ['parallel', '-j', n_cores, '-u', '-C', "' '", '--eta', '--progress', ':::', '%s'%('\n'.join(cmdlines))]
 
         #stdout = subprocess.check_output(cmd)
         #print(stdout.decode())

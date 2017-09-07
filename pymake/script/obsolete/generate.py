@@ -33,7 +33,7 @@ Corpuses = _spec.CORPUS_REAL_V2
 #Models = _spec.MODELS_GENERATE
 Spec = ExpTensor ((
     ('corpus', Corpuses),
-    ('data_type'    , 'networks'),
+    ('_data_type'    , 'networks'),
     ('debug'        , 'debug11') , # ign in gen
     #('model'        , 'mmsb_cgs')   ,
     ('model'        , 'immsb')   ,
