@@ -173,6 +173,7 @@ class GramExp(object):
     # Reserved by GramExp
     # shloud ne in special ?
     _reserved_keywords = ['_spec', # for nested specification
+                          '_expe_id', # unique expe identifier
                          ]
 
 

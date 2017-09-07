@@ -228,6 +228,9 @@ class ExpTensor(OrderedDict, BaseObject):
 
         _need_bind = False
         for k, v in d.items():
+            if k in ['_id_expe']:
+                continue
+
             vector = self.get(k, [])
             if v not in vector:
                 if len(vector) == 0:
