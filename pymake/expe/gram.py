@@ -129,6 +129,10 @@ _Gram = [
         nargs='?', const=True, type=int,
         help='set seed value. If no seed specified but flag given, it will save/load the current state.'),
 
+    '--cores', dict(
+        type=int, dest='_cores',
+        help='number of cores to run with runpara command.'),
+
     '--refdir', dict(
         dest='_refdir',
         help='Name to append in data/<bdir>/<refdir>/ for th output path.'),

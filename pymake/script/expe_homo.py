@@ -25,7 +25,7 @@ expe_args = argparser.exp_tabulate(USAGE)
 
 ### Expe Forest
 map_parameters = ExpTensor((
-    ('data_type', ('networks',)),
+    ('_data_type', ('networks',)),
     #('corpus' , ('fb_uc', 'manufacturing')),
     ('corpus' , ('Graph7', 'Graph12', 'Graph10', 'Graph4')),
     ('debug'  , ('debug10', 'debug11')),
@@ -49,7 +49,7 @@ rez = forest_tensor(target_files, map_parameters)
 ### Expe 1 settings # Todo RegularExp
 # debug10, immsb
 expe_1 = OrderedDict((
-    ('data_type', 'networks'),
+    ('_data_type', 'networks'),
     ('corpus', '*'),
     ('debug' , 'debug10') ,
     ('model' , 'immsb')   ,

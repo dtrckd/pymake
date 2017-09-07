@@ -25,7 +25,7 @@ _DATA_PATH = get_global_settings('project_data')
 # Default and New values
 # @filename to rebuild file
 _MASTERKEYS = OrderedDict((
-    ('data_type'   , None),
+    ('_data_type'   , None),
     ('corpus'      , None),
     ('repeat'      , None),
     ('model'       , None),

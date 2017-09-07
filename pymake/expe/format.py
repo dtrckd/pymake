@@ -14,6 +14,7 @@ from pymake.index.indexmanager import IndexManager as IX
 from tabulate import tabulate
 
 
+lgg = logging.getLogger('root')
 
 # Not sure this one is necessary, or not here
 class BaseObject(object):
@@ -160,9 +161,9 @@ class ExpTensor(OrderedDict, BaseObject):
                 A design of experiment.
         '''
         _conf = None
-        if 'spec' in expe:
+        if '_spec' in expe:
             _conf = expe.copy()
-            expe = _conf.pop('spec')
+            expe = _conf.pop('_spec')
 
         if not issubclass(type(expe), (cls, ExpSpace, dict, ExpVector)):
             raise ValueError('Expe not understood: %s' % type(expe))
@@ -215,6 +216,30 @@ class ExpTensor(OrderedDict, BaseObject):
                 self[k] = v
             else:
                 self[k] = [v]
+
+    def push_dict(self, d):
+        ''' push one dict inside a exptensor.
+            It extend _bind rule to filter the tensor.
+        '''
+        tensor_len = np.prod([len(x) for x in self.values()])
+        if len(self) == 0:
+            self.update_from_dict(d)
+            return
+
+        _need_bind = False
+        for k, v in d.items():
+            vector = self.get(k, [])
+            if v not in vector:
+                if len(vector) == 0:
+                    _need_bind = True
+                    lgg.debug('setting to bind: (%s : %s)' % (k, v))
+                vector.append(v)
+            self[k] = vector
+
+        if _need_bind:
+            raise NotImplementedError('Need to push bind value to build a tensor from non-overlaping settings.')
+
+
 
     def table(self, extra=[]):
         return tabulate(extra+sorted(self.items(), key=lambda x:x[0]),
@@ -459,7 +484,8 @@ class ExpeFormat(object):
         # Put a valid expe a the end.
         gramexp.reorder_lastvalid()
 
-        print(gramexp.exptable())
+        if not gramexp._conf.get('simulate'):
+            print(gramexp.exptable())
 
         return
 
