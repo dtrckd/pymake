@@ -21,7 +21,7 @@ Perspectives :
 ## Install
 
 
-System dependencies : `apt-get install python3-setuptools python3-pip pyhton3-tk`
+System dependencies : `apt-get install python3-setuptools python3-pip python3-tk`
 
 Numpy/scipy dependencies : `apt-get install libopenblas-dev gfortran`
 

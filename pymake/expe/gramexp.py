@@ -7,6 +7,7 @@ import logging
 import operator
 import fnmatch
 import pickle
+import subprocess
 import inspect, traceback, importlib
 from collections import defaultdict
 from itertools import product
@@ -530,13 +531,13 @@ class GramExp(object):
         ----------------
         Communicate with the data :
         ----------------
-         |   zymake -l [expe(default)|model|script] : (default) show available spec
          |   zymake update  : update the pymake index
+         |   zymake -l [expe(default)|model|script|SPEC] : (default) show available spec
          |   zymake show SPEC : show one spec details
-         |   zymake cmd SPEC [fun][*args] : generate command-line
-         |   zymake run SPEC [fun][*args][--script ...] : execute tasks (default is fit)
-         |   zymake burn SPEC [fun][*args][--script ...] : parallelize tasks
-         |   zymake path SPEC Filetype(pk|json|inf) [status]
+         |   zymake run SPEC [--script [fun][*args]] ... : execute tasks (default is fit)
+         |   zymake runpara SPEC [--script [fun][*args]] ...: parallelize tasks
+         |   zymake cmd SPEC ... : generate command-line
+         |   zymake path SPEC Filetype(pk|json|inf) [status] ... : show output_path
         ''' + '\n' + usage
 
         s, parser = GramExp.parseargsexpe(usage)
@@ -544,7 +545,7 @@ class GramExp(object):
 
         _spec = mloader.SpecLoader.default_spec()
         ontology = dict(
-            _do    = ['cmd', 'show', 'path', 'burn', 'run', 'update', 'init'],
+            _do    = ['cmd', 'show', 'path', 'burn', 'run', 'update', 'init', 'runpara'],
             spec   = _spec._specs(),
             _ftype = ['json', 'pk', 'inf']
         )
@@ -573,28 +574,32 @@ class GramExp(object):
         do = request.get('_do', [])
         checksum = len(do)
         # No more Complex !
-        for i, v in enumerate(do):
-            for ont, words in ontology.items():
-                # Walktrough the ontology to find arg meaning
-                if v in words:
-                    if ont == 'spec':
-                        if v in ont_values:
-                            lgg.error('=> Warning: conflict between name of ExpDesign and GramExp ontology keywords ')
-                        do.remove(v)
-                        v = _spec[v]
-                    request[ont] = v
-                    checksum -= 1
-                    break
+        run_indexs = []
+        for i, v in enumerate(do.copy()):
+            if str.isdigit(v):
+                run_indexs.append(int(v))
+                checksum -= 1
+            else:
+                for ont, words in ontology.items():
+                    # Walktrough the ontology to find arg meaning
+                    if v in words:
+                        if ont == 'spec':
+                            if v in ont_values:
+                                lgg.error('=> Warning: conflict between name of ExpDesign and GramExp ontology keywords ')
+                            do.remove(v)
+                            v = _spec[v]
+                        request[ont] = v
+                        checksum -= 1
+                        break
+
+        request['_run_indexs'] = run_indexs
 
         if request.get('spec') and len(do) == 0:
             request['_do'] = 'show'
 
-        #if '-status' in clargs.grouped:
-        #    # debug status of filr (path)
-        #    request['_status'] = clargs.grouped['-status'].get(0)
 
         if checksum != 0:
-            lgg.error('==> Error : unknow argument: %s\n\nAvailable SPEC : %s' % (do, sorted(_spec._specs())))
+            lgg.error('==> Error : unknown argument: %s\n\nAvailable SPEC : %s' % (do, sorted(_spec._specs())))
             exit(10)
         return cls(request, usage=usage, parser=parser, parseargs=False)
 
@@ -874,8 +879,14 @@ class GramExp(object):
         return seed
 
 
-    def execute(self):
+    def execute(self, indexs=None):
         ''' Execute Exp Sequentially '''
+
+        if not indexs:
+            indexs = range(len(self))
+
+        self.lod = [self.lod[i] for i in indexs]
+
         if 'script' in self._conf:
             script = self._conf.pop('script')
             self.remove('script')
@@ -903,6 +914,41 @@ class GramExp(object):
             self.update(_do=script_args)
         #self.pymake(sandbox=Scripts[script_name])
         self.pymake(sandbox=_script)
+
+    def execute_parallel(self, indexs=None, net=False):
+        cmdlines = []
+        basecmd = sys.argv.copy()
+
+        if not indexs:
+            indexs = range(len(self))
+        else:
+            [basecmd.remove(str(i)) for i in indexs]
+
+        basecmd = ' '.join(basecmd)
+
+        for index in indexs:
+            cmdlines.append( basecmd.replace('runpara', 'run %s'%index, 1) )
+        if net:
+            NDL = '$HOME/src/config/configure/nodeslist'
+            PWD = '/home/ama/adulac/workInProgress/networkofgraphs/process/pymake/pymake'
+            cmd = ['parallel', '-u', '--sshloginfile', NDL, '--workdir', PWD, '-C', "' '", '--eta', '--progress', '--env', 'OMP_NUM_THREADS', '{}']
+        else:
+            cmd = ['parallel', '-u', '-C', "' '", '--eta', '--progress', ':::', '%s'%('\n'.join(cmdlines))]
+
+        #stdout = subprocess.check_output(cmd)
+        #print(stdout.decode())
+        for line in self.subexecute(cmd):
+            print(line, end='')
+
+    @staticmethod
+    def subexecute(cmd):
+        popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
+        for stdout_line in iter(popen.stdout.readline, ""):
+            yield stdout_line
+        popen.stdout.close()
+        return_code = popen.wait()
+        if return_code:
+            raise subprocess.CalledProcessError(return_code, cmd)
 
     def notebook(self):
         from nbformat import v4 as nbf

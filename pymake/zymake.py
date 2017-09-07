@@ -33,17 +33,15 @@ def main():
     elif zyvar['_do'] == 'show':
         zymake.simulate()
     elif zyvar['_do'] ==  'run':
-        line_prefix = './zymake.py run'
-        lines = zymake.execute()
+        lines = zymake.execute(zyvar['_run_indexs'])
+    elif zyvar['_do'] == 'runpara':
+        lines = zymake.execute_parallel(zyvar['_run_indexs'])
     elif zyvar['_do'] == 'notebook':
         lines = zymake.notebook()
     elif zyvar['_do'] == 'update':
         zymake.update_index()
     elif zyvar['_do'] == 'init':
         zymake.init_folders()
-    elif zyvar['_do'] == 'burn':
-        # @todo; parallelize Pymake()
-        raise NotImplementedError('What parallel strategy ?')
     else:
 
         if not 'do_list' in zyvar and zyvar['_do']:
