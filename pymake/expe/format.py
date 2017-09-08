@@ -201,12 +201,18 @@ class ExpTensor(OrderedDict, BaseObject):
                 if True, the is assumed to come from an CLI argparser. if the following conds are true :
                     * the settings in {d} are specified in the CLI (@check already filtererd in GramExp.parseargs)
                     * the settings in {d} is not in the CLI, and not in self.
+
+            Notes
+            -----
+            SHould inherit _reserved keyword to prevent
         '''
 
         if parser is not None:
             dests_filled = get_dest_opt_filled(parser)
 
         for k, v in d.items():
+            if k in ['_id_expe']:
+                continue
 
             if parser is not None:
                 if not k in dests_filled and k in self :
