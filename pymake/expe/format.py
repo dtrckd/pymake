@@ -486,9 +486,7 @@ class ExpeFormat(object):
 
         # update exp_tensor in gramexp
         if hasattr(cls, '_default_expe'):
-            _exp = ExpTensor.from_expe(cls._default_expe)
-            _exp.update(gramexp.exp_tensor)
-            gramexp.exp_setup(_exp)
+            gramexp.set_default_expe(cls._default_expe)
 
         # Put a valid expe a the end.
         gramexp.reorder_lastvalid()

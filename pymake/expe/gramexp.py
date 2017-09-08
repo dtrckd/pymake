@@ -357,6 +357,15 @@ class GramExp(object):
 
         return lod
 
+    def set_default_expe(self, def_conf):
+        for k, v in def_conf.items():
+            if not k in self.exp_tensor:
+                self.exp_tensor[k] = [v]
+                self._conf[k] = v
+                for expe in self.lod:
+                    expe[k] = v
+
+    # @obsolete
     def update(self, **kwargs):
         self._conf.update(kwargs)
         self.exp_tensor.update_from_dict(kwargs)
@@ -1048,6 +1057,7 @@ class GramExp(object):
             print('Available methods for %s: ' % (sandbox))
             print(*self.functable(sandbox) , sep='\n')
             exit()
+
 
         sandbox._preprocess_(self)
         if self._conf.get('simulate'):
