@@ -138,8 +138,12 @@ class GramExp(object):
         ### Expe Filtering
         Expe can contains **special** keywords and value :
         * _bind rules : List of rules of constraintsi on the design.
-            + [a.b]  --- a(value) shoudld occur only with b(value), (ie 'lda.fast_init')
-            + [a.b.c] --- with a(value), key b(key) take only c (value), (ie 'lda.iterations.100')
+            * Inclusif rules
+                + [a.b]  --- a(value) shoudld occur only with b(value), (ie 'lda.fast_init')
+                + [a.b.c] --- with a(value), key b(key) take only c (value), (ie 'lda.iterations.100')
+            * Exclusif Rules
+                + [a.!b]  --- a(value) shoudld not only with b(value),
+                + [a.b.!c] --- with a(value), key b(key) don't take c (value),
 
             Warning : it does only check the last words when parameter are
                       separated by a dot (.) as for model module (name pmk.lda !) for example.
@@ -308,25 +312,42 @@ class GramExp(object):
                 _bind = rule.split('.')
                 values = list(d.values())
 
-                # only last dot separator
+                # This is only for  last dot separator process
                 for j, e in enumerate(values):
                     if type(e) is str:
                         values[j] = e.split('.')[-1]
+
 
                 if len(_bind) == 2:
                     # remove all occurence if this bind don't occur
                     # simltaneous in each expe.
                     a, b = _bind
-                    if a in values and not b in values:
-                        idtoremove.append(expe_id)
+                    if b.startswith('!'):
+                        # Exclusif Rule
+                        b = b[1:]
+                        if a in values and b in values:
+                            idtoremove.append(expe_id)
+                    else:
+                        # Inclusif Rule
+                        if a in values and not b in values:
+                            idtoremove.append(expe_id)
+
                 elif len(_bind) == 3:
                     # remove occurence of this specific key:value if
                     # it does not comply with this bind.
                     a, b, c = _bind
                     # Get the type of this key:value.
                     _type = type(d[b])
-                    if a in values and _type(c) != d[b]:
-                        idtoremove.append(expe_id)
+
+                    if c.startswith('!'):
+                        # Exclusif Rule
+                        c = c[1:]
+                        if a in values and _type(c) == d[b]:
+                            idtoremove.append(expe_id)
+                    else:
+                        # Inclusif Rule
+                        if a in values and _type(c) != d[b]:
+                            idtoremove.append(expe_id)
 
         lod = [d for i,d in enumerate(lod) if i not in idtoremove]
 

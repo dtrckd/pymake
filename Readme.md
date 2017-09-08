@@ -77,7 +77,7 @@ This will be documented soon.
 1. Workflow / directory structure
 2. pymake commands
 3. pymake.cfg
-3. ExpSpace and ExpTensor
+4. ExpSpace and ExpTensor
 5. Track your data and results
 6. Search and indexation
 
@@ -118,7 +118,7 @@ List/Search information :
     pymake -l model   # show available models
     pymake -l script # show available scripts
     pymake -l expe   # show available designs of experimentation                                                                                                                             
-    pymake show expe_name # equivalent to: pymake expe_name --simulate|-s
+    pymake show expe_name # or just pymake expe_name
 
 Run a experience :
 
@@ -134,7 +134,7 @@ Show individuals commands for asynchronously purpose :
 
 ##### Track your data and results
 
-In order t  save and analyse your results, each unique experience need to be identified in a file. To do so we propose a mechanism to map settings/specification of an unique experience to a <filename>. Depending on what the developer want to write, the extension of this file can be modified. Pymake use three conventions : 
+In order to  save and analyse your results, each unique experience need to be identified in a file. To do so we propose a mechanism to map settings/specification of an unique experience to a <filename>. Depending on what the developer want to write, the extension of this file can be modified. Pymake use three conventions : 
 
 * <filename>.inf : csv file where each line contains the state of iterative process of an experiment,
 * <filename>.pk : to save complex object usually at the end of an experiments, to load it after for analysis/visualisation,
@@ -150,11 +150,11 @@ settings = dict(name = 'myexpe',
                 size = 42,
                 key1 = 100,
                 key2 = 'johndoe'
-                _format = '{name}-{size}-{key1}_-_{key2}'
+                _format = '{name}-{size}-{key1}_{key2}'
         )
 ```
 
-The filename for this unique experiment will be 'myexpe-42-100_-_johndoe'
+The filename for this unique experiment will be 'myexpe-42-100_johndoe'
 
 ###### settings the path -- _refdir
 
