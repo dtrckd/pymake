@@ -173,7 +173,7 @@ class GramExp(object):
     # Reserved by GramExp
     # shloud ne in special ?
     _reserved_keywords = ['_spec', # for nested specification
-                          '_expe_id', # unique expe identifier
+                          '_id_expe', # unique expe identifier
                          ]
 
 
@@ -1035,7 +1035,7 @@ class GramExp(object):
         for id_expe, expe in enumerate(self.lod):
             _expe = ExpSpace(**expe)
 
-            pt = dict((key, value.index(_expe[key])) for key, value in self.exp_tensor.items() if isinstance(_expe[key], (basestring, int, float)))
+            pt = dict((key, value.index(_expe[key])) for key, value in self.exp_tensor.items() if (isinstance(_expe[key], (basestring, int, float)) and key not in self._reserved_keywords))
             pt['expe'] = id_expe
 
             # Init Expe
