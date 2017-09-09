@@ -32,7 +32,7 @@ class Netw(ExpDesign):
 
 
     # Networks Data
-    CORPUS_REAL_NET = Corpus(['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad'])
+    corpus_real_net = Corpus(['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad'])
 
     ### Bursty
     CORPUS_BURST_1     = Corpus(['generator3', 'generator11', 'generator12', 'generator7', 'generator14'])
@@ -46,11 +46,11 @@ class Netw(ExpDesign):
     CORPUS_REAL_PNAS = Corpus(['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro'])
     CORPUS_ALL_PNAS = CORPUS_REAL_PNAS +  CORPUS_SYN_ICDM
     pnas_short = Corpus([ 'blogs', 'manufacturing', 'generator7','generator4'])
-    pnas_rest = (CORPUS_REAL_NET + CORPUS_SYN_ICDM) - pnas_short
+    pnas_rest = (corpus_real_net + CORPUS_SYN_ICDM) - pnas_short
 
     # Text Corpus
     # intruder ?
-    CORPUS_TEXT_ALL = Corpus(['kos', 'nips12', 'nips', 'reuter50', '20ngroups']) # lucene
+    corpus_text_all = Corpus(['kos', 'nips12', 'nips', 'reuter50', '20ngroups']) # lucene
 
     # Tensor Exp
     EXPE_ICDM = ExpTensor((

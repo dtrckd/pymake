@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import time
 import numpy as np
 from numpy import ma
 from pymake import ModelManager, FrontendManager, GramExp, ExpeFormat, ExpSpace
@@ -18,6 +19,9 @@ class Fit(ExpeFormat):
 
     def __call__(self):
         expe = self.expe
+
+        t0 = time.time()
+
         frontend = FrontendManager.load(expe)
 
         # @Debug: Obsolete / Inside model
@@ -40,6 +44,8 @@ class Fit(ExpeFormat):
         m = model.model.get_mask()
 
         model.predict(frontend=frontend)
+
+        self.log.info('Expe %d finished in %.1f' % (self.pt['expe']+1, time.time()-t0))
 
 if __name__ == '__main__':
     GramExp.generate().pymake(Fit)

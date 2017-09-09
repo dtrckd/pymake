@@ -33,7 +33,7 @@ class immsb_scvb(SVB):
 
         # Stream Parameters
         chunk = self.expe.get('chunk', 10)
-        self.burnin = self.expe.get('burnin', 1)
+        self.iterations = self.expe.get('iterations', 1)
 
         self.chunk_size = chunk * self._len['N']
         self.chunk_len = self._len['nnz']/self.chunk_size
@@ -88,6 +88,8 @@ class immsb_scvb(SVB):
         self.N_phi = N_phi
         self.N_theta_left = N_theta_left
         self.N_theta_right = N_theta_right
+
+        self.N_phi_sum = self.N_phi.sum(0)
 
         # Temp Containers (for minibatch)
         self._N_phi = np.zeros((nfeat, K,K))
@@ -194,15 +196,16 @@ class immsb_scvb(SVB):
         self.samples.append(variational)
         self._timestep += self._time_delta
 
-    def expectation(self, iter):
+    def expectation(self, iter, hack_up=10):
         ''' Follow the White Rabbit '''
         i,j = iter
         xij = self._xij
         qij = self.samples[-1]
 
         self._update_local_gradient(i, j, qij)
-        if self._id_burn < self.burnin-1:
-            return
+        if self._it < self.iterations-1 :
+            if self._it % hack_up != 0:
+                return
         self._update_global_gradient(i, j, qij, xij)
         #self.samples = []
 
@@ -235,10 +238,11 @@ class immsb_scvb(SVB):
     def _purge_minibatch(self):
         ''' Update the global gradient then purge containers '''
         if not self._is_container_empty():
-            self.N_phi = (1 - self.gstep_phi)*self.N_phi + self.gstep_phi * (self._len('nnz') / len(self.samples)) * self._N_phi
-            self.N_phi_sum = (1 - self.gstep_phi)*self.N_phi_sum + self.gstep_phi * (self._len('nnz') / len(self.samples)) * self._N_phi.sum(0)
-            # Is this line equivalent to the N_Phu_sum gradient ????
-            #self._N_phi_sum = self.N_phi.sum(0)
+            self.N_phi = (1 - self.gstep_phi)*self.N_phi + self.gstep_phi * (self._len['nnz'] / len(self.samples)) * self._N_phi
+
+            #self.N_phi_sum = (1 - self.gstep_phi)*self.N_phi_sum + self.gstep_phi * (self._len['nnz'] / len(self.samples)) * self._N_phi.sum(0)
+            # Is the line above equivalent to the below for N_Phi_sum gradient ????
+            self._N_phi_sum = self.N_phi.sum(0)
 
         self._update_gstep_phi()
         self._reset_containers()

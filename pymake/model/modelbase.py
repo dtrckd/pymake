@@ -628,17 +628,17 @@ class SVB(ModelBase):
 
     def sample(self, minibatch):
 
-        for _id_burn in range(self.burnin):
-            self._id_burn = _id_burn
+        for _it in range(self.iterations):
+            self._it = _it
             for _id_token, iter in enumerate(minibatch):
                 self._id_token = _id_token
                 self._xij = self.fr.data_ma[tuple(iter)]
                 self.maximization(iter)
                 self.expectation(iter)
 
-            if self._id_burn != self.burnin-1 and self.expe.verbose < 20:
+            if self._it != self.iterations-1 and self.expe.verbose < 20:
                 self.update_elbo()
-                lgg.debug('it %d,  ELBO: %s, elbo diff: %s' % (_id_burn, self.elbo, self.elbo_diff))
+                lgg.debug('it %d,  ELBO: %s, elbo diff: %s' % (_it, self.elbo, self.elbo_diff))
 
         self._purge_minibatch()
 

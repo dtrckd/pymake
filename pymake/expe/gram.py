@@ -133,9 +133,13 @@ _Gram = [
         type=int, dest='_cores',
         help='number of cores to run with runpara command.'),
 
+    '--data-type', dict(
+        dest='_data_type',
+        help='Name to prepend in data/<data-type>/<refdir>/ for the output path.'),
+
     '--refdir', dict(
         dest='_refdir',
-        help='Name to append in data/<bdir>/<refdir>/ for th output path.'),
+        help='Name to append in data/<data-typer>/<refdir>/ for the output path.'),
 
     '--format', dict(
         dest='_format', type=str,
