@@ -254,6 +254,10 @@ class frontendNetwork(DataBase):
             """
         data = None
         bdir = os.path.dirname(self.output_path)
+        if '_refdir' in self.expe:
+            # Ignore refdir
+            bdir = '/'.join(bdir.split('/')[:-1])
+
         fn = os.path.join(bdir, corpus_name)
         if self._load_data and os.path.isfile(fn+'.pk'):
             try:
