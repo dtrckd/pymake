@@ -338,6 +338,8 @@ class GramExp(object):
                     a, b, c = _bind
                     # Get the type of this key:value.
                     _type = type(d[b])
+                    if _type is bool:
+                        _type = lambda x: True if x in ['True', 'true', '1'] else False
 
                     if c.startswith('!'):
                         # Exclusif Rule

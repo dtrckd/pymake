@@ -93,8 +93,12 @@ class CheckNetwork(ExpeFormat):
             #clusters = model.get_clusters(K, skip=1)
             #clusters = model.get_communities(K)
             clusters = Louvain.get_clusters(frontend.to_directed(), resolution=10)
-            if len(np.unique(clusters)) > 20 or True:
+            if len(np.unique(clusters)) > 20 or False:
+                self.log.info('Using Annealing clustering')
                 clusters = Annealing(frontend.data, iterations=200, C_init=5, grow_rate=0).search()
+            else:
+                self.log.info('Using Louvain clustering')
+
 
         if clusters is None:
             lgg.error('No clusters here...passing')

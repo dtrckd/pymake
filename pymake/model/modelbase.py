@@ -450,18 +450,22 @@ from sympy.functions.combinatorial.numbers import stirling
 try:
     from pymake.util.compute_stirling import load_stirling
     _stirling_mat = load_stirling()
+    STIRLING_LOADED = True
 except Exception as e:
-    pass
+    print(e)
+    STIRLING_LOADED = False
 
 class MSampler(object):
 
-    try:
-        stirling_mat = lambda _, x, y : _stirling_mat[x, y]
-    except Exception as e:
-        lgg.error('stirling.npy file not found, using sympy instead (it will be 10 time slower !)')
-        stirling_mat = lambda _, x,y : np.asarray([float(sympy.log(stirling(x, i, kind=1)).evalf()) for i in y])
+    if STIRLING_LOADED:
+        stirling_mat = lambda  _, x, y : _stirling_mat[x, y]
+    else:
+        lgg.error('stirling.npy file not found, using sympy instead (it will be 100 time slower !)')
+        stirling_mat = lambda  _,x,y : np.asarray([float(sympy.log(stirling(x, i, kind=1)).evalf()) for i in y])
 
     def __init__(self, zsampler):
+
+
         self.zsampler = zsampler
         self.get_log_alpha_beta = zsampler.get_log_alpha_beta
         self.count_k_by_j = zsampler.doc_topic_counts
@@ -619,28 +623,38 @@ class SVB(ModelBase):
             # </try>
 
             self.update_elbo()
-            lgg.info('mnibatch %d/%d,  ELBO: %s, elbo diff: %s' % (_id_mnb, self.chunk_len, self.elbo, self.elbo_diff))
+            lgg.info('mnibatch %d/%d,  ELBO: %s, elbo diff: %s' % (_id_mnb+1, self.chunk_len, self.elbo, self.elbo_diff))
             if self.expe.get('write'):
                 measures = [_id_mnb, time_it] + self.measures()
                 self.write_some(measures)
 
-        self.close()
+        #self.close()
 
     def sample(self, minibatch):
 
-        for _it in range(self.iterations):
+        # self.iterations is considered as the burnin here.
+        for _it in range(self.iterations+1):
             self._it = _it
+            burnin = (_it == self.iterations -1)
+            #np.random.shuffle(minibatch)
             for _id_token, iter in enumerate(minibatch):
                 self._id_token = _id_token
                 self._xij = self.fr.data_ma[tuple(iter)]
                 self.maximization(iter)
-                self.expectation(iter)
+                self.expectation(iter, burnin=burnin)
 
             if self._it != self.iterations-1 and self.expe.verbose < 20:
                 self.update_elbo()
                 lgg.debug('it %d,  ELBO: %s, elbo diff: %s' % (_it, self.elbo, self.elbo_diff))
 
-        self._purge_minibatch()
+
+        # Update global parameters after each "minibatech of links"
+        # @debug if not, is the time_step evolve differently for N_Phi and N_Theta.
+        minibashed_finished = True
+        if minibashed_finished:
+            self._purge_minibatch()
+            self.inc_time()
+
 
         #if self.elbo_diff < self.limit_elbo_diff:
         #    print('ELBO get stuck during data iteration : Sampling useless, return ?!')

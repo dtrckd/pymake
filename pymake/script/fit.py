@@ -25,8 +25,8 @@ class Fit(ExpeFormat):
         frontend = FrontendManager.load(expe)
 
         # @Debug: Obsolete / Inside model
-        alpha = expe.get('alpha', .5)
-        gmma = expe.get('gmma', .5)
+        alpha = expe.get('alpha', .1)
+        gmma = expe.get('gmma', .1)
         delta = expe.get('delta', .5)
 
         hyperparams = {'alpha': alpha, 'delta': delta, 'gmma': gmma}
@@ -37,7 +37,8 @@ class Fit(ExpeFormat):
         #/
 
         model = ModelManager(expe=expe, frontend=frontend)
-        model.fit(frontend)
+        for i in range(1):
+            model.fit(frontend)
 
         # Uhgh, trashed this !
         # here if save -> predict
