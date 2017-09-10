@@ -36,6 +36,7 @@ class ModelBase(object):
         'iterations' : 1,
         'snapshot_freq': 20,
     }
+    log = logging.getLogger('root')
     def __init__(self, **kwargs):
         """ Model Initialization strategy:
             1. self lookup from child initalization
@@ -55,8 +56,11 @@ class ModelBase(object):
             try: os.makedirs(os.path.dirname(self.output_path))
             except: pass
             self.fname_i = self.output_path + '.inf'
-            self._f = open(self.fname_i, 'wb')
-            self._f.write((self.csv_typo + '\n').encode('utf8'))
+            if not getattr(self, 'csv_typo', None):
+                self.log.warning('No csv_typo, for this model %s, no inference file...')
+            else:
+                self._f = open(self.fname_i, 'wb')
+                self._f.write((self.csv_typo + '\n').encode('utf8'))
 
         # Why this the fuck ? to remove
         #super(ModelBase, self).__init__()

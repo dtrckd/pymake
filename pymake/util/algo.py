@@ -554,29 +554,3 @@ def kmeans_plus(X=None, K=4):
     plt.grid(True)
     plt.show()
 
-from scipy.io.matlab import loadmat
-from scipy.sparse import lil_matrix
-try:
-    from rescal import rescal_als
-except:
-    pass
-def rescal(X, K):
-
-    ## Set logging to INFO to see RESCAL information
-    #logging.basicConfig(level=logging.INFO)
-
-    ## Load Matlab data and convert it to dense tensor format
-    #T = loadmat('data/alyawarra.mat')['Rs']
-    #X = [lil_matrix(T[:, :, k]) for k in range(T.shape[2])]
-
-    X = [sp.sparse.csr_matrix(X)]
-    A, R, fit, itr, exectimes = rescal_als(X, K, init='nvecs', lambda_A=10, lambda_R=10)
-
-    theta =  A.dot(R).dot(A.T)
-    Y = 1 / (1 + np.exp(-theta))
-    Y =  Y[:,0,:]
-    Y[Y <= 0.5] = 0
-    Y[Y > 0.5] = 1
-    #Y = sp.stats.bernoulli.rvs(Y)
-    return Y
-

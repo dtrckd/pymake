@@ -120,6 +120,7 @@ class ModelManager(object):
 
     def is_model(self, m,  _type):
         if _type == 'pymake':
+             # __init__ method should be of type (expe, frontend, ...)
             pmk = inspect.signature(m).parameters.keys()
             score = []
             for wd in ('frontend', 'expe'):
