@@ -21,7 +21,7 @@ def main():
 
     if zyvar.get('simulate') and not zyvar['_do'] in ['run', 'runpara']:
         # same as show !
-        zymake.simulate()
+        zymake.simulate(zyvar['_run_indexs'])
 
     ### Makes OUT Files
     lines = None
@@ -31,7 +31,7 @@ def main():
     elif zyvar['_do'] == 'path':
         lines = zymake.make_path(ftype=zyvar.get('_ftype', 'inf'), status=zyvar.get('_status'))
     elif zyvar['_do'] == 'show':
-        zymake.simulate()
+        zymake.simulate(zyvar['_run_indexs'])
     elif zyvar['_do'] ==  'run':
         lines = zymake.execute(zyvar['_run_indexs'])
     elif zyvar['_do'] == 'runpara':
