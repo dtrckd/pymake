@@ -38,32 +38,32 @@ class Netw2(ExpDesign):
     debug_scvb = ExpTensor (
         corpus        = ['manufacturing', 'clique6'],
         model         = ['immsb_scvb', 'immsb_csg', 'mmsb_cgs', 'ilfm_cgs']  ,
-        K             = 6    ,
         N             = 'all'   ,
-        chunk = 25,
+        K             = 6    ,
         iterations    = 10,
         hyper         = 'fix',
         testset_ratio = 10,
+        chunk = 25,
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
-        _format       = '{model}_{K}_{chunk}_{hyper}_{homo}_{N}_{testset_ratio}'
+        _format       = '{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}'
         # push _typo_csv
     )
 
     # compare perplexity and rox curve from those baseline.
     compare_scvb = ExpTensor (
-        corpus        = ['clique6'],
-        model         = ['immsb_csg', 'ilfm_cgs']  ,
+        corpus        = ['clique6', 'BA'],
+        model         = ['immsb_cgs', 'ilfm_cgs', 'rescal']  ,
+        N             = '200'   ,
         K             = 6    ,
-        N             = '100'   ,
-        chunk = 10,
-        iterations    = 100,
+        iterations    = 150,
         hyper         = 'auto',
         testset_ratio = 10,
+        chunk = 10,
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
-        _format       = '{model}_{K}_{chunk}_{hyper}_{homo}_{N}_{testset_ratio}'
+        _format       = '{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}'
         # push _typo_csv
     )

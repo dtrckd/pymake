@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import os
 import numpy as np
 import scipy as sp
 from numpy import ma
@@ -469,7 +470,8 @@ class GenNetwork(ExpeFormat):
         #draw_graph_spectral(y, clusters)
         #draw_graph_circular(y, clusters)
 
-        adjshow(y, title=expe.model)
+        description = os.path.basename(self.output_path)
+        adjshow(y, title=description)
         #adjblocks(y, clusters=comm['clusters'], title='Blockmodels of Adjacency matrix')
         #adjshow(reorder_mat(y, comm['clusters']), 'test reordering')
         #draw_blocks(comm)
@@ -678,11 +680,13 @@ class GenNetwork(ExpeFormat):
                 probas = probas[:n_d]
             else:
                 theta, phi = model.get_params()
-                print('theta', theta, theta.shape)
-                print('phi', phi, phi.shape)
-                print(expe.model, expe.corpus)
-                print(y_true.sum(), (y_true==0).sum(), probas)
-                pass
+                try:
+                    print('theta', theta, theta.shape)
+                    print('phi', phi, phi.shape)
+                    print(expe.model, expe.corpus)
+                    print(y_true.sum(), (y_true==0).sum(), probas)
+                except:
+                    self.log.error('warning type theta, phi (%s, %s)'%(type(theta), type(phi)))
 
         elif _type == 'learnset':
             n = int(data.size * _ratio)
@@ -692,7 +696,9 @@ class GenNetwork(ExpeFormat):
 
         fpr, tpr, thresholds = roc_curve(y_true, probas)
         roc_auc = auc(fpr, tpr)
-        ax.plot(fpr, tpr, label='ROC %s (area = %0.2f)' % (_spec.name(expe.model), roc_auc), ls=frame.linestyle.next())
+        description = os.path.basename(self.output_path)
+        #description = _spec.name(expe.model)
+        ax.plot(fpr, tpr, label='ROC %s (area = %0.2f)' % (description, roc_auc), ls=frame.linestyle.next())
         self.noplot = True
 
         #precision, recall, thresholds = precision_recall_curve( y_true, probas)

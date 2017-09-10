@@ -1063,7 +1063,9 @@ class GramExp(object):
             open(fn, 'a').close()
             return
 
-        cmd = ' '.join( sys.argv)
+        cmd = sys.argv.copy()
+        cmd[0] = os.path.basename(cmd[0])
+        cmd = ' '.join(cmd)
         _tail = tail(fn, 10)
 
         with open(fn, 'a') as _f:

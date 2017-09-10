@@ -3,6 +3,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import os
 import numpy as np
 from numpy import ma
 from pymake import ModelManager, FrontendManager, GramExp, ExpeFormat, ExpSpace
@@ -10,6 +11,7 @@ import matplotlib.pyplot as plt
 
 import logging
 lgg = logging.getLogger('root')
+
 
 USAGE = """\
 ----------------
@@ -37,8 +39,10 @@ class Plot(ExpeFormat):
 
         data = model.load_some(get='likelihood')
         burnin = 5
+        #description = _spec.name(expe.model)
+        description = os.path.basename(self.output_path)
         ll_y = np.ma.masked_invalid(np.array(data, dtype='float'))
-        ax.plot(ll_y, label=_spec.name(expe.model))
+        ax.plot(ll_y, label=description)
         ax.legend(loc='upper right',prop={'size':7})
 
     @ExpeFormat.plot

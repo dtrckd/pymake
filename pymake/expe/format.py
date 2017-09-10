@@ -387,6 +387,7 @@ class ExpeFormat(object):
         self._it = pt['expe']
         self.corpus_pos = pt.get('corpus')
         self.model_pos = pt.get('model')
+        self.output_path = self.gramexp.make_output_path(self.expe)
 
         self.log.info('---')
         self.log.info(''.join([colored('Expe %d/%d', 'red'),
