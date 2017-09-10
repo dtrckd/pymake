@@ -26,23 +26,27 @@ def main():
     ### Makes OUT Files
     lines = None
     line_prefix = ''
-    if zyvar['_do'] == 'cmd':
-        lines = zymake.make_commandline()
-    elif zyvar['_do'] == 'path':
-        lines = zymake.make_path(ftype=zyvar.get('_ftype', 'inf'), status=zyvar.get('_status'))
+    if zyvar['_do'] == 'init':
+        zymake.init_folders()
+    elif zyvar['_do'] == 'update':
+        zymake.update_index()
     elif zyvar['_do'] == 'show':
         zymake.simulate(zyvar['_run_indexs'])
     elif zyvar['_do'] ==  'run':
         lines = zymake.execute(zyvar['_run_indexs'])
+        zymake.pushcmd2hist()
     elif zyvar['_do'] == 'runpara':
         lines = zymake.execute_parallel(zyvar['_run_indexs'])
-    elif zyvar['_do'] == 'notebook':
+        zymake.pushcmd2hist()
+    elif zyvar['_do'] == 'cmd':
+        lines = zymake.make_commandline()
+    elif zyvar['_do'] == 'path':
+        lines = zymake.make_path(ftype=zyvar.get('_ftype', 'inf'), status=zyvar.get('_status'))
+    elif zyvar['_do'] == 'hist':
+        lines = zymake.show_history()
+    elif zyvar['_do'] == 'notebook': # @Todo
         lines = zymake.notebook()
-    elif zyvar['_do'] == 'update':
-        zymake.update_index()
-    elif zyvar['_do'] == 'init':
-        zymake.init_folders()
-    else:
+    else: # list things
 
         if not 'do_list' in zyvar and zyvar['_do']:
             raise ValueError('Unknown command : %s' % zyvar['_do'])

@@ -6,6 +6,7 @@ tags
 *~
 *.session.vim
 *.byobu
+.pymake_hist
 
 # Build
 *.egg-info/
