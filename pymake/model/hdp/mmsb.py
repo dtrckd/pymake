@@ -637,10 +637,14 @@ class GibbsRun(GibbsSampler):
             except: return self.generate(N, K, hyperparams, 'generative', symmetric)
             K = theta.shape[1]
 
+        pij = self.likelihood(theta, phi)
+
+        # Treshold
         #pij[pij >= 0.5 ] = 1
         #pij[pij < 0.5 ] = 0
         #Y = pij
-        pij = self.likelihood(theta, phi)
+
+        # Sampling
         pij = np.clip(pij, 0, 1)
         Y = sp.stats.bernoulli.rvs(pij)
 

@@ -43,6 +43,9 @@ class immsb_scvb(SVB):
             self.chunk_len = 1
 
         self._time_delta = 1
+        self.chi = 1
+        self.tau = 10
+        self.kappa = 0.9
         self._update_gstep_theta()
         self._update_gstep_phi()
 
@@ -75,8 +78,10 @@ class immsb_scvb(SVB):
         ones = self._len['ones']
         nnz = self._len['nnz']
 
-        N_theta_left = (dims[:, None] * np.random.dirichlet(np.ones(K), N))
-        N_theta_right = (dims[:, None] * np.random.dirichlet(np.ones(K), N))
+        #N_theta_left = (dims[:, None] * np.random.dirichlet(np.ones(K), N))
+        #N_theta_right = (dims[:, None] * np.random.dirichlet(np.ones(K), N))
+        N_theta_left = (dims[:, None] * np.random.dirichlet([0.5]*K, N))
+        N_theta_right = (dims[:, None] * np.random.dirichlet([0.5]*K, N))
 
         #N_phi = np.random.dirichlet([zeros, ones], K**2).T.reshape(2,K,K)
         #N_phi = nnz / (K**2) *  np.random.dirichlet([1, 1], K**2).T.reshape(2,K,K)
@@ -99,6 +104,7 @@ class immsb_scvb(SVB):
 
         #self._qij = self.likelihood(*self.reduce_latent())
 
+        # Return sufficient statistics
         return [N_phi, N_theta_left, N_theta_right]
 
     def _reset_containers(self):
@@ -112,14 +118,22 @@ class immsb_scvb(SVB):
     def update_hyper(self, hyper):
         pass
 
-    def _update_gstep_theta(self, kappa=0.9, tau=2**5):
+    def _update_gstep_theta(self):
         ''' Gradient converge for kappa _in (0.5,1] '''
         #tau = self._len['K'] * np.log2(self._len['N'])
         # Why when tau > 2 objective decrease ???
-        self.gstep_theta = 1 / (tau + self._timestep)**kappa
+        chi = self.chi
+        tau = self.tau
+        kappa = self.kappa
 
-    def _update_gstep_phi(self, kappa=0.9, tau=2**5):
-        self.gstep_phi =  1 / (tau + self._timestep)**kappa
+        self.gstep_theta = chi / (tau + self._timestep)**kappa
+
+    def _update_gstep_phi(self):
+        chi = self.chi
+        tau = self.tau
+        kappa = self.kappa
+
+        self.gstep_phi =  chi / (tau + self._timestep)**kappa
 
     def data_iter(self, batch, randomize=True):
         data_ma = batch
@@ -189,29 +203,34 @@ class immsb_scvb(SVB):
             self.fr.symmetrize(outer_kk)
         return lognormalize(outer_kk)
 
+    def inc_time(self):
+        #self.__timestep += 1
+        #self._timestep = np.log(self.__timestep)
+        self._timestep += 1
+        #self._timestep += self._time_delta
+
+
     def maximization(self, iter):
         ''' Variational Objective '''
         i,j = iter
         variational = self._reduce_one(i,j)
         self.samples.append(variational)
-        self._timestep += self._time_delta
 
-    def expectation(self, iter, hack_up=10):
+    def expectation(self, iter, hack_up=10, burnin=False):
         ''' Follow the White Rabbit '''
         i,j = iter
         xij = self._xij
         qij = self.samples[-1]
 
         self._update_local_gradient(i, j, qij)
-        if self._it < self.iterations-1 :
-            if self._it % hack_up != 0:
-                return
-        self._update_global_gradient(i, j, qij, xij)
-        #self.samples = []
 
-        #self.__timestep += 1
-        #self._timestep = np.log(self.__timestep)
-        self._timestep += 1
+        #if self._it < self.iterations-1 :
+        #    if self._it % hack_up != 0:
+        #        return
+        if burnin:
+            return
+        else:
+            self._update_global_gradient(i, j, qij, xij)
 
 
     def _update_local_gradient(self, i, j, qij):
@@ -220,9 +239,11 @@ class immsb_scvb(SVB):
         # Sum ?
         self.N_theta_left[i]  = (1 - self.gstep_theta)*self.N_theta_left[i]  + (self.gstep_theta * _len['dims'][i] * qij.sum(1))
         self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * _len['dims'][j] * qij.sum(0))
+
         # or Mean ?
         #self.N_theta_left[i]  = (1 - self.gstep_theta)*self.N_theta_left[i]  + (self.gstep_theta * _len['dims'][i] * qij.mean(1))
         #self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * _len['dims'][j] * qij.mean(0))
+
         # or Right  ?
         #pik = self.pik / (2*len(_len['dims']) + self.hyper_theta_sum)
         #pjk = self.pjk / (2*len(_len['dims']) + self.hyper_theta_sum)
