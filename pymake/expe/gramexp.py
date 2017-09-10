@@ -820,7 +820,14 @@ class GramExp(object):
               ''' % (len(self), self.getCorpuses(), self.getModels()), file=sys.stdout)
         exit()
 
-    def simulate(self, halt=True, file=sys.stdout):
+    def simulate(self, indexs=None, halt=True, file=sys.stdout):
+
+        if not indexs:
+            indexs = range(len(self))
+
+        self.lod = [self.lod[i] for i in indexs]
+        self.exp_tensor = self.make_tensor(self.lod)
+
         print('-'*30, file=file)
         print('PYMAKE Request %s : %d expe' % (self.exp_tensor.name(), len(self) ), file=file)
         print(self.exptable(), file=file)
