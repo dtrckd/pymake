@@ -585,6 +585,7 @@ class GramExp(object):
          |   zymake show SPEC : show one spec details
          |   zymake run SPEC [--script [fun][*args]] ... : execute tasks (default is fit)
          |   zymake runpara SPEC [--script [fun][*args]] ...: parallelize tasks
+         |   zymake hist [-n n_lines] : show command history
          |   zymake cmd SPEC ... : generate command-line
          |   zymake path SPEC Filetype(pk|json|inf) [status] ... : show output_path
         ''' + '\n' + usage
@@ -594,7 +595,7 @@ class GramExp(object):
 
         _spec = mloader.SpecLoader.default_spec()
         ontology = dict(
-            _do    = ['cmd', 'show', 'path', 'burn', 'run', 'update', 'init', 'runpara'],
+            _do    = ['cmd', 'show', 'path', 'burn', 'run', 'update', 'init', 'runpara', 'hist'],
             _spec   = _spec._specs(),
             _ftype = ['json', 'pk', 'inf']
         )
@@ -1053,6 +1054,35 @@ class GramExp(object):
         set_global_settings(settings)
         print('update project: {projectname}'.format(**spec))
         return self.update_index()
+
+    def pushcmd2hist(self):
+        from pymake.util.utils import tail
+        bdir = self.data_path
+        fn = os.path.join(bdir, '.pymake_hist')
+        if not os.path.isfile(fn):
+            open(fn, 'a').close()
+            return
+
+        cmd = ' '.join( sys.argv)
+        _tail = tail(fn, 10)
+
+        with open(fn, 'a') as _f:
+            if not cmd in _tail:
+                return _f.write(cmd+'\n')
+
+
+    def show_history(self):
+        from pymake.util.utils import tail
+        n_lines = int(self._conf.get('N', 20))
+        bdir = self.data_path
+        fn = os.path.join(bdir, '.pymake_hist')
+        if not os.path.isfile(fn):
+            lgg.error('hist file does not exist.')
+            return
+
+        _tail = tail(fn, n_lines)
+
+        print('\n'.join(_tail))
 
 
     def update_index(self):
