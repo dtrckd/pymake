@@ -50,3 +50,20 @@ class Netw2(ExpDesign):
         _format       = '{model}_{K}_{chunk}_{hyper}_{homo}_{N}_{testset_ratio}'
         # push _typo_csv
     )
+
+    # compare perplexity and rox curve from those baseline.
+    compare_scvb = ExpTensor (
+        corpus        = ['clique6'],
+        model         = ['immsb_csg', 'ilfm_cgs']  ,
+        K             = 6    ,
+        N             = '100'   ,
+        chunk = 10,
+        iterations    = 100,
+        hyper         = 'auto',
+        testset_ratio = 10,
+
+        _data_type    = 'networks',
+        _refdir       = 'debug_scvb' ,
+        _format       = '{model}_{K}_{chunk}_{hyper}_{homo}_{N}_{testset_ratio}'
+        # push _typo_csv
+    )
