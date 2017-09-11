@@ -35,27 +35,30 @@ class Netw2(ExpDesign):
 
     corpus_text_all = Corpus(['kos', 'nips12', 'nips', 'reuter50', '20ngroups']) # lucene
 
-    debug_scvb = ExpTensor (
-        corpus        = ['manufacturing', 'clique6'],
-        model         = ['immsb_scvb', 'immsb_csg', 'mmsb_cgs', 'ilfm_cgs']  ,
-        N             = 'all'   ,
+    scvb = ExpTensor (
+        corpus        = ['clique6', 'BA'],
+        model         = 'immsb_scvb'  ,
+        N             = 150   ,
+        chunk = 50,
         K             = 6    ,
-        iterations    = 10,
-        hyper         = 'fix',
+        iterations    = 3,
+        hyper         = 'auto',
         testset_ratio = 10,
-        chunk = 25,
+        chi = [0.5, 1, 2, 10],
+        tau = [0.5, 1, 2, 16, 64, 256, 1024],
+        kappa = [0.51, 0.45, 1],
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
-        _format       = '{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}'
-        # push _typo_csv
+        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}-{chi}-{tau}-{kappa}',
+        _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
     )
 
     # compare perplexity and rox curve from those baseline.
     compare_scvb = ExpTensor (
         corpus        = ['clique6', 'BA'],
         model         = ['immsb_cgs', 'ilfm_cgs', 'rescal']  ,
-        N             = '200'   ,
+        N             = 200   ,
         K             = 6    ,
         iterations    = 150,
         hyper         = 'auto',
@@ -64,6 +67,7 @@ class Netw2(ExpDesign):
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
-        _format       = '{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}'
-        # push _typo_csv
+        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}',
+        _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
     )
+

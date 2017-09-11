@@ -182,11 +182,10 @@ class ModelManager(object):
             else:
                 raise NotImplementedError('Pipeline to model got unknown sinature')
 
-        if self.expe.write:
-            self.model.save()
 
         return
 
+    # @obsolete / pmk compute
     # frontend ? no, data stat should be elsewhere.
     # Accept new data for prediction (now is just test data)
     def predict(self, frontend=None):
@@ -281,5 +280,13 @@ class ModelManager(object):
             lgg.error('model unknown: %s' % modelname)
             exit(3)
         return _model
+
+    @classmethod
+    def from_expe_frontend(cls, expe, frontend):
+        # urgh,
+        # structure and workflow for streaming ? temporal ?
+        meta_model = cls(expe=expe, frontend=frontend)
+        cls.model = meta_model._get_model(frontend)
+        return cls.model
 
 

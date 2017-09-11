@@ -68,6 +68,18 @@ _gram = [
         nargs='*', action=partial(exp_append, _t=int),
         help='Number of samples used for burnin period.'),
 
+    # step for gradient
+    '--chi', dict(
+        nargs='*', action=partial(exp_append, _t=int),
+        help=''),
+    '--tau', dict(
+        nargs='*', action=partial(exp_append, _t=int),
+        help=''),
+    '--kappa', dict(
+        nargs='*', action=partial(exp_append, _t=int),
+        help=''),
+
+
 
     # System
     '-nld','--no-load-data', dict(

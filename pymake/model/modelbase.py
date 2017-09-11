@@ -31,7 +31,7 @@ class ModelBase(object):
     default_settings = {
         'write' : False,
         'output_path' : 'tm-output',
-        'csv_typo' : None,
+        '_csv_typo' : None,
         'fmt' : None,
         'iterations' : 1,
         'snapshot_freq': 20,
@@ -46,21 +46,11 @@ class ModelBase(object):
 
         # change to semantic -> update value (t+1)
         self.samples = [] # actual sample
-        self._samples    = [] # slice to save
+        self._samples    = [] # slice to save to avoid writing disk a each iteratoin. (ref format.write_it_step.)
 
         for k, v in self.default_settings.items():
             self._init(k, kwargs, v)
 
-        if self.output_path and self.write:
-            import os
-            try: os.makedirs(os.path.dirname(self.output_path))
-            except: pass
-            self.fname_i = self.output_path + '.inf'
-            if not getattr(self, 'csv_typo', None):
-                self.log.warning('No csv_typo, for this model %s, no inference file...')
-            else:
-                self._f = open(self.fname_i, 'wb')
-                self._f.write((self.csv_typo + '\n').encode('utf8'))
 
         # Why this the fuck ? to remove
         #super(ModelBase, self).__init__()
@@ -75,57 +65,6 @@ class ModelBase(object):
 
         return setattr(self, key, value)
 
-    def write_some(self, samples, buff=20):
-        """ Write data with buffer manager """
-        f = self._f
-        fmt = self.fmt
-
-        if samples is None:
-            buff=1
-        else:
-            self._samples.append(samples)
-
-        if len(self._samples) >= buff:
-            #samples = np.array(self._samples)
-            samples = self._samples
-            np.savetxt(f, samples, fmt=str(fmt))
-            f.flush()
-            self._samples = []
-
-    # try on output_path i/o error manage fname_i
-    def load_some(self, iter_max=None, get=None):
-        filen = self.fname_i
-        with open(filen) as f:
-            data = f.read()
-
-        data = filter(None, data.split('\n'))
-        if iter_max:
-            data = data[:iter_max]
-        # Ignore Comments
-        data = [re.sub("\s\s+" , " ", x.strip()) for l,x in enumerate(data) if not x.startswith(('#', '%'))]
-
-        if get is not None:
-            sep = ' '
-            # __future__ remove
-            try:
-                csv_typo = self.csv_typo
-            except:
-                csv_typo = '# it it_time likelihood likelihood_t K alpha gamma alpha_mean delta_mean alpha_var delta_var'
-            col_typo = csv_typo.split()
-            col = col_typo.index(get) - 1
-            data = [row.split(sep)[col] for row in data]
-
-        #ll_y = [row.split(sep)[column] for row in data]
-        #ll_y = np.ma.masked_invalid(np.array(ll_y, dtype='float'))
-        return data
-
-    def close(self):
-        if not hasattr(self, '_f'):
-            return
-        # Write remaining data
-        if self._samples:
-            self.write_some(None)
-        self._f.close()
 
     def similarity_matrix(self, theta=None, phi=None, sim='cos'):
         if theta is None:
@@ -273,8 +212,6 @@ class ModelBase(object):
     # Just for MCMC ?():
     def predict(self):
         raise NotImplementedError
-    def scores(self):
-        raise NotImplementedError
 
     # get_params ~ transform ?sklearn
 
@@ -301,13 +238,15 @@ class GibbsSampler(ModelBase):
         super(GibbsSampler, self).__init__(**kwargs)
 
     @mmm
-    def measures(self):
-        pp = self.evaluate_perplexity()
+    def compute_measures(self):
+        self._K = self.s.zsampler._K
+
+        self._entropy = self.evaluate_entropy()
         if self.data_t is not None:
-            pp_t = self.predictive_likelihood()
+            self._entropy_t = self.predictive_likelihood()
         else:
-            pp_t = np.nan
-        k = self.s.zsampler._K
+            self._entropy_t = np.nan
+
         alpha_0 = self.s.zsampler.alpha_0
         try:
             gmma = self.s.betasampler.gmma
@@ -316,49 +255,40 @@ class GibbsSampler(ModelBase):
             gmma = np.nan
             alpha = np.exp(self.s.zsampler.logalpha)
 
-        alpha_mean = alpha.mean()
-        alpha_var = alpha.var()
-        delta_mean = self.s.zsampler.likelihood.delta.mean()
-        delta_var = self.s.zsampler.likelihood.delta.var()
-
-        measures = [pp, pp_t, k, alpha_0, gmma, alpha_mean, delta_mean, alpha_var, delta_var]
-        return measures
+        self._alpha = alpha_0
+        self._gmma = gmma
+        self.alpha_mean = alpha.mean()
+        self.alpha_var = alpha.var()
+        self.delta_mean = self.s.zsampler.likelihood.delta.mean()
+        self.delta_var = self.s.zsampler.likelihood.delta.var()
 
 
     def fit(self):
-        time_it = 0
-        self.evaluate_perplexity()
-        for i in range(self.iterations):
-            ### Output / Measures
-            print('.', end='')
-            measures = self.measures()
-            sample = [i, time_it] + measures
-            k = self.s.zsampler._K
-            lgg.info('Iteration %d, K=%d Entropy: %s ' % (i, k, measures[0]))
-            if self.write:
-                self.write_some(sample)
 
-            begin = datetime.now()
+        lgg.info( '__init__  Entropy: %f' % self.evaluate_entropy())
+        for _it in range(self.iterations):
+            self._iteration = _it
+
             ### Sampling
+            begin_it = datetime.now()
             self.s.sample()
-            time_it = (datetime.now() - begin).total_seconds() / 60
+            self.time_it = (datetime.now() - begin_it).total_seconds() / 60
 
-            if i >= self.iterations:
-                s.clean()
-                break
-            if i >= self.burnin:
-                if i % self.thinning == 0:
+            if _it >= self.iterations - self.burnin:
+                if _it % self.thinning == 0:
                     self.samples.append([self._theta, self._phi])
 
-            if self.write and i!=0 and i % self.iterations == self.snapshot_freq:
-                self.save(silent=True)
+            self.compute_measures()
+            lgg.info('Iteration %d,  Entropy: %f \t\t K=%d  alpha: %f gamma: %f' % (_it, self._entropy, self._K,self._alpha, self._gmma))
+            if self.write:
+                self.write_it_step(self)
+                if (_it > 0 and _it % self.snapshot_freq == 0) or (_it == self.iterations-1):
+                    self.save(silent=(not _it == self.iterations-1))
 
         ### Clean Things
         print()
-        self.samples = self.samples
         if not self.samples:
             self.samples.append([self._theta, self._phi])
-        self.close()
         return
 
     @mmm #frontend
@@ -370,8 +300,6 @@ class GibbsSampler(ModelBase):
         likelihood = theta.dot(phi).dot(theta.T)
         return likelihood
 
-    def scores(self):
-        return self.likelihood()
 
     @mmm
     def update_hyper(self, hyper):
@@ -421,9 +349,9 @@ class GibbsSampler(ModelBase):
         self.s.zsampler.likelihood = None
 
     @mmm
-    def evaluate_perplexity(self, data=None):
+    def evaluate_entropy(self, data=None):
         self._theta, self._phi = self.s.zsampler.estimate_latent_variables()
-        return self.s.zsampler.perplexity(data)
+        return self.s.zsampler.entropy(data)
 
     # keep only the most representative dimension (number of topics) in the samples
     @mmm
@@ -483,7 +411,7 @@ class MSampler(object):
 
         indices = np.ndenumerate(self.count_k_by_j)
 
-        lgg.info( 'Sample m...')
+        lgg.debug('Sample m...')
         for ind in indices:
             j, k = ind[0]
             count = ind[1]
@@ -549,7 +477,7 @@ class BetaSampler(object):
         self.beta = dirichlet([1, gmma])
 
     def sample(self):
-        lgg.info( 'Sample Beta...')
+        lgg.debug( 'Sample Beta...')
         self._update_dirichlet_params()
         self.beta = dirichlet(self.dirichlet_params)
 
@@ -557,7 +485,7 @@ class BetaSampler(object):
 
     def _update_dirichlet_params(self):
         m_dotk_augmented = np.append(self.msampler.m_dotk, self.gmma)
-        lgg.info( 'Beta Dirichlet Prior: %s, alpha0: %.4f ' % (m_dotk_augmented, self.msampler.zsampler.alpha_0))
+        lgg.debug( 'Beta Dirichlet Prior: %s, alpha0: %.4f ' % (m_dotk_augmented, self.msampler.zsampler.alpha_0))
         self.dirichlet_params = m_dotk_augmented
 
 class SVB(ModelBase):
@@ -567,9 +495,7 @@ class SVB(ModelBase):
     __abstractmethods__ = 'model'
 
     def __init__(self, expe, frontend=None):
-        self.csv_typo = '# it it_time likelihood likelihood_t K alpha gamma alpha_mean delta_mean alpha_var delta_var'
         self.fmt = '%d %.4f %.8f %.8f %d'
-        #self.fmt = '%d %.4f %.8f %.8f %d %.8f %.8f %.4f %.4f %.4f %.4f'
         super(SVB, self).__init__(**expe)
         self.elbo = None
         self.limit_elbo_diff = 1e-3
@@ -577,7 +503,7 @@ class SVB(ModelBase):
         self.mask = self.fr.data_ma.mask
         self.expe = expe
 
-        if frontend is not None:
+        if expe:
             self._init_params(frontend)
 
     def _init_params(self, frontend):
@@ -585,15 +511,6 @@ class SVB(ModelBase):
 
     def data_iter(self, batch, randomize=True):
         raise NotImplementedError
-
-    def measures(self):
-        pp = self._pp
-        pp_t = 0
-        k = self._K
-
-        #measures = [pp, pp_t, k, alpha_0, gmma, alpha_mean, delta_mean, alpha_var, delta_var]
-        measures = [pp, pp_t, k]
-        return measures
 
     def _update_chunk_nnz(self, groups):
         _nnz = []
@@ -613,33 +530,37 @@ class SVB(ModelBase):
         ''' chunk is the number of row to threat in a minibach '''
 
         data_ma = self.fr.data_ma
-        _abc = self.data_iter(data_ma)
+        _abc = self.data_iter(data_ma, randomize=False)
         chunk_groups = np.array_split(_abc, self.chunk_len)
         self._update_chunk_nnz(chunk_groups)
-        time_it = 0
+
+        print('__init__ Entropy %f' % self.entropy())
         for _id_mnb, minibatch in enumerate(chunk_groups):
 
             self.mnb_size = self._nnz_vector[_id_mnb]
-            # <try with multiple iterations here>
-            begin = datetime.now()
+
+            begin_it = datetime.now()
             self.sample(minibatch)
-            time_it = (datetime.now() - begin).total_seconds() / 60
-            # </try>
+            time_it = (datetime.now() - begin_it).total_seconds() / 60
 
-            self.update_elbo()
-            lgg.info('mnibatch %d/%d,  ELBO: %s, elbo diff: %s' % (_id_mnb+1, self.chunk_len, self.elbo, self.elbo_diff))
+            self.compute_measures()
+            lgg.info('mnibatch %d/%d,  ELBO: %f,  elbo diff: %f' % (_id_mnb+1, self.chunk_len, self.elbo, self.elbo_diff))
             if self.expe.get('write'):
-                measures = [_id_mnb, time_it] + self.measures()
-                self.write_some(measures)
-
-        #self.close()
+                self.write_it_step(self)
+                if (_id_mnb > 0 and _id_mnb % self.snapshot_freq == 0) or (_id_mnb == len(chunk_groups)-1):
+                    self.save(silent=(not _id_mnb == len(chunk_groups)-1))
 
     def sample(self, minibatch):
+        '''
+        Notes
+        -----
+        * self.iterations is actually the burnin phase of SVB.
+        '''
 
-        # self.iterations is considered as the burnin here.
+        # self.iterations is actually the burnin phase of SVB.
         for _it in range(self.iterations+1):
-            self._it = _it
-            burnin = (_it == self.iterations -1)
+            self._iteration = _it
+            burnin = (_it < self.iterations)
             #np.random.shuffle(minibatch)
             for _id_token, iter in enumerate(minibatch):
                 self._id_token = _id_token
@@ -647,9 +568,15 @@ class SVB(ModelBase):
                 self.maximization(iter)
                 self.expectation(iter, burnin=burnin)
 
-            if self._it != self.iterations-1 and self.expe.verbose < 20:
-                self.update_elbo()
+
+                #self.entropy()
+                #print(self._pp)
+
+            self.compute_measures()
+            if self._iteration != self.iterations-1 and self.expe.verbose < 20:
                 lgg.debug('it %d,  ELBO: %s, elbo diff: %s' % (_it, self.elbo, self.elbo_diff))
+                if self.expe.get('write'):
+                    self.write_it_step(self)
 
 
         # Update global parameters after each "minibatech of links"
@@ -659,15 +586,19 @@ class SVB(ModelBase):
             self._purge_minibatch()
             self.inc_time()
 
-
         #if self.elbo_diff < self.limit_elbo_diff:
         #    print('ELBO get stuck during data iteration : Sampling useless, return ?!')
 
-        return
+
+    def compute_measures(self):
+        self.update_elbo()
+        self._entropy_t = 0
+        self._K = self.N_phi.shape[1]
+
 
     def update_elbo(self):
-        ## Get real ELBO instead of pp
-        nelbo = self.perplexity()
+        ## Get real ELBO instead of ll
+        nelbo = self.entropy()
         self.elbo_diff = nelbo - self.elbo
         self.elbo = nelbo
         return self.elbo
@@ -683,9 +614,6 @@ class SVB(ModelBase):
 
     def _purge_minibatch(self):
         raise NotImplementedError
-
-    def scores(self):
-        return self.likelihood()
 
     def purge(self):
         self.fr = None

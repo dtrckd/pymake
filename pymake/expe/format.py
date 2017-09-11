@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import os
 import logging
 import traceback,  importlib
 import numpy as np
@@ -389,14 +390,14 @@ class ExpeFormat(object):
         self.model_pos = pt.get('model')
         self.output_path = self.gramexp.make_output_path(self.expe)
 
-        self.log.info('---')
+        self.log.info('-'*10)
         self.log.info(''.join([colored('Expe %d/%d', 'red'),
                           ' : %s -- %s -- N=%s -- K=%s']) % (
                               self._it+1, self.expe_size,
                               self.specname(expe.get('corpus')),
                               self.specname(expe.get('model')),
                               expe.get('N'), expe.get('K'),))
-        self.log.info('---')
+        self.log.info('-'*10)
 
     @classmethod
     def display(cls, conf):
@@ -513,4 +514,196 @@ class ExpeFormat(object):
 
     def __call__(self):
         raise NotImplementedError
+
+
+
+
+
+
+
+    def _format_line_out(self, model, comments=('#','%')):
+        ''' extract data in model from variable name declared in {self.scv_typo}.
+            The iterable build constitute the csv-like line, for **one iteration**, to be written in the outputfile.
+
+            Spec : (Make a grammar dude !)
+                * Each name in the **typo** should be accesible (gettable) in the model/module class, at fit time,
+                * a '{}' symbol means that this is a list.
+                * a 'x[y]' symbole that the dict value is requested,
+                * if there is a list '{}', the size of the list should be **put just before it**,
+                * if there is several list next each other, they should have the same size.
+
+                @debug: raise a sprcialerror from this class,
+                    instead of duplicate the exception print in _fotmat_line_out.
+        '''
+        line = []
+        for o in self.expe._csv_typo.split():
+            if o in comments:
+                continue
+            elif o.startswith('{'): # is a list
+                obj = o[1:-1]
+                brak_pt = obj.find('[')
+                if brak_pt != -1: # assume  nested dictionary
+                    obj, key = obj[:brak_pt], obj[brak_pt+1:-1]
+                    try:
+                        values = [str(elt[key]) for elt in getattr(model, obj).values()]
+                    except KeyError as e:
+                        traceback.print_exc()
+                        print('\n')
+                        self.log.error("expe setting ${_format} is probably wrong !")
+                        print("model `%s' do not contains one of object: %s, %s" % (str(model), key, obj))
+                        print('exiting...')
+                        os._exit(2)
+
+                else : # assume list
+                    try:
+                        values = [str(elt) for elt in getattr(model, obj)]
+                    except KeyError as e:
+                        traceback.print_exc()
+                        print('\n')
+                        self.log.error("expe setting ${_format} is probably wrong !")
+                        print("model `%s' do not contains one of object: %s" % (str(model), obj))
+                        print('exiting...')
+                        os._exit(2)
+
+                line.extend(values)
+            else: # is atomic ie can be converted to string.
+                try:
+                    value = str(getattr(model, o))
+                except KeyError as e:
+                    traceback.print_exc()
+                    print('\n')
+                    self.log.error("expe setting ${_format} is probably wrong !")
+                    print("model `%s' do not contains one of object: %s" % (str(model), o))
+                    print('exiting...')
+                    os._exit(2)
+                line.append(value)
+
+        return line
+
+
+    def write_some(self, _f,  samples, buff=20):
+        ''' Write data with buffer manager
+            * lines are formatted as {self.csv_typo}
+            * output file is {self._f}
+        '''
+        #fmt = self.fmt
+
+        if samples is None:
+            buff=1
+        else:
+            self._samples.append(samples)
+
+        if len(self._samples) >= buff:
+            #samples = np.array(self._samples)
+            samples = self._samples
+            #np.savetxt(f, samples, fmt=str(fmt))
+            for line in samples:
+                # @debug manage float .4f !
+                line = ' '.join(line)+'\n'
+                _f.write(line.encode('utf8'))
+
+            _f.flush()
+            self._samples = []
+
+
+    def load_some(self, filename, iter_max=None, comments=('#','%')):
+        ''' Load data from file according that each line
+            respect the format in {self._csv_typo}.
+        '''
+        with open(filename) as f:
+            data = f.read()
+
+        data = filter(None, data.split('\n'))
+        if iter_max:
+            data = data[:iter_max]
+        # Ignore Comments
+        data = [re.sub("\s\s+" , " ", x.strip()).split() for l,x in enumerate(data) if not x.startswith(comments)]
+
+        # Grammar dude ?
+        col_typo = self.expe._csv_typo.split()[1:]
+        array = []
+        last_list_size = None
+        # Format the data in a list of dict by entry
+        for data_line in data:
+            line = {}
+            offset = 0
+            for true_pos in range(len(data_line)):
+                pos = true_pos + offset
+                if pos >= len(data_line):
+                    break
+                o = col_typo[true_pos]
+                if data_line[0] in comments:
+                    break
+                elif o.startswith('{'): # is a list
+                    obj = o[1:-1]
+                    brak_pt = obj.find('[')
+                    if brak_pt != -1: # assume  nested dictionary
+                        obj, key = obj[:brak_pt], obj[brak_pt+1:-1]
+                        newkey = '.'.join((obj, key))
+                        values = data_line[pos:pos+last_elt_size]
+                        line[newkey] = values
+                    else : # assume list
+                        values = data_line[pos:pos+last_elt_size]
+                        line[obj] = values
+                    offset += last_elt_size-1
+                else:
+                    line[o] = data_line[pos]
+                    if str.isdigit(line[o]):
+                        last_elt_size = int(line[o])
+
+            array.append(line)
+
+
+        # Format the array of dict to a dict by entry function of iterations
+        data = {}
+        for line in array:
+            for k, v in line.items():
+                l = data.get(k, [])
+                l.append(v)
+                data[k] = l
+
+        return data
+
+    def init_fitfile(self):
+        ''' Create the file to save the iterations state of a model.'''
+        self._samples = []
+        os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
+        self.fname_i = self.output_path + '.inf'
+        if not '_csv_typo' in self.expe:
+            self.log.warning('No csv_typo, for this model %s, no inference file...')
+        else:
+            self._fitit_f = open(self.fname_i, 'wb')
+            self._fitit_f.write((self.expe._csv_typo + '\n').encode('utf8'))
+
+
+    def clear_fitfile(self):
+        ''' Write remaining data and close the file. '''
+        if self._samples:
+            self.write_some(self._fitit_f, None)
+        self._fitit_f.close()
+
+
+    def write_current_state(self, model):
+        ''' push the current state of a model in the output file. '''
+        self.write_some(self._fitit_f, self._format_line_out(model))
+
+
+    def write_it_step(self, model):
+        if not self.expe.get('write'):
+            return
+        self.write_current_state(model)
+
+    def configure_model(self, model):
+        # Inject the writing some method
+        setattr(model, 'write_it_step', self.write_it_step)
+
+        # meta model ? ugly hach
+        if hasattr(model, 'model') and hasattr(model.model, 'fit'):
+            setattr(model.model, 'write_it_step', self.write_it_step)
+
+        # Configure csv_typo if present in model.
+        if getattr(model, '_csv_typo', False):
+            self.expe._csv_typo = model._csv_typo
+
+
 

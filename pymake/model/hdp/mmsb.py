@@ -229,12 +229,12 @@ class ZSampler(object):
         self._update_log_alpha_beta()
         self.update_matrix_shape()
 
-        lgg.info('Sample z...')
-        lgg.debug('#J \t #I \t  #topic')
+        lgg.debug('Sample z...')
+        lgg.vdebug('#J \t #I \t  #topic')
         doc_order = np.random.permutation(self.J)
         # @debug: symmetric matrix !
         for j, i in self.likelihood.data_iter(randomize=True):
-            lgg.debug( '%d \t %d \t %d' % ( j , i, self.doc_topic_counts.shape[1]-1))
+            lgg.vdebug( '%d \t %d \t %d' % ( j , i, self.doc_topic_counts.shape[1]-1))
             params = self.prob_zji(j, i, self._K + 1)
             sample_topic_raveled = categorical(params)
             k_j, k_i = np.unravel_index(sample_topic_raveled, (self._K+1, self._K+1))
@@ -326,7 +326,7 @@ class ZSampler(object):
 
         self.last_purged_topics = dummy_topics
         if len(dummy_topics) > 0:
-            lgg.info( 'zsampler: %d topics purged' % (len(dummy_topics)))
+            lgg.debug( 'zsampler: %d topics purged' % (len(dummy_topics)))
         self.doc_topic_counts =  counts
 
     def add_beta_sampler(self, betasampler):
@@ -363,14 +363,11 @@ class ZSampler(object):
         else:
             return self.log_alpha_beta[k]
 
-    def clean(self):
-        self.K = self.doc_topic_counts.shape[1]
-
     def predictive_topics(self, data):
         pass
 
     def estimate_latent_variables(self):
-        # check if perplexity is equal if removing dummy empty topics...
+        # check if likelihood  is equal if removing dummy empty topics...
         if not hasattr(self, 'logalpha'):
             log_alpha_beta = self.log_alpha_beta
             new_k = self.get_K()+1 - len(log_alpha_beta)
@@ -396,7 +393,7 @@ class ZSampler(object):
         return self._theta, self._phi
 
     # Mean can be arithmetic or geometric
-    def perplexity(self, data=None, mean='arithmetic'):
+    def entropy(self, data=None, mean='arithmetic'):
         phi = self._phi
         if data is None:
             data = self.likelihood.data_ma
@@ -426,10 +423,9 @@ class ZSampler(object):
         #    entropy =  np.log(p_ji[self.likelihood.triu]).sum()
         #else:
         #    entropy =  np.log(p_ji).sum()
-        entropy =  np.log(p_ji).sum()
+        ll =  np.log(p_ji).sum()
 
-        #perplexity = np.exp(-entropy / nnz)
-        entropy = - entropy / nnz
+        entropy = - ll / nnz
         return entropy
 
 class ZSamplerParametric(ZSampler):
@@ -449,12 +445,12 @@ class ZSamplerParametric(ZSampler):
         super(ZSamplerParametric, self).__init__(alpha_0, likelihood, self.K, data_t=data_t)
 
     def sample(self):
-        lgg.info('Sample z...')
-        lgg.debug('#J \t #I \t #topic')
+        lgg.debug('Sample z...')
+        lgg.vdebug('#J \t #I \t #topic')
         doc_order = np.random.permutation(self.J)
         # @debug: symmetric matrix !
         for j, i in self.likelihood.data_iter(randomize=True):
-            lgg.debug( '%d \t %d \t %d' % (j , i, self.doc_topic_counts.shape[1]-1))
+            lgg.vdebug( '%d \t %d \t %d' % (j , i, self.doc_topic_counts.shape[1]-1))
             params = self.prob_zji(j, i, self.K)
             sample_topic_raveled = categorical(params)
             k_j, k_i = np.unravel_index(sample_topic_raveled, (self._K, self._K))
@@ -472,8 +468,6 @@ class ZSamplerParametric(ZSampler):
     def get_log_alpha_beta(self, k):
         return self.logalpha[k]
 
-    def clean(self):
-        pass
 
 
 class NP_CGS(object):
@@ -538,7 +532,7 @@ class NP_CGS(object):
 
         #print 'm_dot %d, alpha a, b: %s, %s ' % (m_dot, self.a_alpha + m_dot - u_j.sum(), 1/( self.b_alpha - np.log(v_j).sum()))
         #print 'gamma a, b: %s, %s ' % (self.a_gmma + K -1 + u, 1/(self.b_gmma - np.log(v)))
-        lgg.info('hyper sample: alpha_0: %s gamma: %s' % (new_alpha0, new_gmma))
+        lgg.debug('hyper sample: alpha_0: %s gamma: %s' % (new_alpha0, new_gmma))
         return
 
     def sample(self):
@@ -563,11 +557,11 @@ class CGS(object):
 class GibbsRun(GibbsSampler):
     __abstractmethods__ = 'model'
     def __init__(self, sampler,  data_t=None, **kwargs):
-        self.burnin = kwargs.get('burnin',  0.05) # Ratio of iteration
+        self.burnin = kwargs.get('burnin',  5) # (inverse burnin, last sample to keep
         self.thinning = kwargs.get('thinning',  1)
         self.comm = dict() # Empty dict to store communities and blockmodel structure
         self.data_t = data_t
-        self.csv_typo = '# it it_time likelihood likelihood_t K alpha gamma alpha_mean delta_mean alpha_var delta_var'
+        #self._csv_typo = '# it it_time likelihood likelihood_t K alpha gamma alpha_mean delta_mean alpha_var delta_var'
         self.fmt = '%d %.4f %.8f %.8f %d %.8f %.8f %.4f %.4f %.4f %.4f'
         #self.fmt = '%s %s %s %s %s %s %s %s %s %s %s'
         GibbsSampler.__init__(self, sampler, **kwargs)

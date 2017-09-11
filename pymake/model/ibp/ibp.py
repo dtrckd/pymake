@@ -186,7 +186,7 @@ class IBP(object):
         #posterior_scale = float(1) / (alpha_hyper_b + self._N)
 
         alpha_new = np.random.gamma(posterior_shape, 1/posterior_rate, size=5).mean()
-        lgg.info( 'hyper sample: alpha: %s' % alpha_new )
+        lgg.debug('hyper sample: alpha: %s' % alpha_new )
 
         return alpha_new
 

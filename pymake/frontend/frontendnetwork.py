@@ -42,6 +42,25 @@ class frontendNetwork(DataBase):
         self.bdir = 'networks'
         super(frontendNetwork, self).__init__(expe, load)
 
+    @classmethod
+    def from_array(cls, array):
+
+        fr = cls()
+
+        if isinstance(array, sp.sparse.csr_matrix):
+            raise NotImplementedError
+        elif isinstance(array, np.ma.MaskedArray):
+            data = array.data
+            fr.data_ma = array
+        elif isinstance(array, np.ndarray):
+            data = array
+        else:
+            raise NotImplementedError
+
+        fr.update_data(data)
+        return fr
+
+
     def load_data(self, corpus_name=None, randomize=False):
         """ Load data according to different scheme,
             by order of priority (if several specification in settings)
@@ -229,7 +248,7 @@ class frontendNetwork(DataBase):
             data = getClique(N, K=K)
             #Data = nx.adjacency_matrix(G, np.random.permutation(range(N))).A
         elif rnd in ('BA', 'barabasi-albert'):
-            data = nx.adjacency_matrix(nx.barabasi_albert_graph(N, m=13) ).A
+            data = nx.adjacency_matrix(nx.barabasi_albert_graph(N, m=int(0.95*N)) ).A
         elif rnd ==  'alternate':
             #data = np.empty((N,N),int)
             data = np.zeros((N,N), int)
