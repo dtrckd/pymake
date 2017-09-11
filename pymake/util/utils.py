@@ -70,7 +70,7 @@ def get_dest_opt_filled(parser):
         set of string
     '''
 
-    opts_in = [opt for opt in sys.argv if opt.startswith('-')]
+    opts_in = [opt for opt in sys.argv if opt.startswith('-') and opt not in ['-vv','-vvv']]
     opt2dest_dict = dict( (opt, act.dest) for act in parser._get_optional_actions() for opt in act.option_strings )
     dests_in = set([opt2dest_dict[opt] for opt in opts_in])
     return dests_in

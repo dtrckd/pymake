@@ -282,8 +282,8 @@ class GibbsSampler(ModelBase):
             lgg.info('Iteration %d,  Entropy: %f \t\t K=%d  alpha: %f gamma: %f' % (_it, self._entropy, self._K,self._alpha, self._gmma))
             if self.write:
                 self.write_it_step(self)
-                if (_it > 0 and _it % self.snapshot_freq == 0) or (_it == self.iterations-1):
-                    self.save(silent=(not _it == self.iterations-1))
+                if _it > 0 and _it % self.snapshot_freq == 0:
+                    self.save(silent=True)
 
         ### Clean Things
         print()
@@ -497,7 +497,6 @@ class SVB(ModelBase):
     def __init__(self, expe, frontend=None):
         self.fmt = '%d %.4f %.8f %.8f %d'
         super(SVB, self).__init__(**expe)
-        self.elbo = None
         self.limit_elbo_diff = 1e-3
         self.fr = frontend
         self.mask = self.fr.data_ma.mask
@@ -534,7 +533,8 @@ class SVB(ModelBase):
         chunk_groups = np.array_split(_abc, self.chunk_len)
         self._update_chunk_nnz(chunk_groups)
 
-        print('__init__ Entropy %f' % self.entropy())
+        self.elbo = self.entropy()
+        print('__init__ Entropy %f' % self.elbo)
         for _id_mnb, minibatch in enumerate(chunk_groups):
 
             self.mnb_size = self._nnz_vector[_id_mnb]
@@ -547,8 +547,8 @@ class SVB(ModelBase):
             lgg.info('mnibatch %d/%d,  ELBO: %f,  elbo diff: %f' % (_id_mnb+1, self.chunk_len, self.elbo, self.elbo_diff))
             if self.expe.get('write'):
                 self.write_it_step(self)
-                if (_id_mnb > 0 and _id_mnb % self.snapshot_freq == 0) or (_id_mnb == len(chunk_groups)-1):
-                    self.save(silent=(not _id_mnb == len(chunk_groups)-1))
+                if _id_mnb > 0 and _id_mnb % self.snapshot_freq == 0:
+                    self.save(silent=True)
 
     def sample(self, minibatch):
         '''
@@ -574,7 +574,7 @@ class SVB(ModelBase):
 
             self.compute_measures()
             if self._iteration != self.iterations-1 and self.expe.verbose < 20:
-                lgg.debug('it %d,  ELBO: %s, elbo diff: %s' % (_it, self.elbo, self.elbo_diff))
+                lgg.debug('it %d,  ELBO: %f, elbo diff: %f \t K=%d' % (_it, self.elbo, self.elbo_diff, self._K))
                 if self.expe.get('write'):
                     self.write_it_step(self)
 

@@ -30,6 +30,8 @@ class Fit(ExpeFormat):
     def _postprocess(self):
         if self.expe.get('write'):
             self.clear_fitfile()
+            self.model.save()
+
 
     def __call__(self):
         expe = self.expe
@@ -50,11 +52,11 @@ class Fit(ExpeFormat):
         #frontend.data = frontend.data.astype(float)
         #/
 
-        model = ModelManager.from_expe_frontend(expe, frontend)
-        self.configure_model(model)
+        self.model = ModelManager.from_expe_frontend(expe, frontend)
+        self.configure_model(self.model)
 
         for i in range(1):
-            model.fit()
+            self.model.fit()
 
 
         #model.predict(frontend=frontend)
