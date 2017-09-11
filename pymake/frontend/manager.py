@@ -109,6 +109,7 @@ class ModelManager(object):
         elif 'network' in str(type(data)).lower():
             data_t = None
             if testset_ratio is None:
+                lgg.warning("testset-ratio option options unknow, data won't be masked array")
                 data = data.data
             else:
                 data = data.set_masked(testset_ratio)
