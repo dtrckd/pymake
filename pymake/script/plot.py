@@ -27,35 +27,40 @@ class Plot(ExpeFormat):
     def __init__(self, *args, **kwargs):
         super(Plot, self).__init__(*args, **kwargs)
         self.model = ModelManager.from_expe(self.expe)
+        self.configure_model(self.model)
         #self.frontend = FrontendManager.load(self.expe)
 
     @ExpeFormat.plot('corpus')
-    def __call__(self, _type='likelihood'):
+    def __call__(self, attribute='_perplexity'):
         ''' likelihood/perplexity convergence report '''
         expe = self.expe
         model = self.model
 
         ax = self.gramexp.figs[expe.corpus].fig.gca()
 
-        data = model.load_some(get='likelihood')
+        data = model.load_some(self.output_path+'.inf')[attribute]
+        data = np.ma.masked_invalid(np.array(data, dtype='float'))
+
+        #if type(y[0]) is list:
+        #    y = [np.array(yy, dtype=float).mean() for yy in y]
+
         burnin = 5
         #description = _spec.name(expe.model)
         description = os.path.basename(self.output_path)
-        ll_y = np.ma.masked_invalid(np.array(data, dtype='float'))
-        ax.plot(ll_y, label=description)
+        ax.plot(data, label=description)
         ax.legend(loc='upper right',prop={'size':7})
 
     @ExpeFormat.plot
-    def plot_unique(self, _type='likelihood'):
+    def plot_unique(self, attribute='_perplexity'):
         ''' likelihood/perplexity convergence report '''
         expe = self.expe
         model = self.model
 
+        data = model.load_some(self.output_path+'.inf')[attribute]
+        data = np.ma.masked_invalid(np.array(data, dtype='float'))
 
-        data = model.load_some(get='likelihood')
         burnin = 5
-        ll_y = np.ma.masked_invalid(np.array(data, dtype='float'))
-        plt.plot(ll_y, label=_spec.name(expe.model))
+        plt.plot(data, label=_spec.name(expe.model))
         plt.legend(loc='upper right',prop={'size':7})
 
 if __name__ == '__main__':

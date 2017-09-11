@@ -48,16 +48,15 @@ class IBPGibbsSampling(IBP, GibbsSampler):
         self._sigma_w_hyper_parameter = sigma_w_hyper_parameter
         self.bilinear_matrix = None
         self.log_likelihood = None
-        self.ll_inc = 0
         self.assortativity = assortativity
         self._overflow = 1.0
         self.ratio_MH_F = 0.0
         self.ratio_MH_W = 0.0
         self.snapshot_freq = 20
 
-        self.burnin = kwargs.get('burnin',  0.05) # Ratio of iteration
+        self.burnin = kwargs.get('burnin',  5) # (inverse burnin, last sample to keep
         self.thinning = kwargs.get('thinning',  1)
-        self.csv_typo = '# it it_time likelihood likelihood_t K alpha sigma Z_sum ratio_MH_F ratio_MH_W'
+        self._csv_typo = '# _iteration time_it _entropy _entropy_t _K _alpha _sigma_w Z_sum ratio_MH_F ratio_MH_W'
         self.fmt = '%d %.4f %.8f %.8f %d %.8f %.8f %d %.4f %.4f'
         IBP.__init__(self, alpha_hyper_parameter, metropolis_hastings_k_new)
         GibbsSampler.__init__(self, None,  **kwargs)
@@ -122,77 +121,34 @@ class IBPGibbsSampling(IBP, GibbsSampler):
 
         assert(self._W.shape == (self._K, self._K))
 
-    """
-    sample the corpus to train the parameters """
     def fit(self):
+        # Two things to merge unify with GibbsSample !!!
+        #   * rename parameters _Z and _W ot _theta and _Phi
+        #   * appand all the samplee in self.s to factorize the method self.sample
 
-        # Sample the total data
+        lgg.info( '__init__  Entropy: %f' % (-self.log_likelihood_Y() / self.nnz))
+        for _it in range(self.iterations):
+            self._iteration = _it
 
-        likelihood_Y = self.log_likelihood_Y()
-        lgg.info( 'Init Likelihood: %f' % likelihood_Y)
-        for iter in range(self.iterations):
-            #sys.stdout.write('.')
-            print('.', end='')
             begin_it = datetime.now()
+            self.sample()
+            self.time_it = (datetime.now() - begin_it).total_seconds() / 60
 
-            # Can't get why I need this !
-            self.log_likelihood_Y()
-            # Sample every object
-            order = np.random.permutation(self._N)
-            for (object_counter, object_index) in enumerate(order):
-                #sys.stdout.write('Z')
-                singleton_features = self.sample_Zn(object_index)
+            if _it >= self.iterations - self.burnin:
+                if _it % self.thinning == 0:
+                    self.samples.append([self._Z, self._W])
 
-                if self._metropolis_hastings_k_new:
-                    if self.metropolis_hastings_K_new(object_index, singleton_features):
-                        #sys.stdout.write('Z+')
-                        self.ratio_MH_F += 1
-                #sys.stdout.flush()
-
-            self.ratio_MH_F /= len(order)
-
-            # Regularize matrices
-            self.regularize_matrices()
-
-            if self.assortativity == 1:
-                self._W  = (np.ones((self._K, self._K))*W_diag) * (np.ones((self._K)) + np.eye(self._K)*-2)
-                #self._W  = np.eye(self._K)
-            elif self.assortativity == 2:
-                self.sample_W()
-            else:
-                self.sample_W()
-
-            if self._alpha_hyper_parameter:
-                self._alpha = self.sample_alpha()
-
-            if self._sigma_w_hyper_parameter != None:
-                self._sigma_w = self.sample_sigma_w(self._sigma_w_hyper_parameter)
-
-            ### Output / Measures
-            if likelihood_Y == self.log_likelihood:
-                self.ll_inc +=1
-            it_time = (datetime.now() - begin_it).total_seconds() / 60
-            likelihood_Y = -self.log_likelihood / self.nnz
-            likelihood_Z = np.nan # self.log_likelihood_Z()
-            Z_sum = (self._Z == 1).sum()
-            lgg.info("iteration: %i\tK: %i\tEntropy Y: %f\tEntropy Z: %f, alpha: %f\tsigma_w: %f\t Z.sum(): %i" % (iter, self._K, likelihood_Y, likelihood_Z, self._alpha, self._sigma_w, Z_sum))
-
-            ### Save data
+            self.compute_measures()
+            lgg.info("iteration: %i,  Entropy : %f \t\t K=%i,  Entropy Z: %f, alpha: %f sigma_w: %f Z.sum(): %i" % (_it, self._entropy, self._K, self._entropy_Z, self._alpha, self._sigma_w, self.Z_sum))
             if self.write:
-                samples = [iter, it_time, likelihood_Y, np.nan, self._K,  self._alpha, self._sigma_w, Z_sum, self.ratio_MH_F, self.ratio_MH_W ]
-                self.write_some(samples)
-
-            if iter >= self.burnin:
-                self.samples.append([self._Z, self._W])
-
-            if self.write and iter!=0 and iter % self.iterations == self.snapshot_freq:
-                self.save(silent=True)
+                self.write_it_step(self)
+                if (_it > 0 and _it % self.snapshot_freq == 0) or (_it == self.iterations-1):
+                    self.save(silent=(not _it == self.iterations-1))
 
         ### Clean Things
         print()
         if not self.samples:
             self.samples.append([self._Z, self._W])
-        self.close()
 
         Yd = self._Y.data
         Yd[Yd <= 0 ] = 0
@@ -200,9 +156,53 @@ class IBPGibbsSampling(IBP, GibbsSampler):
 
         return
 
-    """
-    @param object_index: an int data type, indicates the object index (row index) of Z we want to sample """
+    def compute_measures(self):
+
+        ### Output / Measures
+        self._entropy = -self.log_likelihood / self.nnz
+        self._entropy_t = None
+        self._entropy_Z = np.nan # self.log_likelihood_Z()
+        self.Z_sum = (self._Z == 1).sum()
+
+
+    def sample(self):
+
+        # Can't get why I need this !
+        self.log_likelihood_Y()
+        # Sample every object
+        order = np.random.permutation(self._N)
+        for (object_counter, object_index) in enumerate(order):
+            #sys.stdout.write('Z')
+            singleton_features = self.sample_Zn(object_index)
+
+            if self._metropolis_hastings_k_new:
+                if self.metropolis_hastings_K_new(object_index, singleton_features):
+                    #sys.stdout.write('Z+')
+                    self.ratio_MH_F += 1
+            #sys.stdout.flush()
+
+        self.ratio_MH_F /= len(order)
+
+        # Regularize matrices
+        self.regularize_matrices()
+
+        if self.assortativity == 1:
+            self._W  = (np.ones((self._K, self._K))*W_diag) * (np.ones((self._K)) + np.eye(self._K)*-2)
+            #self._W  = np.eye(self._K)
+        elif self.assortativity == 2:
+            self.sample_W()
+        else:
+            self.sample_W()
+
+        if self._alpha_hyper_parameter:
+            self._alpha = self.sample_alpha()
+
+        if self._sigma_w_hyper_parameter != None:
+            self._sigma_w = self.sample_sigma_w(self._sigma_w_hyper_parameter)
+
     def sample_Zn(self, object_index):
+        ''' :param: object_index: an int data type, indicates the object index (row index) of Z we want to sample '''
+
         assert(type(object_index) == int or type(object_index) == np.int32 or type(object_index) == np.int64)
 
         # calculate initial feature possess counts

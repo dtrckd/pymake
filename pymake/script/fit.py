@@ -16,6 +16,20 @@ Fit the data :
 
 class Fit(ExpeFormat):
 
+    def init_run(self):
+        # setup seed ?
+        # setup branch ?
+        # setup description ?
+        pass
+
+    def _preprocess(self):
+        self.init_run()
+        if self.expe.get('write'):
+            self.init_fitfile()
+
+    def _postprocess(self):
+        if self.expe.get('write'):
+            self.clear_fitfile()
 
     def __call__(self):
         expe = self.expe
@@ -36,15 +50,14 @@ class Fit(ExpeFormat):
         #frontend.data = frontend.data.astype(float)
         #/
 
-        model = ModelManager(expe=expe, frontend=frontend)
+        model = ModelManager.from_expe_frontend(expe, frontend)
+        self.configure_model(model)
+
         for i in range(1):
-            model.fit(frontend)
+            model.fit()
 
-        # Uhgh, trashed this !
-        # here if save -> predict
-        m = model.model.get_mask()
 
-        model.predict(frontend=frontend)
+        #model.predict(frontend=frontend)
 
         self.log.info('Expe %d finished in %.1f' % (self.pt['expe']+1, time.time()-t0))
 

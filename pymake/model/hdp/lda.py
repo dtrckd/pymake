@@ -504,7 +504,7 @@ class GibbsRun(GibbsSampler):
         self.thinning = kwargs.get('thinning',  1)
         self.comm = dict() # Empty dict to store communities and blockmodel structure
         self.data_t = data_t
-        self.csv_typo = '# it it_time entropy_train entropy_test K alpha gamma alpha_mean delta_mean alpha_var delta_var'
+        self._csv_typo = '# it it_time entropy_train entropy_test K alpha gamma alpha_mean delta_mean alpha_var delta_var'
         self.fmt = '%d %.4f %.8f %.8f %d %.8f %.8f %.4f %.4f %.4f %.4f'
         #self.fmt = '%s %s %s %s %s %s %s %s %s %s %s'
         GibbsSampler.__init__(self, sampler, **kwargs)

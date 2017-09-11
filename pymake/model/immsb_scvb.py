@@ -5,14 +5,11 @@ import numpy as np
 import scipy as sp
 
 from pymake.util.math import lognormalize, categorical, sorted_perm, adj_to_degree, gem
-from .modelbase import SVB
+from pymake.model.modelbase import SVB
 
 #@network class frontend :
 #   * pb of method conlicts, save, purge etc..fond a way
 class immsb_scvb(SVB):
-
-    # @Debug (graph selfloop in initialization ? ma ?)
-    csv_typo = ''
 
     # *args ?
     def _init_params(self, frontend):
@@ -35,8 +32,10 @@ class immsb_scvb(SVB):
         chunk = self.expe.get('chunk', 10)
         self.iterations = self.expe.get('iterations', 1)
 
-        self.chunk_size = chunk * self._len['N']
-        self.chunk_len = self._len['nnz']/self.chunk_size
+        #self.chunk_size = chunk * self._len['N']
+        self.chunk_size = chunk
+
+        self.chunk_len = self._len['nnz'] / self.chunk_size
 
         if self.chunk_len < 1:
             self.chunk_size = self._len['nnz']
@@ -45,7 +44,7 @@ class immsb_scvb(SVB):
         self._time_delta = 1
         self.chi = 1
         self.tau = 10
-        self.kappa = 0.9
+        self.kappa = 0.8
         self._update_gstep_theta()
         self._update_gstep_phi()
 
@@ -65,8 +64,6 @@ class immsb_scvb(SVB):
         self.data_A.data[self.data_A.data == 0] = -1
         self.data_B = np.ones(data_ma.shape) - data_ma
 
-        self.elbo = self.perplexity()
-        print('__init__ ELBO %f' % self.elbo)
 
     def _random_ss_init(self, frontend):
         ''' Sufficient Statistics Initialization '''
@@ -98,7 +95,6 @@ class immsb_scvb(SVB):
 
         # Temp Containers (for minibatch)
         self._N_phi = np.zeros((nfeat, K,K))
-        self._N_phi_sum = self.N_phi.sum(0)
         self.hyper_phi_sum = self.hyper_phi.sum()
         self.hyper_theta_sum = self.hyper_theta.sum()
 
@@ -158,6 +154,7 @@ class immsb_scvb(SVB):
     def get_elbo(self):
         return elbo
 
+    #@mmm
     def likelihood(self, theta=None, phi=None):
         if theta is None:
             theta = self.theta
@@ -166,26 +163,28 @@ class immsb_scvb(SVB):
         likelihood = theta.dot(phi).dot(theta.T)
         return likelihood
 
-    def perplexity(self):
+    def entropy(self):
         pij = self.likelihood(*self._reduce_latent())
 
+        # Log-likelihood
         p_ij = self.data_A * pij + self.data_B
-        pp = np.log(pij).sum()
-        pp = - pp / self._len['nnz']
+        ll = np.log(pij).sum()
 
-        # huh
-        self._K = pij.shape[0]
-        self._pp = pp
+        # Entropy
+        self._entropy = - ll / self._len['nnz']
 
-        return pp
+        # Perplexity is 2**H(X).
+
+        return self._entropy
 
     def _reduce_latent(self):
-        theta = self.N_theta_right + self.N_theta_left + np.tile(self.hyper_theta, (self.N_theta_left.shape[0],1))
+        theta = self.N_theta_right + self.N_theta_left + 2*np.tile(self.hyper_theta, (self.N_theta_left.shape[0],1))
         theta = (theta.T / theta.sum(axis=1)).T
 
         phi = self.N_phi + np.tile(self.hyper_phi, (self.N_phi.shape[1], self.N_phi.shape[2], 1)).T
         #phi = (phi / np.linalg.norm(phi, axis=0))[1]
         phi = (phi / phi.sum(0))[1]
+        #phi = (phi / (self.N_phi_sum + self.hyper_phi_sum))[1]
 
         return theta, phi
 
@@ -195,10 +194,13 @@ class immsb_scvb(SVB):
         self.pik = self.N_theta_left[i] + self.hyper_theta
         self.pjk = self.N_theta_right[j] + self.hyper_theta
         pxk = self.N_phi[xij] + self.hyper_phi[xij]
+
         ##
-        self.pxk = lognormalize(np.log(pxk) - np.log(self._N_phi_sum + self.hyper_phi_sum))
-        ##\#
-        outer_kk = np.log(np.outer(self.pik, self.pjk)) + np.log(pxk) - np.log(self._N_phi_sum + self.hyper_phi_sum)
+        outer_kk = np.log(np.outer(self.pik, self.pjk)) + np.log(pxk) - np.log(self.N_phi.sum(0) + self.hyper_phi_sum)
+        ##
+
+        #pxk = lognormalize(np.log(pxk) - np.log(self.N_phi_sum + self.hyper_phi_sum))
+        #outer_kk = np.log(np.outer(self.pik, self.pjk)) + np.log(pxk) - np.log(self.N_phi_sum + self.hyper_phi_sum)
         if self.fr.is_symmetric():
             self.fr.symmetrize(outer_kk)
         return lognormalize(outer_kk)
@@ -216,7 +218,7 @@ class immsb_scvb(SVB):
         variational = self._reduce_one(i,j)
         self.samples.append(variational)
 
-    def expectation(self, iter, hack_up=10, burnin=False):
+    def expectation(self, iter, burnin=False):
         ''' Follow the White Rabbit '''
         i,j = iter
         xij = self._xij
@@ -224,13 +226,13 @@ class immsb_scvb(SVB):
 
         self._update_local_gradient(i, j, qij)
 
-        #if self._it < self.iterations-1 :
-        #    if self._it % hack_up != 0:
-        #        return
         if burnin:
+            self.samples = []
             return
         else:
             self._update_global_gradient(i, j, qij, xij)
+            #self._purge_minibatch()
+            pass
 
 
     def _update_local_gradient(self, i, j, qij):
@@ -263,9 +265,10 @@ class immsb_scvb(SVB):
 
             #self.N_phi_sum = (1 - self.gstep_phi)*self.N_phi_sum + self.gstep_phi * (self._len['nnz'] / len(self.samples)) * self._N_phi.sum(0)
             # Is the line above equivalent to the below for N_Phi_sum gradient ????
-            self._N_phi_sum = self.N_phi.sum(0)
+            self.N_phi_sum = self.N_phi.sum(0)
 
         self._update_gstep_phi()
+
         self._reset_containers()
 
 
@@ -283,3 +286,28 @@ class immsb_scvb(SVB):
         Y = sp.stats.bernoulli.rvs(pij)
 
         return Y
+
+
+if __name__ == "__main__":
+
+    import pymake
+    from pymake import frontendNetwork
+
+    data = np.arange(16).reshape(4,4)
+    data_ma = np.ma.array(data, mask = data*0)
+
+    data_ma.mask[0,1] = True
+    data_ma.mask[1,1] = True
+    data_ma.mask[1,2] = True
+    data_ma.mask[1,3] = True
+    data_ma.mask[3,3] = True
+
+    fr = frontendNetwork.from_array(data_ma)
+
+    model = immsb_scvb({}, fr)
+
+    _abc = model.data_iter(data_ma)
+
+    # data to iter
+    print(data_ma[zip(*_abc)])
+

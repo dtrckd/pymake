@@ -36,12 +36,14 @@ class MyLogFormatter(logging.Formatter):
     critical_fmt  = "====>>> CRITICAL: %(msg)s"
     err_fmt  = "===>> ERROR: %(msg)s"
     warn_fmt  = "==> Warning: %(msg)s"
-    dbg_fmt  = "%(msg)s"
-    info_fmt = "%(msg)s"
-
-    #default_fmt = '%(module): %(msg)s'
-    #default_fmt = '%(levelno)d: %(msg)s'
+    #info_fmt = '%(module): %(msg)s'
+    #info_fmt = '%(levelno)d: %(msg)s'
     default_fmt = '%(msg)s'
+
+    # CUstom Level
+    VDEBUG_LEVEL_NUM = 9
+    logging.addLevelName(VDEBUG_LEVEL_NUM, "VDEBUG")
+    logging.VDEBUG = 9
 
     def __init__(self, fmt=default_fmt):
         super().__init__(fmt=fmt, datefmt=None, style='%')
@@ -53,16 +55,15 @@ class MyLogFormatter(logging.Formatter):
         format_orig = self._style._fmt
 
         # Replace the original format with one customized by logging level
-        if record.levelno == logging.DEBUG:
-            self._style._fmt = MyLogFormatter.dbg_fmt
-        elif record.levelno == logging.INFO:
-            self._style._fmt = MyLogFormatter.info_fmt
-        elif record.levelno == logging.WARNING:
+        if record.levelno == logging.WARNING:
             self._style._fmt = MyLogFormatter.warn_fmt
         elif record.levelno == logging.ERROR:
             self._style._fmt = MyLogFormatter.err_fmt
         elif record.levelno == logging.CRITICAL:
             self._style._fmt = MyLogFormatter.critical_fmt
+        else:
+            self._style._fmt = MyLogFormatter.default_fmt
+
 
         # Call the original formatter class to do the grunt work
         result = logging.Formatter.format(self, record)
@@ -79,6 +80,8 @@ def setup_logger(level=logging.INFO, name='root'):
     if level == 1:
         level = logging.DEBUG
     elif level == 2:
+        level = logging.VDEBUG
+    elif level == 3:
         print ('what level of verbosity heeere ?')
         exit(2)
     else:
@@ -99,6 +102,15 @@ def setup_logger(level=logging.INFO, name='root'):
     # Prevent logging propagation of handler,
     # who reults in logging things multiple times
     logger.propagate = False
+
+
+    def vdebug(self, message, *args, **kws):
+        # Yes, logger takes its '*args' as 'args'.
+        if self.isEnabledFor(logging.VDEBUG):
+            self._log(logging.VDEBUG, message, args, **kws)
+
+    #logger.Logger.vdebug = vdebug
+    logging.Logger.vdebug = vdebug
 
     return logger
 
@@ -227,6 +239,20 @@ class GramExp(object):
         if size_exp > 1 and 'write' in exp:
             self._check_format(exp)
 
+        # Clean pymake extra args:
+        extra_args = ['_ignore_format_unique', ('_net', False)]
+        keys_to_remove = []
+        for _key in extra_args:
+            if type(_key) is tuple:
+                if self._conf.get(_key[0]) is _key[1]:
+                    keys_to_remove.append(_key[0])
+            elif _key in self._conf:
+                    keys_to_remove.append(_key)
+        # |
+        for key in keys_to_remove:
+            self._conf.pop(key)
+            self.exp_tensor.pop(key)
+
 
     @staticmethod
     def _check_model_typo(exp_tensor):
@@ -253,8 +279,7 @@ class GramExp(object):
                 _null = getattr(self, '_null',[])
                 _null.append(k)
 
-    @staticmethod
-    def _check_format(exp_tensor):
+    def _check_format(self, exp_tensor):
         ''' Check if all expVector are distinguishable in _format. '''
         hidden_key = []
         _format = exp_tensor.get('_format', [''])
@@ -264,15 +289,16 @@ class GramExp(object):
             _format = _format[0]
 
         format_settings = re.findall(r'{([^{}]*)}', _format)
-        for setting in exp_tensor:
-            if isinstance(setting, list) and len(setting) > 1 and setting not in format_settings:
+        for setting, values in exp_tensor.items():
+            if isinstance(values, list) and len(values) > 1 and setting not in format_settings:
                 hidden_key.append(setting)
 
-        if hidden_key:
+        if hidden_key and self._conf.get('_ignore_format_unique') is not True:
             lgg.error('The following settings are not set in _format:')
             print(' '+ '  '.join(hidden_key))
             print('Possible conflicts in experience results outputs.')
             print('Please correct {_format} key to fit the experience settings.')
+            print('To force the runs, use:  --ignore-format-unique')
             print('Exiting...')
             exit(2)
 
@@ -389,14 +415,15 @@ class GramExp(object):
         if exp is not None:
             self.exp_tensor = exp
 
+        # Global settings (unique argument)
+        self._conf = {k:v[0] for k,v in self.exp_tensor.items() if len(v) == 1}
+
         # makes it contextual.
         self._preprocess_exp()
 
         # Make lod
         self.lod = self.make_lod(self.exp_tensor)
 
-        # Global settings (unique argument)
-        self._conf = {k:v[0] for k,v in self.exp_tensor.items() if len(v) == 1}
 
     def getConfig(self):
         # get global conf...
@@ -974,7 +1001,7 @@ class GramExp(object):
         #self.pymake(sandbox=Scripts[script_name])
         self.pymake(sandbox=_script)
 
-    def execute_parallel(self, indexs=None, net=False):
+    def execute_parallel(self, indexs=None):
         cmdlines = []
         basecmd = sys.argv.copy()
 
@@ -988,9 +1015,10 @@ class GramExp(object):
         for index in indexs:
             cmdlines.append( basecmd.replace('runpara', 'run %s'%index, 1) )
 
+        net = self._conf.get('_net', False)
         if net:
-            NDL = '$HOME/src/config/configure/nodeslist'
-            PWD = '/home/ama/adulac/workInProgress/networkofgraphs/process/pymake/pymake'
+            NDL = get_global_settings('loginfile')
+            PWD = get_global_settings('remote_pwd')
             cmd = ['parallel', '-u', '--sshloginfile', NDL, '--workdir', PWD, '-C', "' '", '--eta', '--progress', '--env', 'OMP_NUM_THREADS', '{}']
         else:
             n_cores = str(self._conf.get('_cores', 0))

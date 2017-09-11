@@ -133,17 +133,17 @@ _Gram = [
         type=int, dest='_cores',
         help='number of cores to run with runpara command.'),
 
-    '--data-type', dict(
-        dest='_data_type',
-        help='Name to prepend in data/<data-type>/<refdir>/ for the output path.'),
+    '-l', '--list', dict(
+        nargs='?', dest='do_list', const='expe', action=unaggregate_append,
+        help='Request to print informations.'),
 
-    '--refdir', dict(
-        dest='_refdir',
-        help='Name to append in data/<data-typer>/<refdir>/ for the output path.'),
+    '--net', dict(
+        action='store_true', dest='_net',
+        help='[with runpara, send run to remote via loginfile.'),
 
-    '--format', dict(
-        dest='_format', type=str,
-        help='File format for saving results and models.'),
+    '--ignore-format-unique', dict(
+        action='store_true', dest='_ignore_format_unique',
+        help='dont check that if _format overllaping expe outpath name.'),
 
 
 
@@ -168,7 +168,16 @@ _Gram = [
         nargs='*', dest='_repeat', action=exp_append, #type=check_positive_integer,
         help='Index of tn nth repetitions/randomization of an design of experiments. Impact the outpout path as data/<bdir>/<refdir>/<repeat>/...'),
 
-    '-l', '--list', dict(
-        nargs='?', dest='do_list', const='expe', action=unaggregate_append,
-        help='Request to print informations.'),
+    '--data-type', dict(
+        dest='_data_type',
+        help='Name to prepend in data/<data-type>/<refdir>/ for the output path.'),
+
+    '--refdir', dict(
+        dest='_refdir',
+        help='Name to append in data/<data-typer>/<refdir>/ for the output path.'),
+
+    '--format', dict(
+        dest='_format', type=str,
+        help='File format for saving results and models.'),
+
     ]
