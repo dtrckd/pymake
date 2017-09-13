@@ -2,6 +2,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
+import re
 import logging
 import traceback,  importlib
 import numpy as np
@@ -546,39 +547,30 @@ class ExpeFormat(object):
                     obj, key = obj[:brak_pt], obj[brak_pt+1:-1]
                     try:
                         values = [str(elt[key]) for elt in getattr(model, obj).values()]
-                    except KeyError as e:
-                        traceback.print_exc()
-                        print('\n')
-                        self.log.error("expe setting ${_format} is probably wrong !")
-                        print("model `%s' do not contains one of object: %s, %s" % (str(model), key, obj))
-                        print('exiting...')
-                        os._exit(2)
+                    except (KeyError, AttributeError) as e:
+                        self.format_error(model, o)
 
                 else : # assume list
                     try:
                         values = [str(elt) for elt in getattr(model, obj)]
-                    except KeyError as e:
-                        traceback.print_exc()
-                        print('\n')
-                        self.log.error("expe setting ${_format} is probably wrong !")
-                        print("model `%s' do not contains one of object: %s" % (str(model), obj))
-                        print('exiting...')
-                        os._exit(2)
+                    except (KeyError, AttributeError) as e:
+                        self.format_error(model, o)
 
                 line.extend(values)
             else: # is atomic ie can be converted to string.
-                try:
-                    value = str(getattr(model, o))
-                except KeyError as e:
-                    traceback.print_exc()
-                    print('\n')
-                    self.log.error("expe setting ${_format} is probably wrong !")
-                    print("model `%s' do not contains one of object: %s" % (str(model), o))
-                    print('exiting...')
-                    os._exit(2)
+                try: value = str(getattr(model, o))
+                except (KeyError, AttributeError) as e:
                 line.append(value)
 
         return line
+
+    def format_error(self, model, o):
+        traceback.print_exc()
+        print('\n')
+        self.log.critical("expe setting ${_format} is probably wrong !")
+        self.log.error("model `%s' do not contains one of object: %s" % (str(model), o))
+        print('Continue...')
+        #os._exit(2)
 
 
     def write_some(self, _f,  samples, buff=20):

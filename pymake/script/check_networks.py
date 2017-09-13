@@ -139,10 +139,13 @@ class CheckNetwork(ExpeFormat):
 
         # Global burstiness
         d, dc = degree_hist(adj_to_degree(data), filter_zeros=True)
-        gof = gofit(d, dc)
         fig = plt.figure()
         plot_degree(data, spec=True, title=_spec.name(expe.corpus))
         #plot_degree_poly(data, spec=True, title=expe.corpus)
+
+        gof = gofit(d, dc)
+        if not gof:
+            return
 
         alpha = gof['alpha']
         x_min = gof['x_min']

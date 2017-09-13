@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import sys
+import re
 from datetime import datetime
 import pickle
 from copy import deepcopy
-import re
 
 import numpy as np
 import scipy as sp
@@ -34,7 +35,7 @@ class ModelBase(object):
         '_csv_typo' : None,
         'fmt' : None,
         'iterations' : 1,
-        'snapshot_freq': 20,
+        'snapshot_freq': 42,
     }
     log = logging.getLogger('root')
     def __init__(self, **kwargs):
@@ -47,6 +48,7 @@ class ModelBase(object):
         # change to semantic -> update value (t+1)
         self.samples = [] # actual sample
         self._samples    = [] # slice to save to avoid writing disk a each iteratoin. (ref format.write_it_step.)
+        self.time_it = 0
 
         for k, v in self.default_settings.items():
             self._init(k, kwargs, v)
@@ -265,7 +267,7 @@ class GibbsSampler(ModelBase):
 
     def fit(self):
 
-        lgg.info( '__init__  Entropy: %f' % self.evaluate_entropy())
+        print( '__init__ Entropy: %f' % self.evaluate_entropy())
         for _it in range(self.iterations):
             self._iteration = _it
 
@@ -279,11 +281,13 @@ class GibbsSampler(ModelBase):
                     self.samples.append([self._theta, self._phi])
 
             self.compute_measures()
+            print('.', end='')
             lgg.info('Iteration %d,  Entropy: %f \t\t K=%d  alpha: %f gamma: %f' % (_it, self._entropy, self._K,self._alpha, self._gmma))
             if self.write:
                 self.write_it_step(self)
                 if _it > 0 and _it % self.snapshot_freq == 0:
                     self.save(silent=True)
+                    sys.stdout.flush()
 
         ### Clean Things
         print()
@@ -541,14 +545,16 @@ class SVB(ModelBase):
 
             begin_it = datetime.now()
             self.sample(minibatch)
-            time_it = (datetime.now() - begin_it).total_seconds() / 60
+            self.time_it = (datetime.now() - begin_it).total_seconds() / 60
 
             self.compute_measures()
-            lgg.info('mnibatch %d/%d,  ELBO: %f,  elbo diff: %f' % (_id_mnb+1, self.chunk_len, self.elbo, self.elbo_diff))
+            print('.', end='')
+            lgg.info('Minibatch %d/%d,  ELBO: %f,  elbo diff: %f' % (_id_mnb+1, self.chunk_len, self.elbo, self.elbo_diff))
             if self.expe.get('write'):
                 self.write_it_step(self)
                 if _id_mnb > 0 and _id_mnb % self.snapshot_freq == 0:
                     self.save(silent=True)
+                    sys.stdout.flush()
 
     def sample(self, minibatch):
         '''
@@ -559,14 +565,16 @@ class SVB(ModelBase):
 
         # self.iterations is actually the burnin phase of SVB.
         for _it in range(self.iterations+1):
+            self._timestep_a = 0
             self._iteration = _it
             burnin = (_it < self.iterations)
-            #np.random.shuffle(minibatch)
+            np.random.shuffle(minibatch)
             for _id_token, iter in enumerate(minibatch):
                 self._id_token = _id_token
                 self._xij = self.fr.data_ma[tuple(iter)]
                 self.maximization(iter)
                 self.expectation(iter, burnin=burnin)
+                self._timestep_a += 1
 
 
                 #self.entropy()
@@ -584,7 +592,7 @@ class SVB(ModelBase):
         minibashed_finished = True
         if minibashed_finished:
             self._purge_minibatch()
-            self.inc_time()
+            self._timestep_b += 1
 
         #if self.elbo_diff < self.limit_elbo_diff:
         #    print('ELBO get stuck during data iteration : Sampling useless, return ?!')
@@ -594,7 +602,6 @@ class SVB(ModelBase):
         self.update_elbo()
         self._entropy_t = 0
         self._K = self.N_phi.shape[1]
-
 
     def update_elbo(self):
         ## Get real ELBO instead of ll

@@ -84,6 +84,8 @@ def setup_logger(level=logging.INFO, name='root'):
     elif level == 3:
         print ('what level of verbosity heeere ?')
         exit(2)
+    elif level == -1:
+        level = logging.WARNING
     else:
         # make a --silent option for juste error and critial log ?
         level = logging.INFO
@@ -1004,6 +1006,8 @@ class GramExp(object):
     def execute_parallel(self, indexs=None):
         cmdlines = []
         basecmd = sys.argv.copy()
+        basecmd = ['python3', './zymake.py'] + basecmd[1:]
+        #basecmd = ['pymake'] + basecmd[1:] # PATH and PYTHONPATH varible missing to be able to execute "pymake"
 
         if not indexs:
             indexs = range(len(self))
@@ -1019,7 +1023,8 @@ class GramExp(object):
         if net:
             NDL = get_global_settings('loginfile')
             PWD = get_global_settings('remote_pwd')
-            cmd = ['parallel', '-u', '--sshloginfile', NDL, '--workdir', PWD, '-C', "' '", '--eta', '--progress', '--env', 'OMP_NUM_THREADS', '{}']
+            cmd = ['parallel', '-u', '-C', "' '", '--eta', '--progress',
+                   '--sshloginfile', NDL, '--workdir', PWD, '--env', 'OMP_NUM_THREADS',  ':::', '%s'%('\n'.join(cmdlines))]
         else:
             n_cores = str(self._conf.get('_cores', 0))
             cmd = ['parallel', '-j', n_cores, '-u', '-C', "' '", '--eta', '--progress', ':::', '%s'%('\n'.join(cmdlines))]

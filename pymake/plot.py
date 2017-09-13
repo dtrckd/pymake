@@ -238,10 +238,10 @@ def plot_degree_2(P, logscale=False, colors=False, line=False, ax=None, title=No
         ax = plt.gca()
 
     x, y, yerr = P
-    y = ma.array(y)
+    y = np.ma.array(y)
     for i, v in enumerate(y):
         if v == 0:
-            y[i] = ma.masked
+            y[i] = np.ma.masked
         else:
             break
 
