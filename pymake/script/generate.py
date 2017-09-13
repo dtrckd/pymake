@@ -694,7 +694,12 @@ class GenNetwork(ExpeFormat):
             y_true = data[mask_index]
             probas = model.likelihood()[mask_index]
 
-        fpr, tpr, thresholds = roc_curve(y_true, probas)
+        try:
+            fpr, tpr, thresholds = roc_curve(y_true, probas)
+        except Exception as e:
+            print(e)
+            self.log.error('can format expe : %s' % (self.output_path))
+            return
         roc_auc = auc(fpr, tpr)
         description = os.path.basename(self.output_path)
         #description = _spec.name(expe.model)

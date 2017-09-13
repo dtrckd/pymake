@@ -15,8 +15,8 @@ class immsb_scvb(SVB):
     def _init_params(self, frontend):
         ### The time Limitations are @heere
         # frontend integration ?
-        self.__timestep = 0
-        self._timestep = 0
+        self._timestep_a = 0
+        self._timestep_b = 0
         _len = {}
         _len['K'] = self.expe.get('K')
         _len['N'] = frontend.getN()
@@ -41,10 +41,12 @@ class immsb_scvb(SVB):
             self.chunk_size = self._len['nnz']
             self.chunk_len = 1
 
-        self._time_delta = 1
-        self.chi = 1
-        self.tau = 10
-        self.kappa = 0.8
+        self._chi_a =  1
+        self._tau_a =  10
+        self._kappa_a = 0.9
+        self._chi_b = self.expe.get('chi', 2)
+        self._tau_b = self.expe.get('tau', 100)
+        self._kappa_b = self.expe.get('kappa', 0.9)
         self._update_gstep_theta()
         self._update_gstep_phi()
 
@@ -118,18 +120,18 @@ class immsb_scvb(SVB):
         ''' Gradient converge for kappa _in (0.5,1] '''
         #tau = self._len['K'] * np.log2(self._len['N'])
         # Why when tau > 2 objective decrease ???
-        chi = self.chi
-        tau = self.tau
-        kappa = self.kappa
+        chi = self._chi_a
+        tau = self._tau_a
+        kappa = self._kappa_a
 
-        self.gstep_theta = chi / (tau + self._timestep)**kappa
+        self.gstep_theta = chi / (tau + self._timestep_a)**kappa
 
     def _update_gstep_phi(self):
-        chi = self.chi
-        tau = self.tau
-        kappa = self.kappa
+        chi = self._chi_b
+        tau = self._tau_b
+        kappa = self._kappa_b
 
-        self.gstep_phi =  chi / (tau + self._timestep)**kappa
+        self.gstep_phi =  chi / (tau + self._timestep_b)**kappa
 
     def data_iter(self, batch, randomize=True):
         data_ma = batch
@@ -204,12 +206,6 @@ class immsb_scvb(SVB):
         if self.fr.is_symmetric():
             self.fr.symmetrize(outer_kk)
         return lognormalize(outer_kk)
-
-    def inc_time(self):
-        #self.__timestep += 1
-        #self._timestep = np.log(self.__timestep)
-        self._timestep += 1
-        #self._timestep += self._time_delta
 
 
     def maximization(self, iter):

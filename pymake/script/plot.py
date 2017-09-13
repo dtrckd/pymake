@@ -31,14 +31,19 @@ class Plot(ExpeFormat):
         #self.frontend = FrontendManager.load(self.expe)
 
     @ExpeFormat.plot('corpus')
-    def __call__(self, attribute='_perplexity'):
+    def __call__(self, attribute='_entropy'):
         ''' likelihood/perplexity convergence report '''
         expe = self.expe
         model = self.model
 
         ax = self.gramexp.figs[expe.corpus].fig.gca()
 
-        data = model.load_some(self.output_path+'.inf')[attribute]
+        data = self.load_some(self.output_path+'.inf')
+        if not data:
+            self.log.warning('No data for expe : %s' % self.output_path)
+            return
+
+        data = data[attribute]
         data = np.ma.masked_invalid(np.array(data, dtype='float'))
 
         #if type(y[0]) is list:
@@ -51,12 +56,12 @@ class Plot(ExpeFormat):
         ax.legend(loc='upper right',prop={'size':7})
 
     @ExpeFormat.plot
-    def plot_unique(self, attribute='_perplexity'):
+    def plot_unique(self, attribute='_entropy'):
         ''' likelihood/perplexity convergence report '''
         expe = self.expe
         model = self.model
 
-        data = model.load_some(self.output_path+'.inf')[attribute]
+        data = self.load_some(self.output_path+'.inf')[attribute]
         data = np.ma.masked_invalid(np.array(data, dtype='float'))
 
         burnin = 5
