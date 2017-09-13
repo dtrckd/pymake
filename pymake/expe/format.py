@@ -559,8 +559,7 @@ class ExpeFormat(object):
                 line.extend(values)
             else: # is atomic ie can be converted to string.
                 try: value = str(getattr(model, o))
-                except (KeyError, AttributeError) as e:
-                line.append(value)
+                except (KeyError, AttributeError) as e: line.append(value)
 
         return line
 
