@@ -273,15 +273,20 @@ class frontendNetwork(DataBase):
 
             Notes
             -----
-            Corpus are in special path : {pmk/data/training/}
+            Corpus are in special path : {pmk/data/training/corpus_name}
         """
         data = None
-        bdir = os.path.dirname(self.output_path)
-        if '_refdir' in self.expe:
-            # Ignore refdir
-            bdir = '/'.join(bdir.split('/')[:-1])
+        bdir = self.input_path
+
+        #lgg.debug('load input data is force to False !')
+        #self._load_data = False
+        if not os.path.exists(bdir):
+            lgg.error("Corpus `%s' Not found." % (bdir))
+            print('please run "fetch_networks"')
+            exit(2)
 
         fn = os.path.join(bdir, corpus_name)
+
         if self._load_data and os.path.isfile(fn+'.pk'):
             try:
                 data = self.load(fn)

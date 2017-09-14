@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import os
 import json, copy
 from itertools import chain
 from string import Template
@@ -35,10 +36,10 @@ class DataBase(object):
         # Load a .pk file for data(default: True if present)
         # + it faset
         # - some data features are not stored in .pk
-        self._load_data = expe.get('load_data', True)
+        self._load_data = expe.get('_load_data', True)
 
         # Save a .pk file of data
-        self._save_data = expe.get('save_data', False)
+        self._save_data = expe.get('_save_data', False)
 
         self.corpus_name = expe.get('corpus')
         self.model_name = expe.get('model')
@@ -79,8 +80,10 @@ class DataBase(object):
     def make_output_path(self):
         ''' Write Path (for models results) in global settings '''
         self.output_path = GramExp.make_output_path(self.expe)
-        # deprecated / outputapth is setup in gramexp
+        self.input_path = GramExp.make_input_path(self.expe)
+        # path can be updated by self.
         self.expe['output_path'] = self.output_path
+        self.expe['input_path'] = self.input_path
 
     def update_spec(self, **spec):
         v = None
