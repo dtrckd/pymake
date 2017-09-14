@@ -20,11 +20,8 @@ corpuses = ('nips12', 'kos','reuter50', 'nips', 'enron', 'nytimes', 'pubmed', '2
 
 if __name__ == '__main__':
     config = dict(
-        ##### Global settings
-        ###### I/O settings
-        bdir = '../data',
-        load_data = False,
-        save_data = True,
+        _load_data = False,
+        _save_data = True,
     )
     config.update(argparser.gramexp())
 

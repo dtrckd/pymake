@@ -198,8 +198,8 @@ class GramExp(object):
     _exp_default = {
         #'host'      : 'localhost',
         'verbose'   : logging.INFO,
-        'load_data' : True,
-        'save_data' : False,
+        '_load_data' : True, # if .pk corpus is here, load it.
+        '_save_data' : False,
         'write'     : False,
     }
 
@@ -477,7 +477,7 @@ class GramExp(object):
         return targets
 
     @classmethod
-    def make_output_path(cls, expe, _type=None, status=None):
+    def make_output_path(cls, expe, _type=None, status=None, base_dir='results'):
         """ Make a single output path from a expe/dict
             @status: f finished
             @type: pk, json or inference.
@@ -487,17 +487,7 @@ class GramExp(object):
         base = expe.get('_data_type', 'pmk-temp')
         hook = expe.get('_refdir', '')
 
-        # Corpus is an historical exception and has its own subfolder.
-        c = expe.get('corpus')
-        if not c:
-            c = ''
-            lgg.debug('warning: No Corpus given')
-        if c.lower().startswith(('clique', 'graph', 'generator')):
-            c = c.replace('generator', 'Graph')
-            c = c.replace('graph', 'Graph')
-            c = 'generator/' + c
-
-        basedir = os.path.join(os.path.dirname(__file__), _DATA_PATH, base, c)
+        basedir = os.path.join(os.path.dirname(__file__), _DATA_PATH, base, base_dir)
 
         if '_repeat' in expe and ( expe['_repeat'] is not None and expe['_repeat'] is not False):
             p = os.path.join(hook, str(expe['_repeat']))
@@ -505,12 +495,11 @@ class GramExp(object):
             p = os.path.join(hook)
 
         if not expe['_format']:
-            # upgrade to '{corpus}_{model}} or much better hash of the settings.
-            _format = '{model}_{K}_{hyper}_{homo}_{N}'
-        else:
-            _format = expe['_format']
+            # or give a hash if write is False ?
+            lgg.error('No _format given, please set _format for output_path settings.')
+            exit(2)
 
-        t = _format.format(**cls.get_file_format(expe))
+        t = expe['_format'].format(**cls.get_file_format(expe))
 
         filen = os.path.join(basedir, p, t)
 
@@ -522,6 +511,28 @@ class GramExp(object):
             return  None
         else:
             return filen
+
+    @classmethod
+    def make_input_path(cls, expe, _type=None, status=None, base_dir='training'):
+        """ Make a single input path from a expe/dict
+        """
+        expe = defaultdict(lambda: None, expe)
+        filen = None
+        base = expe.get('_data_type', 'pmk-temp')
+
+        # Corpus is an historical exception and has its own subfolder.
+        c = expe.get('corpus')
+        if not c:
+            c = ''
+            lgg.debug('warning: No Corpus given')
+        if c.lower().startswith(('clique', 'graph', 'generator')):
+            c = c.replace('generator', 'Graph')
+            c = c.replace('graph', 'Graph')
+            c = 'generator/' + c
+
+        input_dir = os.path.join(os.path.dirname(__file__), _DATA_PATH, base, base_dir, c)
+
+        return input_dir
 
     @staticmethod
     def get_file_format(expe):
@@ -959,6 +970,10 @@ class GramExp(object):
             # if no seed is given, it impossible ti get a seed from numpy
             # https://stackoverflow.com/questions/32172054/how-can-i-retrieve-the-current-seed-of-numpys-random-number-generator
             np.random.seed(seed)
+
+        # Init I/O settings
+        expe['_output_path'] = self.make_output_path(expe)
+        expe['_input_path'] = self.make_input_path(expe)
 
         self.save(np.random.get_state(), _seed_path, silent=True)
         self._seed = seed

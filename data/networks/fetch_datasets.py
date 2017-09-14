@@ -8,7 +8,7 @@
 
 
 from subprocess import call
-from os import path
+import os
 
 class DataFetcher(object):
 
@@ -65,14 +65,22 @@ class DataFetcher(object):
     def __init__(self):
         self.ua = 'Linux / Firefox 44: Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:44.0) Gecko/20100101 Firefox/44.0'
 
+    def train_target(fun):
+        def  wrap(*args, **kwargs):
+            path = fun(*args, **kwargs)
+            return os.path.join('training', path)
+        return wrap
+
+    @train_target
     def getTargetFile(self, repo):
         return  repo['filename'] + '/' + repo['url'].split('/')[-1]
 
+    @train_target
     def getIdFile(self, repo):
         return  repo['filename'] + '/' + repo['filename'] + '.' + repo['ext']
 
     def wget(self, url, out):
-        call([ 'mkdir', '-p', path.dirname(out)])
+        call([ 'mkdir', '-p', os.path.dirname(out)])
         call(['wget', url, '-O', out, '--user-agent', self.ua])
         return
 
@@ -87,8 +95,14 @@ class DataFetcher(object):
 
         for repo in REPO:
             # exceture postprocessing // mkdir etc
-            self.wget(repo['url'], self.getTargetFile(repo))
-            self.postProcess(repo)
+            try:
+                self.wget(repo['url'], self.getTargetFile(repo))
+            except Exception as e:
+                print('Error for corpus: %s' % (repo))
+                print(e)
+                continue
+            finally:
+                self.postProcess(repo)
 
         return
 
@@ -102,7 +116,7 @@ class DataFetcher(object):
 
         # Decompress
         if target_file.endswith('.tar.gz'):
-            call(['tar', 'zxvf', target_file, '-C',  repo['filename'], '--strip-components', '1'])
+            call(['tar', 'zxvf', target_file, '-C',  os.path.dirname(target_file), '--strip-components', '1'])
             # by chance only manufacturing for decmopress well in filenames...
         elif target_file.endswith('.gz'):
             call(['gzip', '-d', target_file])

@@ -84,9 +84,6 @@ class ModelManager(object):
         self.fr = frontend
 
         self.hyperparams = expe.get('hyperparams', dict())
-        output_path = GramExp.make_output_path(expe)
-        if not 'output_path' in  expe:
-            expe['output_path'] = output_path
 
         # Initialize model
         #self.model = self._get_model(frontend, data_t)

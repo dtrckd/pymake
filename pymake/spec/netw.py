@@ -79,7 +79,7 @@ class Netw(ExpDesign):
         ('_repeat'      , 1)       ,
         ('_bind'    , ['immsb_cgs.auto', 'ilfm_cgs.fix']),
         ('iterations', '200'),
-        ('_format', '{model}_{K}_{hyper}_{homo}_{N}')
+        ('_format', '{model}_{corpus}_{K}_{hyper}_{homo}_{N}')
     ))
 
     PNAS2 = ExpTensor ((
@@ -96,7 +96,7 @@ class Netw(ExpDesign):
         ('_bind'    , ['immsb_cgs.auto', 'ilfm_cgs.fix', 'ilfm_cgs.iterations.25', 'immsb_cgs.iterations.150']),
         ('iterations', [25, 150]),
         ('testset_ratio', [40, 60, 80]),
-        ('_format', '{model}_{K}_{hyper}_{homo}_{N}_{testset_ratio}')
+        ('_format', '{model}_{corpus}_{K}_{hyper}_{homo}_{N}_{testset_ratio}')
 
     ))
 
@@ -184,6 +184,7 @@ class Netw(ExpDesign):
         iterations  = 3,
         chunk       = 10,
         homo        = 0, # learn W in IBP
+        _format = '{model}_{corpus}_{K}_{hyper}_{homo}_{N}',
         _csv_typo = '# _iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
     )
 
@@ -286,6 +287,8 @@ class Netw(ExpDesign):
         _repeat = list(range(2)),
         _csv_typo = '# _iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
     )
+
+    test = default_expe
 
 
 
