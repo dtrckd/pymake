@@ -149,7 +149,8 @@ class ModelManager(object):
 
         _model = Model.get(self.expe.model)
         if not _model:
-            raise NotImplementedError(lgg.error('Model Unknown : %s' % (self.expe.model)))
+            lgg.error('Model Unknown : %s' % (self.expe.model))
+            raise NotImplementedError()
 
         ### Learn to match signature ?!?
         if self.is_model(_model, 'pymake'):

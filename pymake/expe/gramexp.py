@@ -484,7 +484,6 @@ class GramExp(object):
         """
         expe = defaultdict(lambda: None, expe)
         filen = None
-        lgg.debug('heere, get _data_type from loader corpus info !')
         base = expe.get('_data_type', 'pmk-temp')
         hook = expe.get('_refdir', '')
 

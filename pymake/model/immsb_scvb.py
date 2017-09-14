@@ -12,18 +12,18 @@ from pymake.model.modelbase import SVB
 class immsb_scvb(SVB):
 
     # *args ?
-    def _init_params(self, frontend):
+    def _init_params(self):
         ### The time Limitations are @heere
         # frontend integration ?
         self._timestep_a = 0
         self._timestep_b = 0
         _len = {}
         _len['K'] = self.expe.get('K')
-        _len['N'] = frontend.getN()
-        _len['nfeat'] = frontend.get_nfeat()
-        data_ma = frontend.data_ma
-        _len['nnz'] = frontend.ma_nnz()
-        _len['dims'] = frontend.ma_dims()
+        _len['N'] = self.fr.getN()
+        _len['nfeat'] = self.fr.get_nfeat()
+        data_ma = self.fr.data_ma
+        _len['nnz'] = self.fr.ma_nnz()
+        _len['dims'] = self.fr.ma_dims()
         _len['ones'] = (data_ma == 1).sum()
         _len['zeros'] = (data_ma == 0).sum()
         self._len = _len
@@ -41,23 +41,18 @@ class immsb_scvb(SVB):
             self.chunk_size = self._len['nnz']
             self.chunk_len = 1
 
-        self._chi_a =  1
-        self._tau_a =  10
-        self._kappa_a = 0.9
-        self._chi_b = self.expe.get('chi', 2)
-        self._tau_b = self.expe.get('tau', 100)
-        self._kappa_b = self.expe.get('kappa', 0.9)
-        self._update_gstep_theta()
-        self._update_gstep_phi()
+        self._init_gradient2()
 
         # Hyperparams
         delta = self.expe['hyperparams']['delta']
         self.hyper_phi = np.asarray(delta) if isinstance(delta, (np.ndarray, list, tuple)) else np.asarray([delta] * self._len['nfeat'])
         self.hyper_theta = np.asarray([1.0 / (i + np.sqrt(self._len['K'])) for i in range(self._len['K'])])
         self.hyper_theta /= self.hyper_theta.sum()
+        self.hyper_theta = np.array([9.99996923e-02, 3.07710143e-07, 3.07710143e-07, 3.07710143e-07, 3.07710143e-07,  3.07710143e-07])
 
         # Sufficient Statistics
-        self._ss = self._random_ss_init(frontend)
+        self._ss = self._random_s_init()
+        #self._ss = self._random_ss_init()
 
         # JUNK
         # for loglikelihood bernoulli computation
@@ -66,8 +61,85 @@ class immsb_scvb(SVB):
         self.data_A.data[self.data_A.data == 0] = -1
         self.data_B = np.ones(data_ma.shape) - data_ma
 
+    def _init_gradient(self):
+        self._chi_a =  5
+        self._tau_a =  10
+        self._kappa_a = 0.9
+        self._chi_b = self.expe.get('chi', 1)
+        self._tau_b = self.expe.get('tau', 100)
+        self._kappa_b = self.expe.get('kappa', 0.9)
+        self._update_gstep_theta()
+        self._update_gstep_phi()
 
-    def _random_ss_init(self, frontend):
+    def _init_gradient2(self):
+        self._chi_a =  5
+        self._tau_a =  10
+        self._kappa_a = 0.77
+        self._chi_b = self.expe.get('chi', 2)
+        self._tau_b = self.expe.get('tau', 100)
+        self._kappa_b = self.expe.get('kappa', 0.77)
+        self._update_gstep_theta()
+        self._update_gstep_phi()
+
+    def _random_s_init(self):
+        K = self._len['K']
+        N = self._len['N']
+        nfeat = self._len['nfeat']
+        dims = self._len['dims']
+        zeros = self._len['zeros']
+        ones = self._len['ones']
+        nnz = self._len['nnz']
+
+        ##### Topic assignment
+        dim = (N, N, 2)
+
+        # Poisson way
+        #alpha_0 = self.alpha_0
+        #z = np.array( [poisson(alpha_0, size=dim) for dim in data_dims] )
+
+        # Random way
+        K = self._len['K']
+        z = np.random.randint(0, K, (dim))
+
+        if self._is_symmetric:
+            z[:, :, 0] = np.triu(z[:, :, 0]) + np.triu(z[:, :, 0], 1).T
+            z[:, :, 1] = np.triu(z[:, :, 1]) + np.triu(z[:, :, 1], 1).T
+
+        ### Theta recovering
+        #theta_left = np.zeros((N, K), dtype=int)
+        theta_right = np.zeros((N, K), dtype=int)
+
+        self.symmetric_pt = self._is_symmetric +1
+        for i, j in self.data_iter(self.fr.data_ma):
+            k_i = z[i, j, 0]
+            k_j = z[i, j, 1]
+            theta_right[i, k_i] +=  self.symmetric_pt
+            theta_right[j, k_j] += self.symmetric_pt
+
+        ##### phi assignment
+        phi = np.zeros((nfeat, K, K), dtype=int)
+
+        for i, j in self.data_iter(self.fr.data_ma):
+            z_ij = z[i,j,0]
+            z_ji = z[i,j,1]
+            phi[self.fr.data_ma[i, j], z_ij, z_ji] += 1
+            if self._is_symmetric:
+                phi[self.fr.data_ma[j, i], z_ji, z_ij] += 1
+
+        #self.N_theta_left = theta_left
+        self.N_theta_right = theta_right
+        self.N_phi = phi
+
+        self.N_phi_sum = self.N_phi.sum(0)
+
+        # Temp Containers (for minibatch)
+        self._N_phi = np.zeros((nfeat, K,K))
+        self.hyper_phi_sum = self.hyper_phi.sum()
+        self.hyper_theta_sum = self.hyper_theta.sum()
+
+        return [self.N_phi, self.N_theta_right]
+
+    def _random_ss_init(self):
         ''' Sufficient Statistics Initialization '''
         K = self._len['K']
         N = self._len['N']
@@ -133,13 +205,13 @@ class immsb_scvb(SVB):
 
         self.gstep_phi =  chi / (tau + self._timestep_b)**kappa
 
-    def data_iter(self, batch, randomize=True):
-        data_ma = batch
+    def data_iter(self, data, randomize=False):
+        data_ma = data
 
         order = np.arange(data_ma.size).reshape(data_ma.shape)
         masked = order[data_ma.mask]
 
-        if self.fr.is_symmetric():
+        if self._is_symmetric:
             tril = np.tril_indices_from(data_ma, -1)
             tril = order[tril]
             masked =  np.append(masked, tril)
@@ -166,11 +238,11 @@ class immsb_scvb(SVB):
         return likelihood
 
     def entropy(self):
-        pij = self.likelihood(*self._reduce_latent())
+        p_ij = self.likelihood(*self._reduce_latent())
 
         # Log-likelihood
-        p_ij = self.data_A * pij + self.data_B
-        ll = np.log(pij).sum()
+        p_ij = self.data_A * p_ij + self.data_B
+        ll = np.log(p_ij).sum()
 
         # Entropy
         self._entropy = - ll / self._len['nnz']
@@ -180,20 +252,20 @@ class immsb_scvb(SVB):
         return self._entropy
 
     def _reduce_latent(self):
-        theta = self.N_theta_right + self.N_theta_left + 2*np.tile(self.hyper_theta, (self.N_theta_left.shape[0],1))
+        theta = self.N_theta_right + np.tile(self.hyper_theta, (self.N_theta_right.shape[0],1))
+        #theta = self.N_theta_left + self.N_theta_left + np.tile(self.hyper_theta, (self.N_theta_left.shape[0],1))
         theta = (theta.T / theta.sum(axis=1)).T
 
         phi = self.N_phi + np.tile(self.hyper_phi, (self.N_phi.shape[1], self.N_phi.shape[2], 1)).T
         #phi = (phi / np.linalg.norm(phi, axis=0))[1]
         phi = (phi / phi.sum(0))[1]
-        #phi = (phi / (self.N_phi_sum + self.hyper_phi_sum))[1]
 
         return theta, phi
 
     def _reduce_one(self, i, j):
         xij = self._xij
 
-        self.pik = self.N_theta_left[i] + self.hyper_theta
+        self.pik = self.N_theta_right[i] + self.hyper_theta
         self.pjk = self.N_theta_right[j] + self.hyper_theta
         pxk = self.N_phi[xij] + self.hyper_phi[xij]
 
@@ -203,8 +275,9 @@ class immsb_scvb(SVB):
 
         #pxk = lognormalize(np.log(pxk) - np.log(self.N_phi_sum + self.hyper_phi_sum))
         #outer_kk = np.log(np.outer(self.pik, self.pjk)) + np.log(pxk) - np.log(self.N_phi_sum + self.hyper_phi_sum)
-        if self.fr.is_symmetric():
+        if self._is_symmetric:
             self.fr.symmetrize(outer_kk)
+
         return lognormalize(outer_kk)
 
 
@@ -235,7 +308,7 @@ class immsb_scvb(SVB):
         _len = self._len
 
         # Sum ?
-        self.N_theta_left[i]  = (1 - self.gstep_theta)*self.N_theta_left[i]  + (self.gstep_theta * _len['dims'][i] * qij.sum(1))
+        self.N_theta_right[i] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * _len['dims'][i] * qij.sum(0))
         self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * _len['dims'][j] * qij.sum(0))
 
         # or Mean ?
@@ -248,6 +321,9 @@ class immsb_scvb(SVB):
         #self.N_theta_left[i]  = (1 - self.gstep_theta)*self.N_theta_left[i]  + (self.gstep_theta * _len['dims'][i] * pik)
         #self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * _len['dims'][j] * pjk)
 
+        if self._is_symmetric:
+            self.fr.symmetrize(self.N_theta_right)
+            #self.fr.symmetrize(self.N_theta_left)
 
         self._update_gstep_theta()
 

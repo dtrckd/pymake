@@ -548,18 +548,22 @@ class ExpeFormat(object):
                     try:
                         values = [str(elt[key]) for elt in getattr(model, obj).values()]
                     except (KeyError, AttributeError) as e:
-                        self.format_error(model, o)
+                        values = self.format_error(model, o)
 
                 else : # assume list
                     try:
                         values = [str(elt) for elt in getattr(model, obj)]
                     except (KeyError, AttributeError) as e:
-                        self.format_error(model, o)
-
-                line.extend(values)
+                        values = self.format_error(model, o)
             else: # is atomic ie can be converted to string.
-                try: value = str(getattr(model, o))
-                except (KeyError, AttributeError) as e: line.append(value)
+                try: values = str(getattr(model, o))
+                except (KeyError, AttributeError) as e: values = self.format_error(model, o)
+
+
+            if isinstance(values, list):
+                line.extend(values)
+            else:
+                line.append(values)
 
         return line
 
@@ -570,6 +574,7 @@ class ExpeFormat(object):
         self.log.error("model `%s' do not contains one of object: %s" % (str(model), o))
         print('Continue...')
         #os._exit(2)
+        return 'None'
 
 
     def write_some(self, _f,  samples, buff=20):
