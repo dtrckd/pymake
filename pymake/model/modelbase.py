@@ -265,7 +265,34 @@ class GibbsSampler(ModelBase):
         self.delta_var = self.s.zsampler.likelihood.delta.var()
 
 
+    def fdebug(self):
+
+        lkl = self.s.zsampler.likelihood
+
+        theta = self.s.zsampler.doc_topic_counts
+        phi = lkl.word_topic_counts
+        dma = lkl.data_ma
+
+        _theta = (theta.T / theta.sum(axis=1)).T
+        _phi = (phi / phi.sum(0))[1]
+
+        print(_theta.sum())
+        print(_phi.sum())
+
+        p_ij = _theta.dot(_phi).dot(_theta.T)
+        pij = lkl.data_A * p_ij + lkl.data_B
+
+        print(np.log(pij))
+        ll = - np.log(pij).sum() / lkl.nnz
+
+        print(dma.sum())
+        print(p_ij.sum())
+        print(pij.sum())
+        print(ll)
+
     def fit(self):
+
+        #self.fdebug()
 
         print( '__init__ Entropy: %f' % self.evaluate_entropy())
         for _it in range(self.iterations):
@@ -502,25 +529,30 @@ class SVB(ModelBase):
         self.fmt = '%d %.4f %.8f %.8f %d'
         super(SVB, self).__init__(**expe)
         self.limit_elbo_diff = 1e-3
+
         self.fr = frontend
+        self._is_symmetric = frontend.is_symmetric()
         self.mask = self.fr.data_ma.mask
         self.expe = expe
 
-        if expe:
-            self._init_params(frontend)
 
-    def _init_params(self, frontend):
+        #np.fill_diagonal(self.fr.data_ma, np.ma.masked)
+
+
+        if expe:
+            self._init_params()
+
+    def _init_params(self):
         raise NotImplementedError
 
-    def data_iter(self, batch, randomize=True):
+    def data_iter(self, data, randomize=False):
         raise NotImplementedError
 
     def _update_chunk_nnz(self, groups):
         _nnz = []
-        frontend = self.fr
         dama = self.fr.data_ma
         for g in groups:
-            if frontend.is_symmetric():
+            if self._is_symmetric:
                 count = 2* len(g)
                 #count =  len(g)
             else:
@@ -529,13 +561,35 @@ class SVB(ModelBase):
 
         self._nnz_vector = _nnz
 
+    def fdebug(self):
+
+        theta = self.N_theta_right
+        phi = self.N_phi
+        dma = self.fr.data_ma
+
+        _theta, _phi = self._reduce_latent()
+        print(_theta.sum())
+        print(_phi.sum())
+
+        p_ij = _theta.dot(_phi).dot(_theta.T)
+        pij = self.data_A * p_ij + self.data_B
+
+        ll = - np.log(pij).sum() / self._len['nnz']
+
+        print(dma.sum())
+        print(p_ij.sum())
+        print(pij.sum())
+        print(ll)
+
     def fit(self):
         ''' chunk is the number of row to threat in a minibach '''
 
         data_ma = self.fr.data_ma
-        _abc = self.data_iter(data_ma, randomize=False)
+        _abc = self.data_iter(data_ma, randomize=True)
         chunk_groups = np.array_split(_abc, self.chunk_len)
         self._update_chunk_nnz(chunk_groups)
+
+        #self.fdebug()
 
         self.elbo = self.entropy()
         print('__init__ Entropy %f' % self.elbo)

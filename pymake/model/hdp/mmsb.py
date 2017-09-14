@@ -201,6 +201,7 @@ class ZSampler(object):
         # pay attention to the topic added among those purged...(A topic cannot be added and purged in the same sample iteration !)
         self.last_purged_topics = []
 
+
     # @debug: symmetric matrix ?
     def _init_topics_assignement(self):
         dim = (self.J, self.J, 2)

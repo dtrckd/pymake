@@ -270,7 +270,11 @@ class frontendNetwork(DataBase):
     def networkloader(self, corpus_name, format):
         """ Load pickle or parse data.
             Format is understanding for parsing.
-            """
+
+            Notes
+            -----
+            Corpus are in special path : {pmk/data/training/}
+        """
         data = None
         bdir = os.path.dirname(self.output_path)
         if '_refdir' in self.expe:

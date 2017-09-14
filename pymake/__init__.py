@@ -3,7 +3,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import  os
 if os.environ.get('DISPLAY') is None:
+    # plot in nil/void
     import matplotlib; matplotlib.use('Agg')
+    print('==> Warning : Unable to load DISPLAY')
+    print("To force a display try : `'")
 
 
 # This lines take a while
