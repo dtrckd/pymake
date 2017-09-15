@@ -45,17 +45,16 @@ class Netw2(ExpDesign):
         iterations    = 150,
         hyper         = 'auto',
         testset_ratio = 10,
-        chunk         = 10,
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
-        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}',
+        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
     )
 
     # Test various gradient steps
     scvb_chi = ExpTensor (
-        corpus        = ['clique6', 'BA'],
+        corpus        = ['clique6', 'BA', 'manufacturing'],
         model         = 'immsb_scvb',
         N             = 200,
         chunk         = 150,

@@ -1061,7 +1061,11 @@ class GramExp(object):
     def notebook(self):
         from nbformat import v4 as nbf
         nb = nbf.new_notebook()
+
         text = ''
+        # get the expe
+        # get the script
+        # get the figure
         code = ''
         nb['cells'] = [nbf.new_markdown_cell(text),
                        nbf.new_code_cell(code) ]

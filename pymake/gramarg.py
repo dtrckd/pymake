@@ -92,6 +92,9 @@ _gram = [
     '-np', '--save_plot', dict(
         action='store_true', help="don't block figure"),
 
+     '--snapshot',dict(
+        dest='snapshot_freq', type=int),
+
     '-g', '--generative',dict(
         dest='_mode', action='store_const', const='generative'),
     '-p', '--predictive', dict(

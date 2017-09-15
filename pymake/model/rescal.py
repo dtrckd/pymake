@@ -32,14 +32,14 @@ class Rescal(ModelBase):
         self.log.info('Rescal fit info : ')
         print('fit: %s; itr: %s, exectimes: %s' % (fit, itr, exectimes))
 
-        self.theta = A
-        self.phi = R
+        self._theta = A
+        self._phi = R
 
     def likelihood(self, theta=None, phi=None):
         if theta is None:
-            theta = self.theta
+            theta = self._theta
         if phi is None:
-            phi = self.phi
+            phi = self._phi
 
         bilinear_form = theta.dot(phi).dot(theta.T)
         likelihood = 1 / (1 + np.exp(-bilinear_form))
