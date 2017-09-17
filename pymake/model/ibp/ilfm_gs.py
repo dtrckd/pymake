@@ -40,11 +40,11 @@ W_diag = -2
 
 class IBPGibbsSampling(IBP, GibbsSampler):
     __abstractmethods__ = 'model'
-    def __init__(self, assortativity=False,
+    def __init__(self, expe, frontend,
+                 assortativity=False,
                  alpha_hyper_parameter=None,
                  sigma_w_hyper_parameter=None,
-                 metropolis_hastings_k_new=True,
-                 **kwargs):
+                 metropolis_hastings_k_new=True,):
         self._sigma_w_hyper_parameter = sigma_w_hyper_parameter
         self.bilinear_matrix = None
         self.log_likelihood = None
@@ -54,12 +54,12 @@ class IBPGibbsSampling(IBP, GibbsSampler):
         self.ratio_MH_W = 0.0
         self.snapshot_freq = 20
 
-        self.burnin = kwargs.get('burnin',  5) # (inverse burnin, last sample to keep
-        self.thinning = kwargs.get('thinning',  1)
+        self.burnin = expe.get('burnin',  5) # (inverse burnin, last sample to keep
+        self.thinning = expe.get('thinning',  1)
         self._csv_typo = '# _iteration time_it _entropy _entropy_t _K _alpha _sigma_w Z_sum ratio_MH_F ratio_MH_W'
         self.fmt = '%d %.4f %.8f %.8f %d %.8f %.8f %d %.4f %.4f'
         IBP.__init__(self, alpha_hyper_parameter, metropolis_hastings_k_new)
-        GibbsSampler.__init__(self, None,  **kwargs)
+        GibbsSampler.__init__(self, expe, frontend)
     """
     @param data: a NxD np data matrix
     @param alpha: IBP hyper parameter
@@ -146,9 +146,10 @@ class IBPGibbsSampling(IBP, GibbsSampler):
                     self.save(silent=True)
 
         ### Clean Things
-        print()
         if not self.samples:
             self.samples.append([self._Z, self._W])
+        self._reduce_latent()
+        self.samples = None # free space
 
         Yd = self._Y.data
         Yd[Yd <= 0 ] = 0
@@ -500,8 +501,8 @@ class IBPGibbsSampling(IBP, GibbsSampler):
             if symmetric is True:
                 phi = np.triu(phi) + np.triu(phi, 1).T
 
-            self.theta = theta
-            self.phi = phi
+            self._theta = theta
+            self._phi = phi
         elif mode == 'predictive':
             theta, phi = self.get_params()
             K = theta.shape[1]
@@ -521,12 +522,12 @@ class IBPGibbsSampling(IBP, GibbsSampler):
         if theta is None:
             # __future__ do getTheta() : return self._Z, _W
             try:
-                theta = self.theta
+                theta = self._theta
             except:
                 theta = self._Z
         if phi is None:
             try:
-                phi = self.phi
+                phi = self._phi
             except:
                 phi = self._W
         bilinear_form = theta.dot(phi).dot(theta.T)
@@ -550,9 +551,9 @@ class IBPGibbsSampling(IBP, GibbsSampler):
 
         Z = Z[-1]
         W = np.mean(W, 0)
-        self.theta = Z
-        self.phi = W
-        self.K = self.theta.shape[1]
+        self._theta = Z
+        self._phi = W
+        self._K = self._theta.shape[1]
         return Z, W
 
     def get_mask(self):

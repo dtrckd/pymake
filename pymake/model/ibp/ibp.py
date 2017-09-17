@@ -15,7 +15,6 @@ class IBP(object):
     __metaclass__ = abc.ABCMeta
 
     """
-    @param gibbs_sampling_maximum_iteration: gibbs sampling maximum iteration
     @param alpha_hyper_parameter: hyper-parameter for alpha sampling, a tuple defining the parameter for an inverse gamma distribution
     @param metropolis_hastings_k_new: a boolean variable, set to true if we use metropolis hasting to estimate K_new, otherwise use truncated gibbs sampling """
     def __init__(self, #real_valued_latent_feature=True,

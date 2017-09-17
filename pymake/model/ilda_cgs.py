@@ -29,11 +29,12 @@ class ilda_cgs(GibbsRun):
         jointsampler = NP_CGS(zsampler, msampler, betasampler,
                               hyper=hyper, hyper_prior=hyper_prior)
 
-        super(ilda_cgs, self).__init__(jointsampler,
-                                    iterations=expe.iterations,
-                                    output_path=expe.output_path,
-                                    write=expe.write,
-                                    data_t=data_t)
+        super(ilda_cgs, self).__init__(expe, frontend,
+                                       jointsampler,
+                                       iterations=expe.iterations,
+                                       output_path=expe.output_path,
+                                       write=expe.write,
+                                       data_t=data_t)
         self.update_hyper(expe.hyperparams)
 
 
