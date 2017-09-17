@@ -29,6 +29,7 @@ ref:
 HDP: Teh et al. (2005) Gibbs sampler for the Hierarchical Dirichlet Process: Direct assignement.
 """
 
+
 # Broadcast class based on numpy matrix
 # Assume delta a scalar.
 class Likelihood(object):
@@ -57,7 +58,6 @@ class Likelihood(object):
             return
 
         self.data_ma = data
-        self.symmetric = (data == data.T).all()
         self.data_dims = self.get_data_dims()
         self.nnz = self.get_nnz()
         # Vocabulary size
@@ -85,6 +85,7 @@ class Likelihood(object):
 
 
     def compute(self, j, i, k_ji, k_ij):
+        # _reduce_one !
         return self.loglikelihood(j, i, k_ji, k_ij)
 
     def get_nfeat(self):
@@ -117,11 +118,11 @@ class Likelihood(object):
     def make_word_topic_counts(self, z, K):
         word_topic_counts = np.zeros((self.nfeat, K, K), dtype=int)
 
-        for j, i in self.data_iter():
+        for j, i in self.data_iter(randomize=True):
             z_ji = z[j,i,0]
             z_ij = z[j,i,1]
             word_topic_counts[self.data_ma[j, i], z_ji, z_ij] += 1
-            if self.symmetric:
+            if self._symmetric:
                 word_topic_counts[self.data_ma[j, i], z_ij, z_ji] += 1
 
         self.word_topic_counts = word_topic_counts
@@ -132,7 +133,7 @@ class Likelihood(object):
             order = np.arange(self.data_ma.size).reshape(self.data_ma.shape)
             masked = order[self.data_ma.mask]
 
-            if self.symmetric:
+            if self._symmetric:
                 tril = np.tril_indices_from(self.data_ma, -1)
                 tril = order[tril]
                 masked =  np.append(masked, tril)
@@ -154,7 +155,7 @@ class Likelihood(object):
         w_ji = self.data_ma[j, i]
         self.word_topic_counts[w_ji, k_ji, k_ij] -= 1
         self.total_w_k[k_ji, k_ij] -= 1
-        if self.symmetric:
+        if self._symmetric:
             self.word_topic_counts[w_ji, k_ij, k_ji] -= 1
             self.total_w_k[k_ij, k_ji] -= 1
 
@@ -180,11 +181,11 @@ class ZSampler(object):
         # z DxN_k topic assignment matrix
         # --- From this reconstruct theta and phi
 
-    def __init__(self, alpha_0, likelihood, K_init=1, data_t=None):
+    def __init__(self, alpha_0, likelihood, K_init=1):
         self.K_init = K_init or 1
         self.alpha_0 = alpha_0
         self.likelihood = likelihood
-        self.symmetric_pt = self.likelihood.symmetric +1 # the increment for Gibbs iteration
+        self.symmetric_pt = self.likelihood._symmetric +1 # the increment for Gibbs iteration
         self._nmap = likelihood._nmap
         self.nodes_list = likelihood.nodes_list
         self.data_dims = self.likelihood.data_dims
@@ -214,7 +215,7 @@ class ZSampler(object):
         K = self.K_init
         z = np.random.randint(0, K, (dim))
 
-        if self.likelihood.symmetric:
+        if self.likelihood._symmetric:
             z[:, :, 0] = np.triu(z[:, :, 0]) + np.triu(z[:, :, 0], 1).T
             z[:, :, 1] = np.triu(z[:, :, 1]) + np.triu(z[:, :, 1], 1).T
 
@@ -232,8 +233,6 @@ class ZSampler(object):
 
         lgg.debug('Sample z...')
         lgg.vdebug('#J \t #I \t  #topic')
-        doc_order = np.random.permutation(self.J)
-        # @debug: symmetric matrix !
         for j, i in self.likelihood.data_iter(randomize=True):
             lgg.vdebug( '%d \t %d \t %d' % ( j , i, self.doc_topic_counts.shape[1]-1))
             params = self.prob_zji(j, i, self._K + 1)
@@ -281,7 +280,7 @@ class ZSampler(object):
         self.doc_topic_counts[i, k_i] += self.symmetric_pt
         self.likelihood.word_topic_counts[self.likelihood.data_ma[j,i], k_j, k_i] += 1
         self.likelihood.total_w_k[k_j, k_i] += 1
-        if self.likelihood.symmetric:
+        if self.likelihood._symmetric:
             self.likelihood.word_topic_counts[self.likelihood.data_ma[j,i], k_i, k_j] += 1
             self.likelihood.total_w_k[k_i, k_j] += 1
 
@@ -393,46 +392,10 @@ class ZSampler(object):
 
         return self._theta, self._phi
 
-    # Mean can be arithmetic or geometric
-    def entropy(self, data=None, mean='arithmetic'):
-        phi = self._phi
-        if data is None:
-            data = self.likelihood.data_ma
-            nnz = self.likelihood.nnz
-            theta = self._theta
-        else:
-            nnz = data.sum()
-            theta = self.predictive_topics(data)
-
-        ### based on aritmetic mean
-
-        ### Loop Approach
-        #entropy = 0.0
-        #_indices = lambda x: x.nonzero()[1]
-        #for j in xrange(self.J):
-        #    data_j = [ (i, data[j, i]) for i in _indices(data[j]) ]
-        #    entropy += np.sum( cnt_wi * np.log(theta[j] * phi[w_ji]).sum() for w_ji, cnt_wi in data_j )
-
-        ### Vectorized approach
-        # < 2s for kos and nips k=50, quite fast
-        p_ji =  theta.dot(phi).dot(theta.T)
-        # p_ji if a links, (1 - p_ji) if not a links
-        p_ji = self.likelihood.data_A * p_ji + self.likelihood.data_B
-
-        # Commented because count matrices are kept symmetric. So normalized over all to keep coherence.
-        #if self.likelihood.symmetric:
-        #    entropy =  np.log(p_ji[self.likelihood.triu]).sum()
-        #else:
-        #    entropy =  np.log(p_ji).sum()
-        ll =  np.log(p_ji).sum()
-
-        entropy = - ll / nnz
-        return entropy
-
 class ZSamplerParametric(ZSampler):
     # Parametric Version of HDP sampler. Number of topics fixed.
 
-    def __init__(self, alpha_0, likelihood, K, alpha='asymmetric', data_t=None):
+    def __init__(self, alpha_0, likelihood, K, alpha='asymmetric'):
         self.K = self.K_init = self._K =  K
         if 'alpha' in ('symmetric', 'fix'):
             alpha = np.ones(K)*1/K
@@ -443,13 +406,11 @@ class ZSamplerParametric(ZSampler):
             alpha = np.ones(K)*alpha_0
         self.logalpha = np.log(alpha)
         self.alpha = alpha
-        super(ZSamplerParametric, self).__init__(alpha_0, likelihood, self.K, data_t=data_t)
+        super(ZSamplerParametric, self).__init__(alpha_0, likelihood, self.K)
 
     def sample(self):
         lgg.debug('Sample z...')
         lgg.vdebug('#J \t #I \t #topic')
-        doc_order = np.random.permutation(self.J)
-        # @debug: symmetric matrix !
         for j, i in self.likelihood.data_iter(randomize=True):
             lgg.vdebug( '%d \t %d \t %d' % (j , i, self.doc_topic_counts.shape[1]-1))
             params = self.prob_zji(j, i, self.K)
@@ -557,18 +518,12 @@ class CGS(object):
 
 class GibbsRun(GibbsSampler):
     __abstractmethods__ = 'model'
-    def __init__(self, sampler,  data_t=None, **kwargs):
-        self.burnin = kwargs.get('burnin',  5) # (inverse burnin, last sample to keep
-        self.thinning = kwargs.get('thinning',  1)
+    def __init__(self, expe, frontend):
         self.comm = dict() # Empty dict to store communities and blockmodel structure
-        self.data_t = data_t
         #self._csv_typo = '# it it_time likelihood likelihood_t K alpha gamma alpha_mean delta_mean alpha_var delta_var'
         self.fmt = '%d %.4f %.8f %.8f %d %.8f %.8f %.4f %.4f %.4f %.4f'
         #self.fmt = '%s %s %s %s %s %s %s %s %s %s %s'
-        GibbsSampler.__init__(self, sampler, **kwargs)
-
-        self.mask = self.s.zsampler.likelihood.data_ma.mask
-        self.symmetric = self.s.zsampler.likelihood.symmetric
+        GibbsSampler.__init__(self, expe, frontend)
 
     def limit_k(self, N, directed=True):
         alpha, gmma, delta = self.get_hyper()
@@ -625,8 +580,8 @@ class GibbsRun(GibbsSampler):
             if symmetric is True:
                 phi = np.triu(phi) + np.triu(phi, 1).T
 
-            self.theta = theta
-            self.phi = phi
+            self._theta = theta
+            self._phi = phi
         elif mode == 'predictive':
             try: theta, phi = self.get_params()
             except: return self.generate(N, K, hyperparams, 'generative', symmetric)
@@ -822,3 +777,98 @@ class GibbsRun(GibbsSampler):
         self.comm['block_ties'] = bm
         return bm
 
+    def compute_measures(self):
+        self._K = self.s.zsampler._K
+
+        self._entropy = self.entropy()
+        #self._entropy_t = self.predictive_likelihood()
+        self._entropy_t = np.nan
+
+        alpha_0 = self.s.zsampler.alpha_0
+        try:
+            gmma = self.s.betasampler.gmma
+            alpha = np.exp(self.s.zsampler.log_alpha_beta)
+        except:
+            gmma = np.nan
+            alpha = np.exp(self.s.zsampler.logalpha)
+
+        self._alpha = alpha_0
+        self._gmma = gmma
+        self.alpha_mean = alpha.mean()
+        self.alpha_var = alpha.var()
+        self.delta_mean = self.s.zsampler.likelihood.delta.mean()
+        self.delta_var = self.s.zsampler.likelihood.delta.var()
+
+    # Mean can be arithmetic or geometric
+    def entropy(self):
+        buritos = self.s.zsampler
+        self._theta, self._phi = buritos.estimate_latent_variables()
+        pij = self.likelihood(self._theta, self._phi)
+
+        # Log-likelihood
+        pij = buritos.likelihood.data_A * pij + buritos.likelihood.data_B
+        ll = np.log(pij).sum()
+
+        # Entropy
+        self._entropy = - ll / buritos.likelihood.nnz
+
+        # Perplexity is 2**H(X).
+
+        return self._entropy
+
+
+    def purge(self):
+        self.s.zsampler.betasampler = None
+        self.s.zsampler._nmap = None
+        self.s.msampler = None
+        self.s.betasampler = None
+        self.s.zsampler.likelihood = None
+
+
+
+
+    def fdebug(self):
+
+        lkl = self.s.zsampler.likelihood
+
+        theta = self.s.zsampler.doc_topic_counts
+        phi = lkl.word_topic_counts
+        dma = lkl.data_ma
+
+        _theta = (theta.T / theta.sum(axis=1)).T
+        _phi = (phi / phi.sum(0))[1]
+
+        print(_theta.sum())
+        print(_phi.sum())
+
+        p_ij = _theta.dot(_phi).dot(_theta.T)
+        pij = lkl.data_A * p_ij + lkl.data_B
+
+        print(np.log(pij))
+        ll = - np.log(pij).sum() / lkl.nnz
+
+        print(dma.sum())
+        print(p_ij.sum())
+        print(pij.sum())
+        print(ll)
+
+    def get_hyper(self):
+        if not hasattr(self, '_alpha'):
+            try:
+                self._delta = self.s.zsampler.likelihood.delta
+                if type(self.s) is NP_CGS:
+                    self._alpha = self.s.zsampler.alpha_0
+                    self._gmma = self.s.betasampler.gmma
+                else:
+                    self._alpha = self.s.zsampler.alpha
+                    self._gmma = None
+            except:
+                lgg.error('Need to propagate hyperparameters to BaseModel class')
+                self._delta = None
+                self._alpha = None
+                self._gmma =  None
+        return self._alpha, self._gmma, self._delta
+
+
+    def sample(self):
+        self.s.sample()

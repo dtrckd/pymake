@@ -22,6 +22,13 @@ lgg = logging.getLogger('root')
 
 # Todo: rethink sampler and Likelihood class definition.
 
+def mmm(fun):
+    # Todo / wrap latent variable routine
+    # text vs networks type of data ?
+    # * likelihood ?
+    # * simlaritie ?
+    return fun
+
 class ModelBase(object):
     """"  Root Class for all the Models.
 
@@ -31,19 +38,22 @@ class ModelBase(object):
     __abstractmethods__ = 'model'
     default_settings = {
         'write' : False,
-        'output_path' : 'tm-output',
         '_csv_typo' : None,
-        'fmt' : None,
-        'iterations' : 1,
+        '_fmt' : None,
+        'iterations' : 3,
         'snapshot_freq': 42,
+        'burnin' :  5, # (inverse burnin, last sample to keep
+        'thinning' : 1,
     }
     log = logging.getLogger('root')
-    def __init__(self, **kwargs):
+    def __init__(self, frontend, **expe):
         """ Model Initialization strategy:
             1. self lookup from child initalization
             2. kwargs lookup
             3. default value
         """
+
+        self.expe = expe
 
         # change to semantic -> update value (t+1)
         self.samples = [] # actual sample
@@ -51,28 +61,78 @@ class ModelBase(object):
         self.time_it = 0
 
         for k, v in self.default_settings.items():
-            self._init(k, kwargs, v)
+            self._init(k, expe, v)
+
+        # @debug Frontend integratoin !
+        # @if frontend.type == 'network', then
+        self.frontend = frontend
+        self._is_symmetric = frontend.is_symmetric()
+        self.mask = self.frontend.data_ma.mask
+        #np.fill_diagonal(self.frontend.data_ma, np.ma.masked)
+        # @else ... (text, image, son<3)
 
 
-        # Why this the fuck ? to remove
-        #super(ModelBase, self).__init__()
+        if expe and hasattr(self, '_init_params'):
+            self._init_params()
 
-    def _init(self, key, kwargs, default):
+
+    def _init(self, key, expe, default):
         if hasattr(self, key):
             value = getattr(self, key)
-        elif key in kwargs:
-            value = kwargs[key]
+        elif key in expe:
+            value = expe[key]
         else:
             value = default
 
         return setattr(self, key, value)
 
+    def data_iter(self, data=None, randomize=False):
+        ''' Iterate over various type of data :
+            * ma.array (ignore masked
+            * ndarray (todo ?)
+            * What format for temporal/chunk/big data... ?
+        '''
+        return self._data_iter_ma(data, randomize)
+
+    def _data_iter_ma(self, data, randomize):
+        if data is None:
+            data_ma = self.frontend.data_ma
+        else:
+            data_ma = data
+
+        order = np.arange(data_ma.size).reshape(data_ma.shape)
+        masked = order[data_ma.mask]
+
+        if self._is_symmetric:
+            tril = np.tril_indices_from(data_ma, -1)
+            tril = order[tril]
+            masked =  np.append(masked, tril)
+
+        # Remove masked value to the iteration list
+        order = np.delete(order, masked)
+        # Get the indexes of nodes (i,j) for each observed interactions
+        order = list(zip(*np.unravel_index(order, data_ma.shape)))
+
+        if randomize is True:
+            np.random.shuffle(order)
+        return order
+
+    @mmm #frontend
+    def likelihood(self, theta=None, phi=None):
+        if theta is None:
+            theta = self._theta
+        if phi is None:
+            phi = self._phi
+        likelihood = theta.dot(phi).dot(theta.T)
+        return likelihood
+
+
 
     def similarity_matrix(self, theta=None, phi=None, sim='cos'):
         if theta is None:
-            theta = self.theta
+            theta = self._theta
         if phi is None:
-            phi = self.phi
+            phi = self._phi
 
         features = theta
         if sim in  ('dot', 'latent'):
@@ -91,10 +151,14 @@ class ModelBase(object):
         return sim
 
     def get_params(self):
-        if hasattr(self, 'theta') and hasattr(self, 'phi'):
-            return self.theta, self.phi
+        if hasattr(self, '_theta') and hasattr(self, '_phi'):
+            return self._theta, self._phi
         else:
             return self._reduce_latent()
+
+    def _reduce_latent(self):
+        ''' Estimate global parameters of a model '''
+        raise NotImplementedError
 
     def getK(self):
         theta, _ = self.get_params()
@@ -104,9 +168,6 @@ class ModelBase(object):
         theta, _ = self.get_params()
         return theta.shape[0]
 
-    def purge(self):
-        """ Remove variable that are non serializable. """
-        return
 
     def update_hyper(self):
         lgg.error('no method to update hyperparams')
@@ -117,7 +178,7 @@ class ModelBase(object):
         return
 
     def save(self, silent=False):
-        fn = self.output_path + '.pk'
+        fn = self.expe.get('output_path') + '.pk'
         model = deepcopy(self)
         model.purge()
         to_remove = []
@@ -222,9 +283,6 @@ class ModelBase(object):
     def get_clusters(self):
         raise NotImplementedError
 
-def mmm(fun):
-    # Todo / wrap latent variable routine
-    return fun
 
 class GibbsSampler(ModelBase):
     ''' Implmented method, except fit (other?) concerns MMM type models :
@@ -235,72 +293,33 @@ class GibbsSampler(ModelBase):
         -> use a decorator @mmm to get latent variable ...
     '''
     __abstractmethods__ = 'model'
-    def __init__(self, sampler,  **kwargs):
-        self.s = sampler
-        super(GibbsSampler, self).__init__(**kwargs)
+    def __init__(self, expe, frontend):
+        super(GibbsSampler, self).__init__(frontend, **expe)
 
     @mmm
     def compute_measures(self):
-        self._K = self.s.zsampler._K
+        self._entropy = self.entropy()
+        #self._entropy_t = self.predictive_likelihood()
+        self._entropy_t = np.nan
 
-        self._entropy = self.evaluate_entropy()
-        if self.data_t is not None:
-            self._entropy_t = self.predictive_likelihood()
-        else:
-            self._entropy_t = np.nan
-
-        alpha_0 = self.s.zsampler.alpha_0
-        try:
-            gmma = self.s.betasampler.gmma
-            alpha = np.exp(self.s.zsampler.log_alpha_beta)
-        except:
-            gmma = np.nan
-            alpha = np.exp(self.s.zsampler.logalpha)
-
-        self._alpha = alpha_0
-        self._gmma = gmma
-        self.alpha_mean = alpha.mean()
-        self.alpha_var = alpha.var()
-        self.delta_mean = self.s.zsampler.likelihood.delta.mean()
-        self.delta_var = self.s.zsampler.likelihood.delta.var()
-
-
-    def fdebug(self):
-
-        lkl = self.s.zsampler.likelihood
-
-        theta = self.s.zsampler.doc_topic_counts
-        phi = lkl.word_topic_counts
-        dma = lkl.data_ma
-
-        _theta = (theta.T / theta.sum(axis=1)).T
-        _phi = (phi / phi.sum(0))[1]
-
-        print(_theta.sum())
-        print(_phi.sum())
-
-        p_ij = _theta.dot(_phi).dot(_theta.T)
-        pij = lkl.data_A * p_ij + lkl.data_B
-
-        print(np.log(pij))
-        ll = - np.log(pij).sum() / lkl.nnz
-
-        print(dma.sum())
-        print(p_ij.sum())
-        print(pij.sum())
-        print(ll)
+        self._alpha = np.nan
+        self._gmma= np.nan
+        self.alpha_mean = np.nan
+        self.delta_mean = np.nan
+        self.alpha_var = np.nan
+        self.delta_var= np.nan
 
     def fit(self):
 
         #self.fdebug()
 
-        print( '__init__ Entropy: %f' % self.evaluate_entropy())
+        print( '__init__ Entropy: %f' % self.entropy())
         for _it in range(self.iterations):
             self._iteration = _it
 
             ### Sampling
             begin_it = datetime.now()
-            self.s.sample()
+            self.sample()
             self.time_it = (datetime.now() - begin_it).total_seconds() / 60
 
             if _it >= self.iterations - self.burnin:
@@ -317,19 +336,11 @@ class GibbsSampler(ModelBase):
                     sys.stdout.flush()
 
         ### Clean Things
-        print()
         if not self.samples:
             self.samples.append([self._theta, self._phi])
+        self._reduce_latent()
+        self.samples = None # free space
         return
-
-    @mmm #frontend
-    def likelihood(self, theta=None, phi=None):
-        if theta is None:
-            theta = self.theta
-        if phi is None:
-            phi = self.phi
-        likelihood = theta.dot(phi).dot(theta.T)
-        return likelihood
 
 
     @mmm
@@ -352,37 +363,6 @@ class GibbsSampler(ModelBase):
         if gmma:
             self._gmma = gmma
 
-    @mmm
-    def get_hyper(self):
-        if not hasattr(self, '_alpha'):
-            try:
-                self._delta = self.s.zsampler.likelihood.delta
-                if type(self.s) is NP_CGS:
-                    self._alpha = self.s.zsampler.alpha_0
-                    self._gmma = self.s.betasampler.gmma
-                else:
-                    self._alpha = self.s.zsampler.alpha
-                    self._gmma = None
-            except:
-                lgg.error('Need to propagate hyperparameters to BaseModel class')
-                self._delta = None
-                self._alpha = None
-                self._gmma =  None
-        return self._alpha, self._gmma, self._delta
-
-    # Nasty hack to make serialisation possible
-    @mmm
-    def purge(self):
-        self.s.zsampler.betasampler = None
-        self.s.zsampler._nmap = None
-        self.s.msampler = None
-        self.s.betasampler = None
-        self.s.zsampler.likelihood = None
-
-    @mmm
-    def evaluate_entropy(self, data=None):
-        self._theta, self._phi = self.s.zsampler.estimate_latent_variables()
-        return self.s.zsampler.entropy(data)
 
     # keep only the most representative dimension (number of topics) in the samples
     @mmm
@@ -401,10 +381,13 @@ class GibbsSampler(ModelBase):
 
         lgg.debug('Samples Selected: %d over %s' % (len(theta), len(theta)+len(ind_rm) ))
 
-        self.theta = np.mean(theta, 0)
-        self.phi = np.mean(phi, 0)
-        self.K = self.theta.shape[1]
-        return self.theta, self.phi
+        self._theta = np.mean(theta, 0)
+        self._phi = np.mean(phi, 0)
+        self.K = self._theta.shape[1]
+        return self._theta, self._phi
+
+    def purge(self):
+        pass
 
 # lambda fail to find import if _stirling if not
 # visible in the global scope.
@@ -415,7 +398,8 @@ try:
     _stirling_mat = load_stirling()
     STIRLING_LOADED = True
 except Exception as e:
-    print(e)
+    print('Stirling matrix cant be loaded:')
+    print('error: ', e)
     STIRLING_LOADED = False
 
 class MSampler(object):
@@ -525,32 +509,16 @@ class SVB(ModelBase):
 
     __abstractmethods__ = 'model'
 
-    def __init__(self, expe, frontend=None):
-        self.fmt = '%d %.4f %.8f %.8f %d'
-        super(SVB, self).__init__(**expe)
-        self.limit_elbo_diff = 1e-3
-
-        self.fr = frontend
-        self._is_symmetric = frontend.is_symmetric()
-        self.mask = self.fr.data_ma.mask
-        self.expe = expe
-
-
-        #np.fill_diagonal(self.fr.data_ma, np.ma.masked)
-
-
-        if expe:
-            self._init_params()
+    def __init__(self, expe, frontend):
+        #self.fmt = '%d %.4f %.8f %.8f %d'
+        super(SVB, self).__init__(frontend, **expe)
 
     def _init_params(self):
         raise NotImplementedError
 
-    def data_iter(self, data, randomize=False):
-        raise NotImplementedError
 
     def _update_chunk_nnz(self, groups):
         _nnz = []
-        dama = self.fr.data_ma
         for g in groups:
             if self._is_symmetric:
                 count = 2* len(g)
@@ -565,7 +533,7 @@ class SVB(ModelBase):
 
         theta = self.N_theta_right
         phi = self.N_phi
-        dma = self.fr.data_ma
+        dma = self.frontend.data_ma
 
         _theta, _phi = self._reduce_latent()
         print(_theta.sum())
@@ -584,7 +552,7 @@ class SVB(ModelBase):
     def fit(self):
         ''' chunk is the number of row to threat in a minibach '''
 
-        data_ma = self.fr.data_ma
+        data_ma = self.frontend.data_ma
         _abc = self.data_iter(data_ma, randomize=True)
         chunk_groups = np.array_split(_abc, self.chunk_len)
         self._update_chunk_nnz(chunk_groups)
@@ -619,13 +587,14 @@ class SVB(ModelBase):
 
         # self.iterations is actually the burnin phase of SVB.
         for _it in range(self.iterations+1):
+            self.log.debug('init timestep A ?')
             self._timestep_a = 0
             self._iteration = _it
             burnin = (_it < self.iterations)
             np.random.shuffle(minibatch)
             for _id_token, iter in enumerate(minibatch):
                 self._id_token = _id_token
-                self._xij = self.fr.data_ma[tuple(iter)]
+                self._xij = self.frontend.data_ma[tuple(iter)]
                 self.maximization(iter)
                 self.expectation(iter, burnin=burnin)
                 self._timestep_a += 1
@@ -635,7 +604,7 @@ class SVB(ModelBase):
                 #print(self._pp)
 
             self.compute_measures()
-            if self._iteration != self.iterations-1 and self.expe.verbose < 20:
+            if self._iteration != self.iterations-1 and self.expe.get('verbose', 20) < 20:
                 lgg.debug('it %d,  ELBO: %f, elbo diff: %f \t K=%d' % (_it, self.elbo, self.elbo_diff, self._K))
                 if self.expe.get('write'):
                     self.write_it_step(self)
@@ -655,7 +624,7 @@ class SVB(ModelBase):
     def compute_measures(self):
         self.update_elbo()
         self._entropy_t = 0
-        self._K = self.N_phi.shape[1]
+
 
     def update_elbo(self):
         ## Get real ELBO instead of ll
@@ -664,7 +633,7 @@ class SVB(ModelBase):
         self.elbo = nelbo
         return self.elbo
 
-    def get_elbo(self):
+    def compute_elbo(self):
         raise NotImplementedError
 
     def maximization(self):
@@ -677,4 +646,4 @@ class SVB(ModelBase):
         raise NotImplementedError
 
     def purge(self):
-        self.fr = None
+        self.frontend = None

@@ -81,7 +81,6 @@ class ModelManager(object):
     """
     def __init__(self, expe=None, frontend=None, data_t=None):
         self.expe = expe
-        self.fr = frontend
 
         self.hyperparams = expe.get('hyperparams', dict())
 

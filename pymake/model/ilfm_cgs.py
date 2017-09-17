@@ -16,8 +16,7 @@ class ilfm_cgs(IBPGibbsSampling):
         alpha_hyper_parameter = expe.hyper
         assortativity = expe.get('homo')
 
-        data = frontend.data_ma #####
-        data_t = frontend.data_t
+        data = frontend.data_ma
 
         #if '_cgs' in expe.model:
         #    metropolis_hastings_k_new = False
@@ -26,13 +25,11 @@ class ilfm_cgs(IBPGibbsSampling):
         if assortativity == 2:
             raise NotImplementedError('Warning !: Metropolis Hasting not implemented with matrix normal. Exiting....')
 
-        super(ilfm_cgs, self).__init__(assortativity,
+        super(ilfm_cgs, self).__init__(expe, frontend,
+                                       assortativity,
                                        alpha_hyper_parameter,
                                        sigma_w_hyper_parameter,
-                                       metropolis_hastings_k_new,
-                                       iterations=expe.iterations,
-                                       output_path=expe.output_path,
-                                       write=expe.write)
+                                       metropolis_hastings_k_new)
 
         self._initialize(data, alpha, sigma_w, KK=expe.K)
         self.update_hyper(expe.hyperparams)
@@ -40,4 +37,13 @@ class ilfm_cgs(IBPGibbsSampling):
         lgg.warn('Warning: K is IBP initialized...')
 
         self.normalization_fun = lambda x : 1/(1 + np.exp(-x))
+
+class lfm_cgs(ilfm_cgs):
+    def __init__(self, expe, frontend):
+        super().__init__(expe, frontend)
+
+        self.log.warning(''' Random initializatin intead of ibp ? ''')
+        self._metropolis_hastings_k_new = False
+
+
 
