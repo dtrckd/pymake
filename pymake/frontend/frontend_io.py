@@ -412,11 +412,23 @@ class ModelsLoader(PackageWalker):
         * Need a `fit' method to be identified as model,
         * lookup for models inside a module by fuzzing the name of the module.
     '''
+    def submodule_hook(self, *args,  **kwargs):
+        return super(ModelsLoader, self).submodule_hook_by_attr(*args,  **kwargs)
 
     @classmethod
     def get_packages(cls, module_name, **kwargs):
         if not 'attr_filter' in kwargs:
             kwargs['attr_filter'] = 'fit'
+
+        # need of not needs ?
+        #if isinstance(module_name, list):
+        #    packs = {}
+        #    for m in module_name:
+        #        packs.update(cls(m, **kwargs).packages)
+        #    return packs
+        #else:
+        #    return cls(module_name, **kwargs).packages
+
         return cls(module_name, **kwargs).packages
 
     @staticmethod
@@ -452,9 +464,6 @@ class ModelsLoader(PackageWalker):
             packages[name] = obj
 
         return packages
-
-    def submodule_hook(self, *args,  **kwargs):
-        return super(ModelsLoader, self).submodule_hook_by_attr(*args,  **kwargs)
 
     @classmethod
     def get_atoms(cls,  _type='short'):
@@ -508,7 +517,7 @@ class ScriptsLoader(PackageWalker):
 
     @classmethod
     def get_atoms(cls):
-        t = dict()
+        atoms = dict()
         modules = get_global_settings('_script')
         modules = [modules] if type(modules) is str else modules
         for module in modules:
@@ -520,74 +529,94 @@ class ScriptsLoader(PackageWalker):
             #for method, _class in classs.packages.items():
             #    append decoratpr information to filter @atpymake
 
-            for k, v in s._cls_browse.items():
-                methods = list(v.methods.keys())
+            for name, module in s._cls_browse.items():
+                methods = list(module.methods.keys())
 
                 for m in methods.copy():
-                    _m = getattr(s.packages[k.lower()], m)
+                    _m = getattr(s.packages[name.lower()], m)
                     if not inspect.isfunction(_m) and m != '__call__':
                         methods.remove(m)
                     elif '__call__' == m:
                         methods.remove('__call__')
-                        methods.append(v.name.lower())
+                        methods.append(name.lower())
                     elif m.startswith('_'):
                         methods.remove(m)
-                t[v.name] = methods
-        return t
+                atoms[name] = methods
+        return atoms
 
 class SpecLoader(PackageWalker):
     ''' Load specification of design experimentation :
         * Lookup for ExpDesign subclass in the target module.
     '''
-    # @obsolete
-    #def __init__(self):
-    #    module_name = get_global_settings('_spec')
-    #    class_filter = ExpDesign
-    #    super(SpecLoader, self).__init__(module_name, class_filter=class_filter)
-
     def submodule_hook(self, *args, **kwargs):
         return super(SpecLoader, self).submodule_hook_by_class(*args, **kwargs)
-
-    @staticmethod
-    def _default_spec():
-        #module_name = get_global_settings('_spec')
-        module_name = 'pymake.spec.netw'
-        spec = importlib.import_module(module_name)
-        for m in dir(spec):
-            o = getattr(spec,m)
-            if issubclass(o, ExpDesign) and not o is ExpDesign:
-                return o()
 
     @staticmethod
     def default_spec():
         import pymake
         return getattr(pymake, '__spec')
 
+    #@staticmethod
+    #def _default_spec():
+    #    #module_name = get_global_settings('_spec')
+    #    module_name = 'pymake.spec.netw'
+    #    spec = importlib.import_module(module_name)
+    #    for m in dir(spec):
+    #        o = getattr(spec,m)
+    #        if issubclass(o, ExpDesign) and not o is ExpDesign:
+    #            return o()
+
+    @classmethod
+    def get_packages(cls, **kwargs):
+        module_name = get_global_settings('_spec')
+        if not 'class_filter' in kwargs:
+            kwargs['class_filter'] = ExpDesign
+
+        if isinstance(module_name, list):
+            packs = {}
+            for m in module_name:
+                packs.update(cls(m, **kwargs).packages)
+            return packs
+        else:
+            return cls(module_name, **kwargs).packages
+
     @classmethod
     def get_atoms(cls):
         expe_designs = []
+        atoms = dict()
+
         modules = get_global_settings('_spec')
         modules = [modules] if type(modules) is str else modules
         for module in modules:
 
-            s = cls(module, class_filter=ExpeFormat)
+            s = cls(module, class_filter=ExpDesign)
 
-            for k, v in s._cls_browse.items():
-                spec = importlib.import_module(v.module)
-                for m in dir(spec):
-                    if m.startswith('__'):
-                        continue
-                    o = getattr(spec,m)
-                    if not inspect.isclass(o):
-                        continue
-                    if issubclass(o, ExpDesign) and not o is ExpDesign:
-                        expe_designs.append(o)
+            for name, module in s._cls_browse.items():
+                #print(name, module)
+                #print(module.name, module.file, module.module, module.super)
+                #methods = list(v.methods.keys())
 
-        expdesign = ExpDesign()
-        for s in expe_designs:
-            expdesign.update(s())
+                expd = getattr(importlib.import_module(module.module), name)()
+                atoms[name] = expd._specs()
+        return atoms
 
-        return expdesign
+
+        #    for k, v in s._cls_browse.items():
+        #        spec = importlib.import_module(v.module)
+        #        for m in dir(spec):
+        #            if m.startswith('__'):
+        #                continue
+        #            o = getattr(spec,m)
+        #            if not inspect.isclass(o):
+        #                continue
+        #            if issubclass(o, ExpDesign) and not o is ExpDesign:
+        #                expe_designs.append(o)
+
+        #expdesign = ExpDesign()
+        #for s in expe_designs:
+        #    expdesign.update(s())
+
+        #return expdesign
 
 
 

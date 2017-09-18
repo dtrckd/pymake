@@ -4,35 +4,64 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os
 import re
 import logging
+from copy import copy
 import traceback,  importlib
 import numpy as np
 from collections import OrderedDict, defaultdict
 from decorator import decorator
 from functools import wraps
 
-from pymake.util.utils import colored, basestring, get_dest_opt_filled
+from pymake.util.utils import colored, basestring, get_dest_opt_filled, make_path
 from pymake.index.indexmanager import IndexManager as IX
+
+lgg = logging.getLogger('root')
+
+
+
+
+''' this what Pandas does ? So here is a Lama '''
+
 
 from tabulate import tabulate
 
+# Ugky, factorize
+def _table_(tables, headers=[], max_line=10, max_row=30, name=''):
+    raw = []
+    for sec, table in enumerate(tables):
+        table = sorted(table, key=lambda x:x[0])
+        size = len(table)
+        if size == 0:
+            continue
+        col = int((size-0.1) // max_line)
+        junk = max_line % size
+        table += ['-']*junk
+        table = [table[j:max_line*(i+1)] for i,j in enumerate(range(0, size, max_line))]
+        table = np.char.array(table).astype('|S'+str(max_row))
+        fmt = 'simple'
+        raw.append(tabulate(table.T,
+                            headers=[headers[sec]]+['']*(col),
+                            tablefmt=fmt))
+    sep = '\n'+'='*20+'\n'
+    return sep[1:] + sep.join(raw)
 
-lgg = logging.getLogger('root')
+
+
 
 # Not sure this one is necessary, or not here
 class BaseObject(object):
     ''' Notes : Avoid method conflict by ALWAYS settings this class in last
                 at class definitions.
     '''
-    def __init__(self, name):
+    def __init__(self, name='BaseObject'):
         # Le ruban est infini...
         #if name is None:
         #    print(traceback.extract_stack()[-2])
         #    fn,ln,func,text = traceback.extract_stack()[-2]
         #    name = text[:text.find('=')].strip()
-        self.__name__ = name
+        pass
 
-    def name(self):
-        return self.__name__
+    #def _name(self):
+    #    return self.__name__
     def items(self):
         return [(str(i), j) for i,j in enumerate(self)]
     def table(self):
@@ -78,12 +107,10 @@ class ExpVector(list, BaseObject):
     def __sub__(self, other):
         return self.__class__([item for item in self if item not in other])
 
-
-class Script(BaseObject):
+class Spec(BaseObject):
     @staticmethod
-    def get(scriptname, arguments):
-
-        ix = IX(default_index='script')
+    def get(scriptname, *expe):
+        ix = IX(default_index='spec')
         topmethod = ix.getfirst(scriptname, field='scriptsurname')
         if not topmethod:
             topmethod = ix.getfirst(scriptname, field='method')
@@ -97,14 +124,89 @@ class Script(BaseObject):
         return script, arguments
 
     @staticmethod
+    def get_all():
+        ix = IX(default_index='spec')
+        _res = ix.query(field='expe_name', terms='module_name')
+        return _res
+
+    @staticmethod
+    def load(expe_name, expe_module):
+        # debug to load from module or expe_name !
+
+        p =  expe_module.split('.')
+        modula, modulb = '.'.join(p[:-1]), p[-1]
+        try:
+            expdesign = getattr(importlib.import_module(modula), modulb)
+            exp = getattr(expdesign, expe_name)
+        except AttributeError as e:
+            lgg.critical("Fatal Error: unable to load spec:  try `pymake update'")
+            raise
+
+        return exp, expdesign
+
+
+    @staticmethod
     def table():
-        ix = IX()
-        t = {}
+        ix = IX(default_index='spec')
+        t = OrderedDict()
+        for elt in  ix.query(index='spec', terms=True):
+            name = elt['module_name'].split('.')[-1]
+            expes = t.get(name, []) + [ elt['expe_name'] ]
+            t[name] = sorted(expes)
+        return tabulate(t, headers='keys')
+
+    # no more complex.
+    # @sortbytype
+    @classmethod
+    def table_topos(cls, _spec):
+
+        Headers = OrderedDict((('Corpuses',Corpus),
+                               ('Exp',(ExpSpace, ExpTensor)),
+                               ('Unknown', str)))
+
+        tables = [ [] for i in range(len(Headers))]
+
+        for expe_name, expe_module in _spec.items():
+            expe = cls.load(expe_name, expe_module)
+            try:
+                pos = [isinstance(expe, T) for T in Headers.values()].index(True)
+            except ValueError:
+                pos = len(Headers) - 1
+            tables[pos].append(expe_name)
+
+
+        return _table_(tables, headers=list(Headers.keys()))
+
+
+
+class Script(BaseObject):
+    @staticmethod
+    def get(scriptname, arguments):
+
+        ix = IX(default_index='script')
+        topmethod = ix.getfirst(scriptname, field='scriptsurname')
+        if not topmethod:
+            # get the first method that have this name
+            topmethod = ix.getfirst(scriptname, field='method')
+            if not topmethod:
+                raise ValueError('error: Unknown script: %s' % (scriptname))
+            arguments = [scriptname] + arguments
+            #script_name = topmethod['scriptsurname']
+
+        module = importlib.import_module(topmethod['module'])
+        script = getattr(module, topmethod['scriptname'])
+        return script, arguments
+
+    @staticmethod
+    def table():
+        ix = IX(default_index='script')
+        t = OrderedDict()
         for elt in  ix.query(index='script', terms=True):
             name = elt['scriptname']
             methods = t.get(name, []) + [ elt['method'] ]
-            t[name] = methods
+            t[name] = sorted(methods)
         return tabulate(t, headers='keys')
+
 
 class Corpus(ExpVector):
     @staticmethod
@@ -125,7 +227,7 @@ class Model(ExpVector):
         return _model
 
     @staticmethod
-    def list_all(_type='short'):
+    def get_all(_type='short'):
         ix = IX(default_index='model')
         if _type == 'short':
             res = ix.query(field='surname')
@@ -144,13 +246,24 @@ class Model(ExpVector):
                 res.append(surname)
         return res
 
+    @classmethod
+    def table(cls, _type='short'):
+        Headers = OrderedDict((('Corpuses',Corpus),
+                               ('Models',(ExpSpace, ExpTensor)),
+                               ('Unknown', str)))
+
+        tables = [[], # corpus atoms...
+                  cls.get_all(_type),
+        ]
+
+        return _table_(tables, headers=list(Headers.keys()))
+
 
 class ExpTensor(OrderedDict, BaseObject):
     ''' Represent a set of Experiences (**expe**). '''
     def __init__(self,  *args, **kwargs):
         OrderedDict.__init__(self, *args, **kwargs)
-        name = self.pop('_name', 'expTensor')
-        BaseObject.__init__(self, name)
+        BaseObject.__init__(self)
 
     @classmethod
     def from_expe(cls, expe, parser=None):
@@ -284,65 +397,17 @@ class ExpDesign(dict, BaseObject):
                     self[k] = v
         # @debug: add callable in reserved keyword
         self._reserved_keywords = list(set([w for w in dir(self) if w.startswith('_')] + ['_reserved_keywords']+dir(dict)+dir(BaseObject)))
-        name = self.pop('_name', 'expDesign')
 
-        BaseObject.__init__(self, name)
+        BaseObject.__init__(self)
 
     def _specs(self):
         return [ k for k  in self.keys() if k not in self._reserved_keywords ]
 
-    # no more complex.
-    # @sortbytype
-    def _table(self):
-        glob_table = sorted([ (k, v) for k, v in self.items() if k not in self._reserved_keywords ], key=lambda x:x[0])
 
-        Headers = OrderedDict((('Corpuses',Corpus),
-                               ('Exp',(ExpSpace, ExpTensor)),
-                               ('Unknown', str)))
-        tables = [ [] for i in range(len(Headers))]
-        for name, _type in glob_table:
-            try:
-                pos = [isinstance(_type, v) for v in Headers.values()].index(True)
-            except ValueError:
-                pos = len(Headers) - 1
-            tables[pos].append(name)
-
-        return self._table_(tables, headers=list(Headers.keys()))
-
-    def _table_atoms(self, _type='short'):
-
-        Headers = OrderedDict((('Corpuses',Corpus),
-                               ('Models',(ExpSpace, ExpTensor)),
-                               ('Unknown', str)))
-
-        tables = [[], # corpus atoms...
-                  Model.list_all(_type),
-        ]
-
-        return self._table_(tables, headers=list(Headers.keys()))
-
-    def _table_(self, tables, headers=[], max_line=10, max_row=30):
-        raw = []
-        for sec, table in enumerate(tables):
-            table = sorted(table, key=lambda x:x[0])
-            size = len(table)
-            if size == 0:
-                continue
-            col = int((size-0.1) // max_line)
-            junk = max_line % size
-            table += ['-']*junk
-            table = [table[j:max_line*(i+1)] for i,j in enumerate(range(0, size, max_line))]
-            table = np.char.array(table).astype('|S'+str(max_row))
-            fmt = 'simple'
-            raw.append(tabulate(table.T,
-                                headers=[headers[sec]]+['']*(col),
-                                tablefmt=fmt))
-        sep = '\n'+'='*20+'\n'
-        return '#'+self.__name__ +sep+sep.join(raw)
-
-    def name(self, l):
-        if getattr(self, '_mapname', None):
-            mapname =  self._mapname
+    @classmethod
+    def _name(cls, l):
+        if getattr(cls, '_mapname', None):
+            mapname =  cls._mapname
         else:
             return l
 
@@ -380,7 +445,6 @@ class ExpeFormat(object):
         # Global
         self.expe_size = len(gramexp)
         self.gramexp = gramexp
-        self.specname = gramexp.getSpec().name
         # Local
         self.pt = pt
         self.expe = expe
@@ -457,8 +521,7 @@ class ExpeFormat(object):
                     # Save on last call
                     if self._it == self.expe_size -1:
                         if expe.write:
-                            from pymake.util import out
-                            out.write_figs(expe, self.gramexp.figs)
+                            self.write_figs(expe, self.gramexp.figs)
 
                     return kernel
                 return wrapper
@@ -516,8 +579,64 @@ class ExpeFormat(object):
     def __call__(self):
         raise NotImplementedError
 
+    def specname(self, n):
+        #return self.gramexp._expdesign._name(n).lower().replace(' ', '')
+        return self.gramexp._expdesign._name(n)
+
+    def full_fig_path(self, fn):
+        from pymake.frontend.frontend_io import _FIGS_PATH
+        path = os.path.join(_FIGS_PATH, self.specname(fn))
+        make_path(path)
+        return path
+
+    def formatName(fun):
+        def wrapper(self, *args, **kwargs):
+            args = list(args)
+            expe = copy(args[0])
+            for k, v in expe.items():
+                if isinstance(v, basestring):
+                    nn = self.specname(v)
+                else:
+                    nn = v
+                setattr(expe, k, nn)
+            args[0] = expe
+            f = fun(self, *args, **kwargs)
+            return f
+        return wrapper
 
 
+    @formatName
+    def write_figs(self, expe, figs, _suffix=None, _fn=None, ext='.pdf'):
+        if type(figs) is list:
+            _fn = '' if _fn is None else self.specname(_fn)+'_'
+            for i, f in enumerate(figs):
+                suffix = '_'+ _suffix if _suffix and len(figs)>1 else ''
+                fn = ''.join([_fn, '%s_%s', ext]) % (expe.corpus, str(i) + suffix)
+                print('Writings figs: %s' % fn)
+                f.savefig(self.full_fig_path(fn));
+        elif issubclass(type(figs), dict):
+            for c, f in figs.items():
+                fn = ''.join([f.fn , ext])
+                print('Writings figs: %s' % fn)
+                f.fig.savefig(self.full_fig_path(fn));
+        else:
+            print('ERROR : type of Figure unknow, passing')
+
+    def write_table(self, table, _fn=None, ext='.txt'):
+        if isinstance(table, (list, np.ndarray)):
+            _fn = '' if _fn is None else self.specname(_fn)+'_'
+            fn = ''.join([_fn, 'table', ext])
+            fn = self.full_fig_path(fn)
+            with open(fn, 'w') as _f:
+                _f.write(table)
+        elif isinstance(table, dict):
+            for c, t in table.items():
+                fn = ''.join([t.fn ,'_', self.specname(c), '_table', ext])
+                fn = self.full_fig_path(fn)
+                with open(fn, 'w') as _f:
+                    _f.write(t.table)
+        else:
+            print('ERROR : type `%s\' of Table unknow, passing' % (type(table)))
 
 
 

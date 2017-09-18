@@ -111,12 +111,12 @@ class immsb_scvb(SVB):
         theta_left = np.zeros((N, K), dtype=float)
         theta_right = np.zeros((N, K), dtype=float)
 
-        self.symmetric_pt = self._is_symmetric +1
+        self._symmetric_pt = self._is_symmetric +1
         for i, j in self.data_iter(self.frontend.data_ma):
             k_i = z[i, j, 0]
             k_j = z[i, j, 1]
-            theta_left[i, k_i] +=  self.symmetric_pt
-            theta_right[j, k_j] += self.symmetric_pt
+            theta_left[i, k_i] +=  self._symmetric_pt
+            theta_right[j, k_j] += self._symmetric_pt
 
         ##### phi assignment
         phi = np.zeros((nfeat, K, K), dtype=float)

@@ -79,6 +79,10 @@ class frontendNetwork(DataBase):
             self.make_output_path()
             data = self._get_corpus(corpus_name)
 
+        if data is None:
+            lgg.warning('Unable to load corpus: %s' % (corpus_name))
+            return
+
         self.update_data(data)
 
         # For Gof smothness
@@ -133,6 +137,9 @@ class frontendNetwork(DataBase):
 
     def sample(self, N=None, symmetric=False, randomize=False):
         """ Write self ! """
+        if self.data is None:
+            return
+
         N = N or self.getN()
 
         if N == 'all':
@@ -283,7 +290,9 @@ class frontendNetwork(DataBase):
         if not os.path.exists(bdir):
             lgg.error("Corpus `%s' Not found." % (bdir))
             print('please run "fetch_networks"')
-            exit(2)
+            self.data = None
+            #exit(2)
+            return
 
         fn = os.path.join(bdir, corpus_name)
 

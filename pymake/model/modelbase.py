@@ -199,6 +199,9 @@ class ModelBase(object):
 
         if not silent:
             lgg.info('Snapshotting Model : %s' % fn)
+        else:
+            sys.stdout.write('+')
+
         with open(fn, 'wb') as _f:
             return pickle.dump(model, _f, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -456,7 +459,7 @@ class MSampler(object):
         # Add empty table for new fancy topics
         new_k = K - self.m.shape[1]
         if new_k > 0:
-            lgg.info( 'msampler: %d new topics' % (new_k))
+            lgg.debug( 'msampler: %d new topics' % (new_k))
             J = self.m.shape[0]
             self.m = np.hstack((self.m, np.zeros((J, new_k), dtype=int)))
 

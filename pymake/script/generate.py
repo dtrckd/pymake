@@ -10,7 +10,6 @@ from pymake import ExpTensor, ModelManager, FrontendManager, GramExp, ExpeFormat
 
 import logging
 lgg = logging.getLogger('root')
-_spec = GramExp.Spec()
 
 USAGE = '''\
 ----------------
@@ -33,7 +32,6 @@ from pymake.util.math import reorder_mat, sorted_perm, categorical, clusters_his
 from pymake.util.utils import Now, nowDiff, colored
 import matplotlib.pyplot as plt
 from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2, random_degree,  draw_graph_circular, draw_graph_spectral, draw_graph_spring, _markers
-from pymake.util import out
 from pymake.expe.format import tabulate
 
 import scipy as sp
@@ -142,7 +140,7 @@ class GenNetwork(ExpeFormat):
     def init_fit_tables(self,_type, Y=[]):
         expe = self.expe
         if not hasattr(self.gramexp, 'tables'):
-            corpuses = _spec.name(self.gramexp.getCorpuses())
+            corpuses = self.specname(self.gramexp.getCorpuses())
             models = self.gramexp.getModels()
             Meas = [ 'pvalue', 'alpha', 'x_min', 'n_tail']
             tables = {}
@@ -165,7 +163,7 @@ class GenNetwork(ExpeFormat):
     def init_roc_tables(self):
         expe = self.expe
         if not hasattr(self.gramexp, 'tables'):
-            corpuses = _spec.name(self.gramexp.getCorpuses())
+            corpuses = self.specname(self.gramexp.getCorpuses())
             if not 'testset_ratio' in self.pt:
                 Meas = ['20']
             else:
@@ -310,7 +308,7 @@ class GenNetwork(ExpeFormat):
         figs.append(plt.gcf())
 
         if expe.write:
-            out.write_figs(expe, figs, _fn=expe.model)
+            self.write_figs(expe, figs, _fn=expe.model)
             return
 
 
@@ -439,15 +437,15 @@ class GenNetwork(ExpeFormat):
                 table = table_mean + b' $\pm$ ' + table_std
 
                 # Table formatting
-                corpuses = _spec.name(self.gramexp.getCorpuses())
-                table = np.column_stack((_spec.name(corpuses), table))
+                corpuses = self.specname(self.gramexp.getCorpuses())
+                table = np.column_stack((self.specname(corpuses), table))
                 tablefmt = 'simple'
                 table = tabulate(table, headers=['__'+_model.upper()+'__']+Meas, tablefmt=tablefmt, floatfmt='.3f')
                 print()
                 print(table)
                 if expe.write:
-                    fn = '%s_%s' % (_spec.name(_model), _type)
-                    out.write_table(table, _fn=fn, ext='.md')
+                    fn = '%s_%s' % (self.specname(_model), _type)
+                    self.write_table(table, _fn=fn, ext='.md')
 
     @ExpeFormat.plot
     def draw(self):
@@ -494,10 +492,10 @@ class GenNetwork(ExpeFormat):
         lgg.info('using `%s\' type' % _type)
 
         if not hasattr(self.gramexp, 'tables'):
-            corpuses = _spec.name(self.gramexp.getCorpuses())
+            corpuses = self.specname(self.gramexp.getCorpuses())
             models = self.gramexp.getModels()
             tables = {}
-            corpuses = _spec.name(self.gramexp.getCorpuses())
+            corpuses = self.specname(self.gramexp.getCorpuses())
             for m in models:
                 if _type == 'pearson':
                     Meas = [ 'pearson coeff', '2-tailed pvalue' ]
@@ -535,7 +533,7 @@ class GenNetwork(ExpeFormat):
             d, dc, yerr = random_degree(Y)
             sim_nat = model.similarity_matrix(sim='natural')
             sim_lat = model.similarity_matrix(sim='latent')
-            step_tab = len(_spec.name(self.gramexp.getCorpuses()))
+            step_tab = len(self.specname(self.gramexp.getCorpuses()))
             for it_dat, data in enumerate(Y):
 
                 #homo_object = data
@@ -559,7 +557,7 @@ class GenNetwork(ExpeFormat):
                 table = table_mean + b' $\pm$ ' + table_std
 
                 # Table formatting
-                corpuses = _spec.name(self.gramexp.getCorpuses())
+                corpuses = self.specname(self.gramexp.getCorpuses())
                 try:
                     table = np.column_stack((corpuses, table))
                 except:
@@ -569,8 +567,8 @@ class GenNetwork(ExpeFormat):
                 print()
                 print(table)
                 if expe.write:
-                    fn = '%s_homo_%s' % (_spec.name(_model), _type)
-                    out.write_table(table, _fn=fn, ext='.md')
+                    fn = '%s_homo_%s' % (self.specname(_model), _type)
+                    self.write_table(table, _fn=fn, ext='.md')
 
     @ExpeFormat.plot('model')
     def homo_mustach(self,):
@@ -586,10 +584,10 @@ class GenNetwork(ExpeFormat):
 
 
         if not hasattr(self.gramexp, 'tables'):
-            corpuses = _spec.name(self.gramexp.getCorpuses())
+            corpuses = self.specname(self.gramexp.getCorpuses())
             models = self.gramexp.getModels()
             tables = {}
-            corpuses = _spec.name(self.gramexp.getCorpuses())
+            corpuses = self.specname(self.gramexp.getCorpuses())
             for m in models:
                 sim = [ 'natural', 'latent']
                 Meas = ['links', 'non-links']
@@ -608,7 +606,7 @@ class GenNetwork(ExpeFormat):
         d, dc, yerr = random_degree(Y)
         sim_nat = model.similarity_matrix(sim='natural')
         sim_lat = model.similarity_matrix(sim='latent')
-        step_tab = len(_spec.name(self.gramexp.getCorpuses()))
+        step_tab = len(self.specname(self.gramexp.getCorpuses()))
 
         if not hasattr(self.gramexp.figs[expe.model], 'damax'):
             damax = -np.inf
@@ -679,14 +677,17 @@ class GenNetwork(ExpeFormat):
                 y_true = y_true[:n_d]
                 probas = probas[:n_d]
             else:
+
+                # Log Params statistics
                 theta, phi = model.get_params()
-                try:
-                    print('theta', theta, theta.shape)
-                    print('phi', phi, phi.shape)
-                    print(expe.model, expe.corpus)
-                    print(y_true.sum(), (y_true==0).sum(), probas)
-                except:
-                    self.log.error('warning type theta, phi (%s, %s)'%(type(theta), type(phi)))
+                print('--- Params stats')
+                print('Theta: shape: %s' %(str(theta.shape)))
+                print('Theta: max: %s | min: %.4f | mean: %.4f | std: %.4f  ' % (theta.max(), theta.min(), theta.mean(), theta.std()))
+                print('Phi: shape: %s' %(str(phi.shape)))
+                print('Phi: max: %.4f | min: %.4f | mean: %.4f | std: %.4f  ' % (phi.max(), phi.min(), phi.mean(), phi.std()))
+                print('prediction:  links(1): %d | non-links(0): %d' % (y_true.sum(), (y_true==0).sum()))
+                print('Prediction: probas stat: mean: %.4f | std: %.4f' % (probas.mean(), probas.std()))
+                print('---')
 
         elif _type == 'learnset':
             n = int(data.size * _ratio)
@@ -702,7 +703,7 @@ class GenNetwork(ExpeFormat):
             return
         roc_auc = auc(fpr, tpr)
         description = os.path.basename(self.output_path)
-        #description = _spec.name(expe.model)
+        #description = self.specname(expe.model)
         ax.plot(fpr, tpr, label='ROC %s (area = %0.2f)' % (description, roc_auc), ls=frame.linestyle.next())
         self.noplot = True
 
@@ -789,7 +790,7 @@ class GenNetwork(ExpeFormat):
                 table_std = [None] * len(table_std)
 
             fig = plt.figure()
-            corpuses = _spec.name(self.gramexp.getCorpuses())
+            corpuses = self.specname(self.gramexp.getCorpuses())
             for i in range(len(corpuses)):
                 if _type3 == 'errorbar':
                     plt.errorbar(list(map(int, Meas)), table_mean[i], yerr=table_std[i],
@@ -807,8 +808,8 @@ class GenNetwork(ExpeFormat):
             #table = table_mean + b' $\pm$ ' + table_std
             table = table_mean
 
-            corpuses = _spec.name(self.gramexp.getCorpuses())
-            table = np.column_stack((_spec.name(corpuses), table))
+            corpuses = self.specname(self.gramexp.getCorpuses())
+            table = np.column_stack((self.specname(corpuses), table))
             tablefmt = 'simple'
             headers = ['']+Meas
             table = tabulate(table, headers=headers, tablefmt=tablefmt, floatfmt='.3f')
@@ -817,8 +818,8 @@ class GenNetwork(ExpeFormat):
             if expe.write:
                 fn = '%s_%s_%s' % ( _type, _type2, _ratio)
                 figs = {'roc_evolution': ExpSpace({'fig':fig, 'table':table, 'fn':fn})}
-                out.write_table(figs, ext='.md')
-                out.write_figs(expe, figs)
+                self.write_table(figs, ext='.md')
+                self.write_figs(expe, figs)
 
     @ExpeFormat.plot
     def clustering(self):

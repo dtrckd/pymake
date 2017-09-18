@@ -17,7 +17,7 @@ import numpy as np
 
 import argparse
 
-from pymake import  ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, Script, ExpVector
+from pymake import ExpDesign, ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, Script, Spec, ExpVector
 from pymake.util.utils import colored, basestring, get_global_settings
 
 import pymake.frontend.frontend_io as mloader
@@ -203,10 +203,12 @@ class GramExp(object):
         'write'     : False,
     }
 
-    def __init__(self, conf, usage=None, parser=None, parseargs=True):
+    #_spec = mloader.SpecLoader.default_spec()
+    _spec = Spec.get_all()
+
+    def __init__(self, conf, usage=None, parser=None, parseargs=True, expdesign=None):
         # @logger One logger by Expe ! # in preinit
         setup_logger(level=conf.get('verbose'))
-        self._spec = mloader.SpecLoader.default_spec()
 
         if conf is None:
             conf = {}
@@ -228,6 +230,12 @@ class GramExp(object):
         self.exp_tensor = ExpTensor.from_expe(conf, parser=self.argparser)
         self.checkExp(self.exp_tensor)
         self.exp_setup()
+
+        if expdesign is not None:
+            self._expdesign = expdesign
+        else:
+            self._expdesign = ExpDesign
+
 
     def _preprocess_exp(self):
         # @improvment: do filter from spec
@@ -496,8 +504,8 @@ class GramExp(object):
 
         if not expe['_format']:
             # or give a hash if write is False ?
-            lgg.error('No _format given, please set _format for output_path settings.')
-            exit(2)
+            lgg.debug('No _format given, please set _format for output_path settings.')
+            return None
 
         t = expe['_format'].format(**cls.get_file_format(expe))
 
@@ -614,7 +622,7 @@ class GramExp(object):
         return settings, parser
 
     @classmethod
-    def zymake(cls, request={}, usage=''):
+    def zymake(cls, request={}, usage='', firsttime=True, expdesign=None):
         usage ='''\
         ----------------
         Communicate with the data :
@@ -632,10 +640,9 @@ class GramExp(object):
         s, parser = GramExp.parseargsexpe(usage)
         request.update(s)
 
-        _spec = mloader.SpecLoader.default_spec()
         ontology = dict(
             _do    = ['cmd', 'show', 'path', 'burn', 'run', 'update', 'init', 'runpara', 'hist'],
-            _spec   = _spec._specs(),
+            _spec   = list(cls._spec),
             _ftype = ['json', 'pk', 'inf']
         )
         ont_values = sum([w for k, w in ontology.items() if k != '_spec'] , [])
@@ -676,7 +683,7 @@ class GramExp(object):
                             if v in ont_values:
                                 lgg.error('=> Warning: conflict between name of ExpDesign and GramExp ontology keywords ')
                             do.remove(v)
-                            v = _spec[v]
+                            v, expdesign = Spec.load(v, cls._spec[v])
                         request[ont] = v
                         checksum -= 1
                         break
@@ -686,60 +693,27 @@ class GramExp(object):
         if request.get('_spec') and len(do) == 0:
             request['_do'] = 'show'
 
-
         if checksum != 0:
-            lgg.error('==> Error : unknown argument: %s\n\nAvailable SPEC : %s' % (do, sorted(_spec._specs())))
-            exit(10)
-        return cls(request, usage=usage, parser=parser, parseargs=False)
+            if  firsttime == True:
+                lgg.warning('Spec not found, re-building Spec indexes...')
+                cls._spec = Spec.get_all()
+                return cls.zymake(firsttime=False)
+            else:
+                lgg.error('==> Error : unknown argument: %s\n\nAvailable Exp : %s' % (do, list(cls._spec)))
+                exit(10)
+        return cls(request, usage=usage, parser=parser, parseargs=False, expdesign=expdesign)
+
 
     @classmethod
-    def generate(cls, request={},  usage=''):
-        usage = '''\
-        ----------------
-        Execute scripts :
-        ----------------
-         |   generate [method][fun][*args] [EXP]
-         |
-         |  -g: generative model -- evidence
-         |  -p: predicted data -- model fitted
-         |  --hyper-name *
-         |
-         ''' +'\n'+usage
-
-        parser = GramExp.get_parser(usage=usage)
-        parser.add_argument('-g', '--generative', dest='_mode', action='store_const', const='generative')
-        parser.add_argument('-p', '--predictive', dest='_mode', action='store_const', const='predictive')
-
-        s, parser = GramExp.parseargsexpe(parser=parser)
-
-        request.update(s)
-
-        do = request.get('_do') or ['list']
-        if not isinstance(do, list):
-            # Obsolete ?
-            do = [do]
-            request['_do'] = do
-
-        # Update the spec is a new one is argified
-        _spec = mloader.SpecLoader.default_spec()
-        for a in do:
-            if a in _spec.keys() and issubclass(type(_spec[a]), ExpTensor):
-                request['_spec'] = _spec[a]
-                do.remove(a)
-
-        return cls(request, usage=usage, parser=parser, parseargs=False)
-
-    @staticmethod
-    def expVectorLookup(request):
+    def expVectorLookup(cls, request):
         ''' set exp from spec if presents '''
 
         # get list of scripts/*
         # get list of method
-        _spec = mloader.SpecLoader.default_spec()
         ontology = dict(
             # Allowed multiple flags keywords
             check_spec = {'corpus':Corpus, 'model':Model},
-            spec = _spec.keys()
+            spec = list(cls._spec)
         )
 
         # Handle spec and multiple flags arg value
@@ -748,9 +722,10 @@ class GramExp(object):
             sub_request = ExpVector()
             for v in request.get(k, []):
                 if v in ontology['spec'] and k in ontology['check_spec']:
+                    loaded_v, _ = Spec.load(v, cls._spec[v])
                     # Flag value is in specification
-                    if issubclass(type(_spec[v]), ontology['check_spec'][k]):
-                        sub_request.extend( _spec[v] )
+                    if issubclass(type(loaded_v), ontology['check_spec'][k]):
+                        sub_request.extend( loaded_v )
                     else:
                         raise ValueError('%s not in Spec' % v)
                 else:
@@ -832,20 +807,16 @@ class GramExp(object):
         return self.exp_tensor.table(extra)
 
     def spectable(self):
-        return self._spec._table()
-
-    def atomtable(self, _type='short'):
-        return self._spec._table_atoms(_type=_type)
+        return Spec.table()
 
     def scripttable(self):
         return Script.table()
 
-    def getSpec(self):
-        return self._spec
+    def topotable(self):
+        return Spec.table_topos(self._spec)
 
-    @staticmethod
-    def Spec():
-        return mloader.SpecLoader.default_spec()
+    def modeltable(self, _type='short'):
+        return Model.table(_type)
 
     def help_short(self):
         shelp = self.argparser.format_usage() + self.argparser.epilog
@@ -1138,9 +1109,16 @@ class GramExp(object):
         print('\n'.join(_tail))
 
 
-    def update_index(self):
+    @staticmethod
+    def update_index(*index_name):
         from pymake.index.indexmanager import IndexManager as IX
-        IX.build_indexes()
+
+        if len(index_name) == 0:
+            IX.build_indexes()
+        else:
+            for i in index_name:
+                IX.build_indexes(i)
+
 
     def pymake(self, sandbox=ExpeFormat):
         ''' Walk Trough experiments. '''
@@ -1193,9 +1171,10 @@ class GramExp(object):
                 # it's hard to detach matplotlib...
                 break
             except Exception as e:
-                print(('Error during '+colored('%s', 'red')+' Expe.') % (do))
+                lgg.critical(('Error during '+colored('%s', 'red')+' Expe.') % (do))
                 traceback.print_exc()
-                exit(2)
+                #exit(2)
+                continue
 
             # Expe Postprocess
             expbox._postprocess()

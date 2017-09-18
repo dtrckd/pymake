@@ -9,14 +9,14 @@ if os.environ.get('DISPLAY') is None:
     print("To force a display try : `'")
 
 
+
 # This lines take a while
-from pymake.expe.format import Corpus, Model, Script, ExpSpace, ExpVector, ExpTensor, ExpeFormat, ExpDesign
-from pymake.expe.gramexp import GramExp
+from pymake.expe.format import Spec, Corpus, Model, Script, ExpSpace, ExpVector, ExpTensor, ExpeFormat, ExpDesign
 
 from pymake.frontend.frontend_io import SpecLoader
-#__spec = SpecLoader._default_spec()
-__spec = SpecLoader.get_atoms()
+#__spec = SpecLoader.get_atoms()
 
+from pymake.expe.gramexp import GramExp
 from pymake.frontend.frontendtext import frontendText
 from pymake.frontend.frontendnetwork import frontendNetwork
 from pymake.frontend.manager import ModelManager, FrontendManager
