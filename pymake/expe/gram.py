@@ -134,8 +134,11 @@ _Gram = [
         help='number of cores to run with runpara command.'),
 
     '-l', '--list', dict(
-        nargs='?', dest='do_list', const='expe', action=unaggregate_append,
+        nargs='?', dest='do_list', const='spec', action=unaggregate_append,
         help='Request to print informations.'),
+    '-ll', dict(
+        nargs='?', dest='do_list', const='topo', action=unaggregate_append,
+        help='Request to print global informations.'),
 
     '--net', dict(
         action='store_true', dest='_net',

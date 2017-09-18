@@ -8,7 +8,6 @@ from pymake import ExpTensor, ModelManager, FrontendManager, GramExp, ExpeFormat
 
 import logging
 lgg = logging.getLogger('root')
-_spec = GramExp.Spec()
 
 USAGE = """\
 ----------------
@@ -29,7 +28,6 @@ from pymake.util.algo import gofit, Louvain, Annealing
 from pymake.util.math import reorder_mat, sorted_perm
 import matplotlib.pyplot as plt
 from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2
-from pymake.util import out
 from pymake.util.utils import colored
 from pymake.expe.format import tabulate
 
@@ -44,7 +42,7 @@ class CheckNetwork(ExpeFormat):
     def init_fit_tables(self, _type, Y=[]):
         expe = self.expe
         if not hasattr(self.gramexp, 'tables'):
-            corpuses = _spec.name(self.gramexp.getCorpuses())
+            corpuses = self.specname(self.gramexp.getCorpuses())
             models = self.gramexp.getModels()
             Meas = [ 'pvalue', 'alpha', 'x_min', 'n_tail']
             tables = {}
@@ -117,15 +115,15 @@ class CheckNetwork(ExpeFormat):
         ### Plot Adjacency matrix
         fig, (ax1, ax2) = plt.subplots(1,2)
         fig.tight_layout(pad=1.6)
-        adjshow(dlt(data_r), title=_spec.name(expe.corpus), ax=ax1)
+        adjshow(dlt(data_r), title=self.specname(expe.corpus), ax=ax1)
         #plt.figtext(.15, .1, homo_text, fontsize=12)
-        #plt.suptitle(_spec.name(expe.corpus))
+        #plt.suptitle(self.specname(expe.corpus))
 
         ### Plot Degree
         plot_degree_poly(data_r, ax=ax2)
 
         if expe.write:
-            out.write_figs(expe, [fig], _suffix='dd')
+            self.write_figs(expe, [fig], _suffix='dd')
 
     @ExpeFormat.plot
     def burstiness(self, clusters_org='source', _type='local'):
@@ -140,7 +138,7 @@ class CheckNetwork(ExpeFormat):
         # Global burstiness
         d, dc = degree_hist(adj_to_degree(data), filter_zeros=True)
         fig = plt.figure()
-        plot_degree(data, spec=True, title=_spec.name(expe.corpus))
+        plot_degree(data, spec=True, title=self.specname(expe.corpus))
         #plot_degree_poly(data, spec=True, title=expe.corpus)
 
         gof = gofit(d, dc)
@@ -254,7 +252,7 @@ class CheckNetwork(ExpeFormat):
                     Table[self.corpus_pos, i, it_k] = gof[v] #* y.sum() / TOT
                 it_k += 1
 
-        plt.suptitle(_spec.name(expe.corpus))
+        plt.suptitle(self.specname(expe.corpus))
         figs.append(plt.gcf())
 
         # Features burstiness
@@ -268,7 +266,7 @@ class CheckNetwork(ExpeFormat):
         figs.append(plt.gcf())
 
         if expe.write:
-            out.write_figs(expe, figs)
+            self.write_figs(expe, figs)
 
         if self._it == self.expe_size -1:
             for _model, table in self.gramexp.tables.items():
@@ -279,15 +277,15 @@ class CheckNetwork(ExpeFormat):
                 table = table_mean + b' $\pm$ ' + table_std
 
                 # Table formatting
-                corpuses = _spec.name(self.gramexp.getCorpuses())
-                table = np.column_stack((_spec.name(corpuses), table))
+                corpuses = self.specname(self.gramexp.getCorpuses())
+                table = np.column_stack((self.specname(corpuses), table))
                 tablefmt = 'simple'
                 table = tabulate(table, headers=['__'+_model.upper()+'__']+Meas, tablefmt=tablefmt, floatfmt='.3f')
                 print()
                 print(table)
                 #if expe.write:
                 #    fn = '%s' % (clusters_org)
-                #    out.write_table(table, _fn=fn, ext='.md')
+                #    self.write_table(table, _fn=fn, ext='.md')
 
     @ExpeFormat.tabulate
     def pvalue(self):
@@ -300,7 +298,7 @@ class CheckNetwork(ExpeFormat):
         gof = gofit(d, dc)
 
         if not hasattr(self.gramexp, 'Table'):
-            corpuses = _spec.name(self.gramexp.getCorpuses())
+            corpuses = self.specname(self.gramexp.getCorpuses())
             Meas = [ 'pvalue', 'alpha', 'x_min', 'n_tail']
             Table = np.empty((len(corpuses), len(Meas)))
             Table = np.column_stack((corpuses, Table))
@@ -329,16 +327,19 @@ class CheckNetwork(ExpeFormat):
             Table = self.gramexp.Table
             Meas = self.gramexp.Meas
         except AttributeError:
-            corpuses = _spec.name(self.gramexp.getCorpuses())
+            corpuses = self.specname(self.gramexp.getCorpuses())
             Meas = [ 'nodes', 'edges', 'density']
             Meas += [ 'is_symmetric', 'modularity', 'clustering_coefficient']
-            Table = np.empty((len(corpuses), len(Meas)))
+            Table = np.zeros((len(corpuses), len(Meas))) * np.nan
             Table = np.column_stack((corpuses, Table))
             self.gramexp.Table = Table
             self.gramexp.Meas = Meas
 
         #print (frontend.get_data_prop())
         for i, v in enumerate(Meas):
+            if frontend.data is None:
+                Table[self.corpus_pos, 1:] = 'none'
+                break
             Table[self.corpus_pos, i+1] = getattr(frontend, v)()
 
         if self._it == self.expe_size -1:

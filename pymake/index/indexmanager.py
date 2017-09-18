@@ -34,11 +34,15 @@ class IndexManager(object):
 
                  'script' : ws.fields.Schema(scriptname    = ws.fields.ID(stored = True),
                                              scriptsurname = ws.fields.ID(stored = True),
-                                             module   = ws.fields.ID(stored = True),
-                                             method   = ws.fields.KEYWORD(stored = True),
+                                             module    = ws.fields.ID(stored = True),
+                                             method    = ws.fields.KEYWORD(stored = True),
                                              signature = ws.fields.TEXT(stored = True),
-                                             content  = ws.fields.TEXT),
+                                             content   = ws.fields.TEXT),
 
+                 'spec' : ws.fields.Schema(module_name  = ws.fields.ID(stored = True),
+                                           script_name  = ws.fields.ID(stored = True),
+                                           expe_name    = ws.fields.ID(stored = True),
+                                           content      = ws.fields.TEXT),
                 }
 
     log = logging.getLogger('root')
@@ -106,10 +110,17 @@ class IndexManager(object):
         return ix.searcher()
 
     @classmethod
-    def build_indexes(cls):
+    def build_indexes(cls, index_name=None):
         ''' Update the system index '''
         idx = cls()
-        for name  in idx._SCHEMA:
+
+        if index_name is None:
+            schemas = idx._SCHEMA
+        else:
+            schemas = [index_name]
+
+        for name  in schemas:
+
             func = 'update_' + name + '_index'
             builder = getattr(idx, func)
             builder()
@@ -117,6 +128,29 @@ class IndexManager(object):
 
     def update_corpus_index(self):
         raise NotImplementedError
+
+    def update_spec_index(self):
+        ''' Update the schema of the Spec index '''
+        from pymake.frontend.frontend_io import SpecLoader
+        model = 'spec'
+        self.log.info('Building %s index...' % model)
+        Specs = SpecLoader.get_packages()
+        design_by_name = SpecLoader.get_atoms()
+        writer = self.clean_index(model).writer()
+        for scriptname, module in Specs.items():
+            self.log.info('\tindexing %s' % (str(scriptname)+str(module)))
+
+            fullmodulename = '.'.join((module.__module__, module.__name__))
+            exp = design_by_name[module.__name__]
+
+            for expe in exp:
+
+                content = ''
+                writer.add_document(module_name = fullmodulename,
+                                    script_name = scriptname,
+                                    expe_name = expe,
+                                    content = content)
+        writer.commit()
 
     def update_script_index(self):
         ''' Update the schema of the Scripts index '''
@@ -235,7 +269,9 @@ class IndexManager(object):
         return docs
 
     # @debug : online searcher
+    # @debug : get a list of terms (mongo projection equivalent ?!)
     def query(self, field=None, index=None, terms=False):
+        ''' return all object that have the filed entry set '''
         index = index or self._default_index
         ix = self.get_index(index)
         field = field or ix.schema.stored_names()[0]
@@ -245,6 +281,8 @@ class IndexManager(object):
             results = searcher.search(query, limit=None)
             if terms is False:
                 results = [r[field] for r in results]
+            elif isinstance(terms, str):
+                results = dict((o[field], o[terms]) for o in results)
             else:
                 results = [dict(r) for r in results]
 

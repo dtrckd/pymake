@@ -17,6 +17,8 @@ from pymake import GramExp
 def main():
 
     zymake = GramExp.zymake()
+
+
     zyvar = zymake._conf
 
     if zyvar.get('simulate') and not zyvar['_do'] in ['run', 'runpara']:
@@ -51,14 +53,16 @@ def main():
         if not 'do_list' in zyvar and zyvar['_do']:
             raise ValueError('Unknown command : %s' % zyvar['_do'])
 
-        if 'model' == zyvar.get('do_list'):
-            print (zymake.atomtable())
+        if 'spec' == zyvar.get('do_list'):
+            print (zymake.spectable())
+        elif 'model' == zyvar.get('do_list'):
+            print (zymake.modeltable())
         elif 'model_topos' == zyvar.get('do_list'):
-            print (zymake.atomtable(_type='topos'))
+            print (zymake.modeltable(_type='topos'))
         elif 'script' == zyvar.get('do_list'):
             print(zymake.scripttable())
-        elif 'expe' ==  zyvar.get('do_list'):
-            print (zymake.spectable())
+        elif 'topo' ==  zyvar.get('do_list'):
+            print (zymake.topotable())
         else:
             print(zymake.help_short())
             if zyvar.get('do_list'):
