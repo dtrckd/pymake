@@ -171,13 +171,13 @@ _Gram = [
         nargs='*', dest='_repeat', action=exp_append, #type=check_positive_integer,
         help='Index of tn nth repetitions/randomization of an design of experiments. Impact the outpout path as data/<bdir>/<refdir>/<repeat>/...'),
 
+    '--refdir', dict(
+        nargs='*', dest='_refdir', action=exp_append,
+        help='Name to append in data/<data-typer>/<refdir>/ for the output path.'),
+
     '--data-type', dict(
         dest='_data_type',
         help='Name to prepend in data/<data-type>/<refdir>/ for the output path.'),
-
-    '--refdir', dict(
-        dest='_refdir',
-        help='Name to append in data/<data-typer>/<refdir>/ for the output path.'),
 
     '--format', dict(
         dest='_format', type=str,

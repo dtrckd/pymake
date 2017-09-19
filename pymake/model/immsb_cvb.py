@@ -69,6 +69,7 @@ class immsb_cvb(GibbsSampler):
                 gmma = gmma / gmma.sum()
                 self.gamma[i,j] = gmma
 
+                #self.gamma[j,i] = gmma # data_iter 2
                 gmma = np.random.randint(1, 2*N, (K,K))
                 self.frontend.symmetrize(gmma)
                 gmma = gmma / gmma.sum()

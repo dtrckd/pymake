@@ -213,7 +213,7 @@ class immsb_scvb(SVB):
 
         phi = self.N_phi + np.tile(self.hyper_phi, (self.N_phi.shape[1], self.N_phi.shape[2], 1)).T
         #phi = (phi / np.linalg.norm(phi, axis=0))[1]
-        self.p_hi = (phi / phi.sum(0))[1]
+        self._phi = (phi / phi.sum(0))[1]
 
         self._K = self.N_phi.shape[1]
 
@@ -232,16 +232,17 @@ class immsb_scvb(SVB):
 
         #pxk = lognormalize(np.log(pxk) - np.log(self.N_phi_sum + self.hyper_phi_sum))
         #outer_kk = np.log(np.outer(self.pik, self.pjk)) + np.log(pxk) - np.log(self.N_phi_sum + self.hyper_phi_sum)
-        if self._is_symmetric:
-            self.frontend.symmetrize(outer_kk)
 
-        return lognormalize(outer_kk)
+        #if self._is_symmetric:
+        #    self.frontend.symmetrize(outer_kk)
+
+        return lognormalize(outer_kk.ravel())
 
 
     def maximization(self, iter):
         ''' Variational Objective '''
         i,j = iter
-        variational = self._reduce_one(i,j)
+        variational = self._reduce_one(i,j).reshape(self._len['K'], self._len['K'])
         self.samples.append(variational)
 
     def expectation(self, iter, burnin=False):
@@ -265,9 +266,13 @@ class immsb_scvb(SVB):
         _len = self._len
 
         # Sum ?
-        #self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * _len['dims'][j] * qij.sum(0))
-        self.N_theta_left[i] = (1 - self.gstep_theta)*self.N_theta_left[i] + (self.gstep_theta * _len['dims'][j] * qij.sum(0))
-        self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * _len['dims'][i] * qij.sum(0))
+        self.N_theta_left[i] = (1 - self.gstep_theta)*self.N_theta_left[i] + (self.gstep_theta * _len['dims'][i] * qij.sum(1))
+        self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * _len['dims'][j] * qij.sum(0))
+
+        if self._is_symmetric:
+            self.N_theta_left[j] = (1 - self.gstep_theta)*self.N_theta_left[j] + (self.gstep_theta * _len['dims'][j] * qij.sum(1))
+            self.N_theta_right[i] = (1 - self.gstep_theta)*self.N_theta_right[i] + (self.gstep_theta * _len['dims'][i] * qij.sum(0))
+
 
         # or Mean ?
         #self.N_theta_left[i]  = (1 - self.gstep_theta)*self.N_theta_left[i]  + (self.gstep_theta * _len['dims'][i] * qij.mean(1))
@@ -279,14 +284,10 @@ class immsb_scvb(SVB):
         #self.N_theta_left[i]  = (1 - self.gstep_theta)*self.N_theta_left[i]  + (self.gstep_theta * _len['dims'][i] * pik)
         #self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * _len['dims'][j] * pjk)
 
-        if self._is_symmetric:
-            self.frontend.symmetrize(self.N_theta_left)
-            self.frontend.symmetrize(self.N_theta_right)
-
         self._update_gstep_theta()
 
     def _update_global_gradient(self, i, j, qij, xij):
-        self._N_phi[xij] += qij
+        self._N_phi[xij] += qij * self._symmetric_pt
 
     def _purge_minibatch(self):
         ''' Update the global gradient then purge containers '''
