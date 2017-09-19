@@ -442,6 +442,9 @@ class ExpeFormat(object):
     _logfile = False # for external integration
 
     def __init__(self, pt, expe, gramexp):
+        # @debug this, I dont know whyiam in lib/package sometimes, annoying !
+        #os.chdir(os.getenv('PWD'))
+
         # Global
         self.expe_size = len(gramexp)
         self.gramexp = gramexp

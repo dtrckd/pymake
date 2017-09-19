@@ -14,8 +14,7 @@ lgg = logging.getLogger('root')
 ##########################
 
 def lognormalize(x):
-    a = np.logaddexp.reduce(x)
-    return np.exp(x - a)
+    return np.exp(x - np.logaddexp.reduce(x))
 
 def categorical(params):
     return np.where(np.random.multinomial(1, params) == 1)[0]
