@@ -44,7 +44,7 @@ class Plot(ExpeFormat):
         data = np.ma.masked_invalid(np.array(data, dtype='float'))
 
         burnin = 5
-        description = os.path.basename(self.output_path)
+        description = '/'.join((expe._refdir, os.path.basename(self.output_path)))
 
         ax = self.gramexp.figs[expe.corpus].fig.gca()
         ax.plot(data, label=description, marker=_markers.next())
@@ -65,10 +65,10 @@ class Plot(ExpeFormat):
         data = np.ma.masked_invalid(np.array(data, dtype='float'))
 
         burnin = 5
-        description = os.path.basename(self.output_path)
+        description = '/'.join((expe._refdir, os.path.basename(self.output_path)))
 
         plt.plot(data, label=description, marker=_markers.next())
-        plt.legend(loc='upper right',prop={'size':7})
+        plt.legend(loc='upper right',prop={'size':1})
 
 if __name__ == '__main__':
     GramExp.generate().pymake(Plot)

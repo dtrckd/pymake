@@ -183,7 +183,7 @@ class GramExp(object):
         fit.py -m immsb -c alternate -n 100 -i 10'''
 
     # has special semantics
-    _special_keywords = [ 'refdir', '_base_type',
+    _special_keywords = [ '_refdir', '_base_type',
                          '_format', '_csv_typo',
                          '_repeat',
                         ] # output_path => pmk-basedire/{base_type}/{refdir}/{repeat}/${format}:${csv_typo}
@@ -300,6 +300,8 @@ class GramExp(object):
 
         format_settings = re.findall(r'{([^{}]*)}', _format)
         for setting, values in exp_tensor.items():
+            if setting in self._special_keywords:
+                continue
             if isinstance(values, list) and len(values) > 1 and setting not in format_settings:
                 hidden_key.append(setting)
 
@@ -685,7 +687,7 @@ class GramExp(object):
                     if v in words:
                         if ont == '_spec':
                             if v in ont_values:
-                                lgg.error('=> Warning: conflict between name of ExpDesign and GramExp ontology keywords ')
+                                lgg.critical('=> Warning: conflict between name of ExpDesign and Pymake commands')
                             do.remove(v)
                             v, expdesign = Spec.load(v, cls._spec[v])
                         request[ont] = v

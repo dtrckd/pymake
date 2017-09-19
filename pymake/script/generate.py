@@ -468,7 +468,7 @@ class GenNetwork(ExpeFormat):
         #draw_graph_spectral(y, clusters)
         #draw_graph_circular(y, clusters)
 
-        description = os.path.basename(self.output_path)
+        description = '/'.join((expe._refdir, os.path.basename(self.output_path)))
         adjshow(y, title=description)
         #adjblocks(y, clusters=comm['clusters'], title='Blockmodels of Adjacency matrix')
         #adjshow(reorder_mat(y, comm['clusters']), 'test reordering')
@@ -702,9 +702,10 @@ class GenNetwork(ExpeFormat):
             self.log.error('can format expe : %s' % (self.output_path))
             return
         roc_auc = auc(fpr, tpr)
-        description = os.path.basename(self.output_path)
+        description = '/'.join((expe._refdir, os.path.basename(self.output_path)))
         #description = self.specname(expe.model)
         ax.plot(fpr, tpr, label='ROC %s (area = %0.2f)' % (description, roc_auc), ls=frame.linestyle.next())
+        plt.legend(loc='upper right',prop={'size':1})
         self.noplot = True
 
         #precision, recall, thresholds = precision_recall_curve( y_true, probas)
