@@ -628,7 +628,7 @@ class GramExp(object):
         Communicate with the data :
         ----------------
          |   zymake update  : update the pymake index
-         |   zymake -l [expe(default)|model|script|SPEC] : (default) show available spec
+         |   zymake -l [spec(default)|model|script|topo]
          |   zymake show SPEC : show one spec details
          |   zymake run SPEC [--script [fun][*args]] ... : execute tasks (default is fit)
          |   zymake runpara SPEC [--script [fun][*args]] ...: parallelize tasks
@@ -664,7 +664,11 @@ class GramExp(object):
             no_do = len(do) == 0
             no_do_command = len(request['_do']) > 0 and not request['_do'][0] in ontology['_do']
             if no_do or no_do_command:
-                request['_do'] = ['run'] + do
+                if '_cores' in request or '_net' in request:
+                    runcmd = 'runpara'
+                else:
+                    runcmd = 'run'
+                request['_do'] = [runcmd] + do
 
 
         do = request.get('_do', [])
@@ -840,7 +844,7 @@ class GramExp(object):
         self.exp_tensor = self.make_tensor(self.lod)
 
         print('-'*30, file=file)
-        print('PYMAKE Request %s : %d expe' % (self.exp_tensor.name(), len(self) ), file=file)
+        print('PYMAKE Exp: %d expe' % (len(self) ), file=file)
         print(self.exptable(), file=file)
         if halt:
             exit()
@@ -989,29 +993,54 @@ class GramExp(object):
         self.pymake(sandbox=_script)
 
     def execute_parallel(self, indexs=None):
-        cmdlines = []
+
         basecmd = sys.argv.copy()
-        basecmd = ['python3', './zymake.py'] + basecmd[1:]
+        Target = './zymake.py'
+        basecmd = ['python3', Target] + basecmd[1:]
         #basecmd = ['pymake'] + basecmd[1:] # PATH and PYTHONPATH varible missing to be able to execute "pymake"
 
+        # Create commands indexs
         if not indexs:
             indexs = range(len(self))
         else:
             [basecmd.remove(str(i)) for i in indexs]
 
-        basecmd = ' '.join(basecmd)
-
+        # Creates a list of commands that pick each index
+        # from base requests commands.
+        cmdlines = []
         for index in indexs:
-            cmdlines.append( basecmd.replace('runpara', 'run %s'%index, 1) )
+            id_cmd = 'run %s' % (index)
+            if 'runpara' in basecmd:
+                cmd = ' '.join(basecmd).replace('runpara', id_cmd, 1)
+            else:
+                idx = basecmd.index(Target)
+                cmd = ' '.join(basecmd[:idx] + [Target + ' '+ id_cmd] + basecmd[idx+1:])
+            cmdlines.append(cmd)
 
         net = self._conf.get('_net', False)
         if net:
+            if self._conf.get('_cores'):
+                lgg.critical('--cores options cannot be enable with --net options (risk of recursive call to parallel)')
+                exit(3)
+
+            # remove the --net options
+            for i, cmd in enumerate(cmdlines):
+                cmdlines[i] = cmd.replace('--net', '').strip()
+
             NDL = get_global_settings('loginfile')
             PWD = get_global_settings('remote_pwd')
             cmd = ['parallel', '-u', '-C', "' '", '--eta', '--progress',
                    '--sshloginfile', NDL, '--workdir', PWD, '--env', 'OMP_NUM_THREADS',  ':::', '%s'%('\n'.join(cmdlines))]
         else:
             n_cores = str(self._conf.get('_cores', 0))
+            # remove the --cores options
+            for i, cmd in enumerate(cmdlines):
+                cmd = cmd.split()
+                try: idx = cmd.index('--cores')
+                except: continue
+                cmd.pop(idx); cmd.pop(idx) # pop --cores int
+                cmdlines[i] = ' '.join(cmd)
+
             cmd = ['parallel', '-j', n_cores, '-u', '-C', "' '", '--eta', '--progress', ':::', '%s'%('\n'.join(cmdlines))]
 
         #stdout = subprocess.check_output(cmd)
@@ -1097,7 +1126,7 @@ class GramExp(object):
 
     def show_history(self):
         from pymake.util.utils import tail
-        n_lines = int(self._conf.get('N', 20))
+        n_lines = int(self._conf.get('N', 42))
         bdir = self.data_path
         fn = os.path.join(bdir, '.pymake_hist')
         if not os.path.isfile(fn):

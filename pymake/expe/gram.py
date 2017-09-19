@@ -141,7 +141,7 @@ _Gram = [
         help='Request to print global informations.'),
 
     '--net', dict(
-        action='store_true', dest='_net',
+        nargs='?', dest='_net', const='True',
         help='[with runpara, send run to remote via loginfile.'),
 
     '--ignore-format-unique', dict(
