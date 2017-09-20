@@ -12,7 +12,7 @@ plt.rc('font', size=__plot_font_size)  # controls default text sizes
 class Netw2(ExpDesign):
 
     # Use for Name on figure and table
-    _mapname = dict((
+    _alias = dict((
         ('propro'   , 'Protein')  ,
         ('blogs'    , 'Blogs')    ,
         ('euroroad' , 'Euroroad') ,
@@ -89,4 +89,17 @@ class Netw2(ExpDesign):
         _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_a _tau_a _kappa_a'
     )
+
+
+    #
+    #
+    #
+    # * iter1 : don"t set masked, and gamma is not symmetric
+    #
+    # * iter2 : don"t set masked, and gamma is symmetric
+    #
+    #
+    #
+
+
 

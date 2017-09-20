@@ -35,7 +35,7 @@ class immsb_cvb(GibbsSampler):
         self.hyper_phi = np.asarray(delta) if isinstance(delta, (np.ndarray, list, tuple)) else np.asarray([delta] * self._len['nfeat'])
 
         alpha = self.expe['hyperparams']['alpha'] # unused
-        self.hyper_theta = np.asarray([1.0 / (i + self._len['K']) for i in range(self._len['K'])])
+        self.hyper_theta = np.asarray([1.0 / (i + np.sqrt(self._len['K'])) for i in range(self._len['K'])])
         self.hyper_theta /= self.hyper_theta.sum()
 
         self.hyper_phi_sum = self.hyper_phi.sum()

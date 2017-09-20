@@ -26,6 +26,13 @@ from tabulate import tabulate
 
 # Ugky, factorize
 def _table_(tables, headers=[], max_line=10, max_row=30, name=''):
+
+    if isinstance(headers, str):
+        sep = '# %s'%name +  '\n'+'='*20
+        print(sep)
+        return tabulate(tables, headers=headers)
+
+
     raw = []
     for sec, table in enumerate(tables):
         table = sorted(table, key=lambda x:x[0])
@@ -145,15 +152,15 @@ class Spec(BaseObject):
         return exp, expdesign
 
 
-    @staticmethod
-    def table():
+    @classmethod
+    def table(cls):
         ix = IX(default_index='spec')
         t = OrderedDict()
         for elt in  ix.query(index='spec', terms=True):
             name = elt['module_name'].split('.')[-1]
             expes = t.get(name, []) + [ elt['expe_name'] ]
             t[name] = sorted(expes)
-        return tabulate(t, headers='keys')
+        return _table_(t, headers='keys', name=cls.__name__)
 
     # no more complex.
     # @sortbytype
@@ -167,7 +174,7 @@ class Spec(BaseObject):
         tables = [ [] for i in range(len(Headers))]
 
         for expe_name, expe_module in _spec.items():
-            expe = cls.load(expe_name, expe_module)
+            expe, _ = cls.load(expe_name, expe_module)
             try:
                 pos = [isinstance(expe, T) for T in Headers.values()].index(True)
             except ValueError:
@@ -197,15 +204,15 @@ class Script(BaseObject):
         script = getattr(module, topmethod['scriptname'])
         return script, arguments
 
-    @staticmethod
-    def table():
+    @classmethod
+    def table(cls):
         ix = IX(default_index='script')
         t = OrderedDict()
         for elt in  ix.query(index='script', terms=True):
             name = elt['scriptname']
             methods = t.get(name, []) + [ elt['method'] ]
             t[name] = sorted(methods)
-        return tabulate(t, headers='keys')
+        return _table_(t, headers='keys', name=cls.__name__)
 
 
 class Corpus(ExpVector):
@@ -375,14 +382,8 @@ class ExpDesign(dict, BaseObject):
         NOTES
         -----
         Special attribute meaning:
-            _mapname : dict
-                use when self.name is called to translate keywords
             _alias : dict
-                command line alias
-            _model_package : list of str
-                where to get models
-            _corpus_package : list of str
-                where to get corpus
+                use when self._name is called to translate keywords
     '''
     def __init__(self,  *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
@@ -406,22 +407,22 @@ class ExpDesign(dict, BaseObject):
 
     @classmethod
     def _name(cls, l):
-        if getattr(cls, '_mapname', None):
-            mapname =  cls._mapname
+        if getattr(cls, '_alias', None):
+            _alias =  cls._alias
         else:
             return l
 
 
         if isinstance(l, (set, list, tuple)):
-            return [ mapname.get(i, i) for i in l ]
+            return [ _alias.get(i, i) for i in l ]
         elif isinstance(l, (dict, ExpSpace)):
             d = dict(l)
             for k, v in d.items():
-                if isinstance(v, basestring) and v in mapname:
-                    d[k] = mapname[v]
+                if isinstance(v, basestring) and v in _alias:
+                    d[k] = _alias[v]
             return d
         else :
-            return mapname.get(l, l)
+            return _alias.get(l, l)
 
 
 ### Todo:
