@@ -27,9 +27,23 @@ class immsb_scvb(SVB):
         _len['zeros'] = (data_ma == 0).sum()
         self._len = _len
 
-        # Stream Parameters
-        chunk = self.expe.get('chunk', 10)
         self.iterations = self.expe.get('iterations', 1)
+
+        # Chunk Parameters
+        chunk = self.expe.get('chunk', 100)
+        if isinstance(chunk, str):
+            mean_nodes = np.mean(_len['dims'])
+            chunk_mode, ratio = chunk.split('_')
+            if chunk_mode == 'adaptative':
+                if '.' in ratio:
+                    ratio = float(ratio)
+                else:
+                    ratio = int(ratio)
+
+                chunk = ratio * mean_nodes
+            else:
+                raise ValueError('Unknown chunk mode: %s' % chunk_mode)
+
 
         #self.chunk_size = chunk * self._len['N']
         self.chunk_size = chunk

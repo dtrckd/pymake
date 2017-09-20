@@ -6,7 +6,7 @@ if os.environ.get('DISPLAY') is None:
     # plot in nil/void
     import matplotlib; matplotlib.use('Agg')
     print('==> Warning : Unable to load DISPLAY')
-    print("To force a display try : `'")
+    print("To force a display try : `export DISPLAY=:0.0")
 
 
 

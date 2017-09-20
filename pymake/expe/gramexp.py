@@ -550,7 +550,7 @@ class GramExp(object):
         # iteration over {expe} trow a 'RuntimeError: dictionary changed size during iteration',
         # maybe due to **expe pass in argument ?
         for k, v in fmt_expe.items():
-            if isinstance(v, (list, dict)):
+            if isinstance(v, (list, dict)) or k == '_id':
                 fmt_expe[k] = '_id_expe' + str(expe['_id_expe'])
         return fmt_expe
 
