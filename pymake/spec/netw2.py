@@ -66,11 +66,10 @@ class Netw2(ExpDesign):
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
-        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}-{chi}-{tau}-{kappa}',
-        _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_a _tau_a _kappa_a'
+        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{_id}',
+        _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
     )
 
-    scvb_test = Corpus(['propro', 'fb_uc', 'generator12'])
     scvb = ExpTensor (
         corpus        = ['clique6'],
         model         = 'immsb_scvb',
@@ -86,9 +85,11 @@ class Netw2(ExpDesign):
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
-        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}',
-        _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_a _tau_a _kappa_a'
+        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}_{_id}',
+        _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
     )
+
+
 
 
     #
@@ -103,3 +104,21 @@ class Netw2(ExpDesign):
 
 
 
+    scvb1 = ExpTensor (
+        corpus        = corpus_net_all,
+        model         = 'immsb_scvb',
+        N             = 'all',
+        chunk         = ['adaptative_0.33','adaptative_1', 'adaptative_3'],
+        K             = 6,
+        iterations    = 1, # relaunch with 3 to see if any difference !
+        hyper         = 'auto',
+        testset_ratio = 25,
+        #chi = [0.5, 1, 2, 10],
+        #tau = [0.5, 1, 2, 16, 64, 256, 1024],
+        #kappa = [0.51, 0.45, 1],
+
+        _data_type    = 'networks',
+        _refdir       = 'debug_scvb_1' ,
+        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}_{_id}',
+        _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
+    )

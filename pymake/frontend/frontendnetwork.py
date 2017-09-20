@@ -332,8 +332,17 @@ class frontendNetwork(DataBase):
         lgg.debug('opening file: %s' % fn)
         with open(fn) as f:
             content = f.read()
-        lines = filter(None, content.split('\n'))
-        edges = [l.strip().split(sep)[-3:-1] for l in lines]
+        lines = list(filter(None, content.split('\n')))
+        line1_length = lines[0].strip().split(sep)
+        if len(line1_length) == 2:
+            # format 'i j' if edges.
+            self._data_file_format = 'txt'
+            edges = [l.strip().split(sep)[:] for l in lines]
+        elif len(line1_length) == 5:
+            # format '"date" i j weight'.
+            self._data_file_format = 'tnet'
+            edges = [l.strip().split(sep)[-3:-1] for l in lines]
+
         edges = np.array([ (e[0], e[1]) for e in edges], dtype=int) -1
         N = edges.max() +1
         #N = max(list(itertools.chain(*edges))) + 1

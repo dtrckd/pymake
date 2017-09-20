@@ -64,6 +64,8 @@ class DataBase(object):
         # Yes, use gramexp to setup path !!!
         # K, others ?
 
+        self._data_file_format = None
+
         if load is True:
             self.load_data(randomize=False)
 
