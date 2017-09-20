@@ -305,7 +305,7 @@ class GramExp(object):
             if isinstance(values, list) and len(values) > 1 and setting not in format_settings:
                 hidden_key.append(setting)
 
-        if hidden_key and self._conf.get('_ignore_format_unique') is not True:
+        if hidden_key and self._conf.get('_ignore_format_unique') is not True and self._conf['_do'] != 'show':
             lgg.error('The following settings are not set in _format:')
             print(' '+ '  '.join(hidden_key))
             print('Possible conflicts in experience results outputs.')
