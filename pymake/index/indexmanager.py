@@ -134,20 +134,16 @@ class IndexManager(object):
         from pymake.frontend.frontend_io import SpecLoader
         model = 'spec'
         self.log.info('Building %s index...' % model)
-        Specs = SpecLoader.get_packages()
-        design_by_name = SpecLoader.get_atoms()
+        Specs = SpecLoader.get_atoms()
         writer = self.clean_index(model).writer()
-        for scriptname, module in Specs.items():
-            self.log.info('\tindexing %s' % (str(scriptname)+str(module)))
+        for scriptname, _content in Specs.items():
+            self.log.info('\tindexing %s' % (str(scriptname)+str(_content['_module'])))
 
-            fullmodulename = '.'.join((module.__module__, module.__name__))
-            exp = design_by_name[module.__name__]
-
-            for expe in exp:
+            for expe in _content['exp']:
 
                 content = ''
-                writer.add_document(module_name = fullmodulename,
-                                    script_name = scriptname,
+                writer.add_document(script_name = _content['script_name'],
+                                    module_name = _content['module_name'],
                                     expe_name = expe,
                                     content = content)
         writer.commit()
@@ -157,20 +153,18 @@ class IndexManager(object):
         from pymake.frontend.frontend_io import ScriptsLoader
         model = 'script'
         self.log.info('Building %s index...' % model)
-        Scripts = ScriptsLoader.get_packages()
-        method_by_cls = ScriptsLoader.get_atoms()
+        Scripts = ScriptsLoader.get_atoms()
         writer = self.clean_index(model).writer()
-        for scriptname, module in Scripts.items():
-            self.log.info('\tindexing %s' % (str(scriptname)+str(module)))
+        for scriptname, _content in Scripts.items():
+            self.log.info('\tindexing %s' % (str(scriptname)+str(_content['_module'])))
 
             # Loop is context/model dependant
-            methods = method_by_cls[module.__name__]
-            for method in methods:
+            for method in _content['methods']:
 
                 content = ''
-                writer.add_document(scriptname = module.__name__,
-                                    scriptsurname = scriptname,
-                                    module = module.__module__,
+                writer.add_document(scriptname = _content['scriptname'],
+                                    scriptsurname = _content['scriptsurname'],
+                                    module = _content['module'],
                                     method = method,
                                     content = content)
         writer.commit()

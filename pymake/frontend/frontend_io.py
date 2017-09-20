@@ -307,7 +307,23 @@ def make_tensor_expe_index(expe, map_parameters):
     return ptx
 
 class PackageWalker(object):
-    ''' Import all submodules of a module, recursively. '''
+    ''' Import all submodules of a module, recursively.
+
+        Module walker implements this class by overloading the methods 'submodule_hook',
+        that should call one of the following methods :
+            * submodul_hook_by_attr : to reach/get module if an attribut is {defined}
+            * submodul_hook_by_class : to reach/get a module if a class is of a {defined} type.
+
+        The {defined} value should be defined in the {_default_attr} with a class inherit PackageWalker is defining the class.
+        (see the *Loader for .e.g).
+
+        Attributes
+        ----------
+        packages : OrederedDict
+            contains the module by name
+        _cls_browse : pyclbr
+            contains module informations
+    '''
 
     _default_attr = dict(
         attr_filter = None,
@@ -324,7 +340,13 @@ class PackageWalker(object):
         [setattr(self, k, kwargs.get(k, v)) for k,v in self._default_attr.items()]
 
         self._cls_browse = {}
+        self._unavailable_modules = []
+
+        ### Core function
         self.packages = self._get_packages(module_name)
+
+        if len(self._unavailable_modules) > 0:
+            lgg.warning('There is some unavailable modules : %s' % self._unavailable_modules)
 
     def __repr__(self):
         return self.packages
@@ -343,7 +365,7 @@ class PackageWalker(object):
         try:
             module = importlib.import_module(module_name)
         except ImportError as e:
-            lgg.debug('package unavailable (%s) : %s' % (e, module_name))
+            lgg.warning('package unavailable (%s) : %s' % (e, module_name))
             return packages
 
         for loader, name, is_pkg in pkgutil.walk_packages(module.__path__):
@@ -356,7 +378,9 @@ class PackageWalker(object):
                 submodule = importlib.import_module(submodule_name)
             except ImportError as e:
                 lgg.debug('submodule unavailable (%s) : %s'%(e, submodule_name))
+                self._unavailable_modules.append(submodule_name)
                 if 'algo' in str(e):
+                    lgg.warning('Please report this error: pymake.frontend_io algo condition ?')
                     submodule = importlib.import_module(submodule_name)
                 continue
 
@@ -529,9 +553,10 @@ class ScriptsLoader(PackageWalker):
             #for method, _class in classs.packages.items():
             #    append decoratpr information to filter @atpymake
 
-            for name, module in s._cls_browse.items():
+            for surname, _module in s.packages.items():
+                name = _module.__name__
+                module = s._cls_browse[name]
                 methods = list(module.methods.keys())
-
                 for m in methods.copy():
                     _m = getattr(s.packages[name.lower()], m)
                     if not inspect.isfunction(_m) and m != '__call__':
@@ -541,7 +566,18 @@ class ScriptsLoader(PackageWalker):
                         methods.append(name.lower())
                     elif m.startswith('_'):
                         methods.remove(m)
-                atoms[name] = methods
+
+                content = {}
+                content['scriptname'] = name
+                content['scriptsurname'] = surname
+                content['module_file'] = module.file
+                content['module'] = _module.__module__
+                content['_module'] = _module
+                #content['module_name'] = '.'.join((module.name, module.module))
+                content['module_super'] = module.super
+                content['methods'] = methods
+                atoms[name] = content
+
         return atoms
 
 class SpecLoader(PackageWalker):
@@ -591,32 +627,19 @@ class SpecLoader(PackageWalker):
 
             s = cls(module, class_filter=ExpDesign)
 
-            for name, module in s._cls_browse.items():
-                #print(name, module)
-                #print(module.name, module.file, module.module, module.super)
-                #methods = list(v.methods.keys())
+            for surname, _module in s.packages.items():
+                name = _module.__name__
+                module = s._cls_browse[name]
 
                 expd = getattr(importlib.import_module(module.module), name)()
-                atoms[name] = expd._specs()
+
+                content = {}
+                content['script_name'] = surname
+                content['module_name'] = '.'.join((_module.__module__, _module.__name__))
+                content['_module'] = module
+                content['exp'] = expd._specs()
+                atoms[name] = content
+
         return atoms
-
-
-        #    for k, v in s._cls_browse.items():
-        #        spec = importlib.import_module(v.module)
-        #        for m in dir(spec):
-        #            if m.startswith('__'):
-        #                continue
-        #            o = getattr(spec,m)
-        #            if not inspect.isclass(o):
-        #                continue
-        #            if issubclass(o, ExpDesign) and not o is ExpDesign:
-        #                expe_designs.append(o)
-
-        #expdesign = ExpDesign()
-        #for s in expe_designs:
-        #    expdesign.update(s())
-
-        #return expdesign
-
 
 
