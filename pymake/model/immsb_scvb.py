@@ -30,23 +30,7 @@ class immsb_scvb(SVB):
         self.iterations = self.expe.get('iterations', 1)
 
         # Chunk Parameters
-        chunk = self.expe.get('chunk', 100)
-        if isinstance(chunk, str):
-            mean_nodes = np.mean(_len['dims'])
-            chunk_mode, ratio = chunk.split('_')
-            if chunk_mode == 'adaptative':
-                if '.' in ratio:
-                    ratio = float(ratio)
-                else:
-                    ratio = int(ratio)
-
-                chunk = ratio * mean_nodes
-            else:
-                raise ValueError('Unknown chunk mode: %s' % chunk_mode)
-
-
-        #self.chunk_size = chunk * self._len['N']
-        self.chunk_size = chunk
+        self.chunk_size = self._get_chunk()
 
         self.chunk_len = self._len['nnz'] / self.chunk_size
 
@@ -203,8 +187,6 @@ class immsb_scvb(SVB):
 
     def _update_gstep_theta(self):
         ''' Gradient converge for kappa _in (0.5,1] '''
-        #tau = self._len['K'] * np.log2(self._len['N'])
-        # Why when tau > 2 objective decrease ???
         chi = self._chi_a
         tau = self._tau_a
         kappa = self._kappa_a
@@ -219,9 +201,7 @@ class immsb_scvb(SVB):
         self.gstep_phi =  chi / (tau + self._timestep_b)**kappa
 
 
-
     def _reduce_latent(self):
-        #theta = self.N_theta_right + np.tile(self.hyper_theta, (self.N_theta_right.shape[0],1))
         theta = self.N_theta_right + self.N_theta_left + np.tile(self.hyper_theta, (self.N_theta_left.shape[0],1))
         self._theta = (theta.T / theta.sum(axis=1)).T
 
@@ -240,15 +220,7 @@ class immsb_scvb(SVB):
         self.pjk = self.N_theta_right[j] + self.hyper_theta
         pxk = self.N_phi[xij] + self.hyper_phi[xij]
 
-        ##
         outer_kk = np.log(np.outer(self.pik, self.pjk)) + np.log(pxk) - np.log(self.N_phi.sum(0) + self.hyper_phi_sum)
-        ##
-
-        #pxk = lognormalize(np.log(pxk) - np.log(self.N_phi_sum + self.hyper_phi_sum))
-        #outer_kk = np.log(np.outer(self.pik, self.pjk)) + np.log(pxk) - np.log(self.N_phi_sum + self.hyper_phi_sum)
-
-        #if self._is_symmetric:
-        #    self.frontend.symmetrize(outer_kk)
 
         return lognormalize(outer_kk.ravel())
 

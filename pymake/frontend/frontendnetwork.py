@@ -80,7 +80,7 @@ class frontendNetwork(DataBase):
             data = self._get_corpus(corpus_name)
 
         if data is None:
-            lgg.warning('Unable to load corpus: %s' % (corpus_name))
+            self.log.warning('Unable to load corpus: %s' % (corpus_name))
             return
 
         self.update_data(data)
@@ -243,6 +243,9 @@ class frontendNetwork(DataBase):
 
     def random_corpus(self, rnd):
         N = self.getN()
+        if isinstance(N, str):
+            self.log.warning('Random graph size missing (-n): Using 100 nodes.')
+            N = 100
 
         if rnd == 'uniform':
             data = np.random.randint(0, 2, (N, N))
@@ -285,10 +288,8 @@ class frontendNetwork(DataBase):
         data = None
         bdir = self.input_path
 
-        #lgg.debug('load input data is force to False !')
-        #self._load_data = False
         if not os.path.exists(bdir):
-            lgg.error("Corpus `%s' Not found." % (bdir))
+            self.log.error("Corpus `%s' Not found." % (bdir))
             print('please run "fetch_networks"')
             self.data = None
             #exit(2)
@@ -300,7 +301,7 @@ class frontendNetwork(DataBase):
             try:
                 data = self.load(fn)
             except Exception as e:
-                lgg.error('Error : %s on %s' % (e, fn+'.pk'))
+                self.log.error('Error : %s on %s' % (e, fn+'.pk'))
                 data = None
         if data is None:
             ext = format
@@ -329,7 +330,7 @@ class frontendNetwork(DataBase):
 
     def parse_tnet(self, fn):
         sep = ' '
-        lgg.debug('opening file: %s' % fn)
+        self.log.debug('opening file: %s' % fn)
         with open(fn) as f:
             content = f.read()
         lines = list(filter(None, content.split('\n')))
@@ -353,7 +354,7 @@ class frontendNetwork(DataBase):
 
     def parse_csv(self, fn):
         sep = ';'
-        lgg.debug('opening file: %s' % fn)
+        self.log.debug('opening file: %s' % fn)
         with open(fn, 'r') as f:
             content = f.read()
         lines = list(filter(None, content.split('\n')))[1:]
@@ -368,7 +369,7 @@ class frontendNetwork(DataBase):
 
     def parse_dancer(self, fn, sep=';'):
         """ Parse Network data depending on type/extension """
-        lgg.debug('opening file: %s' % fn)
+        self.log.debug('opening file: %s' % fn)
         f = open(fn, 'r')
         data = []
         inside = {'vertices':False, 'edges':False }
@@ -421,7 +422,7 @@ class frontendNetwork(DataBase):
 
     def parse_dat(self, fn, sep=' '):
         """ Parse Network data depending on type/extension """
-        lgg.debug('opening file: %s' % fn)
+        self.log.debug('opening file: %s' % fn)
         f = open(fn, 'rb')
         data = []
         inside = {'vertices':False, 'edges':False }
@@ -591,7 +592,7 @@ class frontendNetwork(DataBase):
         try:
             modul = pylouvain.modularity(part, g)
         except NameError:
-            lgg.error('python-louvain) library is not installed \n \
+            self.log.error('python-louvain) library is not installed \n \
                       Modularity can\'t be computed ')
             modul = None
         return modul
@@ -634,7 +635,7 @@ class frontendNetwork(DataBase):
     def get_nfeat(self):
         nfeat = self.data.max() + 1
         if nfeat == 1:
-            lgg.warn('Warning, only zeros in adjacency matrix...')
+            self.log.warn('Warning, only zeros in adjacency matrix...')
             nfeat = 2
         return nfeat
 

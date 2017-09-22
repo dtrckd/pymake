@@ -62,7 +62,7 @@ _gram = [
         nargs='*', action=partial(exp_append, _t=float),
         help='Third hyperparameter.'),
     '--chunk', dict(
-        nargs='*', action=partial(exp_append, _t=float),
+        nargs='*', action=partial(exp_append, _t=str),
         help='Chunk size for online learning.'),
     '--burnin', dict(
         nargs='*', action=partial(exp_append, _t=int),
