@@ -12,7 +12,6 @@ import numpy as np
 from pymake import GramExp
 
 import logging
-lgg = logging.getLogger('root')
 
 class DataBase(object):
     """ Root Class for Frontend Manipulation over Corpuses and Models.
@@ -30,6 +29,8 @@ class DataBase(object):
         (frontent)  ->   (choice)       -> (adapt preprocessing)
 
     """
+
+    log = logging.getLogger('root')
 
     def __init__(self, expe, load=False):
 
@@ -173,18 +174,18 @@ class DataBase(object):
             if hasattr(v, 'tolist'):
                 new_res[k] = v.tolist()
 
-        lgg.info('Saving json : %s' % fn)
+        self.log.info('Saving json : %s' % fn)
         return json.dump(new_res, open(fn,'w'))
     def get_json(self):
         fn = self.output_path + '.json'
-        lgg.info('Loading json frData ; %s' % fn)
+        self.log.info('Loading json frData ; %s' % fn)
         d = json.load(open(fn,'r'))
         return d
     def update_json(self, d):
         fn = self.output_path + '.json'
         res = json.load(open(fn,'r'))
         res.update(d)
-        lgg.info('Updating json frData: %s' % fn)
+        self.log.info('Updating json frData: %s' % fn)
         json.dump(res, open(fn,'w'))
         return fn
 

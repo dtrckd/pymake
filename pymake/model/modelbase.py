@@ -286,6 +286,9 @@ class ModelBase(object):
     def get_clusters(self):
         raise NotImplementedError
 
+    def purge(self):
+        lgg.info('Noting to purge')
+
 
 class GibbsSampler(ModelBase):
     ''' Implmented method, except fit (other?) concerns MMM type models :
@@ -531,6 +534,34 @@ class SVB(ModelBase):
             _nnz.append(count)
 
         self._nnz_vector = _nnz
+
+    def _get_chunk(self):
+        chunk = self.expe.get('chunk', 100)
+
+        if isinstance(chunk, (int, float)):
+            return chunk
+        elif isinstance(chunk, str):
+            pass
+        else:
+            raise TypeError('Unknown chunk type: %s' % type(chunk))
+
+        mean_nodes = np.mean(_len['dims'])
+        try:
+            chunk_mode, ratio = chunk.split('_')
+        except ValueError as e:
+            return float(chunk)
+
+        if chunk_mode == 'adaptative':
+            if '.' in ratio:
+                ratio = float(ratio)
+            else:
+                ratio = int(ratio)
+
+            chunk = ratio * mean_nodes
+        else:
+            raise ValueError('Unknown chunk mode: %s' % chunk_mode)
+
+        return chunk
 
     def fdebug(self):
 

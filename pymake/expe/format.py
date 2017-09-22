@@ -440,7 +440,7 @@ class ExpeFormat(object):
     '''
 
     log = logging.getLogger('root')
-    _logfile = False # for external integration
+    _logfile = False # for external integration @deprcated ?
 
     def __init__(self, pt, expe, gramexp):
         # @debug this, I dont know whyiam in lib/package sometimes, annoying !
@@ -500,7 +500,7 @@ class ExpeFormat(object):
                 @wraps(fun)
                 def wrapper(*args, **kwargs):
                     import matplotlib.pyplot as plt
-                    from pymake.plot import _linestyle
+                    from pymake.plot import _linestyle, _markers
                     group = groups[0]
                     self = args[0]
                     expe = self.expe
@@ -512,6 +512,7 @@ class ExpeFormat(object):
                             figs[c] = ExpSpace()
                             figs[c].fig = plt.figure()
                             figs[c].linestyle = _linestyle.copy()
+                            figs[c].markers = _markers.copy()
 
                         self.gramexp.figs = figs
                     kernel = fun(*args, **kwargs)
@@ -559,7 +560,7 @@ class ExpeFormat(object):
             gramexp.set_default_expe(cls._default_expe)
 
         # Put a valid expe a the end.
-        gramexp.reorder_lastvalid()
+        gramexp.reorder_firstnonvalid()
 
         if not gramexp._conf.get('simulate'):
             print(gramexp.exptable())
@@ -799,7 +800,7 @@ class ExpeFormat(object):
         ''' Write remaining data and close the file. '''
         if self._samples:
             self.write_some(self._fitit_f, None)
-        self._fitit_f.close()
+            self._fitit_f.close()
 
 
     def write_current_state(self, model):

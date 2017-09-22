@@ -46,8 +46,11 @@ class Plot(ExpeFormat):
         burnin = 5
         description = '/'.join((expe._refdir, os.path.basename(self.output_path)))
 
+        frame = self.gramexp.figs[expe.corpus]
+        ax = frame.fig.gca()
+
         ax = self.gramexp.figs[expe.corpus].fig.gca()
-        ax.plot(data, label=description, marker=_markers.next())
+        ax.plot(data, label=description, marker=frame.markers.next())
         ax.legend(loc='upper right',prop={'size':7})
 
 

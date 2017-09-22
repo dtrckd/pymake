@@ -237,9 +237,8 @@ class GramExp(object):
             self._expdesign = ExpDesign
 
 
-    def _preprocess_exp(self):
+    def _preprocess_exp(self, exp):
         # @improvment: do filter from spec
-        exp = self.exp_tensor
         size_exp = np.prod([len(x) for x in exp.values()])
 
         self._check_bind(exp)
@@ -261,7 +260,7 @@ class GramExp(object):
         # |
         for key in keys_to_remove:
             self._conf.pop(key)
-            self.exp_tensor.pop(key)
+            exp.pop(key)
 
 
     @staticmethod
@@ -423,15 +422,14 @@ class GramExp(object):
             if k in d:
                 d.pop(k)
 
-    def exp_setup(self, exp=None):
-        if exp is not None:
-            self.exp_tensor = exp
+    def exp_setup(self):
+        ''' work in self.exp_tensor '''
 
         # Global settings (unique argument)
         self._conf = {k:v[0] for k,v in self.exp_tensor.items() if len(v) == 1}
 
         # makes it contextual.
-        self._preprocess_exp()
+        self._preprocess_exp(self.exp_tensor)
 
         # Make lod
         self.lod = self.make_lod(self.exp_tensor)
@@ -655,11 +653,6 @@ class GramExp(object):
 
         # Special Case for CLI.
         if 'script' in request:
-            if request.get('do_list'):
-                # if a listing is requested go through run.
-                # It'll be stop after signature printing
-                request['_do'] = ['run']
-
             # check if no command is specified, and
             # if 'script" is there, set 'run' command as default.
             do = request.get('_do', [])
@@ -797,15 +790,12 @@ class GramExp(object):
             commands.append(command)
         return commands
 
-    def reorder_lastvalid(self, _type='pk'):
+    def reorder_firstnonvalid(self, _type='pk'):
         for i, e in enumerate(self.lod):
-            if self.make_output_path(e, _type=_type, status='f'):
-                self.lod[-1], self.lod[i] = self.lod[i], self.lod[-1]
+            if not self.make_output_path(e, _type=_type, status='f'):
+                self.lod[0], self.lod[i] = self.lod[i], self.lod[0]
                 break
         return
-
-    def expname(self):
-        return self.exp_tensor.name()
 
     def exptable(self, extra=[]):
         if self._bind:
@@ -1154,7 +1144,7 @@ class GramExp(object):
     def pymake(self, sandbox=ExpeFormat):
         ''' Walk Trough experiments. '''
 
-        if 'do_list' in self.exp_tensor:
+        if 'do_list' in self._conf:
             print('Available methods for %s: ' % (sandbox))
             print(*self.functable(sandbox) , sep='\n')
             exit()
