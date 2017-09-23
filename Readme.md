@@ -15,10 +15,10 @@ Pymake (pmk) is a machine friendly environment for making reproducible research.
 ## Features [](#1)
 * Specification of design of experimentations with a simple grammar,
 * Indexation of specifications, models, scripts and corpus,
-* command-line toolkit for quick design and experience testing,
+* Command-line toolkit for quick design and experience testing,
 * Support experience rules filtering,
 * Support experience parallelization powered by [gnu-parallel](https://www.gnu.org/software/parallel/),
-* browse, design and test several models and corpus find in the literature.
+* Browse, design and test several models and corpus found in the literature.
 
 Perspectives :
 
@@ -48,7 +48,7 @@ The context of the experience is as follows :
 * **Script** : There is two scripts :
     + a fit script that build  the index,
     + a search script that return relevant documents.
-* Experience Parameters are define in the attribute `_default_expe` in each scripts.
+* Experience Parameters are defined in the attribute `_default_expe` in each scripts.
 
 Setup the experience (needed just once) :
 
@@ -140,7 +140,7 @@ Show Paths :
 
     pymake path [expe_name] [script options...]
 
-Show individuals commands for asynchronously purpose :
+Show individuals commands for asynchronously purpose (@deprecated) :
 
     pymake cmd [expe_name] [script options...]
 
@@ -215,7 +215,14 @@ To give an unique identifier of an  expe belonging to a group of experiments (`E
 
 By default all experiments results files will be written in the same directory (specify in `pymake.cfg`). In order to give a special subdirectory name for an experiment, the settings `--refdir str` is a string that represents the subdirectory for results files of the experiments.
 
-###### Specifying what data to sage in .inf files.
+###### Specifying what data to save in .inf files.
+
+<!--
+Suppose you a script `fit` that execute a fit method of a given model. You may want to observe the convergence some quantities of your model trough iterations. The way to achieve this with pmk is to use the special settings `_csv_typo` that contains the attribute of your model you want to track.
+
+Once you provide this settings, you need to inject a function in the fit method of your model to track the results.
+
+-->
 
 to complete...
 

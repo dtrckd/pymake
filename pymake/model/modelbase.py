@@ -413,7 +413,7 @@ class MSampler(object):
     if STIRLING_LOADED:
         stirling_mat = lambda  _, x, y : _stirling_mat[x, y]
     else:
-        lgg.error('stirling.npy file not found, using sympy instead (it will be 100 time slower !)')
+        lgg.error('stirling.npy file not found, using sympy instead (MMSB_CGS model will be 100 time slower !)')
         stirling_mat = lambda  _,x,y : np.asarray([float(sympy.log(stirling(x, i, kind=1)).evalf()) for i in y])
 
     def __init__(self, zsampler):

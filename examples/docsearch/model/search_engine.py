@@ -1,5 +1,5 @@
 from pymake.util.vocabulary import Vocabulary
-from pymake.util.utils import get_global_settings, hash_object
+from pymake.util.utils import get_global_settings, hash_objects
 from pymake.index.indexmanager import IndexManager
 
 
@@ -179,7 +179,7 @@ class tfidf(IndexManager):
 
                 doc = dict(shortpath=shortpath, fullpath=fullpath)
                 doc['content'] = text
-                doc['hash'] = hash_object(text)
+                doc['hash'] = hash_objects(text)
 
                 first_m = self.getfirst(doc['hash'], 'hash')
                 if first_m:
