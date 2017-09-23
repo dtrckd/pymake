@@ -140,7 +140,7 @@ Show Paths :
 
     pymake path [expe_name] [script options...]
 
-Show individuals commands for asynchronously purpose :
+Show individuals commands for asynchronously purpose (@deprecated) :
 
     pymake cmd [expe_name] [script options...]
 
