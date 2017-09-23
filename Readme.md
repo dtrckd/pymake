@@ -1,6 +1,6 @@
 # PYMAKE
 
-Pymake is a platform for making reproducible research. It provides tools adapted to ease the creation, maintenance, tracking and sharing of experiments. It has two main paradigms :
+Pymake is a machine friendly environment for making reproducible research. It provides tools adapted to ease the creation, maintenance, tracking and sharing of experiments. It has two main paradigms :
 
 * Manage and navigate in your experiences, as a **command-line** interface.
 * Models and workflows for Machine Learning experiments, as a **framework**.
@@ -96,7 +96,7 @@ In a pymake project there is 4 main components, associated to 4 directories :
 * `script/`: Code that operate with the data and models,
     + contains scripts for actions, -- every class that inherit `pymake.ExpeFormat` <!-- selection with the `-r` options -->
 * `spec/` : It is the specifications of the context of an experiment. In order words, the parameters of an experience.
-    + contains specification of (design) experiments, -- can be precised as an argument after the second argument of pymake.
+    + contains specification of (design) experiments, -- can be given as an argument after the second argument of pymake.
 
 Along with those directory there is two system files :
 * pymake.cfg : at the root of a project (basically define a project) specify the default and contrib : data | model | script | spec, and other global options, <!-- document each entry -->

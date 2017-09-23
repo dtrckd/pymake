@@ -11,7 +11,7 @@ if os.environ.get('DISPLAY') is None:
 
 
 # This lines take a while
-from pymake.expe.format import Spec, Corpus, Model, Script, ExpSpace, ExpVector, ExpTensor, ExpeFormat, ExpDesign
+from pymake.expe.format import Spec, Corpus, Model, Script, ExpSpace, ExpVector, ExpTensor, ExpeFormat, ExpDesign, ExpGroup
 
 from pymake.frontend.frontend_io import SpecLoader
 #__spec = SpecLoader.get_atoms()

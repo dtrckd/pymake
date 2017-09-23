@@ -3,7 +3,8 @@ import setuptools, sys
 from codecs import open
 from os import path
 
-__version__ = '0.1'
+__version__ = '0.2'
+#__version__ = subprocess.check_output(["git", "describe"]).strip()
 
 try:
     from Cython.Build import cythonize

@@ -17,13 +17,11 @@ from pymake import GramExp
 def main():
 
     zymake = GramExp.zymake()
-
-
     zyvar = zymake._conf
 
     if zyvar.get('simulate') and not zyvar['_do'] in ['run', 'runpara']:
         # same as show !
-        zymake.simulate(zyvar['_run_indexs'])
+        zymake.simulate()
 
     ### Makes OUT Files
     lines = None
@@ -33,12 +31,12 @@ def main():
     elif zyvar['_do'] == 'update':
         zymake.update_index()
     elif zyvar['_do'] == 'show':
-        zymake.simulate(zyvar['_run_indexs'])
+        zymake.simulate()
     elif zyvar['_do'] ==  'run':
-        lines = zymake.execute(zyvar['_run_indexs'])
+        lines = zymake.execute()
         zymake.pushcmd2hist()
     elif zyvar['_do'] == 'runpara':
-        lines = zymake.execute_parallel(zyvar['_run_indexs'])
+        lines = zymake.execute_parallel()
         zymake.pushcmd2hist()
     elif zyvar['_do'] == 'cmd':
         lines = zymake.make_commandline()

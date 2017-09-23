@@ -10,8 +10,9 @@ import numpy as np
 from collections import OrderedDict, defaultdict
 from decorator import decorator
 from functools import wraps
+from itertools import product
 
-from pymake.util.utils import colored, basestring, get_dest_opt_filled, make_path
+from pymake.util.utils import colored, basestring, get_dest_opt_filled, make_path, hash_objects
 from pymake.index.indexmanager import IndexManager as IX
 
 lgg = logging.getLogger('root')
@@ -19,12 +20,15 @@ lgg = logging.getLogger('root')
 
 
 
-''' this what Pandas does ? So here is a Lama '''
+''' Structure of Pymake Objects.
+
+This is what Pandas does ? So here is a Lama.
+'''
 
 
 from tabulate import tabulate
 
-# Ugky, factorize
+# Ugly, integrate.
 def _table_(tables, headers=[], max_line=10, max_row=30, name=''):
 
     if isinstance(headers, str):
@@ -108,6 +112,13 @@ class ExpSpace(dict):
     #    self.__dict__ = self
 
 class ExpVector(list, BaseObject):
+    ''' A List of elements of an ExpTensor. '''
+    def __add__(self, other):
+        return self.__class__(list.__add__(self, other))
+    def __sub__(self, other):
+        return self.__class__([item for item in self if item not in other])
+
+class ExpGroup(list, BaseObject):
     ''' A List of elements of an ExpTensor. '''
     def __add__(self, other):
         return self.__class__(list.__add__(self, other))
@@ -273,7 +284,7 @@ class ExpTensor(OrderedDict, BaseObject):
         BaseObject.__init__(self)
 
     @classmethod
-    def from_expe(cls, expe, parser=None):
+    def from_expe(cls, conf=None, expe=None, parser=None):
         ''' Return the tensor who is an Orderedict of iterable.
             Assume conf is an exp. Non list value will be listified.
 
@@ -282,10 +293,9 @@ class ExpTensor(OrderedDict, BaseObject):
             expe : (ExpDesign, ExpSpace or dict)
                 A design of experiment.
         '''
-        _conf = None
-        if '_spec' in expe:
-            _conf = expe.copy()
-            expe = _conf.pop('_spec')
+        _conf = conf.copy()
+        if expe is None:
+            expe = conf
 
         if not issubclass(type(expe), (cls, ExpSpace, dict, ExpVector)):
             raise ValueError('Expe not understood: %s' % type(expe))
@@ -295,7 +305,6 @@ class ExpTensor(OrderedDict, BaseObject):
         elif issubclass(type(expe), Model):
             tensor = cls(model=expe)
         elif isinstance(expe, ExpTensor):
-            # ExpSpace or dict or  not implemented ExpVector
             tensor = expe.copy()
         elif isinstance(expe, (dict, ExpSpace)):
             tensor = cls()
@@ -345,6 +354,9 @@ class ExpTensor(OrderedDict, BaseObject):
             else:
                 self[k] = [v]
 
+    def get_size(self):
+        return  np.prod([len(x) for x in self.values()])
+
     def push_dict(self, d):
         ''' push one dict inside a exptensor.
             It extend _bind rule to filter the tensor.
@@ -352,29 +364,321 @@ class ExpTensor(OrderedDict, BaseObject):
         tensor_len = np.prod([len(x) for x in self.values()])
         if len(self) == 0:
             self.update_from_dict(d)
-            return
+            return True
 
         _need_bind = False
+        _up_dict = {}
         for k, v in d.items():
             if k in ['_id_expe']:
                 continue
 
-            vector = self.get(k, [])
+            vector = self.get(k, []).copy()
             if v not in vector:
                 if len(vector) == 0:
                     _need_bind = True
-                    lgg.debug('setting to bind: (%s : %s)' % (k, v))
+                    #lgg.debug('setting to bind: (%s : %s)' % (k, v))
+                    break
                 vector.append(v)
-            self[k] = vector
+            _up_dict[k] = vector
 
         if _need_bind:
-            raise NotImplementedError('Need to push bind value to build a tensor from non-overlaping settings.')
-
+            #raise NotImplementedError('Need to push bind value to build a tensor from non-overlaping settings.')
+            return False
+        else:
+            self.update(_up_dict)
+            return True
 
 
     def table(self, extra=[]):
         return tabulate(extra+sorted(self.items(), key=lambda x:x[0]),
                                headers=['Params','Values'])
+
+# @debug : Rename this class to ?
+class ExpTensorV2(BaseObject):
+    ''' Represent a set of Experiences (**expe**). '''
+    def __init__(self):
+        BaseObject.__init__(self)
+
+        # --- Those are aligned ---
+        self._tensors = [] # list of ExpTensor
+        self._bind = []
+        self._null = []
+        self._hash = []
+        #--------------------------
+        self._lod = [] # list of dict
+        self._conf = {}
+        self._size = None
+
+    @classmethod
+    def from_conf(cls, conf, _max_expe=150000):
+        gt = cls()
+        _spec = conf.pop('_spec', None)
+        if not _spec:
+            gt._tensors.append(ExpTensor.from_expe(conf))
+            return gt
+
+        exp = []
+        max_expe = len(_spec)
+        consume_expe = 0
+        while consume_expe < max_expe:
+            o = _spec[consume_expe]
+            if isinstance(o, ExpGroup):
+                max_expe += len(o) -1
+                _spec = _spec[:consume_expe] + o + _spec[consume_expe+1:]
+            else:
+                exp.append(o)
+                consume_expe += 1
+
+            if max_expe > _max_expe:
+                lgg.warning('Number of experiences exceeds the hard limit.')
+
+        gt._tensors.extend([ExpTensor.from_expe(conf, spec) for spec in exp])
+        return gt
+
+    def __iter__(self):
+        for tensor in self._tensors:
+            yield tensor
+
+    def remove_all(self, key):
+        if key in self._conf:
+            self._conf.pop(key)
+
+        for tensor in self._tensors:
+            if key in tensor:
+                tensor.pop(key)
+
+        # @Debug self.lod is left untouched...
+        # Really ?
+        for d in self._lod:
+            if key in d:
+                d.pop(key)
+
+    def update_all(self, **kwargs):
+        self._conf.update(kwargs)
+
+        for tensor in self._tensors:
+            tensor.update_from_dict(kwargs)
+
+        for d in self._lod:
+            d.update(kwargs)
+
+
+    def set_default_all(self, defconf):
+        ''' set default value in exp '''
+        for k, v in def_conf.items():
+
+            for tensor in self._tensors:
+                if not k in tensor:
+                    tensor[k] = [v]
+            for expe in self.lod:
+                if not k in expe:
+                    expe[k] = v
+            if k in self._conf:
+                # @debug: dont test if all the group have this unique value.
+                self._conf[k] = v
+
+    def get_all(self, key, default=[]):
+        vec = []
+        for tensor in self._tensors:
+            vec.extend(tensor.get(key, []))
+
+        if not vec:
+            return default
+        else:
+            return vec
+
+    def get_conf(self):
+        _conf = {}
+        for tensor in self._tensors:
+            for k, v in tensor.items():
+                if len(v) != 1:
+                    if k in _conf:
+                        _conf.pop(k)
+                    continue
+
+                if k in _conf and v[0] != _conf[k]:
+                    _conf.pop(k)
+                    continue
+                else:
+                    _conf[k] = v[0]
+
+            #_confs.append(_conf)
+
+        self._conf = _conf
+        return self._conf
+
+    def get_size(self):
+        size = 0
+        for tensor in self._tensors:
+            size += tensor.get_size()
+        self._size = size
+        return self._size
+
+    def check_bind(self):
+        ''' Rules Filter '''
+
+        for tensor in self._tensors:
+
+            if '_bind' in tensor:
+                _bind = tensor.pop('_bind')
+                if not isinstance(_bind, list):
+                    _bind = [_bind]
+            else:
+                #_bind = getattr(self, '_bind', [])
+                _bind = []
+
+            self._bind.append(_bind)
+
+    def check_model_typo(self):
+        ''' Assume default module is pymake '''
+        for tensor in self._tensors:
+            models = tensor.get('model', [])
+            for i, m in enumerate(models):
+                if not '.' in m:
+                    models[i] = 'pmk.%s'%(m)
+
+    def check_null(self):
+        ''' Filter _null '''
+        for tensor in self._tensors:
+            _null = []
+            for k in list(tensor.keys()):
+                if '_null' in tensor.get(k, []):
+                    tensor.pop(k)
+                    _null.append(k)
+            self._null.append(_null)
+
+    def make_lod(self):
+        ''' Make a list of Expe from tensor, with filtering '''
+
+        self._lod = []
+        for _id, tensor in enumerate(self._tensors):
+            self._lod.extend(self._make_lod(tensor, _id))
+
+        self._make_hash()
+        return self._lod
+
+    def _make_lod(self, tensor, _id):
+        ''' 1. make dol to lod
+            2. filter _bind rule
+            3. add special parameter (expe_id)
+        '''
+        if len(tensor) == 0:
+            lod =  []
+        else:
+            len_l = [len(l) for l in tensor.values()]
+            keys = sorted(tensor)
+            lod = [dict(zip(keys, prod)) for prod in product(*(tensor[key] for key in keys))]
+
+        # POSTFILTERING
+        # Bind Rules
+        idtoremove = []
+        for expe_id, d in enumerate(lod):
+            for rule in self._bind[_id]:
+                _bind = rule.split('.')
+                values = list(d.values())
+
+                # This is only for  last dot separator process
+                for j, e in enumerate(values):
+                    if type(e) is str:
+                        values[j] = e.split('.')[-1]
+
+
+                if len(_bind) == 2:
+                    # remove all occurence if this bind don't occur
+                    # simltaneous in each expe.
+                    a, b = _bind
+                    if b.startswith('!'):
+                        # Exclusif Rule
+                        b = b[1:]
+                        if a in values and b in values:
+                            idtoremove.append(expe_id)
+                    else:
+                        # Inclusif Rule
+                        if a in values and not b in values:
+                            idtoremove.append(expe_id)
+
+                elif len(_bind) == 3:
+                    # remove occurence of this specific key:value if
+                    # it does not comply with this bind.
+                    a, b, c = _bind
+                    # Get the type of this key:value.
+                    _type = type(d[b])
+                    if _type is bool:
+                        _type = lambda x: True if x in ['True', 'true', '1'] else False
+
+                    if c.startswith('!'):
+                        # Exclusif Rule
+                        c = c[1:]
+                        if a in values and _type(c) == d[b]:
+                            idtoremove.append(expe_id)
+                    else:
+                        # Inclusif Rule
+                        if a in values and _type(c) != d[b]:
+                            idtoremove.append(expe_id)
+
+        lod = [d for i,d in enumerate(lod) if i not in idtoremove]
+        # Save true size of tensor (_bind remove)
+        self._tensors[_id]._size = len(lod)
+
+        # Add extra information in lod expes
+        n_last_expe = sum([t._size for t in self._tensors[:_id]])
+        for _id, expe in enumerate(lod):
+            expe['_id_expe'] = _id + n_last_expe
+
+        return lod
+
+    # @todo; lhs for clustering expe applications.
+    def _make_hash(self):
+        _hash = []
+        for _id, d in enumerate(self._lod):
+            o = hash_objects(d)
+            if o in _hash:
+                lgg.warning('Duplicate experience: %d' % (_id))
+            _hash.append(o)
+
+        self._hash = _hash
+
+    def remake(self, indexs):
+        ''' Update the curent tensors by selecting the ${indexs} '''
+
+        self._lod = [self._lod[i] for i in indexs]
+        self._tensors = []
+
+        new_tensor = ExpTensor()
+        consume_expe = 0
+        self._tensors.append(new_tensor)
+        while consume_expe < len(self._lod):
+            d = self._lod[consume_expe]
+            res = new_tensor.push_dict(d)
+            if res is False:
+                new_tensor = ExpTensor()
+                self._tensors.append(new_tensor)
+            else:
+                consume_expe += 1
+
+    def get_gt(self):
+        ''' get Global Tensors.
+            No _binding here...
+        '''
+        gt = {}
+        for tensor in self._tensors:
+            for k, v in tensor.items():
+                _v = gt.get(k,[])
+                gt[k] = _v + v
+        return gt
+
+    def table(self):
+        tables = []
+        for id, group in enumerate(self._tensors):
+            if self._bind:
+                extra = [('_bind', self._bind[id])]
+            if id == 0:
+                headers = ['Params','Values']
+            else:
+                headers = ''
+            tables.append(tabulate(extra+sorted(group.items(), key=lambda x:x[0]), headers=headers))
+
+        return '\n'.join(tables)
 
 class ExpDesign(dict, BaseObject):
     ''' An Ensemble composed of ExpTensors and ExpVectors.
@@ -508,7 +812,7 @@ class ExpeFormat(object):
                     # Init Figs Sink
                     if not hasattr(self.gramexp, 'figs'):
                         figs = dict()
-                        for c in self.gramexp.get(group, []):
+                        for c in self.gramexp.get_all(group):
                             figs[c] = ExpSpace()
                             figs[c].fig = plt.figure()
                             figs[c].linestyle = _linestyle.copy()
@@ -557,7 +861,7 @@ class ExpeFormat(object):
 
         # update exp_tensor in gramexp
         if hasattr(cls, '_default_expe'):
-            gramexp.set_default_expe(cls._default_expe)
+            gramexp.exp_tensor.set_default_all(cls._default_expe)
 
         # Put a valid expe a the end.
         gramexp.reorder_firstnonvalid()

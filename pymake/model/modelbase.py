@@ -545,7 +545,7 @@ class SVB(ModelBase):
         else:
             raise TypeError('Unknown chunk type: %s' % type(chunk))
 
-        mean_nodes = np.mean(_len['dims'])
+        mean_nodes = np.mean(self._len['dims'])
         try:
             chunk_mode, ratio = chunk.split('_')
         except ValueError as e:
