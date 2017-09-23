@@ -81,7 +81,7 @@ Then you can list some informations about pymake :
 1. Workflow / directory structure
 2. pymake commands
 3. pymake.cfg
-4. ExpSpace and ExpTensor
+4. ExpSpace, ExpTensor and ExpGroup
 5. Track your data and results
 6. Search and indexation
 
