@@ -634,15 +634,19 @@ class ExpTensorV2(BaseObject):
     # @todo; lhs for clustering expe applications.
     def _make_hash(self):
         _hash = []
+        n_duplicate = 0
         for _id, _d in enumerate(self._lod):
             d = _d.copy()
             [ d.pop(k) for k in self._private_keywords if k in d and k != '_repeat']
             o = hash_objects(d)
             if o in _hash:
-                lgg.warning('Duplicate experience: %d' % (_id))
-                ask_sure_exit('Continue [y/n]?')
+                n_duplicate += 1
             _hash.append(o)
 
+
+        if n_duplicate > 0:
+            lgg.warning('Duplicate experience: %d' % (n_duplicate))
+            ask_sure_exit('Continue [y/n]?')
         self._hash = _hash
 
     def remake(self, indexs):

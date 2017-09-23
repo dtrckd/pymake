@@ -270,8 +270,7 @@ class GramExp(object):
         self.exp_tensor.check_null()
 
         if size_exp > 1 and 'write' in self._conf:
-            for tensor in self.exp_tensor:
-                self._check_format(tensor)
+            self.check_format()
 
         # Clean pymake extra args:
         extra_args = ['_ignore_format_unique', ('_net', False)]
@@ -287,30 +286,42 @@ class GramExp(object):
             self.exp_tensor.remove_all(key)
 
 
-    def _check_format(self, tensor):
-        ''' Check if all expVector are distinguishable in _format. '''
-        hidden_key = []
-        _format = tensor.get('_format', [''])
-        if len(_format) > 1:
-            raise NotImplementedError('multiple _format not implemented')
-        else:
-            _format = _format[0]
+    def check_format(self):
+        ''' Check if all expVector are distinguishable in _format.
 
-        format_settings = re.findall(r'{([^{}]*)}', _format)
-        for setting, values in tensor.items():
-            if setting in self._special_keywords:
-                continue
-            if isinstance(values, list) and len(values) > 1 and setting not in format_settings:
-                hidden_key.append(setting)
+            @debug: not valid check accros tensors !!!
+            @debug: integration in ExpTensorV2 ?
+        '''
 
-        if hidden_key and self._conf.get('_ignore_format_unique') is not True and self._conf['_do'] != 'show' and not '_id' in format_settings:
-            lgg.error('The following settings are not set in _format:')
-            print(' '+ '  '.join(hidden_key))
-            print('Possible conflicts in experience results outputs.')
-            print('Please correct {_format} key to fit the experience settings.')
-            print('To force the runs, use:  --ignore-format-unique')
-            print('Exiting...')
-            exit(2)
+        for tensor in self.exp_tensor:
+            hidden_key = []
+            _format = tensor.get('_format', [''])
+            if len(_format) > 1:
+                raise NotImplementedError('multiple _format not implemented')
+            else:
+                _format = _format[0]
+
+            format_settings = re.findall(r'{([^{}]*)}', _format)
+            for setting, values in tensor.items():
+                if setting in self._special_keywords:
+                    continue
+                if isinstance(values, list) and len(values) > 1 and setting not in format_settings:
+                    hidden_key.append(setting)
+
+            if hidden_key and self._conf.get('_ignore_format_unique') is not True and self._conf['_do'] != 'show' and not '_id' in format_settings:
+                lgg.error('The following settings are not set in _format:')
+                print(' '+ '  '.join(hidden_key))
+                print('Possible conflicts in experience results outputs.')
+                print('Please correct {_format} key to fit the experience settings.')
+                print('To force the runs, use:  --ignore-format-unique')
+                print('Exiting...')
+                exit(2)
+
+        if self._conf.get('_ignore_format_unique') is True:
+            _format = '{_name}-{_id}'
+            self.exp_tensor.update_all(_format=_format)
+
+
 
     @classmethod
     def _check_exp(cls, tensor):
@@ -366,10 +377,13 @@ class GramExp(object):
 
         basedir = os.path.join(os.path.dirname(__file__), _DATA_PATH, base, base_dir)
 
+        rep = ''
         if '_repeat' in expe and ( expe['_repeat'] is not None and expe['_repeat'] is not False):
-            p = os.path.join(hook, str(expe['_repeat']))
-        else:
-            p = os.path.join(hook)
+            rep = str(expe['_repeat'])
+            if rep == '-1':
+                rep = ''
+
+        p = os.path.join(hook, rep)
 
         if not expe['_format']:
             # or give a hash if write is False ?
@@ -424,6 +438,7 @@ class GramExp(object):
         for k, v in fmt_expe.items():
             if isinstance(v, (list, dict)):
                 fmt_expe[k] = id_str
+
         return fmt_expe
 
 

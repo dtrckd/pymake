@@ -155,22 +155,22 @@ To specify an unique experiment (expe), one can use the `ExpSapce` class :
 
 ```python
 exp1 = ExpSpace(name = 'myexpe',
-				size = 42,
-				key1 = 100,
-				key2 = 'johndoe'
-				_format = '{name}-{size}-{key1}_{key2}'
-		)
+        size = 42,
+        key1 = 100,
+        key2 = 'johndoe'
+        _format = '{name}-{size}-{key1}_{key2}'
+        )
 ```
 
 To specify a **grid search**, one can use the `ExpTensor` class :
 
 ```python
 exp2 = ExpTensor(name = 'myexpe',
-			     size = [42, 100],
-			     key1 = [100, 1000]
-			     key2 = 'johndoe'
-			     _format = '{name}-{size}-{key1}_{key2}'
-		)
+        size = [42, 100],
+        key1 = [100, 1000]
+        key2 = 'johndoe'
+        _format = '{name}-{size}-{key1}_{key2}'
+        )
 ```
 
 Which will results in four experiments where "size" and "key1" settings take different values.
@@ -199,10 +199,10 @@ Suppose we have the following settings :
 
 ```python
 settings = ExpSpace(name = 'myexpe',
-                size = 42,
-                key1 = 100,
-                key2 = 'johndoe'
-                _format = '{name}-{size}-{key1}_{key2}'
+        size = 42,
+        key1 = 100,
+        key2 = 'johndoe'
+        _format = '{name}-{size}-{key1}_{key2}'
         )
 ```
 

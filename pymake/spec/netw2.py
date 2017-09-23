@@ -47,12 +47,12 @@ class Netw2(ExpDesign):
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
-        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}-{_name}-{_id}',
+        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}-{_name}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
     )
 
     # Test various gradient steps
-    scvb_chi = ExpTensor (
+    scvb_chi_b = ExpTensor (
         corpus        = ['clique6', 'BA', 'manufacturing'],
         model         = 'immsb_scvb',
         N             = 200,
@@ -67,7 +67,7 @@ class Netw2(ExpDesign):
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
-        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}-{_name}-{_id}',
+        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}-{_name}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
     )
 
@@ -86,7 +86,7 @@ class Netw2(ExpDesign):
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
-        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}-{_name}-{_id}',
+        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}-{_name}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
     )
 
@@ -119,8 +119,8 @@ class Netw2(ExpDesign):
         #kappa = [0.51, 0.45, 1],
 
         _data_type    = 'networks',
-        _refdir       = 'debug_scvb_1' ,
-        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}-{_name}-{_id}',
+        _refdir       = 'debug_scvb_1' , # it was done with i0 !
+        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}-{_name}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
     )
 
@@ -138,8 +138,8 @@ class Netw2(ExpDesign):
         kappa = [0.51, 0.45, 1],
 
         _data_type    = 'networks',
-        _refdir       = 'debug_scvb_1' ,
-        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}-{_name}-{_id}',
+        _refdir       = 'debug_scvb_1_i1' ,
+        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}-{_name}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
     )
 
