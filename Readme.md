@@ -2,7 +2,7 @@
 
 Pymake (pmk) is a machine friendly environment for making reproducible research. It provides tools adapted to ease the creation, maintenance, tracking and sharing of experiments. It has two main paradigms :
 
-* Manage and navigate in your experiences, as a **command-line** interface.
+* Manage and navigate in your experiments, as a **command-line** interface.
 * Models and workflows for Machine Learning experiments, as a **framework**.
 
 # Table of Contents
@@ -81,7 +81,7 @@ Then you can list some informations about pymake :
 1. Workflow / directory structure
 2. pymake commands
 3. pymake.cfg
-4. ExpSpace and ExpTensor
+4. ExpSpace, ExpTensor and ExpGroup
 5. Track your data and results
 6. Search and indexation
 
