@@ -6,13 +6,13 @@ Pymake (pmk) is a machine friendly environment for making reproducible research.
 * Models and workflows for Machine Learning experiments, as a **framework**.
 
 # Table of Contents
-1. [Features](#features)
-2. [Install](#install)
-3. [Example](#example)
-4. [Documentation](#documentation)
-5. [man pymake](#man)
+1. [Features](#1)
+2. [Install](#2)
+3. [Example](#3)
+4. [Documentation](#4)
+5. [man pymake](#5)
 
-## Features [](#){name=features}
+## Features [](#1)
 * Specification of design of experimentations with a simple grammar,
 * Indexation of specifications, models, scripts and corpus,
 * command-line toolkit for quick design and experience testing,
@@ -26,7 +26,7 @@ Perspectives :
 * Better documentation (or just a documentation, needs feedback!).
 
 
-## Install [](#){name=install}
+## Install [](#2)
 
 
 System dependencies : `apt-get install python3-setuptools python3-pip python3-tk`
@@ -38,7 +38,7 @@ git clone https://github.com/dtrckd/pymake
 cd pymake && make install
 ```
 
-## Examples [](#){name=example}
+## Examples [](#3)
 
 We provide an example of a design workflow with pymake by providing a **Search Engine** experience.
 
@@ -75,7 +75,7 @@ Then you can list some informations about pymake :
 * Show signatures of methods in scripts ('ir' script): `pymake -l --script ir`
 
 
-## Documentation [](#){name=documentation}
+## Documentation [](#4)
 
 
 1. Workflow / directory structure
@@ -151,7 +151,7 @@ Design of experiments are specified inside the `spec/` directory. Where you need
 
 The following examples need to be instantiated in class that inherits `ExpDesign`: `class MyDesign(ExpDesign)`.
 
-To specify an unique experiment (expe), one can use the `ExpSapce` class : 
+To specify an unique experiment (expe), one can use the `ExpSapce` class :
 
 ```python
 exp1 = ExpSpace(name = 'myexpe',
@@ -185,7 +185,7 @@ You can then run `pymake -l` to see our design of experiences.
 
 ##### Track your data and results
 
-In order to  save and analyse your results, each unique experience need to be identified in a file. To do so we propose a mechanism to map settings/specification of an unique experience to a <filename>. Depending on what the developer want to write, the extension of this file can be modified. Pymake use three conventions : 
+In order to  save and analyse your results, each unique experience need to be identified in a file. To do so we propose a mechanism to map settings/specification of an unique experience to a <filename>. Depending on what the developer want to write, the extension of this file can be modified. Pymake use three conventions :
 
 * <filename>.inf : csv file where each line contains the state of iterative process of an experiment,
 * <filename>.pk : to save complex object usually at the end of an experiments, to load it after for analysis/visualisation,
@@ -193,10 +193,11 @@ In order to  save and analyse your results, each unique experience need to be id
 
 ###### formatting the filename -- _format
 
-The choice of the filename will depends on the settings of the experiments. In order to specify the format of the filename, there is the special settings `--format  str_fmt`. `str_fmt` is a string template for the filename, with braces delimiter to specify what settings will be replaced, example : 
+The choice of the filename will depends on the settings of the experiments. In order to specify the format of the filename, there is the special settings `--format  str_fmt`. `str_fmt` is a string template for the filename, with braces delimiter to specify what settings will be replaced, example :
 
-Suppose we have the following settings : 
-```
+Suppose we have the following settings :
+
+```python
 settings = ExpSpace(name = 'myexpe',
                 size = 42,
                 key1 = 100,
@@ -219,7 +220,7 @@ By default all experiments results files will be written in the same directory (
 to complete...
 
 
-## man pymake
+## man pymake [](#5)
 
 pymake (pmk) command-line reference.
 
@@ -232,7 +233,7 @@ expedesign_id = [experience id/name]; # string identifier to an exp
 pmk_options = [pymake special options + project options];
 ```
 
-### Command_name 
+### Command_name
 If empty, a defaut settings a taken from {_default_expe} define as a constant in a script (ExpeFormat). All setings undefined in a design but defined in the {_default_exp} will take this value.
 
 Remark : -l and -s (--simulate) options don't execute, they just show things up.
@@ -242,4 +243,3 @@ Pick among all (design of )experiences in {spec}. To list them `pmk -l spec` (or
 
 ### pmk_options
 Here are all the special options that own pymake, such as --refdir, --format, --script, -w, -l, -h etc. Additionally, all the options for the current project should be added in the `grammarg.py` file.
-
