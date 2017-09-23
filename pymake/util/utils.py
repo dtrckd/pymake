@@ -52,12 +52,12 @@ def ask_sure_exit(question):
 
     while True:
         a = input(question+' ').lower()
-        if a == 'yes':
+        if a in ('yes', 'y'):
             break
-        elif a == 'no':
-            exit()
+        elif a in ('no', 'n'):
+            exit(2)
         else:
-            print("Enter either yes/no")
+            print("Enter either [y|n]")
 
 def get_dest_opt_filled(parser):
     ''' Return the {dest} name of the options filled in the command line

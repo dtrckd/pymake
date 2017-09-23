@@ -184,18 +184,18 @@ class GramExp(object):
         >> Network fitting :
         fit.py -m immsb -c alternate -n 100 -i 10'''
 
-    # has special semantics
+    # has special semantics on **output_path**.
     _special_keywords = [ '_refdir', '_base_type',
                          '_format', '_csv_typo',
                          '_repeat',
                         ] # output_path => pmk-basedire/{base_type}/{refdir}/{repeat}/${format}:${csv_typo}
 
-    # Reserved by GramExp
-    # shloud ne in special ?
-    _reserved_keywords = ['_spec', # for nested specification
-                          '_id_expe', # unique expe identifier
+    # Reserved by GramExp for expe identification
+    _reserved_keywords = ['_spec', # for nested specification.
+                          '_id_expe', # unique expe identifier.
+                          '_name_expe', # exp name identifier.
                          ]
-
+    _private_keywords = _reserved_keywords + _special_keywords
 
     _exp_default = {
         #'host'      : 'localhost',
@@ -229,7 +229,7 @@ class GramExp(object):
         self._user_spec = conf.get('_spec', {})
 
         # Make main data structure
-        self.exp_tensor = ExpTensorV2.from_conf(conf)
+        self.exp_tensor = ExpTensorV2.from_conf(conf, private_keywords=self._private_keywords)
         self.exp_setup()
 
         if expdesign is not None:
@@ -263,7 +263,7 @@ class GramExp(object):
         # @improvment: do filter from spec
         size_exp = self.exp_tensor.get_size()
 
-        self._check_exp(self.exp_tensor)
+        #self._check_exp(self.exp_tensor)
 
         self.exp_tensor.check_bind()
         self.exp_tensor.check_model_typo()
@@ -315,20 +315,17 @@ class GramExp(object):
     @classmethod
     def _check_exp(cls, tensor):
         ''' check format and rules of exp_tensor. '''
-
         for exp in tensor:
-
             # check reserved keyword are absent from exp
             for m in cls._reserved_keywords:
-                if m in exp:
-                    raise ValueError('%m is a reserved keyword of gramExp.')
+                if m in exp and m != '_name_expe':
+                    raise ValueError('%s is a reserved keyword of gramExp.' % m)
 
             # Format
             assert(isinstance(exp, ExpTensor))
             for k, v in exp.items():
                 if not issubclass(type(v), (list, tuple, set)):
                     raise ValueError('error, exp value should be iterable: %s' % k, v)
-
 
     def get_all(self, key, default=[]):
         ''' Return the set of values of expVector of that {key}. '''
@@ -419,8 +416,11 @@ class GramExp(object):
         fmt_expe = expe.copy()
         # iteration over {expe} trow a 'RuntimeError: dictionary changed size during iteration',
         # maybe due to **expe pass in argument ?
-        id_str = '_id_expe' + str(expe['_id_expe'])
+        id_str = 'expe' + str(expe['_id_expe'])
+        id_name = expe['_name_expe']
+
         fmt_expe['_id'] = id_str
+        fmt_expe['_name'] = id_name
         for k, v in fmt_expe.items():
             if isinstance(v, (list, dict)):
                 fmt_expe[k] = id_str
@@ -557,8 +557,8 @@ class GramExp(object):
                             if v in ont_values:
                                 lgg.critical('=> Warning: conflict between name of ExpDesign and Pymake commands')
                             do.remove(v)
-                            v, expdesign = Spec.load(v, cls._spec[v])
-                            expgroup.append(v)
+                            d, expdesign = Spec.load(v, cls._spec[v])
+                            expgroup.append((v,d))
                         else:
                             request[ont] = v
 
