@@ -42,8 +42,8 @@ class CheckNetwork(ExpeFormat):
     def init_fit_tables(self, _type, Y=[]):
         expe = self.expe
         if not hasattr(self.gramexp, 'tables'):
-            corpuses = self.specname(self.gramexp.getCorpuses())
-            models = self.gramexp.getModels()
+            corpuses = self.specname(self.gramexp.get_all('corpus'))
+            models = self.gramexp.get_all('model')
             Meas = [ 'pvalue', 'alpha', 'x_min', 'n_tail']
             tables = {}
             for m in models:
@@ -277,7 +277,7 @@ class CheckNetwork(ExpeFormat):
                 table = table_mean + b' $\pm$ ' + table_std
 
                 # Table formatting
-                corpuses = self.specname(self.gramexp.getCorpuses())
+                corpuses = self.specname(self.gramexp.get_all('corpus'))
                 table = np.column_stack((self.specname(corpuses), table))
                 tablefmt = 'simple'
                 table = tabulate(table, headers=['__'+_model.upper()+'__']+Meas, tablefmt=tablefmt, floatfmt='.3f')
@@ -298,7 +298,7 @@ class CheckNetwork(ExpeFormat):
         gof = gofit(d, dc)
 
         if not hasattr(self.gramexp, 'Table'):
-            corpuses = self.specname(self.gramexp.getCorpuses())
+            corpuses = self.specname(self.gramexp.get_all('corpus'))
             Meas = [ 'pvalue', 'alpha', 'x_min', 'n_tail']
             Table = np.empty((len(corpuses), len(Meas)))
             Table = np.column_stack((corpuses, Table))
@@ -327,7 +327,7 @@ class CheckNetwork(ExpeFormat):
             Table = self.gramexp.Table
             Meas = self.gramexp.Meas
         except AttributeError:
-            corpuses = self.specname(self.gramexp.getCorpuses())
+            corpuses = self.specname(self.gramexp.get_all('corpus'))
             Meas = [ 'nodes', 'edges', 'density']
             Meas += [ 'is_symmetric', 'modularity', 'clustering_coefficient']
             Table = np.zeros((len(corpuses), len(Meas))) * np.nan

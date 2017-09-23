@@ -1,7 +1,7 @@
 
 # -*- coding: utf-8 -*-
 
-from pymake import ExpSpace, ExpTensor, Corpus, ExpDesign
+from pymake import ExpSpace, ExpTensor, Corpus, ExpDesign, ExpGroup
 
 __plot_font_size = 14
 
@@ -124,7 +124,7 @@ class Netw2(ExpDesign):
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
     )
 
-    scvb1 = ExpTensor (
+    scvb1_chi = ExpTensor (
         corpus        = data_net_all,
         model         = 'immsb_scvb',
         N             = 'all',
@@ -133,12 +133,16 @@ class Netw2(ExpDesign):
         iterations    = 1, # relaunch with 3 to see if any difference !
         hyper         = 'auto',
         testset_ratio = 25,
-        #chi = [0.5, 1, 2, 10],
-        #tau = [0.5, 1, 2, 16, 64, 256, 1024],
-        #kappa = [0.51, 0.45, 1],
+        chi = [0.5, 1, 2, 10],
+        tau = [0.5, 1, 2, 16, 64, 256, 1024],
+        kappa = [0.51, 0.45, 1],
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb_1' ,
         _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}_{_id}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
     )
+
+    qq = ExpGroup([compare_scvb, scvb])
+
+    q = ExpGroup([qq,scvb])

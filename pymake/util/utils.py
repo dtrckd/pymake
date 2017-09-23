@@ -7,6 +7,7 @@ from datetime import datetime
 from collections import defaultdict
 import logging
 import hashlib
+import json
 
 import numpy as np
 import scipy as sp
@@ -244,7 +245,7 @@ def retrieve_git_info():
 
     return {'git_branch':git_branch, 'git_hash':git_hash}
 
-def hash_object(obj, algo='md5'):
+def hash_objects(obj, algo='md5'):
     """ Return a list of hash of the input object """
     hashalgo = getattr(hashlib, algo)
 
@@ -252,8 +253,10 @@ def hash_object(obj, algo='md5'):
     if isinstance(obj, (np.ndarray, list, tuple)):
         # array of int
         hashed_obj = hashalgo(np.asarray(obj).tobytes()).hexdigest()
-    elif type(obj) is str:
+    elif isinstance(obj, str):
         hashed_obj = hashalgo(obj.encode("utf-8")).hexdigest()
+    elif isinstance(obj, dict):
+        hashed_obj = hashalgo(json.dumps(obj, sort_keys=True).encode('utf8')).hexdigest()
     else:
         raise TypeError('Type of object unashable: %s' % (type(obj)))
 

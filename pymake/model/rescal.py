@@ -5,8 +5,8 @@ from scipy.io.matlab import loadmat
 from scipy.sparse import lil_matrix
 try:
     from rescal import rescal_als
-except:
-    pass
+except ImportError as e:
+    print('Import Error: %s' % e)
 
 
 from .modelbase import ModelBase
