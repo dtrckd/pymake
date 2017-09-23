@@ -12,7 +12,7 @@ from decorator import decorator
 from functools import wraps
 from itertools import product
 
-from pymake.util.utils import colored, basestring, get_dest_opt_filled, make_path, hash_objects
+from pymake.util.utils import colored, basestring, get_dest_opt_filled, make_path, hash_objects, ask_sure_exit
 from pymake.index.indexmanager import IndexManager as IX
 
 lgg = logging.getLogger('root')
@@ -396,8 +396,9 @@ class ExpTensor(OrderedDict, BaseObject):
 # @debug : Rename this class to ?
 class ExpTensorV2(BaseObject):
     ''' Represent a set of Experiences (**expe**). '''
-    def __init__(self):
+    def __init__(self, private_keywords=[]):
         BaseObject.__init__(self)
+        self._private_keywords = private_keywords
 
         # --- Those are aligned ---
         self._tensors = [] # list of ExpTensor
@@ -410,8 +411,8 @@ class ExpTensorV2(BaseObject):
         self._size = None
 
     @classmethod
-    def from_conf(cls, conf, _max_expe=150000):
-        gt = cls()
+    def from_conf(cls, conf, _max_expe=150000, private_keywords=[]):
+        gt = cls(private_keywords=private_keywords)
         _spec = conf.pop('_spec', None)
         if not _spec:
             gt._tensors.append(ExpTensor.from_expe(conf))
@@ -422,15 +423,19 @@ class ExpTensorV2(BaseObject):
         consume_expe = 0
         while consume_expe < max_expe:
             o = _spec[consume_expe]
+            if isinstance(o, tuple):
+                name, o = o
+
             if isinstance(o, ExpGroup):
                 max_expe += len(o) -1
                 _spec = _spec[:consume_expe] + o + _spec[consume_expe+1:]
             else:
+                o['_name_expe'] = name
                 exp.append(o)
                 consume_expe += 1
 
             if max_expe > _max_expe:
-                lgg.warning('Number of experiences exceeds the hard limit.')
+                lgg.warning('Number of experiences exceeds the hard limit of %d.' % _max_expe)
 
         gt._tensors.extend([ExpTensor.from_expe(conf, spec) for spec in exp])
         return gt
@@ -447,7 +452,7 @@ class ExpTensorV2(BaseObject):
             if key in tensor:
                 tensor.pop(key)
 
-        # @Debug self.lod is left untouched...
+        # @Debug self._lod is left untouched...
         # Really ?
         for d in self._lod:
             if key in d:
@@ -462,15 +467,14 @@ class ExpTensorV2(BaseObject):
         for d in self._lod:
             d.update(kwargs)
 
-
     def set_default_all(self, defconf):
         ''' set default value in exp '''
-        for k, v in def_conf.items():
+        for k, v in defconf.items():
 
             for tensor in self._tensors:
                 if not k in tensor:
                     tensor[k] = [v]
-            for expe in self.lod:
+            for expe in self._lod:
                 if not k in expe:
                     expe[k] = v
             if k in self._conf:
@@ -630,10 +634,13 @@ class ExpTensorV2(BaseObject):
     # @todo; lhs for clustering expe applications.
     def _make_hash(self):
         _hash = []
-        for _id, d in enumerate(self._lod):
+        for _id, _d in enumerate(self._lod):
+            d = _d.copy()
+            [ d.pop(k) for k in self._private_keywords if k in d and k != '_repeat']
             o = hash_objects(d)
             if o in _hash:
                 lgg.warning('Duplicate experience: %d' % (_id))
+                ask_sure_exit('Continue [y/n]?')
             _hash.append(o)
 
         self._hash = _hash
