@@ -64,6 +64,15 @@ class Fit(ExpeFormat):
 
         self.log.info('Expe %d finished in %.1f' % (self.pt['expe']+1, time.time()-t0))
 
+
+    def fitw(self):
+        if self._it == 0:
+            self.gramexp.check_format()
+
+        self.expe['write'] = True
+        self()
+
+
     def fit_missing(self, _type='pk'):
 
         is_fitted = self.gramexp.make_output_path(self.expe, _type=_type, status='f')

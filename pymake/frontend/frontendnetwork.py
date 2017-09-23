@@ -171,13 +171,6 @@ class frontendNetwork(DataBase):
         """ Construct a random mask.
             Random training set on 20% on Data / debug5 - debug11 -- Unbalanced
         """
-        percent_hole = float(percent_hole)
-        if percent_hole >= 1:
-            percent_hole = percent_hole / 100.0
-        elif 0 <= percent_hole < 1:
-            pass
-        else:
-            raise ValueError('cross validation ration not understood : %s' % percent_hole)
 
         data = self.data
         if type(data) is np.ndarray:
@@ -201,7 +194,23 @@ class frontendNetwork(DataBase):
         return data_ma
 
     def set_masked(self, percent_hole, diag_off=1):
-        self.data_ma = self.get_masked(percent_hole, diag_off)
+
+        percent_hole = float(percent_hole)
+        if percent_hole >= 1:
+            percent_hole = percent_hole / 100.0
+        elif 0 <= percent_hole < 1:
+            pass
+        else:
+            raise ValueError('cross validation ratio not understood : %s' % percent_hole)
+
+        mask_type =  self.expe.get('mask', 'unbalanced')
+        if mask_type == 'unbalanced':
+            self.data_ma = self.get_masked(percent_hole, diag_off)
+        elif mask_type == 'balanced':
+            self.data_ma = self.get_masked_1(percent_hole, diag_off)
+        else:
+            raise ValueError('mask type unknow :%s' % mask_type)
+
         return self.data_ma
 
     def get_masked_1(self, percent_hole, diag_off=1):
@@ -216,14 +225,14 @@ class frontendNetwork(DataBase):
             raise NotImplementedError('type %s unknow as corpus' % type(data))
 
         # Correponding Index
-        _0 = np.array(zip(*np.where(data == 0)))
-        _1 = np.array(zip(*np.where(data == 1)))
+        _0 = np.array(list(zip(*np.where(data == 0))))
+        _1 = np.array(list(zip(*np.where(data == 1))))
         n = int(len(_1) * percent_hole)
         # Choice of Index
         n_0 = _0[np.random.choice(len(_0), n, replace=False)]
         n_1 = _1[np.random.choice(len(_1), n, replace=False)]
         # Corresponding Mask
-        mask_index = zip(*(np.concatenate((n_0, n_1))))
+        mask_index = list(zip(*(np.concatenate((n_0, n_1)))))
         mask = np.zeros(data.shape, dtype=int)
         mask[mask_index] = 1
 

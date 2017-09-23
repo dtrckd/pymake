@@ -622,7 +622,8 @@ class SVB(ModelBase):
         # self.iterations is actually the burnin phase of SVB.
         for _it in range(self.iterations+1):
             self.log.debug('init timestep A ?')
-            self._timestep_a = 0
+            # --refdir: i0: set timesetpa to 0, i1 not.
+            #self._timestep_a = 0 # better convergence when setting to 0, but better roc ?
             self._iteration = _it
             burnin = (_it < self.iterations)
             np.random.shuffle(minibatch)

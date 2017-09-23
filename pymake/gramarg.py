@@ -48,6 +48,10 @@ _gram = [
         dest='testset_ratio', nargs='*', action=partial(exp_append, _t=int),
         help='testset/learnset percentage for testing.'),
 
+    '--mask', dict(
+        nargs='*', action=exp_append,
+        help='mask type (balanced|unbalanced'),
+
     '--homo', dict(
         nargs='*', action=exp_append,
         help='Centrality type (NotImplemented)'),
