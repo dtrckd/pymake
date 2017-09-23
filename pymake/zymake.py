@@ -36,7 +36,7 @@ def main():
         lines = zymake.execute()
         zymake.pushcmd2hist()
     elif zyvar['_do'] == 'runpara':
-        lines = zymake.execute_parallel()
+        lines = zymake.execute_parallel2()
         zymake.pushcmd2hist()
     elif zyvar['_do'] == 'cmd':
         lines = zymake.make_commandline()

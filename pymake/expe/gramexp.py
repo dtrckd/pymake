@@ -932,6 +932,71 @@ class GramExp(object):
         for line in self.subexecute(cmd):
             print(line, end='')
 
+    def execute_parallel2(self):
+        ''' run 2 process by machine ! '''
+
+        basecmd = sys.argv.copy()
+        Target = './zymake.py'
+        basecmd = ['python3', Target] + basecmd[1:]
+        #basecmd = ['pymake'] + basecmd[1:] # PATH and PYTHONPATH varible missing to be able to execute "pymake"
+
+        # Create commands indexs
+        indexs = self._conf['_run_indexs']
+        if not indexs:
+            indexs = range(len(self))
+        else:
+            [basecmd.remove(str(i)) for i in indexs]
+
+        # Get chunked indexs
+        ncores = max(1, 2) # integrate --cores with --net
+        indexs = list(map(str, indexs))
+        indexs = [indexs[i:i+ncores] for i in range(0, len(indexs), ncores)]
+
+        # Creates a list of commands that pick each index
+        # from base requests commands.
+        cmdlines = []
+        for index in indexs:
+            id_cmd = 'run %s' % (' '.join(index))
+            if 'runpara' in basecmd:
+                cmd = ' '.join(basecmd).replace('runpara', id_cmd, 1)
+            else:
+                idx = basecmd.index(Target)
+                cmd = ' '.join(basecmd[:idx] + [Target + ' '+ id_cmd] + basecmd[idx+1:])
+
+            cmd = cmd + ' --cores 2'
+            cmdlines.append(cmd)
+
+        net = self._conf.get('_net', False)
+        if net:
+            if self._conf.get('_cores'):
+                lgg.critical('--cores options cannot be enable with --net options (risk of recursive call to parallel)')
+                exit(3)
+
+            # remove the --net options
+            for i, cmd in enumerate(cmdlines):
+                cmdlines[i] = cmd.replace('--net', '').strip()
+
+            NDL = get_global_settings('loginfile')
+            PWD = get_global_settings('remote_pwd')
+            cmd = ['parallel', '-u', '-C', "' '", '--eta', '--progress',
+                   '--sshloginfile', NDL, '--workdir', PWD, '--env', 'OMP_NUM_THREADS',  ':::', '%s'%('\n'.join(cmdlines))]
+        else:
+            n_cores = str(self._conf.get('_cores', 0))
+            # remove the --cores options
+            for i, cmd in enumerate(cmdlines):
+                cmd = cmd.split()
+                try: idx = cmd.index('--cores')
+                except: continue
+                cmd.pop(idx); cmd.pop(idx) # pop --cores int
+                cmdlines[i] = ' '.join(cmd)
+
+            cmd = ['parallel', '-j', n_cores, '-u', '-C', "' '", '--eta', '--progress', ':::', '%s'%('\n'.join(cmdlines))]
+
+        #stdout = subprocess.check_output(cmd)
+        #print(stdout.decode())
+        for line in self.subexecute(cmd):
+            print(line, end='')
+
     @staticmethod
     def subexecute(cmd):
         popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
