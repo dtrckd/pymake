@@ -2,7 +2,7 @@
 
 Pymake (pmk) is a machine friendly environment for making reproducible research. It provides tools adapted to ease the creation, maintenance, tracking and sharing of experiments. It has two main paradigms :
 
-* Manage and navigate in your experiences, as a **command-line** interface.
+* Manage and navigate in your experiments, as a **command-line** interface.
 * Models and workflows for Machine Learning experiments, as a **framework**.
 
 # Table of Contents
@@ -15,9 +15,9 @@ Pymake (pmk) is a machine friendly environment for making reproducible research.
 ## Features [](#1)
 * Specification of design of experimentations with a simple grammar,
 * Indexation of specifications, models, scripts and corpus,
-* Command-line toolkit for quick design and experience testing,
-* Support experience rules filtering,
-* Support experience parallelization powered by [gnu-parallel](https://www.gnu.org/software/parallel/),
+* Command-line toolkit for quick design and experiment testing,
+* Support experiments rules filtering,
+* Support experiments parallelization powered by [gnu-parallel](https://www.gnu.org/software/parallel/),
 * Browse, design and test several models and corpus found in the literature.
 
 Perspectives :
@@ -40,17 +40,17 @@ cd pymake && make install
 
 ## Examples [](#3)
 
-We provide an example of a design workflow with pymake by providing a **Search Engine** experience.
+We provide an example of a design workflow with pymake by providing a **Search Engine** experiment.
 
-The context of the experience is as follows :
+The context of the experiment is as follows :
 * **Data** : documents to search in are pdf documents (like articles for example),
 * **Model** : A bm25 model, that assumes a information model of bag of word representation.
 * **Script** : There is two scripts :
     + a fit script that build  the index,
     + a search script that return relevant documents.
-* Experience Parameters are defined in the attribute `_default_expe` in each scripts.
+* Experiment Parameters are defined in the attribute `_default_expe` in each scripts.
 
-Setup the experience (needed just once) :
+Setup the experiment (needed just once) :
 
 ```bash
 cd examples/docsearch/
@@ -69,7 +69,7 @@ To add new models, a new scripts, you need to write it in the dedicated folder f
 
 Then you can list some informations about pymake :
 
-* What experiences are there: `pymake -l spec`
+* What experiments are there: `pymake -l spec`
 * What models are there: `pymake -l model`
 * What scripts are there: `pymake -l script`
 * Show signatures of methods in scripts ('ir' script): `pymake -l --script ir`
@@ -93,13 +93,13 @@ Then you can list some informations about pymake :
 
 In a pymake project there is 4 main components, associated to 4 directories :
 
-* `data/`: Where are storer input/output of any experience,
+* `data/`: Where are storer input/output of any experiments,
     + contains datasets (and saved results) <!--  selection with the `-c` options and see frontendManager -->,
 * `model/`: It represents our understanding of the data,
     + contains models -- every class with a `fit` method <!-- selection with the `-m` options and see ModelManager -->,
 * `script/`: Code that operate with the data and models,
     + contains scripts for actions, -- every class that inherit `ExpeFormat` <!-- selection with the `-x` options -->
-* `spec/` : It is the specifications of the context of an experiment. In order words, the parameters of an experience.
+* `spec/` : It is the specifications of the context of an experiment. In order words, the parameters of an experiment.
     + contains specification of (design) experiments (`ExpSpace`,`ExpTensor` and `ExpGroup`), -- can be given as an argument of pymake.
 
 Along with those directory there is two system files :
@@ -126,7 +126,7 @@ pymake -l script # show available scripts
 pymake show expe_name # or just pymake expe_name
 ```
 
-Run a experiences :
+Run experiences :
 
 ```bash
 pymake run [expe_name] --script script_name [script options...]
@@ -175,17 +175,17 @@ exp2 = ExpTensor(name = 'myexpe',
 
 Which will results in four experiments where "size" and "key1" settings take different values.
 
-The third class is the `ExpGroup` which allows to group several design of experience (for example if they have different settings name:
+The third class is the `ExpGroup` which allows to group several design of experiments (for example if they have different settings name:
 
 ```python
 exp3 = ExpGroup([exp1, exp2])
 ```
 
-You can then run `pymake -l` to see our design of experiences.
+You can then run `pymake -l` to see our design of experiments.
 
 ##### Track your data and results
 
-In order to  save and analyse your results, each unique experience need to be identified in a file. To do so we propose a mechanism to map settings/specification of an unique experience to a <filename>. Depending on what the developer want to write, the extension of this file can be modified. Pymake use three conventions :
+In order to  save and analyse your results, each unique experiment need to be identified in a file. To do so we propose a mechanism to map settings/specification of an unique experiment to a <filename>. Depending on what the developer want to write, the extension of this file can be modified. Pymake use three conventions :
 
 * <filename>.inf : csv file where each line contains the state of iterative process of an experiment,
 * <filename>.pk : to save complex object usually at the end of an experiments, to load it after for analysis/visualisation,
@@ -236,17 +236,17 @@ init = command$;
 command = 'pmk' command_name [expedesign_id]* [expe_id]* [pmk_options];
 command_name = 'run' | 'runpara' | 'path' | 'cmd' | 'update' | 'show' | 'hist' |  '' ;
 expe_id = int; # int identifier of an expe from 0 to; size(exp) -1.
-expedesign_id = [experience id/name]; # string identifier to an exp
+expedesign_id = [exp id/name]; # string identifier to an exp
 pmk_options = [pymake special options + project options];
 ```
 
 ### Command_name
-If empty, a defaut settings a taken from {_default_expe} define as a constant in a script (ExpeFormat). All setings undefined in a design but defined in the {_default_exp} will take this value.
+If empty, a default settings a taken from {_default_expe} define as a constant in a script (ExpeFormat). All settings undefined in a design but defined in the {_default_exp} will take this value.
 
 Remark : -l and -s (--simulate) options don't execute, they just show things up.
 
 ### Expedesign_id
-Pick among all (design of )experiences in {spec}. To list them `pmk -l spec` (or juste `pmk -l`)
+Pick among all (design of) experiments in {spec}. To list them `pmk -l spec` (or just `pmk -l`)
 
 ### pmk_options
 Here are all the special options that own pymake, such as --refdir, --format, --script, -w, -l, -h etc. Additionally, all the options for the current project should be added in the `grammarg.py` file.

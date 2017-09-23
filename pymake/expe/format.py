@@ -157,7 +157,7 @@ class Spec(BaseObject):
             expdesign = getattr(importlib.import_module(modula), modulb)
             exp = getattr(expdesign, expe_name)
         except AttributeError as e:
-            lgg.error("Seems that a spec  `%s' has been removed : %s" % (expe_name, e))
+            lgg.error("Seems that a spec `%s' has been removed : %s" % (expe_name, e))
             lgg.critical("Fatal Error: unable to load spec:  try `pymake update' or try again.")
             exit(2)
 
