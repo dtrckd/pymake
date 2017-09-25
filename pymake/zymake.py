@@ -36,7 +36,11 @@ def main():
         lines = zymake.execute()
         zymake.pushcmd2hist()
     elif zyvar['_do'] == 'runpara':
-        lines = zymake.execute_parallel2()
+        is_distrib = zyvar.get('_net')
+        if is_distrib:
+            lines = zymake.execute_parallel_net()
+        else:
+            lines = zymake.execute_parallel()
         zymake.pushcmd2hist()
     elif zyvar['_do'] == 'cmd':
         lines = zymake.make_commandline()
