@@ -1,5 +1,7 @@
 from pymake import ModelManager, FrontendManager, ExpeFormat
 
+from collections import OrderedDict
+
 
 import matplotlib.pyplot as plt
 from pymake.util.utils import colored
@@ -21,9 +23,9 @@ class Data(ExpeFormat):
 
 
         if self.is_last_expe():
-            table = {'missing' : [self.gramexp.n_exp_missing],
-                     'total': [self.gramexp.n_exp_total],
-                    }
+            table = OrderedDict([('missing', [self.gramexp.n_exp_missing]),
+                                 ('total', [self.gramexp.n_exp_total]),
+                                ])
             print (tabulate(table, headers='keys', tablefmt='simple', floatfmt='.3f'))
 
 
@@ -39,9 +41,9 @@ class Data(ExpeFormat):
 
 
         if self.is_last_expe():
-            table = {'completed' : [self.gramexp.n_exp_completed],
-                     'total': [self.gramexp.n_exp_total],
-                    }
+            table = OrderedDict([('completed', [self.gramexp.n_exp_completed]),
+                                 ('total', [self.gramexp.n_exp_total]),
+                                ])
             print (tabulate(table, headers='keys', tablefmt='simple', floatfmt='.3f'))
 
 

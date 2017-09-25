@@ -783,6 +783,7 @@ class ExpeFormat(object):
             self.log.info('-'*10)
 
     def log_expe(self):
+        expe = self.expe
         self.log.info(''.join([colored('Expe %d/%d', 'red'),
                           ' : %s -- %s -- N=%s -- K=%s']) % (
                               self._it+1, self.expe_size,
