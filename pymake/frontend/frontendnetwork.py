@@ -167,6 +167,29 @@ class frontendNetwork(DataBase):
         if hasattr(self, 'features') and self.features is not None:
             self.features = self.features[:N]
 
+    def set_masked(self, percent_hole, diag_off=1):
+
+        percent_hole = float(percent_hole)
+        if percent_hole >= 1:
+            percent_hole = percent_hole / 100.0
+        elif 0 <= percent_hole < 1:
+            pass
+        else:
+            raise ValueError('cross validation ratio not understood : %s' % percent_hole)
+
+        mask_type =  self.expe.get('mask', 'unbalanced')
+        if mask_type == 'unbalanced':
+            self.data_ma = self.get_masked(percent_hole, diag_off)
+        elif mask_type == 'balanced':
+            self.data_ma = self.get_masked_1(percent_hole, diag_off)
+        elif mask_type == 'zeros':
+            self.data_ma = self.get_masked_zeros(diag_off)
+        else:
+            raise ValueError('mask type unknow :%s' % mask_type)
+
+        return self.data_ma
+
+
     def get_masked(self, percent_hole, diag_off=1):
         """ Construct a random mask.
             Random training set on 20% on Data / debug5 - debug11 -- Unbalanced
@@ -193,26 +216,6 @@ class frontendNetwork(DataBase):
 
         return data_ma
 
-    def set_masked(self, percent_hole, diag_off=1):
-
-        percent_hole = float(percent_hole)
-        if percent_hole >= 1:
-            percent_hole = percent_hole / 100.0
-        elif 0 <= percent_hole < 1:
-            pass
-        else:
-            raise ValueError('cross validation ratio not understood : %s' % percent_hole)
-
-        mask_type =  self.expe.get('mask', 'unbalanced')
-        if mask_type == 'unbalanced':
-            self.data_ma = self.get_masked(percent_hole, diag_off)
-        elif mask_type == 'balanced':
-            self.data_ma = self.get_masked_1(percent_hole, diag_off)
-        else:
-            raise ValueError('mask type unknow :%s' % mask_type)
-
-        return self.data_ma
-
     def get_masked_1(self, percent_hole, diag_off=1):
         ''' Construct Mask nased on the proportion of 1/links.
             Random training set on 20% on Data vertex (0.2 * data == 1) / debug6 - debug 10 -- Balanced
@@ -235,6 +238,27 @@ class frontendNetwork(DataBase):
         mask_index = list(zip(*(np.concatenate((n_0, n_1)))))
         mask = np.zeros(data.shape, dtype=int)
         mask[mask_index] = 1
+
+        if self.is_symmetric():
+            mask = np.tril(mask) + np.tril(mask, -1).T
+
+        data_ma = ma.array(data, mask=mask)
+        if diag_off == 1:
+            np.fill_diagonal(data_ma, ma.masked)
+
+        return data_ma
+
+    def get_masked_zeros(self, diag_off=1):
+        ''' Take out all zeros '''
+        data = self.data
+        if type(data) is np.ndarray:
+            #self.data_mat = sp.sparse.csr_matrix(data)
+            pass
+        else:
+            raise NotImplementedError('type %s unknow as corpus' % type(data))
+
+        mask = np.zeros(data.shape, dtype=int)
+        mask[data == 0] = 1
 
         if self.is_symmetric():
             mask = np.tril(mask) + np.tril(mask, -1).T

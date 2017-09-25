@@ -152,7 +152,7 @@ class ModelBase(object):
 
     def get_params(self):
         if hasattr(self, '_theta') and hasattr(self, '_phi'):
-            return self._theta, self._phi
+            return np.asarray(self._theta), np.asarray(self._phi)
         else:
             return self._reduce_latent()
 

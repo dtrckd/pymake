@@ -371,7 +371,6 @@ class GramExp(object):
             @type: pk, json or inference.
         """
         expe = defaultdict(lambda: None, expe)
-        filen = None
         base = expe.get('_data_type', 'pmk-temp')
         hook = expe.get('_refdir', '')
 
@@ -878,8 +877,8 @@ class GramExp(object):
     def execute_parallel(self):
 
         basecmd = sys.argv.copy()
-        Target = './zymake.py'
-        basecmd = ['python3', Target] + basecmd[1:]
+        Target = 'pymake'
+        basecmd = [Target] + basecmd[1:]
         #basecmd = ['pymake'] + basecmd[1:] # PATH and PYTHONPATH varible missing to be able to execute "pymake"
 
         # Create commands indexs
@@ -901,39 +900,24 @@ class GramExp(object):
                 cmd = ' '.join(basecmd[:idx] + [Target + ' '+ id_cmd] + basecmd[idx+1:])
             cmdlines.append(cmd)
 
-        net = self._conf.get('_net', False)
-        if net:
-            if self._conf.get('_cores'):
-                lgg.critical('--cores options cannot be enable with --net options (risk of recursive call to parallel)')
-                exit(3)
+        n_cores = str(self._conf.get('_cores', 0))
+        # remove the --cores options
+        for i, cmd in enumerate(cmdlines):
+            cmd = cmd.split()
+            try: idx = cmd.index('--cores')
+            except: continue
+            cmd.pop(idx); cmd.pop(idx) # pop --cores int
+            cmdlines[i] = ' '.join(cmd)
 
-            # remove the --net options
-            for i, cmd in enumerate(cmdlines):
-                cmdlines[i] = cmd.replace('--net', '').strip()
-
-            NDL = get_global_settings('loginfile')
-            PWD = get_global_settings('remote_pwd')
-            cmd = ['parallel', '-u', '-C', "' '", '--eta', '--progress',
-                   '--sshloginfile', NDL, '--workdir', PWD, '--env', 'OMP_NUM_THREADS',  ':::', '%s'%('\n'.join(cmdlines))]
-        else:
-            n_cores = str(self._conf.get('_cores', 0))
-            # remove the --cores options
-            for i, cmd in enumerate(cmdlines):
-                cmd = cmd.split()
-                try: idx = cmd.index('--cores')
-                except: continue
-                cmd.pop(idx); cmd.pop(idx) # pop --cores int
-                cmdlines[i] = ' '.join(cmd)
-
-            cmd = ['parallel', '-j', n_cores, '-u', '-C', "' '", '--eta', '--progress', ':::', '%s'%('\n'.join(cmdlines))]
+        cmd = ['parallel', '-j', n_cores, '-u', '-C', "' '", '--eta', '--progress', ':::', '%s'%('\n'.join(cmdlines))]
 
         #stdout = subprocess.check_output(cmd)
         #print(stdout.decode())
         for line in self.subexecute(cmd):
             print(line, end='')
 
-    def execute_parallel2(self):
-        ''' run 2 process by machine ! '''
+    def execute_parallel_net(self):
+        ''' run X process by machine ! '''
 
         basecmd = sys.argv.copy()
         Target = './zymake.py'
@@ -948,9 +932,10 @@ class GramExp(object):
             [basecmd.remove(str(i)) for i in indexs]
 
         # Get chunked indexs
-        ncores = max(1, 2) # integrate --cores with --net
+        n_cores = int(self._conf.get('_cores', 1))
         indexs = list(map(str, indexs))
-        indexs = [indexs[i:i+ncores] for i in range(0, len(indexs), ncores)]
+        indexs = [indexs[i:i+n_cores] for i in range(0, len(indexs), n_cores)]
+        n_cores = str(n_cores)
 
         # Creates a list of commands that pick each index
         # from base requests commands.
@@ -963,11 +948,9 @@ class GramExp(object):
                 idx = basecmd.index(Target)
                 cmd = ' '.join(basecmd[:idx] + [Target + ' '+ id_cmd] + basecmd[idx+1:])
 
-            cmd = cmd + ' --cores 2'
+            cmd = ' '.join((cmd, '--cores', n_cores))
             cmdlines.append(cmd)
 
-        net = self._conf.get('_net', False)
-        if net:
             if self._conf.get('_cores'):
                 lgg.critical('--cores options cannot be enable with --net options (risk of recursive call to parallel)')
                 exit(3)
@@ -980,15 +963,6 @@ class GramExp(object):
             PWD = get_global_settings('remote_pwd')
             cmd = ['parallel', '-u', '-C', "' '", '--eta', '--progress',
                    '--sshloginfile', NDL, '--workdir', PWD, '--env', 'OMP_NUM_THREADS',  ':::', '%s'%('\n'.join(cmdlines))]
-        else:
-            n_cores = str(self._conf.get('_cores', 0))
-            # remove the --cores options
-            for i, cmd in enumerate(cmdlines):
-                cmd = cmd.split()
-                try: idx = cmd.index('--cores')
-                except: continue
-                cmd.pop(idx); cmd.pop(idx) # pop --cores int
-                cmdlines[i] = ' '.join(cmd)
 
             cmd = ['parallel', '-j', n_cores, '-u', '-C', "' '", '--eta', '--progress', ':::', '%s'%('\n'.join(cmdlines))]
 

@@ -784,6 +784,12 @@ class ExpeFormat(object):
                               expe.get('N'), expe.get('K'),))
         self.log.info('-'*10)
 
+    def is_last_expe(self):
+        if self.expe_size - 1 == self.pt['expe']:
+            return True
+        else:
+            return False
+
     @classmethod
     def display(cls, conf):
         import matplotlib.pyplot as plt
