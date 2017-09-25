@@ -5,7 +5,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import time
 import numpy as np
 from numpy import ma
-from pymake import ModelManager, FrontendManager, GramExp, ExpeFormat, ExpSpace
+from pymake import ModelManager, FrontendManager, GramExp, ExpeFormat
 
 
 USAGE = """\

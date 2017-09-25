@@ -178,7 +178,7 @@ class ModelBase(object):
         return
 
     def save(self, silent=False):
-        fn = self.expe.get('output_path') + '.pk'
+        fn = self.expe['_output_path'] + '.pk'
         model = deepcopy(self)
         model.purge()
         to_remove = []

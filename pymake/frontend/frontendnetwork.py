@@ -71,12 +71,12 @@ class frontendNetwork(DataBase):
             self.update_spec(**{'corpus_name': corpus_name})
         else:
             corpus_name = self.corpus_name
-        self.make_output_path()
+        self.make_io_path()
 
         if self.corpus_name.startswith(self.RANDOM_CORPUS):
             data = self.random_corpus(corpus_name)
         else:
-            self.make_output_path()
+            self.make_io_path()
             data = self._get_corpus(corpus_name)
 
         if data is None:
