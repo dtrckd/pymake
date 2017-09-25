@@ -60,7 +60,7 @@ class DataBase(object):
         ########
         self.expe = expe
         expe['_data_type'] = self.bdir
-        self.make_output_path()
+        self.make_io_path()
         # There is some dynamic settings
         # Yes, use gramexp to setup path !!!
         # K, others ?
@@ -80,13 +80,14 @@ class DataBase(object):
     def update_data(self):
         raise NotImplemented
 
-    def make_output_path(self):
+    def make_io_path(self):
         ''' Write Path (for models results) in global settings '''
         self.output_path = GramExp.make_output_path(self.expe)
         self.input_path = GramExp.make_input_path(self.expe)
+
         # path can be updated by self.
-        self.expe['output_path'] = self.output_path
-        self.expe['input_path'] = self.input_path
+        self.expe['_output_path'] = self.output_path
+        self.expe['_input_path'] = self.input_path
 
     def update_spec(self, **spec):
         v = None

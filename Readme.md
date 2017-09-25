@@ -10,7 +10,7 @@ Pymake (pmk) is a machine friendly environment for making reproducible research.
 2. [Install](#2)
 3. [Example](#3)
 4. [Documentation](#4)
-5. [man pymake](#5)
+5. [man pymake](#man)
 
 ## Features [](#1)
 * Specification of design of experimentations with a simple grammar,
@@ -40,7 +40,7 @@ cd pymake && make install
 
 ## Examples [](#3)
 
-We provide an example of a design workflow with pymake by providing a **Search Engine** experiment.
+We provide an example of a design workflow with pymake by providing a **Search Engine** experience.
 
 The context of the experiment is as follows :
 * **Data** : documents to search in are pdf documents (like articles for example),
@@ -126,7 +126,7 @@ pymake -l script # show available scripts
 pymake show expe_name # or just pymake expe_name
 ```
 
-Run experiences :
+Run experiments :
 
 ```bash
 pymake run [expe_name] --script script_name [script options...]
@@ -227,7 +227,7 @@ Once you provide this settings, you need to inject a function in the fit method 
 to complete...
 
 
-## man pymake [](#5)
+## man pymake [](#man)
 
 pymake (pmk) command-line reference.
 

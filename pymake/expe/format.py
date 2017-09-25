@@ -773,16 +773,46 @@ class ExpeFormat(object):
         self._it = pt['expe']
         self.corpus_pos = pt.get('corpus')
         self.model_pos = pt.get('model')
-        self.output_path = self.gramexp.make_output_path(self.expe)
+        self.output_path = self.expe['_output_path']
 
-        self.log.info('-'*10)
+        if expe.get('_expe_silent'):
+            self.log_silent()
+        else:
+            self.log.info('-'*10)
+            self.log_expe()
+            self.log.info('-'*10)
+
+    def log_expe(self):
         self.log.info(''.join([colored('Expe %d/%d', 'red'),
                           ' : %s -- %s -- N=%s -- K=%s']) % (
                               self._it+1, self.expe_size,
                               self.specname(expe.get('corpus')),
                               self.specname(expe.get('model')),
                               expe.get('N'), expe.get('K'),))
-        self.log.info('-'*10)
+
+    def log_silent(self):
+        if self.is_first_expe():
+            print()
+
+        prefix = 'Computing'
+        n_it = self._it
+        n_total = self.expe_size
+        # Normalize
+        n_it_norm = 2*42 * n_it // n_total
+
+        progress= n_it_norm * '='  + (2*42-n_it_norm) * ' '
+        print('\r%s: [%s>] %s/%s' % (prefix, progress, n_it+1, n_total), end = '\r')
+
+        if self.is_last_expe():
+            print()
+            print()
+
+
+    def is_first_expe(self):
+        if 0 == self.pt['expe']:
+            return True
+        else:
+            return False
 
     def is_last_expe(self):
         if self.expe_size - 1 == self.pt['expe']:

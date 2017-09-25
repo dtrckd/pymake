@@ -139,7 +139,7 @@ class frontendText(DataBase):
         return data, id2word
 
     def get_corpus(self, corpus_name):
-        self.make_output_path()
+        self.make_io_path()
         bdir = self.basedir
         data_t = None
         data_t = None
