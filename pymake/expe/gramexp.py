@@ -901,6 +901,7 @@ class GramExp(object):
             cmdlines.append(cmd)
 
         n_cores = str(self._conf.get('_cores', 0))
+
         # remove the --cores options
         for i, cmd in enumerate(cmdlines):
             cmd = cmd.split()
@@ -951,10 +952,6 @@ class GramExp(object):
             cmd = ' '.join((cmd, '--cores', n_cores))
             cmdlines.append(cmd)
 
-            if self._conf.get('_cores'):
-                lgg.critical('--cores options cannot be enable with --net options (risk of recursive call to parallel)')
-                exit(3)
-
             # remove the --net options
             for i, cmd in enumerate(cmdlines):
                 cmdlines[i] = cmd.replace('--net', '').strip()
@@ -963,8 +960,6 @@ class GramExp(object):
             PWD = get_global_settings('remote_pwd')
             cmd = ['parallel', '-u', '-C', "' '", '--eta', '--progress',
                    '--sshloginfile', NDL, '--workdir', PWD, '--env', 'OMP_NUM_THREADS',  ':::', '%s'%('\n'.join(cmdlines))]
-
-            cmd = ['parallel', '-j', n_cores, '-u', '-C', "' '", '--eta', '--progress', ':::', '%s'%('\n'.join(cmdlines))]
 
         #stdout = subprocess.check_output(cmd)
         #print(stdout.decode())
