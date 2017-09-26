@@ -556,15 +556,6 @@ class IBPGibbsSampling(IBP, GibbsSampler):
         self._K = self._theta.shape[1]
         return Z, W
 
-    def get_mask(self):
-        # future remove
-        return self._Y.mask
-        # future remove
-        try:
-            return self.mask
-        except:
-            return self.s.mask
-
     def get_clusters(self, K=None):
         Z, W = self.get_params()
         K = K or Z.shape[1]
