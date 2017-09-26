@@ -12,7 +12,6 @@ T="networks"
 #FILTER="--exclude debug111111"
 #FILTER='--include "*/" --include "**pnas[23]**" --exclude "*"'
 FILTER='--include "*/" --include "*scvb***"  --exclude "*"'
-FILTER='--include "*/" --include "debug_scvb/**"  --exclude "*"'
 #FILTER=
 
 SIMUL="-n"
