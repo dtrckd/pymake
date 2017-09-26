@@ -179,8 +179,10 @@ class Spec(BaseObject):
     @classmethod
     def table_topos(cls, _spec):
 
-        Headers = OrderedDict((('Corpuses',Corpus),
-                               ('Exp',(ExpSpace, ExpTensor)),
+        Headers = OrderedDict((('Corpuses', Corpus),
+                               ('Models', Model),
+                               ('Vector', ExpVector),
+                               ('Exp', (ExpSpace, ExpTensor)),
                                ('Unknown', str)))
 
         tables = [ [] for i in range(len(Headers))]
@@ -267,15 +269,8 @@ class Model(ExpVector):
 
     @classmethod
     def table(cls, _type='short'):
-        Headers = OrderedDict((('Corpuses',Corpus),
-                               ('Models',(ExpSpace, ExpTensor)),
-                               ('Unknown', str)))
-
-        tables = [[], # corpus atoms...
-                  cls.get_all(_type),
-        ]
-
-        return _table_(tables, headers=list(Headers.keys()))
+        tables = cls.get_all(_type),
+        return _table_(tables, headers=['Models'])
 
 
 class ExpTensor(OrderedDict, BaseObject):
@@ -305,6 +300,8 @@ class ExpTensor(OrderedDict, BaseObject):
             tensor = cls(corpus=expe)
         elif issubclass(type(expe), Model):
             tensor = cls(model=expe)
+        elif issubclass(type(expe), ExpVector):
+            tensor = cls((str(i),j) for i,j in enumerate(expe))
         elif isinstance(expe, ExpTensor):
             tensor = expe.copy()
         elif isinstance(expe, (dict, ExpSpace)):
@@ -430,6 +427,9 @@ class ExpTensorV2(BaseObject):
             if isinstance(o, ExpGroup):
                 max_expe += len(o) -1
                 _spec = _spec[:consume_expe] + o + _spec[consume_expe+1:]
+            elif isinstance(o, list):
+                exp.append(o)
+                consume_expe += 1
             else:
                 o['_name_expe'] = name
                 exp.append(o)

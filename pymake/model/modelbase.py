@@ -71,6 +71,8 @@ class ModelBase(object):
         #np.fill_diagonal(self.frontend.data_ma, np.ma.masked)
         # @else ... (text, image, son<3)
 
+        self._purge_objects = ['frontend', 'data_A', 'data_B']
+
 
         if expe and hasattr(self, '_init_params'):
             self._init_params()
@@ -287,7 +289,9 @@ class ModelBase(object):
         raise NotImplementedError
 
     def purge(self):
-        lgg.info('Noting to purge')
+        for obj in self._purge_objects:
+            if hasattr(self, obj):
+                setattr(self, obj, None)
 
 
 class GibbsSampler(ModelBase):
@@ -392,8 +396,6 @@ class GibbsSampler(ModelBase):
         self.K = self._theta.shape[1]
         return self._theta, self._phi
 
-    def purge(self):
-        pass
 
 # lambda fail to find import if _stirling if not
 # visible in the global scope.
@@ -680,5 +682,3 @@ class SVB(ModelBase):
     def _purge_minibatch(self):
         raise NotImplementedError
 
-    def purge(self):
-        self.frontend = None

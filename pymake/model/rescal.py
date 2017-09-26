@@ -18,9 +18,8 @@ class Rescal(ModelBase):
 
         self.expe = expe
 
-        #self.frontend = frontend # @debug, typo ?
-        self.fr = self.frontend = frontend
-        self.mask = self.fr.data_ma.mask
+        self.frontend = frontend
+        self.mask = self.frontend.data_ma.mask
 
     def fit(self):
         data = self.frontend.data_ma

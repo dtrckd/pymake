@@ -506,7 +506,9 @@ class GramExp(object):
 
         # Assume None value are non-filled options
         settings = dict((key,value) for key, value in vars(s).items() if value is not None)
+
         GramExp.expVectorLookup(settings)
+
         return settings, parser
 
     @classmethod
@@ -607,31 +609,23 @@ class GramExp(object):
     def expVectorLookup(cls, request):
         ''' set exp from spec if presents '''
 
-        # get list of scripts/*
-        # get list of method
-        ontology = dict(
-            # Allowed multiple flags keywords
-            check_spec = {'corpus':Corpus, 'model':Model},
-            spec = list(cls._spec)
-        )
+        for k, v in request.items():
+            if not isinstance(v, ExpVector):
+                continue
 
-        # Handle spec and multiple flags arg value
-        # Too comples, better Grammat/Ast ?
-        for k in ontology['check_spec']:
             sub_request = ExpVector()
-            for v in request.get(k, []):
-                if v in ontology['spec'] and k in ontology['check_spec']:
-                    loaded_v, _ = Spec.load(v, cls._spec[v])
-                    # Flag value is in specification
-                    if issubclass(type(loaded_v), ontology['check_spec'][k]):
-                        sub_request.extend( loaded_v )
-                    else:
-                        raise ValueError('%s not in Spec' % v)
+            for vv in v:
+                if vv in cls._spec:
+                    loaded_v, _ = Spec.load(vv, cls._spec[vv])
+                    if isinstance(loaded_v, ExpVector):
+                        sub_request.extend(loaded_v)
                 else:
                     # Multiple Flags
-                    sub_request.extend([v])
+                    sub_request.append(vv)
+
             if sub_request:
                 request[k] = sub_request
+
 
     @classmethod
     def exp_tabulate(cls, conf={}, usage=''):
@@ -949,7 +943,6 @@ class GramExp(object):
                 idx = basecmd.index(Target)
                 cmd = ' '.join(basecmd[:idx] + [Target + ' '+ id_cmd] + basecmd[idx+1:])
 
-            cmd = ' '.join((cmd, '--cores', n_cores))
             cmdlines.append(cmd)
 
             # remove the --net options

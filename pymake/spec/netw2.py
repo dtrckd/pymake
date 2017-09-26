@@ -43,11 +43,11 @@ class Netw2(ExpDesign):
         K             = 6,
         iterations    = 150,
         hyper         = 'auto',
-        testset_ratio = 10,
+        testset_ratio = 20,
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
-        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}-{_name}',
+        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}-{_name}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
     )
 
@@ -55,19 +55,19 @@ class Netw2(ExpDesign):
     scvb = ExpTensor (
         corpus        = ['clique6'],
         model         = 'immsb_scvb',
-        N             = 'all',
+        N             = 200,
         chunk         = 'adaptative_1',
         K             = 6,
         iterations    = 3,
         hyper         = 'auto',
-        testset_ratio = 10,
+        testset_ratio = 20,
         #chi = [0.5, 1, 2, 10],
         #tau = [0.5, 1, 2, 16, 64, 256, 1024],
         #kappa = [0.51, 0.45, 1],
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
-        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}-{_name}',
+        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}-{_name}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
     )
 
@@ -113,14 +113,14 @@ class Netw2(ExpDesign):
         K             = 6,
         iterations    = 1, # relaunch with 3 to see if any difference !
         hyper         = 'auto',
-        testset_ratio = 25,
+        testset_ratio = 20,
         chi = [0.5, 1, 2, 10],
         tau = [0.5, 1, 2, 16, 64, 256, 1024],
         kappa = [0.51, 0.45, 1],
 
         _data_type    = 'networks',
-        _refdir       = 'debug_scvb_1_i1' ,
-        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}-{_name}-{_id}',
+        _refdir       = 'debug_scvb_chi_i1' ,
+        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}-{_name}-{_id}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
     )
 

@@ -9,24 +9,22 @@ class MMSB(object):
 
 	"""
 
-	def __init__(self, Y, K, alpha = 1, expe):
+	def __init__(self, expe, Y):
 		""" follows the notations in the original NIPS paper
 
 		:param Y: node by node interaction matrix, row=sources, col=destinations
 		:param K: number of mixtures
-		:param alpha: Dirichlet parameter
 		:param rho: sparsity parameter
 		"""
 		self.N = int(Y.shape[0])	# number of nodes
-		self.K = K
-		self.alpha = np.ones(self.K)
+		self.K = expe['K']
 		self.Y = Y
 
 		self.optimize_rho = False
 		self.max_iter = expe['iterations']
 
 		#variational parameters
-		self.phi = np.random.dirichlet(self.alpha, size=(self.N, self.N))
+		self.phi = np.random.dirichlet([1]*self.K, size=(self.N, self.N))
 
 		self.gamma = np.random.dirichlet([1]*self.K, size=self.N)
 
@@ -123,15 +121,14 @@ class mmsb_vb(ModelBase):
 
         self.expe = expe
 
-        #self.frontend = frontend # @debug, typo ?
-        self.fr = self.frontend = frontend
-        self.mask = self.fr.data_ma.mask
+        self.frontend = frontend
+        self.mask = self.frontend.data_ma.mask
 
     def fit(self):
         data = self.frontend.data_ma
         K = self.expe.K
 
-        model = MMSB(data, K, self.expe)
+        model = MMSB(self.expe, data, K)
         model.variational_inference()
 
         self._theta = model.gamma

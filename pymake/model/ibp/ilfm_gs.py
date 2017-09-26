@@ -654,6 +654,9 @@ class IBPGibbsSampling(IBP, GibbsSampler):
         return bm
 
     def purge(self):
-        return
+        purge_obj = ['frontend', '_Y']
+        for obj in purge_obj:
+            if hasattr(self, obj):
+                setattr(self, obj, None)
 
 

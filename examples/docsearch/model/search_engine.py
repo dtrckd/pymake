@@ -56,8 +56,9 @@ class tfidf(IndexManager):
                                                shortpath = ws.fields.ID(stored = True, unique=True),
                                                fullpath = ws.fields.ID(stored = True, unique=True),
                                                title  = ws.fields.KEYWORD(stored = True),
-                                               authors = ws.fields.KEYWORD(stored = True), # names of the authors
-                                               date  = ws.fields.KEYWORD(stored = True), # date of publication
+                                               authors = ws.fields.KEYWORD(stored = True), # names of the authors '||' separated
+                                               references = ws.fields.KEYWORD(stored = True), # names of the references '||' separated
+                                               date  = ws.fields.KEYWORD(stored = True), # date of publication (@todo: find it by cross reference !)
                                                content = ws.fields.TEXT),
                  #source  = '', # name of the journal/conf ertc
                  #type = '', # journal/conf etc
@@ -110,7 +111,7 @@ class tfidf(IndexManager):
             return {}
 
         # 2. get the xml information
-        xml_strings = open('pdf_temp/'+ path.split('.')[0] + '.cermxml').read()
+        xml_strings = open('pdf_temp/'+ path.rpartition('.')[0] + '.cermxml').read()
 
         os.remove('pdf_temp/' + path) # remove the copied pdf
         os.chdir(pwd)
@@ -142,12 +143,18 @@ class tfidf(IndexManager):
         main_title = ' '.join([o.string or '' for o in front_titles]).strip()
         structured['title'] = main_title
 
+        authors = soup.findAll(attrs={'contrib-type':'author'})
+        authors = [o.findAll('string-name') for o in authors]
+        authors = sum(authors, [])
+        authors = ' || '.join([o.string for o in authors])
+        structured['authors'] = authors
+
         # Institution, Journal, Year etc...
         pass
 
         # References
-        pass
-
+        references = [ ' '.join(str(r).split()) for r in soup.findAll('mixed-citation')]
+        structured['references'] = ' || '.join(references)
 
         return structured
 
