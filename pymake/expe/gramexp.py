@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import sys, os
+import sys
+import os
+from datetime import datetime
 import re
 import logging
 import operator
@@ -205,8 +207,8 @@ class GramExp(object):
         'write'     : False,
     }
 
-    #_spec = mloader.SpecLoader.default_spec()
-    _spec = Spec.get_all()
+    _pmk_error_file = '.pymake-errors'
+    _spec = Spec.get_all() #_spec = mloader.SpecLoader.default_spec()
 
     def __init__(self, conf, usage=None, parser=None, parseargs=True, expdesign=None):
         # @logger One logger by Expe ! # in preinit
@@ -451,8 +453,8 @@ class GramExp(object):
 
         return parser
 
-    @staticmethod
-    def push_gramarg(parser, gram=None):
+    @classmethod
+    def push_gramarg(cls, parser, gram=None):
         import pymake.expe.gram as _gram
         if gram is None:
             gram = _gram._Gram
@@ -1073,6 +1075,7 @@ class GramExp(object):
         if self._conf.get('simulate'):
             self.simulate()
 
+        n_errors = 0
         for id_expe, expe in enumerate(self.lod):
             _expe = ExpSpace(**expe)
 
@@ -1112,13 +1115,26 @@ class GramExp(object):
                 # it's hard to detach matplotlib...
                 break
             except Exception as e:
-                lgg.critical(('Error during '+colored('%s', 'red')+' Expe.') % (do))
+                n_errors += 1
+                lgg.critical(('Error during '+colored('%s', 'red')+' Expe no %d.') % (do, id_expe))
                 traceback.print_exc()
-                #exit(2)
+                with open(self._pmk_error_file, 'a') as _f:
+                    lines = []
+                    lines.append('%s' % (datetime.now()))
+                    lines.append('Error during %s Expe no %d' % (do, id_expe))
+                    lines.append('Output path: %s' % (expe.get('output_path')))
+                    _f.write('\n'.join(lines) + '\n')
+                    traceback.print_exc(file=_f)
+                    _f.write('\n')
                 continue
 
             # Expe Postprocess
             expbox._postprocess()
+
+        if n_errors > 0:
+            lgg.warning("There was %d errors,  logged in `%s'" % (n_errors, self._pmk_error_file))
+            with open(self._pmk_error_file, 'a') as _f:
+                _f.write(100*'='+'\n')
 
         return sandbox._postprocess_(self)
 

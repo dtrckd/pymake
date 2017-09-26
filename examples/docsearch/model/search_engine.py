@@ -3,8 +3,9 @@ from pymake.util.utils import get_global_settings, hash_objects
 from pymake.index.indexmanager import IndexManager
 
 
-import subprocess
 import os
+import re
+import subprocess
 import whoosh as ws
 
 def extract_pdf(pdf_file, page_limit=None):
@@ -73,8 +74,13 @@ class tfidf(IndexManager):
 
         path = os.path.expanduser(path)
 
-        if not os.path.exists(path):
+        if os.path.isfile(path):
+            self.expe.path = path.rpartition('/')[0] +'/'
+            for p in  [path]:
+                yield p
+        elif not os.path.exists(path):
             self.log.error('path error: %s' % path)
+            exit()
 
         for root, dirnames, filenames in os.walk(path):
             for filename in filenames:
@@ -92,28 +98,34 @@ class tfidf(IndexManager):
         import shutil
 
         # 0. Init cermine usage. (one path/pdf at a time).
-        path = os.path.basename(hit['fullpath'])
+        filename = os.path.basename(hit['fullpath'])
+        fullpath = hit['fullpath']
+        shortpath = hit['shortpath']
         pwd = os.getenv('PWD')
         os.chdir(os.path.join(pwd, 'data/cermine/'))
-        if not os.path.exists('pdf_temp'):
-            os.makedirs('pdf_temp')
-        shutil.copy(hit['fullpath'], 'pdf_temp/')
+        cermine_tar_dir = 'pdf_temp/'+filename.rpartition('.')[0] + '/'
+        if not os.path.exists(cermine_tar_dir):
+            os.makedirs(cermine_tar_dir)
+        shutil.copy(hit['fullpath'], cermine_tar_dir)
+
 
         # 1. run Cermine
         jar = 'cermine-impl-1.14-SNAPSHOT-jar-with-dependencies.jar'
         classes = 'pl.edu.icm.cermine.ContentExtractor'
         try:
-            self.log.info('extracting content of: %s' % (hit['shortpath']))
-            output = subprocess.check_output(['java', '-cp', jar, classes, '-path', 'pdf_temp/'])
+            self.log.info('extracting content of: %s' % (shortpath))
+            output = subprocess.check_output(['java', '-cp', jar, classes, '-path', cermine_tar_dir])
         except Exception as e:
-            self.log.error(e)
-            self.log.error('Please install Cermine for pdf data extraction.')
+            self.log.error('Cermine Error %s : ' % e)
+            self.log.error('Please try install/upgrade Cermine for pdf data extraction.')
+            os.remove(cermine_tar_dir + filename) # remove the copied pdf
+            os.chdir(pwd)
             return {}
 
         # 2. get the xml information
-        xml_strings = open('pdf_temp/'+ path.rpartition('.')[0] + '.cermxml').read()
+        xml_strings = open(cermine_tar_dir+ filename.rpartition('.')[0] + '.cermxml').read()
 
-        os.remove('pdf_temp/' + path) # remove the copied pdf
+        os.remove(cermine_tar_dir + filename) # remove the copied pdf
         os.chdir(pwd)
         return xml_strings
 
@@ -130,8 +142,12 @@ class tfidf(IndexManager):
         except ImportError:
             self.log.error('Please install BeautifulSoup4 to parse xml doc.')
             return {}
-        import re
-        soup = BeautifulSoup(xml_strings, 'lxml')
+
+        try:
+            soup = BeautifulSoup(xml_strings, 'lxml')
+        except Exception as e:
+            self.log.error('BeautifulSoup fail to parse a file:  %s : ' % e)
+            return {}
 
         #titles = soup.findAll(re.compile(".*title.*"))
 
@@ -167,7 +183,7 @@ class tfidf(IndexManager):
         for _it, path in enumerate(self.doc_yielder(self.expe.path)):
 
             fullpath = path
-            shortpath = fullpath[len(os.path.expanduser(self.expe.path)):]
+            shortpath = '/' +  fullpath[len(os.path.expanduser(self.expe.path)):].rstrip('/').lstrip('/')
 
             is_known = False
             is_duplicated = False
