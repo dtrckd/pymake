@@ -110,7 +110,7 @@ class GenNetwork(ExpeFormat):
         self.model = model
 
         if model is None:
-            raise FileNotFoundError('No model for Expe at :  %s' % self.expe.output_path)
+            raise FileNotFoundError('No model for Expe at :  %s' % self.output_path)
 
         if expe._do[0] in ('burstiness','pvalue','homo', 'homo_mustach'):
             ### Generate data

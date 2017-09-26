@@ -1122,7 +1122,7 @@ class GramExp(object):
                     lines = []
                     lines.append('%s' % (datetime.now()))
                     lines.append('Error during %s Expe no %d' % (do, id_expe))
-                    lines.append('Output path: %s' % (expe.get('output_path')))
+                    lines.append('Output path: %s' % (expe.get('_output_path')))
                     _f.write('\n'.join(lines) + '\n')
                     traceback.print_exc(file=_f)
                     _f.write('\n')

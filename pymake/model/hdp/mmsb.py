@@ -475,9 +475,17 @@ class NP_CGS(object):
         #u_j = binomial(1, p/norm)
         u_j = binomial(1, alpha_0/(n_jdot + alpha_0))
         #u_j = binomial(1, n_jdot/(n_jdot + alpha_0))
-        n_jdot[n_jdot == 0] = np.finfo(float).eps
-        v_j = beta(alpha_0 + 1, n_jdot)
-        new_alpha0 = gamma(self.a_alpha + m_dot - u_j.sum(), 1/( self.b_alpha - np.log(v_j).sum()), size=3).mean()
+        try:
+            v_j = beta(alpha_0 + 1, n_jdot)
+        except:
+             #n_jdot[n_jdot == 0] = np.finfo(float).eps
+            lgg.warning('Unable to optimize MMSB parameters, possible empty sequence...')
+            return
+        shape_a = self.a_alpha + m_dot - u_j.sum()
+        if shape_a <= 0:
+            lgg.warning('Unable to optimize MMSB parameters, possible empty sequence...')
+            return
+        new_alpha0 = gamma(shape_a, 1/( self.b_alpha - np.log(v_j).sum()), size=3).mean()
         self.zsampler.alpha_0 = new_alpha0
 
         # Optimize \gamma
