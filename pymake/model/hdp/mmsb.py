@@ -615,12 +615,6 @@ class GibbsRun(GibbsSampler):
         #        Y[j, i] = sp.stats.bernoulli.rvs(B[zj, zi])
         return Y
 
-    def get_mask(self):
-        # __future__ remove
-        try:
-            return self.mask
-        except:
-            return self.s.mask
 
     def get_clusters(self, K=None, skip=0):
         """ Return a vector of clusters membership of nodes.
