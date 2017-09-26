@@ -1076,17 +1076,17 @@ class GramExp(object):
             self.simulate()
 
         n_errors = 0
-        for id_expe, expe in enumerate(self.lod):
-            _expe = ExpSpace(**expe)
+        for id_expe, _expe in enumerate(self.lod):
+            expe = ExpSpace(**_expe)
 
-            pt = dict((key, value.index(_expe[key])) for key, value in self.exp_tensor.get_gt().items()
-                      if (isinstance(_expe.get(key), (basestring, int, float)) and key not in self._reserved_keywords))
+            pt = dict((key, value.index(expe[key])) for key, value in self.exp_tensor.get_gt().items()
+                      if (isinstance(expe.get(key), (basestring, int, float)) and key not in self._reserved_keywords))
             pt['expe'] = id_expe
 
             # Init Expe
-            self.expe_init(_expe)
+            self.expe_init(expe)
             try:
-                expbox = sandbox(pt, _expe, self)
+                expbox = sandbox(pt, expe, self)
             except FileNotFoundError as e:
                 lgg.error('ignoring %s'%e)
                 continue
@@ -1099,9 +1099,9 @@ class GramExp(object):
             expbox._preprocess()
 
             # Setup handler
-            if hasattr(_expe, '_do') and len(_expe._do) > 0:
+            if hasattr(_expe, '_do') and len(expe._do) > 0:
                 # ExpFormat task ? decorator and autoamtic argument passing ....
-                do = _expe._do
+                do = expe._do
                 pmk = getattr(expbox, do[0])
             else:
                 do = ['__call__']

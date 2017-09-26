@@ -286,7 +286,8 @@ class Netw(ExpDesign):
 
     test = default_expe
 
-    model_all =  Model(['immsb_cgs', 'ilfm_cgs', 'immsb_scvb', 'mmsb_vb', 'rescal'])
+    model_all =  Model(['immsb_cgs', 'ilfm_cgs', 'immsb_scvb', 'rescal'])
+    model_debug =  Model(['mmsb_vb'])
 
 
 
