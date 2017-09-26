@@ -64,6 +64,15 @@ class IR(ExpeFormat):
         res = model.search(query, limit=expe.number_results)
         self.format_results(res)
 
+    def authors(self, *query):
+        expe = self.expe
+        _model = ModelManager.from_name(expe)
+        model = _model(expe)
+
+        query = ' '.join(query)
+        res = model.search(query, field='authors', limit=expe.number_results)
+        self.format_results(res)
+
 
     def stats(self):
         expe = self.expe

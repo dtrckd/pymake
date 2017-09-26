@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from pymake import ExpSpace, ExpTensor, Corpus, ExpDesign
+from pymake import ExpDesign, ExpSpace, ExpTensor, Corpus, Model, ExpVector
 
 __plot_font_size = 14
 
@@ -170,7 +170,7 @@ class Netw(ExpDesign):
     default_check = default_gen.copy()
     default_check['model'] = 'immsb_cgs'
 
-    default_expe = ExpSpace(
+    default_expe = ExpTensor(
         _data_type   = 'networks',
         corpus      = 'clique2',
         model       = 'immsb_cgs',
@@ -180,8 +180,6 @@ class Netw(ExpDesign):
         K           = 4,
         N           = 42,
         iterations  = 3,
-        chunk       = 1,
-        homo        = 0, # learn W in IBP
         _format = '{model}_{corpus}_{K}_{hyper}_{homo}_{N}',
         _csv_typo = '# _iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
     )
@@ -287,6 +285,8 @@ class Netw(ExpDesign):
     )
 
     test = default_expe
+
+    model_all =  Model(['immsb_cgs', 'ilfm_cgs', 'immsb_scvb', 'mmsb_vb', 'rescal'])
 
 
 

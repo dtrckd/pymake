@@ -44,7 +44,7 @@ class Fit(ExpeFormat):
         # @Debug: Obsolete / Inside model
         alpha = expe.get('alpha', .1)
         gmma = expe.get('gmma', .1)
-        delta = expe.get('delta', .5)
+        delta = expe.get('delta', (0.1, 0.9))
 
         hyperparams = {'alpha': alpha, 'delta': delta, 'gmma': gmma}
         expe['hyperparams'] = hyperparams
