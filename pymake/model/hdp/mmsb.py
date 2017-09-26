@@ -475,6 +475,8 @@ class NP_CGS(object):
         #u_j = binomial(1, p/norm)
         u_j = binomial(1, alpha_0/(n_jdot + alpha_0))
         #u_j = binomial(1, n_jdot/(n_jdot + alpha_0))
+        n_jdot[n_jdot == 0] = np.finfo(float).eps
+        print(n_jdot)
         v_j = beta(alpha_0 + 1, n_jdot)
         new_alpha0 = gamma(self.a_alpha + m_dot - u_j.sum(), 1/( self.b_alpha - np.log(v_j).sum()), size=3).mean()
         self.zsampler.alpha_0 = new_alpha0
