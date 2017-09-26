@@ -27,7 +27,7 @@ class lda_cgs(GibbsRun):
 
         super(lda_cgs, self).__init__(jointsampler,
                                     iterations=expe.iterations,
-                                    output_path=expe.output_path,
+                                    output_path=expe._output_path,
                                     write=expe.write,
                                     data_t=data_t)
         self.update_hyper(expe.hyperparams)

@@ -32,7 +32,7 @@ class ilda_cgs(GibbsRun):
         super(ilda_cgs, self).__init__(expe, frontend,
                                        jointsampler,
                                        iterations=expe.iterations,
-                                       output_path=expe.output_path,
+                                       output_path=expe._output_path,
                                        write=expe.write,
                                        data_t=data_t)
         self.update_hyper(expe.hyperparams)
