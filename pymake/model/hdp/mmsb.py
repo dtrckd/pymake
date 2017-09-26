@@ -469,14 +469,13 @@ class NP_CGS(object):
         # Optimize \alpha_0
         m_dot = self.msampler.m_dotk.sum()
         alpha_0 = self.zsampler.alpha_0
-        n_jdot = np.array(self.zsampler.data_dims) # @debug add row count + line count for masked !
+        n_jdot = np.array(self.zsampler.data_dims, dtype=float) # @debug add row count + line count for masked !
         #p = np.power(n_jdot / alpha_0, np.arange(n_jdot.shape[0]))
         #norm = np.linalg.norm(p)
         #u_j = binomial(1, p/norm)
         u_j = binomial(1, alpha_0/(n_jdot + alpha_0))
         #u_j = binomial(1, n_jdot/(n_jdot + alpha_0))
         n_jdot[n_jdot == 0] = np.finfo(float).eps
-        print(n_jdot)
         v_j = beta(alpha_0 + 1, n_jdot)
         new_alpha0 = gamma(self.a_alpha + m_dot - u_j.sum(), 1/( self.b_alpha - np.log(v_j).sum()), size=3).mean()
         self.zsampler.alpha_0 = new_alpha0
