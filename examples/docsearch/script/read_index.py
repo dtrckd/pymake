@@ -3,6 +3,8 @@ from pymake.util.utils import colored
 import textwrap
 from ..model.search_engine import extract_pdf
 
+from subprocess import call
+
 
 USAGE = """\
 ----------------
@@ -14,7 +16,7 @@ class IR(ExpeFormat):
     _default_expe = {'model' : 'docm.tfidf',
                      'highlight' : True,
                      'number_highlight' : 3 ,
-                     'number_results' : 20 ,
+                     'number_results' : 10 ,
                     }
 
     def _preprocess(self):
@@ -63,6 +65,21 @@ class IR(ExpeFormat):
         query = ' '.join(query)
         res = model.search(query, limit=expe.number_results)
         self.format_results(res)
+
+    def open(self, query, hit=0):
+        expe = self.expe
+        _model = ModelManager.from_name(expe)
+        model = _model(expe)
+
+        res = model.search(query, limit=expe.number_results)
+
+        for rank, _hit in enumerate(res):
+            if rank == int(hit)-1:
+                fpath = _hit['fullpath']
+                break
+
+        print(fpath)
+        call(['evince', fpath])
 
     def authors(self, *query):
         expe = self.expe
