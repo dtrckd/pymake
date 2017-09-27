@@ -873,9 +873,12 @@ class GramExp(object):
     def execute_parallel(self):
 
         basecmd = sys.argv.copy()
-        Target = 'pymake'
+        try:
+            Target = subprocess.check_output(['which','pymake']).strip().decode()
+            #Target = 'pymake'
+        except:
+            Target = 'python3 ./zymake.py'
         basecmd = [Target] + basecmd[1:]
-        #basecmd = ['pymake'] + basecmd[1:] # PATH and PYTHONPATH varible missing to be able to execute "pymake"
 
         # Create commands indexs
         indexs = self._conf['_run_indexs']
@@ -917,7 +920,7 @@ class GramExp(object):
         ''' run X process by machine ! '''
 
         basecmd = sys.argv.copy()
-        Target = './zymake.py'
+        Target = './zymake.py' # add remote binary in .pymake.cfg
         basecmd = ['python3', Target] + basecmd[1:]
         #basecmd = ['pymake'] + basecmd[1:] # PATH and PYTHONPATH varible missing to be able to execute "pymake"
 
@@ -938,7 +941,7 @@ class GramExp(object):
         # from base requests commands.
         cmdlines = []
         for index in indexs:
-            id_cmd = 'run %s' % (' '.join(index))
+            id_cmd = '%s' % (' '.join(index))
             if 'runpara' in basecmd:
                 cmd = ' '.join(basecmd).replace('runpara', id_cmd, 1)
             else:
@@ -954,7 +957,7 @@ class GramExp(object):
             NDL = get_global_settings('loginfile')
             PWD = get_global_settings('remote_pwd')
             cmd = ['parallel', '-u', '-C', "' '", '--eta', '--progress',
-                   '--sshloginfile', NDL, '--workdir', PWD, '--env', 'OMP_NUM_THREADS',  ':::', '%s'%('\n'.join(cmdlines))]
+                   '--sshloginfile', NDL, '--workdir', PWD, '--env', 'OMP_NUM_THREADS', ':::', '%s'%('\n'.join(cmdlines))]
 
         #stdout = subprocess.check_output(cmd)
         #print(stdout.decode())
@@ -1073,6 +1076,7 @@ class GramExp(object):
 
 
         sandbox._preprocess_(self)
+
         if self._conf.get('simulate'):
             self.simulate()
 
