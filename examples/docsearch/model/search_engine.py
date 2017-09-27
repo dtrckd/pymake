@@ -123,7 +123,11 @@ class tfidf(IndexManager):
             return {}
 
         # 2. get the xml information
-        xml_strings = open(cermine_tar_dir+ filename.rpartition('.')[0] + '.cermxml').read()
+        cermine_file = cermine_tar_dir+ filename.rpartition('.')[0] + '.cermxml'
+        if not os.path.isfile(cermine_file):
+            self.log.error('Cermine failed...')
+            return {}
+        xml_strings = open(cermine_file).read()
 
         os.remove(cermine_tar_dir + filename) # remove the copied pdf
         os.chdir(pwd)
@@ -222,12 +226,19 @@ class tfidf(IndexManager):
 
             if not (is_known or is_duplicated):
                 print("indexing `%s'" % (path))
-                writer.add_document(**doc)
+                try:
+                    writer.add_document(**doc)
+                except Exception as e:
+                    print('indexing doc %s failed!' % fullpath)
 
         return
 
     def close(self):
         if hasattr(self, 'writer'):
-            self.writer.close()
+            try:
+                self.writer.close()
+            except Exception as e:
+                print('Whoosh error: %s' %e)
+
 
 

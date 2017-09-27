@@ -1,4 +1,5 @@
 from pymake import ExpeFormat, ModelManager
+from pymake.util.utils import ask_sure_exit
 
 
 USAGE = """\
@@ -30,6 +31,9 @@ class fit(ExpeFormat):
         expe = self.expe
         _model = ModelManager.from_name(expe)
         model = _model(expe)
+
+        if expe.reset is True:
+            ask_sure_exit('reset option will destroy all the indexes, sure [y/n]?')
 
         try:
             model.fit()

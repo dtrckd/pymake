@@ -1054,6 +1054,7 @@ class GramExp(object):
     @staticmethod
     def update_index(*index_name):
         from pymake.index.indexmanager import IndexManager as IX
+        os.chdir(os.getenv('PWD'))
 
         if len(index_name) == 0:
             IX.build_indexes()
