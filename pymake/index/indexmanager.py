@@ -83,7 +83,12 @@ class IndexManager(object):
         if name in self._ix:
             return self._ix[name]
         elif os.path.exists(self.get_index_path(name)):
-           return  self.load_index(name)
+            try:
+               return  self.load_index(name)
+            except Exception as e:
+                print('Whoos index i/o error %s' % e)
+                print('removing to clean the index (removing data/ir_index folder)')
+                exit(2)
         else:
             return self.clean_index(name)
 
