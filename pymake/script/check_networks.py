@@ -347,6 +347,8 @@ class CheckNetwork(ExpeFormat):
             print(colored('\nStats Table :', 'green'))
             print (tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
 
+
+
 if __name__ == '__main__':
 
     GramExp.generate(usage=USAGE).pymake(CheckNetwork)

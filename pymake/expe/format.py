@@ -796,13 +796,13 @@ class ExpeFormat(object):
             print()
 
         prefix = 'Computing'
-        n_it = self._it
+        n_it = self._it +1
         n_total = self.expe_size
         # Normalize
         n_it_norm = 2*42 * n_it // n_total
 
         progress= n_it_norm * '='  + (2*42-n_it_norm) * ' '
-        print('\r%s: [%s>] %s/%s' % (prefix, progress, n_it+1, n_total), end = '\r')
+        print('\r%s: [%s>] %s/%s' % (prefix, progress, n_it, n_total), end = '\r')
 
         if self.is_last_expe():
             print()

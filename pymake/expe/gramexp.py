@@ -202,9 +202,9 @@ class GramExp(object):
     _exp_default = {
         #'host'      : 'localhost',
         'verbose'   : logging.INFO,
-        '_load_data' : True, # if .pk corpus is here, load it.
-        '_save_data' : False,
         'write'     : False,
+        #'_load_data' : True, # if .pk corpus is here, load it.
+        #'_save_data' : False, # save corpus as .pk.
     }
 
     _pmk_error_file = '.pymake-errors'
@@ -257,21 +257,21 @@ class GramExp(object):
             self._update()
 
     def _update(self):
+        # Seems obsolete, _conf is not writtent in exp_tensor, right ?
         self._conf = self.exp_tensor._conf
+        #
         self.lod = self.exp_tensor._lod
 
 
     def _preprocess_exp(self):
-        # @improvment: do filter from spec
-        size_exp = self.exp_tensor.get_size()
-
         #self._check_exp(self.exp_tensor)
-
         self.exp_tensor.check_bind()
         self.exp_tensor.check_model_typo()
         self.exp_tensor.check_null()
 
-        if size_exp > 1 and 'write' in self._conf:
+
+    def io_format_check(self):
+        if len(self) > 1 and 'write' in self._conf:
             self.check_format()
 
         # Clean pymake extra args:
@@ -310,7 +310,7 @@ class GramExp(object):
                 if isinstance(values, list) and len(values) > 1 and setting not in format_settings:
                     hidden_key.append(setting)
 
-            if hidden_key and self._conf.get('_ignore_format_unique') is not True and self._conf['_do'] != 'show' and not '_id' in format_settings:
+            if hidden_key and self._conf.get('_ignore_format_unique') is not True and not '_id' in format_settings:
                 lgg.error('The following settings are not set in _format:')
                 print(' '+ '  '.join(hidden_key))
                 print('Possible conflicts in experience results outputs.')
@@ -848,9 +848,17 @@ class GramExp(object):
 
         try:
             _script, script_args = Script.get(script[0], script[1:])
+        except ValueError as e:
+            lgg.warning('Script not found, re-building Scripts indexes...')
+            self.update_index('script')
+            #cls._spec = Spec.get_all()
+            try:
+                _script, script_args = Script.get(script[0], script[1:])
+            except:
+                raise
         except IndexError as e:
-            lgg.error('Script arguments error : %s -- %s' % (e, script))
-            exit(2)
+                lgg.error('Script arguments error : %s -- %s' % (e, script))
+                exit(2)
 
         # Raw search
         #script_name = script[0]
@@ -1074,8 +1082,8 @@ class GramExp(object):
             print(*self.functable(sandbox) , sep='\n')
             exit()
 
-
         sandbox._preprocess_(self)
+        self.io_format_check()
 
         if self._conf.get('simulate'):
             self.simulate()

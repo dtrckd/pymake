@@ -11,6 +11,7 @@ class Data(ExpeFormat):
 
     _default_expe = { '_expe_silent' : True }
 
+    # @need an expe
     def missing(self, _type='pk'):
         if self.is_first_expe():
             self.gramexp.n_exp_total = self.expe_size
@@ -29,6 +30,7 @@ class Data(ExpeFormat):
             print (tabulate(table, headers='keys', tablefmt='simple', floatfmt='.3f'))
 
 
+    # @need an expe
     def completed(self, _type='pk'):
         if self.is_first_expe():
             self.gramexp.n_exp_total = self.expe_size
@@ -45,6 +47,18 @@ class Data(ExpeFormat):
                                  ('total', [self.gramexp.n_exp_total]),
                                 ])
             print (tabulate(table, headers='keys', tablefmt='simple', floatfmt='.3f'))
+
+
+
+    def topo(self):
+        print('''' Todo Topo:
+
+                1. get all _typo in spec,
+                2. parse all file (pk ou inf ?)
+                3. classify all expe accordinf to : refdir, _name, corpus, model
+                4. tabulate.
+             ''')
+        pass
 
 
 
