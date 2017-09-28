@@ -7,7 +7,7 @@ from pymake.util.utils import get_global_settings, colored
 
 import whoosh as ws
 import whoosh.highlight
-from whoosh.qparser import QueryParser
+from whoosh.qparser import QueryParser, OrGroup, AndGroup
 
 
 class TerminalFormatter(ws.highlight.Formatter):
@@ -215,15 +215,36 @@ class IndexManager(object):
         return results
 
     def search(self, query='',  field=None,  index=None, limit=None):
-        ''' OR search '''
+        ''' Text search '''
         index = index or self._default_index
         limit = None if limit == 'all' else limit
         ix = self.get_index(index)
         fieldin = field or 'content'
 
-        qp = QueryParser(fieldin, ix.schema)
+        fuzzy = '~' in query
+        wildcard = '*' in query
+        plusminus = '+' in query or '-' in query
+        multifield = ':' in query
+        boost = '^' in query
+
+
+        qp = QueryParser(fieldin, ix.schema, group=OrGroup)
+
+        # Check the difference between the both, not sure ?
         qp.add_plugin(ws.qparser.SingleQuotePlugin())
-        qp.add_plugin(ws.qparser.WildcardPlugin())
+        qp.add_plugin(ws.qparser.PhrasePlugin())
+
+        if wildcard:
+            qp.add_plugin(ws.qparser.WildcardPlugin())
+        if fuzzy:
+            qp.add_plugin(ws.qparser.FuzzyTermPlugin())
+        if plusminus:
+            qp.add_plugin(ws.qparser.PlusMinusPlugin())
+        if multifield:
+            qp.add_plugin(ws.qparser.MultifieldPlugin([fieldin]))
+        if boost:
+            qp.add_plugin(ws.qparser.BoostPlugin())
+
         query = qp.parse(query)
         with ix.searcher() as searcher:
                 results = searcher.search(query, limit=limit)

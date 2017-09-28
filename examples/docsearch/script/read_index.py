@@ -57,28 +57,46 @@ class IR(ExpeFormat):
         s.close()
 
 
+
+    def sem(self, query):
+        ''' Query semantics. '''
+
+        squery = []
+        for q in query:
+            esc = q.split()
+            if len(esc) > 1:
+                squery.append('"'+' '.join(esc)+'"')
+            else:
+                squery.append(q)
+
+
+        squery = ' '.join(squery)
+        print(squery)
+        return squery
+
+
     def search(self, *query):
         expe = self.expe
         _model = ModelManager.from_name(expe)
         model = _model(expe)
 
-        query = ' '.join(query)
-        res = model.search(query, limit=expe.number_results)
+        res = model.search(self.sem(query), limit=expe.number_results)
         self.format_results(res)
 
-    def open(self, query, hit=0):
+    def open(self, query, hit=1):
         expe = self.expe
         _model = ModelManager.from_name(expe)
         model = _model(expe)
 
-        res = model.search(query, limit=expe.number_results)
+        query = [query]
+
+        res = model.search(self.sem(query), limit=expe.number_results)
 
         for rank, _hit in enumerate(res):
             if rank == int(hit)-1:
                 fpath = _hit['fullpath']
                 break
 
-        print(fpath)
         call(['evince', fpath])
 
     def authors(self, *query):
@@ -86,8 +104,7 @@ class IR(ExpeFormat):
         _model = ModelManager.from_name(expe)
         model = _model(expe)
 
-        query = ' '.join(query)
-        res = model.search(query, field='authors', limit=expe.number_results)
+        res = model.search(self.sem(query), field='authors', limit=expe.number_results)
         self.format_results(res)
 
 

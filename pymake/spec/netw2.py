@@ -90,9 +90,9 @@ class Netw2(ExpDesign):
         corpus        = data_net_all,
         model         = 'immsb_scvb',
         N             = 'all',
-        chunk         = ['adaptative_0.33','adaptative_1', 'adaptative_3'],
+        chunk         = ['adaptative_0.33','adaptative_1', 'adaptative_3'], # best seemes to be _1 !
         K             = 6,
-        iterations    = [1, 10], # relaunch with 3 to see if any difference.
+        iterations    = [1, 10], # relaunch with 3 to see if any difference. not many ! but some fluctuation...!
         hyper         = 'auto',
         testset_ratio = 25,
         #chi = [0.5, 1, 2, 10],
