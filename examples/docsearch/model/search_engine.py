@@ -9,6 +9,12 @@ import subprocess
 import whoosh as ws
 
 def extract_pdf(pdf_file, page_limit=None):
+    if pdf_file.startswith('/home/'):
+        # allow index sharing between machine
+        pp = pdf_file.split('/')
+        pp[2] = os.getenv('USER')
+        pdf_file = '/'.join(pp)
+
     try:
         import textract_ # longer than pdftotext
         text = textract.process(pdf_file).decode('utf8')

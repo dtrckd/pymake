@@ -57,6 +57,8 @@ cd examples/docsearch/
 make setup
 ```
 
+You may alos need the following package : `apt-get install poppler-utils`
+
 Then a typical pymake usage :
 
 ```bash

@@ -71,7 +71,6 @@ class IR(ExpeFormat):
 
 
         squery = ' '.join(squery)
-        print(squery)
         return squery
 
 
