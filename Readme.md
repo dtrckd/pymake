@@ -16,8 +16,9 @@ Pymake (pmk) is a machine friendly environment for making reproducible research.
 * Specification of design of experimentations with a simple grammar,
 * Indexation of specifications, models, scripts and corpus,
 * Command-line toolkit for quick design and experiment testing,
-* Support experiments rules filtering,
+* Simple grid gearch specification and naviguation,
 * Support experiments parallelization powered by [gnu-parallel](https://www.gnu.org/software/parallel/),
+* Support experiments rules filtering,
 * Browse, design and test several models and corpus found in the literature.
 
 Perspectives :
