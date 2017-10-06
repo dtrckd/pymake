@@ -8,13 +8,17 @@ import re
 import subprocess
 import whoosh as ws
 
-def extract_pdf(pdf_file, page_limit=None):
-    if pdf_file.startswith('/home/'):
-        # allow index sharing between machine
-        pp = pdf_file.split('/')
-        pp[2] = os.getenv('USER')
-        pdf_file = '/'.join(pp)
 
+def glob_path(path):
+    if path.startswith('/home/'):
+        # allow index sharing between machine
+        pp = path.split('/')
+        pp[2] = os.getenv('USER')
+        path = '/'.join(pp)
+    return path
+
+def extract_pdf(pdf_file, page_limit=None):
+    pdf_file = glob_path(pdf_file)
     try:
         import textract_ # longer than pdftotext
         text = textract.process(pdf_file).decode('utf8')

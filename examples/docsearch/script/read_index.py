@@ -1,7 +1,7 @@
 from pymake import ExpeFormat, ModelManager
 from pymake.util.utils import colored
 import textwrap
-from ..model.search_engine import extract_pdf
+from ..model.search_engine import extract_pdf, glob_path
 
 from subprocess import call
 
@@ -93,7 +93,7 @@ class IR(ExpeFormat):
 
         for rank, _hit in enumerate(res):
             if rank == int(hit)-1:
-                fpath = _hit['fullpath']
+                fpath = glob_path(_hit['fullpath'])
                 break
 
         call(['evince', fpath])
