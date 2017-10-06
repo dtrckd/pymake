@@ -32,6 +32,6 @@ examples/docsearch/data
 
 # Automatic generation
 stirling.pk
-#stirling.npy
+stirling.npy
 autobuild/
 ir_index/
