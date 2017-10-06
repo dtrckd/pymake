@@ -1,3 +1,6 @@
+.ONESHELL:
+SHELL = /bin/bash
+
 PACKAGE := pymake
 # Assumes Python3
 pip3_version := $(shell pip3 --version 2>/dev/null)
@@ -16,13 +19,13 @@ ifdef pip3_version
 		pip3 install --user -r requirements.txt
 		python3 setup.py install --user
 		@echo 'fetching stirling number lookup table'
-		mkdir temp_junk/
-		cd temp_junk
+		@mkdir temp_junk/
+		@cd temp_junk/
 		wget https://github.com/dtrckd/raw_data/archive/master.zip
 		unzip master.zip
-		gunzip raw_data-master/stirling/* && cat raw_data-master/stirling/* > ../util/stirling.npy
-		cd ..
-		rm -rf temp_junk/
+		@gunzip raw_data-master/stirling/* && cat raw_data-master/stirling/* > ../pymake/util/stirling.npy
+		@cd ..
+		@rm -rf temp_junk/
 else
 		@echo "error: please install the \`pip3' package"
 		@exit 0
