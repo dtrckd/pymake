@@ -10,11 +10,7 @@ tests = (
     'zymake show',
     'zymake -l',
     'zymake -l model',
-    'fit -m immsb_cgs',
-    'scripts/check_networks pvalue',
-    'scripts/check_networks stats',
-    'scripts/generate homo',
-    'scripts/generate',
+    'fit expe_default -x fit -m immsb_cgs',
 )
 
 for t in tests:

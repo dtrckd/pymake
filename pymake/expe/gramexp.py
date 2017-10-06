@@ -376,7 +376,7 @@ class GramExp(object):
         base = expe.get('_data_type', 'pmk-temp')
         hook = expe.get('_refdir', '')
 
-        basedir = os.path.join(os.path.dirname(__file__), _DATA_PATH, base, base_dir)
+        basedir = os.path.join(_DATA_PATH, base, base_dir)
 
         rep = ''
         if '_repeat' in expe and ( expe['_repeat'] is not None and expe['_repeat'] is not False):
@@ -422,7 +422,7 @@ class GramExp(object):
             c = c.replace('graph', 'Graph')
             c = 'generator/' + c
 
-        input_dir = os.path.join(os.path.dirname(__file__), _DATA_PATH, base, base_dir, c)
+        input_dir = os.path.join(_DATA_PATH, base, base_dir, c)
 
         return input_dir
 
