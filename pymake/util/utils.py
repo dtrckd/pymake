@@ -226,15 +226,22 @@ def get_global_settings(key=None, default_config=__default_config, cfg_name='pym
 
     config = parse_file_conf(cfg_file, sep='=')
 
+    for k in list(config):
+        v = config[k]
+        if '~' in v:
+            config[k] = os.path.expanduser(v)
+        if './' in v or '../' in v:
+            config[k] = os.path.join(dir, v)
+
     if not key:
         settings =  config
     elif key.startswith('_'):
         res = []
         for k in ['default'+key, 'contrib'+key]:
-            res += os.path.expanduser(config.get(k, default_config[k])).split(',')
+            res += config.get(k, default_config[k]).split(',')
         settings =  [e for e in map(str.strip, res) if e]
     else:
-        settings = os.path.expanduser(config.get(key, default_config[key]))
+        settings = config.get(key, default_config[key])
 
     #print(settings)
     return settings

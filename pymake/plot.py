@@ -451,6 +451,7 @@ def adjshow_4(Y,title=[], pixelspervalue=20):
 ### Curve Plot
 ##########################
 
+# @deprecated
 def plot_csv(target_dirs='', columns=0, sep=' ', separate=False, title=None, twin=False, iter_max=None):
     if type(columns) is not list:
         columns = [columns]
