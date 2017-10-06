@@ -2,10 +2,10 @@
 *.sw[mnopl]
 *.py[co]
 *.[ao]
-tags
 *~
 *.session.vim
-*.byobu
+
+# Volatile project file
 .pymake_hist
 .pymake-errors
 

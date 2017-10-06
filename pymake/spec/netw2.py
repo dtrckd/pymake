@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 
 from pymake import ExpSpace, ExpTensor, Corpus, ExpDesign, ExpGroup
@@ -70,7 +69,6 @@ class Netw2(ExpDesign):
         _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}-{_name}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
     )
-
 
 
 
