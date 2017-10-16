@@ -32,7 +32,7 @@ from pymake.util.math import reorder_mat, sorted_perm, categorical, clusters_his
 from pymake.util.utils import Now, nowDiff, colored
 import matplotlib.pyplot as plt
 from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2, random_degree,  draw_graph_circular, draw_graph_spectral, draw_graph_spring, _markers
-from pymake.expe.format import tabulate
+from pymake.core.format import tabulate
 
 import scipy as sp
 from sklearn.metrics import roc_curve, auc, precision_recall_curve

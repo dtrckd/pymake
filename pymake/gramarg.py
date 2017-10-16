@@ -1,5 +1,5 @@
 from functools import partial
-from pymake.expe.gram import exp_append, exp_append_uniq
+from pymake.core.gram import exp_append, exp_append_uniq
 
 _gram = [
     #  Expe Settings -- Context-Free

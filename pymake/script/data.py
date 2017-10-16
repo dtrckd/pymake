@@ -5,7 +5,7 @@ from collections import OrderedDict
 
 import matplotlib.pyplot as plt
 from pymake.util.utils import colored
-from pymake.expe.format import tabulate
+from pymake.core.format import tabulate
 
 class Data(ExpeFormat):
 
