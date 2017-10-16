@@ -129,17 +129,8 @@ class Spec(BaseObject):
     @staticmethod
     def get(scriptname, *expe):
         ix = IX(default_index='spec')
-        topmethod = ix.getfirst(scriptname, field='scriptsurname')
-        if not topmethod:
-            topmethod = ix.getfirst(scriptname, field='method')
-            if not topmethod:
-                raise ValueError('error: Unknown script: %s' % (scriptname))
-            arguments = [scriptname] + arguments
-            #script_name = topmethod['scriptsurname']
+        raise NotImplementedError
 
-        module = importlib.import_module(topmethod['module'])
-        script = getattr(module, topmethod['scriptname'])
-        return script, arguments
 
     @staticmethod
     def get_all():
@@ -701,6 +692,25 @@ class ExpDesign(dict, BaseObject):
             _alias : dict
                 use when self._name is called to translate keywords
     '''
+
+    # @debug, this a global temp variable
+    _alias = dict((
+        ('propro'   , 'Protein')  ,
+        ('blogs'    , 'Blogs')    ,
+        ('euroroad' , 'Euroroad') ,
+        ('emaileu'  , 'Emaileu') ,
+        ('manufacturing'  , 'Manufacturing'),
+        ('fb_uc'          , 'UC Irvine' ),
+        ('generator7'     , 'Network1' ),
+        ('generator12'    , 'Network2' ),
+        ('generator10'    , 'Network3' ),
+
+        ('generator4'     , 'Network4' ),
+        #('generator4'     , 'Network2' ),
+        ('pmk.ilfm_cgs'     , 'ILFM' ),
+        ('pmk.immsb_cgs'     , 'IMMSB' ),
+    ))
+
     def __init__(self,  *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
 
@@ -1079,10 +1089,13 @@ class ExpeFormat(object):
             self._samples = []
 
 
-    def load_some(self, filename, iter_max=None, comments=('#','%')):
+    def load_some(self, filename=None, iter_max=None, comments=('#','%')):
         ''' Load data from file according that each line
             respect the format in {self._csv_typo}.
         '''
+        if filename is None:
+            filename = self.output_path + '.inf'
+
         with open(filename) as f:
             data = f.read()
 
@@ -1095,7 +1108,7 @@ class ExpeFormat(object):
         # Grammar dude ?
         col_typo = self.expe._csv_typo.split()[1:]
         array = []
-        last_list_size = None
+        last_elt_size = None
         # Format the data in a list of dict by entry
         for data_line in data:
             line = {}

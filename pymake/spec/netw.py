@@ -11,7 +11,7 @@ plt.rc('font', size=__plot_font_size)  # controls default text sizes
 class Netw(ExpDesign):
 
     # Use for Name on figure and table
-    _mapname = dict((
+    _alias = dict((
         ('propro'   , 'Protein')  ,
         ('blogs'    , 'Blogs')    ,
         ('euroroad' , 'Euroroad') ,

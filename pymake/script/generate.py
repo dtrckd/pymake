@@ -335,7 +335,6 @@ class GenNetwork(ExpeFormat):
         lgg.info('using `%s\' burstiness' % _type)
 
         if _type == 'global':
-
             ### Global degree
             for it_dat, data in enumerate(Y):
                 d, dc = degree_hist(adj_to_degree(data), filter_zeros=True)

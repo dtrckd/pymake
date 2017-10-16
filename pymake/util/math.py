@@ -189,7 +189,7 @@ def random_degree(Y, params=None):
     # 0 are filtered out in degree_hist
     return np.arange(1, len(y)+1),  np.round(y), yerr
 
-def reorder_mat(y, clusters, reverse=True, labels=False):
+def reorder_mat(y, clusters, labels=False, reverse=True):
     """Reorder the  matrix according the clusters membership
         @Debug: square matrix
     """

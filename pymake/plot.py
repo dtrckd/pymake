@@ -183,7 +183,7 @@ def plor_degree_polygof(y, gof):
     # I dunno structore for plot ?
     pass
 
-def plot_degree_poly(y, scatter=True, spec=True, title=None, ax=None,label='', logscale=True):
+def plot_degree_poly(y, scatter=True, spec=True, title=None, ax=None, logscale=True):
     """ Degree plot along with a linear regression of the distribution.
     if scatter is false, draw only the linear approx"""
     # To convert normalized degrees to raw degrees
@@ -201,7 +201,9 @@ def plot_degree_poly(y, scatter=True, spec=True, title=None, ax=None,label='', l
         ax.set_title(title)
 
     fit = np.polyfit(np.log(d), np.log(dc), deg=1)
-    ax.plot(d,np.exp(fit[0] *np.log(d) + fit[1]), 'g--', label=label % fit[1])
+    #label = 'power %.2f' % abs(fit[0])
+    label = ''
+    ax.plot(d, np.exp(fit[0] *np.log(d) + fit[1]), 'g--', label=label % fit[1])
     if label:
         leg = ax.legend(loc='upper right',prop={'size':10})
 
