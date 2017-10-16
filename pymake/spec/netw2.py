@@ -10,23 +10,6 @@ plt.rc('font', size=__plot_font_size)  # controls default text sizes
 
 class Netw2(ExpDesign):
 
-    # Use for Name on figure and table
-    _alias = dict((
-        ('propro'   , 'Protein')  ,
-        ('blogs'    , 'Blogs')    ,
-        ('euroroad' , 'Euroroad') ,
-        ('emaileu'  , 'Emaileu') ,
-        ('manufacturing'  , 'Manufacturing'),
-        ('fb_uc'          , 'UC Irvine' ),
-        ('generator7'     , 'Network1' ),
-        ('generator12'    , 'Network2' ),
-        ('generator10'    , 'Network3' ),
-
-        ('generator4'     , 'Network4' ),
-        #('generator4'     , 'Network2' ),
-        ('pmk.ilfm_cgs'     , 'ILFM' ),
-        ('pmk.immsb_cgs'     , 'IMMSB' ),
-    ))
 
     data_net_all = Corpus(['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad', 'generator7', 'generator12', 'generator10', 'generator4'])
     net_all = data_net_all + Corpus(['clique6', 'BA'])

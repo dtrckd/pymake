@@ -31,12 +31,19 @@ from tabulate import tabulate
 # Ugly, integrate.
 def _table_(tables, headers=[], max_line=10, max_row=30, name=''):
 
+
+    # tables is dict
     if isinstance(headers, str):
+        # Sort the dict
+        ordered_keys = sorted(tables.keys())
+        tables = OrderedDict([(k,tables[k]) for k in ordered_keys ])
+
         sep = '# %s'%name +  '\n'+'='*20
         print(sep)
         return tabulate(tables, headers=headers)
 
 
+    # tables is list
     raw = []
     for sec, table in enumerate(tables):
         table = sorted(table, key=lambda x:x[0])
@@ -159,7 +166,7 @@ class Spec(BaseObject):
     def table(cls):
         ix = IX(default_index='spec')
         t = OrderedDict()
-        for elt in  ix.query(index='spec', terms=True):
+        for elt in ix.query(index='spec', terms=True):
             name = elt['module_name'].split('.')[-1]
             expes = t.get(name, []) + [ elt['expe_name'] ]
             t[name] = sorted(expes)
