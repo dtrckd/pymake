@@ -3,7 +3,7 @@ from pymake import ModelManager, FrontendManager, ExpeFormat
 
 import matplotlib.pyplot as plt
 from pymake.util.utils import colored, ask_sure_exit
-from pymake.expe.format import tabulate
+from pymake.core.format import tabulate
 
 class Corpus(ExpeFormat):
 

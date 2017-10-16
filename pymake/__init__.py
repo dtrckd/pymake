@@ -9,13 +9,13 @@ if os.environ.get('DISPLAY') is None:
     print("To force a display try : `export DISPLAY=:0.0")
 
 
-from pymake.expe.format import Spec, Corpus, Model, Script, ExpSpace, ExpVector, ExpTensor, ExpeFormat, ExpDesign, ExpGroup
+from pymake.core.format import Spec, Corpus, Model, Script, ExpSpace, ExpVector, ExpTensor, ExpeFormat, ExpDesign, ExpGroup
 
 # Without whoosh fashion...
 #from pymake.frontend.frontend_io import SpecLoader
 #__spec = SpecLoader.get_atoms()
 
-from pymake.expe.gramexp import GramExp
+from pymake.core.gramexp import GramExp
 from pymake.frontend.manager import ModelManager, FrontendManager
 
 

@@ -29,7 +29,7 @@ from pymake.util.math import reorder_mat, sorted_perm
 import matplotlib.pyplot as plt
 from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2
 from pymake.util.utils import colored
-from pymake.expe.format import tabulate
+from pymake.core.format import tabulate
 
 class CheckNetwork(ExpeFormat):
 

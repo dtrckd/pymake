@@ -12,7 +12,7 @@ import scipy as sp
 np.set_printoptions(threshold='nan')
 
 from frontend.frontendnetwork import frontendNetwork
-from expe.spec import _spec
+from core.spec import _spec
 
 
 ''' Build Networks Corpus '''

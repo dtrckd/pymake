@@ -22,7 +22,7 @@ from pymake import ExpDesign, ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, Sc
 from pymake.util.utils import colored, basestring, get_global_settings
 
 # @debug name integration
-from pymake.expe.format import ExpTensorV2
+from pymake.core.format import ExpTensorV2
 
 import pymake.frontend.frontend_io as mloader
 
@@ -447,7 +447,7 @@ class GramExp(object):
 
     @staticmethod
     def get_parser(description=None, usage=None):
-        import pymake.expe.gram as _gram
+        import pymake.core.gram as _gram
         parser = _gram.ExpArgumentParser(description=description, epilog=usage,
                                         formatter_class=argparse.RawDescriptionHelpFormatter)
         parser.add_argument('--version', action='version', version='%(prog)s '+str(_version))
@@ -456,7 +456,7 @@ class GramExp(object):
 
     @classmethod
     def push_gramarg(cls, parser, gram=None):
-        import pymake.expe.gram as _gram
+        import pymake.core.gram as _gram
         if gram is None:
             gram = _gram._Gram
         else:
