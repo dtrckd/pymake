@@ -44,6 +44,9 @@ class CheckNetwork(ExpeFormat):
         if not hasattr(self.gramexp, 'tables'):
             corpuses = self.specname(self.gramexp.get_all('corpus'))
             models = self.gramexp.get_all('model')
+
+            if not models:
+                models = ['no_model']
             Meas = [ 'pvalue', 'alpha', 'x_min', 'n_tail']
             tables = {}
             for m in models:
@@ -83,9 +86,6 @@ class CheckNetwork(ExpeFormat):
         K = None
         if clusters_org == 'source':
             clusters = frontend.get_clusters()
-            if clusters is not None:
-                class_hist = np.bincount(clusters)
-                K = (class_hist != 0).sum()
         elif clusters_org == 'model':
             model = ModelManager.from_expe(expe)
             #clusters = model.get_clusters(K, skip=1)
@@ -103,7 +103,7 @@ class CheckNetwork(ExpeFormat):
             return
         else:
             block_hist = np.bincount(clusters)
-            K = len(block_hist)
+            K = (block_hist != 0).sum()
             lgg.info('%d Clusters from `%s\':' % (K, clusters_org))
             data_r = reorder_mat(frontend.data, clusters)
 
@@ -179,8 +179,6 @@ class CheckNetwork(ExpeFormat):
 
         # Local burstiness
 
-        Table,Meas = self.init_fit_tables(_type=_type)
-
         #
         # Get the Class/Cluster and local degree information
         # Reordering Adjacency Mmatrix based on Clusters/Class/Communities
@@ -189,9 +187,6 @@ class CheckNetwork(ExpeFormat):
         K = None
         if clusters_org == 'source':
             clusters = frontend.get_clusters()
-            if clusters is not None:
-                class_hist = np.bincount(clusters)
-                K = (class_hist != 0).sum()
         elif clusters_org == 'model':
             model = ModelManager.from_expe(expe)
             #clusters = model.get_clusters(K, skip=1)
@@ -205,10 +200,14 @@ class CheckNetwork(ExpeFormat):
             return
         else:
             block_hist = np.bincount(clusters)
-            K = len(block_hist)
+            K = (block_hist != 0).sum()
             lgg.info('%d Clusters from `%s\':' % (K, clusters_org))
 
+        expe.K = K
+        assert(not 'model' in expe)
+        expe.model = 'no_model'
         #data_r, labels= reorder_mat(data, clusters, labels=True)
+        Table,Meas = self.init_fit_tables(_type=_type)
 
         # Just inner degree
         f = plt.figure()

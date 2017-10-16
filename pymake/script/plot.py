@@ -35,7 +35,7 @@ class Plot(ExpeFormat):
         ''' likelihood/perplexity convergence report '''
         expe = self.expe
 
-        data = self.load_some(self.output_path+'.inf')
+        data = self.load_some()
         if not data:
             self.log.warning('No data for expe : %s' % self.output_path)
             return
@@ -59,7 +59,7 @@ class Plot(ExpeFormat):
         ''' likelihood/perplexity convergence report '''
         expe = self.expe
 
-        data = self.load_some(self.output_path+'.inf')
+        data = self.load_some()
         if not data:
             self.log.warning('No data for expe : %s' % self.output_path)
             return

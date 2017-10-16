@@ -218,7 +218,7 @@ class GramExp(object):
             conf = {}
 
         if parseargs is True:
-            kwargs, self.argparser = self.parseargsexpe(usage)
+            kwargs, self.argparser, _ = self.parseargsexpe(usage)
             conf.update(kwargs)
         if parser is not None:
             # merge parser an parsargs ?
@@ -235,6 +235,7 @@ class GramExp(object):
         self.exp_setup()
 
         if expdesign is not None:
+            # Init or not init ?
             self._expdesign = expdesign
         else:
             self._expdesign = ExpDesign
@@ -509,9 +510,9 @@ class GramExp(object):
         # Assume None value are non-filled options
         settings = dict((key,value) for key, value in vars(s).items() if value is not None)
 
-        GramExp.expVectorLookup(settings)
+        expdesign = GramExp.expVectorLookup(settings)
 
-        return settings, parser
+        return settings, parser, expdesign
 
     @classmethod
     def zymake(cls, request={}, usage='', firsttime=True, expdesign=None):
@@ -529,7 +530,7 @@ class GramExp(object):
          |   zymake path SPEC Filetype(pk|json|inf) [status] ... : show output_path
         ''' + '\n' + usage
 
-        s, parser = GramExp.parseargsexpe(usage)
+        s, parser, expdesign_lkp = GramExp.parseargsexpe(usage)
         request.update(s)
 
         ontology = dict(
@@ -604,6 +605,8 @@ class GramExp(object):
         if len(expgroup) > 0 and len(do) == 0:
             request['_do'] = 'show'
 
+
+        expdesign = expdesign or expdesign_lkp
         return cls(request, usage=usage, parser=parser, parseargs=False, expdesign=expdesign)
 
 
@@ -611,6 +614,7 @@ class GramExp(object):
     def expVectorLookup(cls, request):
         ''' set exp from spec if presents '''
 
+        expdesign = None
         for k, v in request.items():
             if not isinstance(v, ExpVector):
                 continue
@@ -618,7 +622,7 @@ class GramExp(object):
             sub_request = ExpVector()
             for vv in v:
                 if vv in cls._spec:
-                    loaded_v, _ = Spec.load(vv, cls._spec[vv])
+                    loaded_v, expdesign = Spec.load(vv, cls._spec[vv])
                     if isinstance(loaded_v, ExpVector):
                         sub_request.extend(loaded_v)
                 else:
@@ -627,6 +631,8 @@ class GramExp(object):
 
             if sub_request:
                 request[k] = sub_request
+
+        return expdesign
 
 
     @classmethod
