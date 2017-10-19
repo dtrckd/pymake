@@ -44,11 +44,11 @@ cd pymake && make install
 We provide an example of a design workflow with pymake by providing a **Search Engine** experience.
 
 The context of the experiment is as follows :
-* **Data** : documents to search in are pdf documents (like articles for example),
-* **Model** : A bm25 model, that assumes a information model of bag of word representation.
+* **Data** : documents to search-in are pdf documents (like articles for example),
+* **Model** : A bm25 model, that assumes a information model of bag of words representation.
 * **Script** : There is two scripts :
-    + a fit script that build  the index,
-    + a search script that return relevant documents.
+    + a fit script that builds the index,
+    + a search script that returns relevant documents.
 * Experiment Parameters are defined in the attribute `_default_expe` in each scripts.
 
 Setup the experiment (needed just once) :
@@ -58,7 +58,7 @@ cd examples/docsearch/
 make setup
 ```
 
-You may alos need the following package : `apt-get install poppler-utils`
+You may also need the following package : `apt-get install poppler-utils`
 
 Then a typical pymake usage :
 
@@ -68,9 +68,9 @@ pymake run --script search "your text search request"  # show relevant informati
 ```
 Or show only the first match :  `pymake run --script search "your text search request" --limit 1`
 
-To add new models, a new scripts, you need to write it in the dedicated folder following the base class implementations.
+To add new models, new scripts, or specs,  you need to create it in the dedicated folder following the base class implementations.
 
-Then you can list some informations about pymake :
+Then you can list some informations about pymake objects :
 
 * What experiments are there: `pymake -l spec`
 * What models are there: `pymake -l model`
