@@ -30,42 +30,17 @@ class FrontendManager(object):
     def get(expe, load=False):
         """ Return: The frontend suited for the given expeuration"""
 
-        corpus = expe.get('corpus') or expe.get('random')
-        corpus_typo = {
-            'network': [
-                'clique', 'generator', 'graph', 'alternate', 'BA', # random
-                'facebook',
-                'fb_uc',
-                'manufacturing',
-                'propro',
-                'blogs',
-                'euroroad',
-                'emaileu'
-            ],
-            'text': ['reuter50',
-                     'nips12',
-                     'nips',
-                     'enron',
-                     'kos',
-                     'nytimes',
-                     'pubmed',
-                     '20ngroups',
-                     'odp',
-                     'wikipedia',
-                     'lucene']}
+        corpus_name = expe.get('corpus') or expe.get('random')
 
-        frontend = None
-        for key, cps in corpus_typo.items():
-            if corpus.startswith(tuple(cps)):
-                if key == 'text':
-                    frontend = frontendText(expe, load=load)
-                    break
-                elif key == 'network':
-                    frontend = frontendNetwork(expe, load=load)
-                    break
-
-        if frontend is None:
+        _corpus = Corpus.get(corpus_name)
+        if _corpus is None:
             raise ValueError('Unknown Corpus `%s\'!' % corpus)
+
+        if _corpus['structure'] == 'text':
+            frontend = frontendText(expe, load=load)
+        elif _corpus['structure'] == 'network':
+            frontend = frontendNetwork(expe, load=load)
+
         return frontend
 
     @classmethod

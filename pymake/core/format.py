@@ -228,9 +228,51 @@ class Script(BaseObject):
 
 
 class Corpus(ExpVector):
-    @staticmethod
-    def get():
-        pass
+
+    # Meta-grammar / Ontology :
+    #   Corpus := {
+    #               structure : text | network | image | ...,
+    #               type : "specific to a structure"
+    #               name : "object identifier"
+    #               path : "disk repo"
+    #               source : url | random
+    #             }
+
+    # IX integration needed..
+    _corpus_typo = {
+        'network': [
+            'clique', 'generator', 'graph', 'alternate', 'BA', # random
+            'facebook',
+            'fb_uc',
+            'manufacturing',
+            'propro',
+            'blogs',
+            'euroroad',
+            'emaileu'
+        ],
+        'text': ['reuter50',
+                 'nips12',
+                 'nips',
+                 'enron',
+                 'kos',
+                 'nytimes',
+                 'pubmed',
+                 '20ngroups',
+                 'odp',
+                 'wikipedia',
+                 'lucene']}
+    @classmethod
+    def get(cls, corpus_name):
+        corpus = None
+        for key, cps in cls._corpus_typo.items():
+            if corpus_name.startswith(tuple(cps)):
+                corpus = {'name': corpus_name, 'structure':key}
+                break
+        return corpus
+
+    @classmethod
+    def get_all(cls):
+        return cls._corpus_typo
 
 class Model(ExpVector):
 
