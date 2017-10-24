@@ -204,7 +204,7 @@ class frontendNetwork(DataBase):
 
         n = int(data.size * percent_hole)
         mask_index = np.unravel_index(np.random.permutation(data.size)[:n], data.shape)
-        mask = np.zeros(data.shape, dtype=int)
+        mask = np.zeros(data.shape, dtype=data.dtype)
         mask[mask_index] = 1
 
         if self.is_symmetric():
@@ -236,7 +236,7 @@ class frontendNetwork(DataBase):
         n_1 = _1[np.random.choice(len(_1), n, replace=False)]
         # Corresponding Mask
         mask_index = list(zip(*(np.concatenate((n_0, n_1)))))
-        mask = np.zeros(data.shape, dtype=int)
+        mask = np.zeros(data.shape, dtype=data.dtype)
         mask[mask_index] = 1
 
         if self.is_symmetric():
@@ -257,7 +257,7 @@ class frontendNetwork(DataBase):
         else:
             raise NotImplementedError('type %s unknow as corpus' % type(data))
 
-        mask = np.zeros(data.shape, dtype=int)
+        mask = np.zeros(data.shape, dtype=data.dtype)
         mask[data == 0] = 1
 
         if self.is_symmetric():
@@ -339,22 +339,25 @@ class frontendNetwork(DataBase):
         if data is None:
             ext = format
             fn = os.path.join(bdir, corpus_name +'.'+ ext)
-            if ext == 'graph':
+            if ext == 'graph': # Dancer
                 fn = os.path.join(bdir, 't0.graph')
                 data = self.parse_dancer(fn)
-            elif ext == 'edges':
+            elif ext == 'edges': # NotImplemented
                 fn = os.path.join(bdir, '0.edges')
                 data = self.parse_edges(fn)
-                # NotImplemented
+                raise NotImplementedError
             elif ext in ('txt'):
                 data = self.parse_tnet(fn)
             elif ext == 'csv':
-                #elif os.path.basename(fn) == 'manufacturing.csv':
                 data = self.parse_csv(fn)
             elif ext == 'dat':
                 data = self.parse_dat(fn)
             else:
                 raise ValueError('extension of network data unknown')
+
+        if np.tril(data, k=-1).sum() == 0:
+            # Symmetrize if lower triu is empty.
+            self.Symmetrize(data)
 
         if self._save_data:
             self.save(data, fn[:-len('.'+ext)])
@@ -362,42 +365,61 @@ class frontendNetwork(DataBase):
         return data
 
     def parse_tnet(self, fn):
+        ''' Grammar retro-ingennired from fb/emaileu.txt '''
         sep = ' '
         self.log.debug('opening file: %s' % fn)
         with open(fn) as f:
             content = f.read()
         lines = list(filter(None, content.split('\n')))
         line1_length = lines[0].strip().split(sep)
+        edges = {}
         if len(line1_length) == 2:
             # format 'i j' if edges.
             self._data_file_format = 'txt'
-            edges = [l.strip().split(sep)[:] for l in lines]
+            for line in lines:
+                dyad = line.strip().split(sep)[:]
+                dyad = '.'.join(dyad)
+                edges[dyad] = edges.get(dyad, 0) + 1
+            #edges = [l.strip().split(sep)[:] for l in lines]
         elif len(line1_length) == 5:
             # format '"date" i j weight'.
             self._data_file_format = 'tnet'
-            edges = [l.strip().split(sep)[-3:-1] for l in lines]
+            for line in lines:
+                _line = line.strip().split(sep)
+                dyad = _line[-3:-1]
+                dyad = '.'.join(dyad)
+                w = int(_line[-1])
+                edges[dyad] = edges.get(dyad, 0) + w
+            #edges = [l.strip().split(sep)[-3:-1] for l in lines]
 
-        edges = np.array([ (e[0], e[1]) for e in edges], dtype=int) -1
+        edges = np.array([ (e.split('.')[0], e.split('.')[1], w+1) for e, w in edges.items()], dtype=int) -1
         N = edges.max() +1
         #N = max(list(itertools.chain(*edges))) + 1
 
-        g = np.zeros((N,N), dtype=int)
-        g[tuple(edges.T)] = 1
+        g = np.zeros((N,N), dtype=self._dtype)
+        g[tuple(edges[:, :2].T)] = edges[:, 2]
         return g
 
     def parse_csv(self, fn):
+        ''' Grammar retro-ingennired from manufacturing.csv '''
         sep = ';'
         self.log.debug('opening file: %s' % fn)
         with open(fn, 'r') as f:
             content = f.read()
         lines = list(filter(None, content.split('\n')))[1:]
-        edges = [l.strip().split(sep)[0:2] for l in lines]
-        edges = np.array([ (e[0], e[1]) for e in edges], dtype=int) -1
+        edges = {}
+        for line in lines:
+            dyad = line.strip().split(sep)[0:2]
+            dyad = '.'.join(dyad)
+            edges[dyad] = edges.get(dyad, 0) + 1
+        #edges = [l.strip().split(sep)[0:2] for l in lines]
+        #edges = np.array([ (e[0], e[1]) for e in edges], dtype=int) -1
+        edges = np.array([ (e.split('.')[0], e.split('.')[1], w+1) for e, w in edges.items()], dtype=int) -1
         N = edges.max() +1
         #N = max(list(itertools.chain(*edges))) + 1
 
-        g = np.zeros((N,N), dtype=int)
-        g[tuple(edges.T)] = 1
+        g = np.zeros((N,N), dtype=self._dtype)
+        g[tuple(edges[:, :2].T)] = edges[:, 2]
         return g
 
     def parse_dancer(self, fn, sep=';'):
@@ -436,7 +458,7 @@ class frontendNetwork(DataBase):
         f.close()
 
         edges = np.array([tuple(row.split(sep)) for row in data]).astype(int)
-        g = np.zeros((N,N), dtype=int)
+        g = np.zeros((N,N), dtype=self._dtype)
         g[[e[0] for e in edges], [e[1] for e in edges]] = 1
         g[[e[1] for e in edges], [e[0] for e in edges]] = 1
         # ?! .T
@@ -488,20 +510,28 @@ class frontendNetwork(DataBase):
 
         row_size = len(data[0].split(sep))
         edges = np.array([tuple(row.split(sep)) for row in data]).astype(int)-1
+        edges = {}
         if row_size == 2:
             # like .txt
-            pass
+            for line in data:
+                dyad = line.strip().split(sep)[:]
+                dyad = '.'.join(dyad)
+                edges[dyad] = edges.get(dyad, 0) + 1
         elif row_size == 3:
-            # has zeros...
-            # take edges if non zeros edges, and remove last column (edges]
-            edges = edges[ edges.T[-1] > -1 ][:, :-1] # -1, edges start from 1
-            edges = np.array([(e[0],e[1]) for e in edges]).astype(int)
+            for line in data:
+                _line = line.strip().split(sep)
+                dyad = _line[0:2]
+                dyad = line.strip().split(sep)[:]
+                dyad = '.'.join(dyad)
+                w = int(_line[-1]) # can be zeros
+                edges[dyad] = edges.get(dyad, 0) + int(w)
         else:
             raise NotImplementedError
 
+        edges = np.array([ (e.split('.')[0], e.split('.')[1], w+1) for e, w in edges.items()], dtype=int) -1
         N = edges.max() +1
-        g = np.zeros((N,N), dtype=int)
-        g[tuple(edges.T)] = 1
+        g = np.zeros((N,N), dtype=self._dtype)
+        g[tuple(edges[:, :2].T)] = edges[:, 2]
         return g
 
     def _old_communities_analysis(self):
@@ -637,6 +667,20 @@ class frontendNetwork(DataBase):
         except:
             cc = None
         return cc
+
+    def net_type(self):
+        return '%s / max value: %s' % (self._net_type, np.max(self.data))
+
+
+    @property
+    def _type(self):
+        g = self.getG()
+        return type(g)
+
+    @property
+    def _shape(self):
+        g = self.getG()
+        return g.shape
 
     def getN(self):
         if hasattr(self, 'N'):

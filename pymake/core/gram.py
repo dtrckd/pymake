@@ -144,7 +144,7 @@ _Gram = [
         nargs='?', dest='_net', const='True',
         help='[with runpara, send run to remote via loginfile.'),
 
-    '--ignore-format-unique', dict(
+    '--ifu', '--ignore-format-unique', dict(
         action='store_true', dest='_ignore_format_unique',
         help='dont check that if _format overllaping expe outpath name.'),
 
@@ -178,6 +178,10 @@ _Gram = [
     '--data-type', dict(
         dest='_data_type',
         help='Name to prepend in data/<data-type>/<refdir>/ for the output path.'),
+
+    '--data-format', dict(
+        dest='_data_format',
+        help='The type/format of data to use.'),
 
     '--format', dict(
         dest='_format', type=str,

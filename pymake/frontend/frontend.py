@@ -66,6 +66,15 @@ class DataBase(object):
         # K, others ?
 
         self._data_file_format = None
+        data_format = self.expe.get('_data_format', 'b')
+        if data_format == 'w':
+            self._net_type = 'weighted'
+            self._dtype = int
+        elif data_format == 'b':
+            self._net_type = 'binary'
+            self._dtype = bool
+        else:
+            raise NotImplemented('Network format unknwown: %s' % data_format)
 
         if load is True:
             self.load_data(randomize=False)
