@@ -327,8 +327,8 @@ class CheckNetwork(ExpeFormat):
             Meas = self.gramexp.Meas
         except AttributeError:
             corpuses = self.specname(self.gramexp.get_all('corpus'))
-            Meas = [ 'nodes', 'edges', 'density']
-            Meas += [ 'is_symmetric', 'modularity', 'clustering_coefficient']
+            Meas = ['nodes', 'edges', 'density']
+            Meas += ['is_symmetric', 'modularity', 'clustering_coefficient', 'net_type']
             Table = np.zeros((len(corpuses), len(Meas))) * np.nan
             Table = np.column_stack((corpuses, Table))
             self.gramexp.Table = Table
