@@ -168,8 +168,10 @@ class Spec(BaseObject):
         t = OrderedDict()
         for elt in ix.query(index='spec', terms=True):
             name = elt['module_name'].split('.')[-1]
-            expes = t.get(name, []) + [ elt['expe_name'] ]
-            t[name] = sorted(expes)
+            obj, _ = cls.load(elt['expe_name'], elt['module_name'])
+            if isinstance(obj, (ExpSpace, ExpTensor, ExpGroup)):
+                expes = t.get(name, []) + [ elt['expe_name'] ]
+                t[name] = sorted(expes)
         return _table_(t, headers='keys', name=cls.__name__)
 
     # no more complex.
@@ -180,7 +182,7 @@ class Spec(BaseObject):
         Headers = OrderedDict((('Corpuses', Corpus),
                                ('Models', Model),
                                ('Vector', ExpVector),
-                               ('Exp', (ExpSpace, ExpTensor)),
+                               ('Exp', (ExpSpace, ExpTensor, ExpGroup)),
                                ('Unknown', str)))
 
         tables = [ [] for i in range(len(Headers))]
