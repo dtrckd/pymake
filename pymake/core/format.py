@@ -109,6 +109,7 @@ class ExpSpace(dict):
         try:
             return self[key]
         except KeyError:
+            lgg.warning('an ExpSpace request exceptions occured !')
             raise AttributeError(key)
 
     # For Piclking
