@@ -180,6 +180,7 @@ class Netw(ExpDesign):
         K           = 4,
         N           = 42,
         iterations  = 3,
+        homo = 0,
         _format = '{model}_{corpus}_{K}_{hyper}_{homo}_{N}',
         _csv_typo = '# _iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
     )
