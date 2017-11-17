@@ -1118,7 +1118,7 @@ class GramExp(object):
             expbox._preprocess()
 
             # Setup handler
-            if hasattr(expe, '_do') and len(expe._do) > 0:
+            if '_do' in expe and len(expe._do) > 0:
                 # ExpFormat task ? decorator and autoamtic argument passing ....
                 do = expe._do
                 pmk = getattr(expbox, do[0])

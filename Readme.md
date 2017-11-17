@@ -5,6 +5,8 @@ Pymake (pmk) is a machine friendly environment for making reproducible research.
 * Manage and navigate in your experiments, as a **command-line** interface.
 * Models and workflows for Machine Learning experiments, as a **framework**.
 
+<!-- Build Powerfull CLI | Create Beautiful UI | Browse your Experiments  -->
+
 # Table of Contents
 1. [Features](#1)
 2. [Install](#2)
@@ -23,6 +25,7 @@ Pymake (pmk) is a machine friendly environment for making reproducible research.
 
 Perspectives :
 
+* Web server UI and notebook automatic builder
 * An online repo to push/fetch/search in design of experimentations, models, scripts and corpus,
 * Better documentation (or just a documentation, needs feedback!).
 
