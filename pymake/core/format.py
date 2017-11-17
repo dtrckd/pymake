@@ -89,6 +89,11 @@ class ExpSpace(dict):
     """ A dictionnary with dot notation access.
         Used for the **expe** settings stream.
     """
+
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+    #__builtins__.hasattr = hasattr
+
     def __init__(self, *args, **kwargs):
         super(ExpSpace, self).__init__(*args, **kwargs)
         for arg in args:
@@ -103,14 +108,15 @@ class ExpSpace(dict):
     def __copy__(self):
         return self.__class__(**self)
 
-    __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
     def __getattr__(self, key):
         try:
             return self[key]
         except KeyError:
             lgg.warning('an ExpSpace request exceptions occured for key :%s ' % (key))
             raise AttributeError(key)
+
+    def hasattr(self, key):
+        return key in self
 
     # For Piclking
     def __getstate__(self):
@@ -771,8 +777,8 @@ class ExpDesign(dict, BaseObject):
             #_spec = ExpDesign((k, getattr(Netw, k)) for k in dir(Netw) if not k.startswith('__') )
             if not k.startswith('_'):
                 v = getattr(self, k)
-                #if not callable(v): #  python >3.2
-                if not hasattr(v, '__call__'):
+                #if not hasattr(v, '__call__'): # print a waring because hasattr call getattr in expSpace.
+                if not callable(v): #  python >3.2
                     self[k] = v
         # @debug: add callable in reserved keyword
         self._reserved_keywords = list(set([w for w in dir(self) if w.startswith('_')] + ['_reserved_keywords']+dir(dict)+dir(BaseObject)))
