@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import  os
 if os.environ.get('DISPLAY') is None:
@@ -17,7 +16,6 @@ from pymake.core.format import Spec, Corpus, Model, Script, ExpSpace, ExpVector,
 
 from pymake.core.gramexp import GramExp
 from pymake.frontend.manager import ModelManager, FrontendManager
-
 
 #
 # Erckelfault

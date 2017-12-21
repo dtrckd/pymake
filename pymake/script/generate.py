@@ -1,6 +1,5 @@
 #!/usr/bin/python3 -u
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
 import numpy as np
@@ -59,7 +58,6 @@ class GenNetwork(ExpeFormat):
             ### Generate data from a fitted model
             model = ModelManager.from_expe(expe)
 
-            # __future__ remove
             try:
                 # this try due to mthod modification entry in init not in picke object..
                 expe.hyperparams = model.get_hyper()
@@ -120,7 +118,6 @@ class GenNetwork(ExpeFormat):
                 try:
                     y = model.generate(mode=expe._mode, N=N, K=expe.K)
                 except:
-                # __future__, remove, one errror, update y = model.gen.....
                     y,_,_ = model.generate(mode=expe._mode, N=N, K=expe.K)
                 Y.append(y)
             lgg.info('Data Generation : %s second' % nowDiff(now))

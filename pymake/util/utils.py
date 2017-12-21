@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys, os
 from os.path import dirname
@@ -12,11 +11,8 @@ import json
 import numpy as np
 import scipy as sp
 
-# __future__
-try: from builtins import input
-except ImportError: input = raw_input
-try: basestring = basestring # python2
-except NameError: basestring = (str, bytes) # python3
+from builtins import input
+basestring = (str, bytes)
 
 
 try:

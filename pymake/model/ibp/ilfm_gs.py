@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 from datetime import datetime
 import itertools
@@ -520,7 +519,6 @@ class IBPGibbsSampling(IBP, GibbsSampler):
 
     def likelihood(self, theta=None, phi=None):
         if theta is None:
-            # __future__ do getTheta() : return self._Z, _W
             try:
                 theta = self._theta
             except:

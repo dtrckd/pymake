@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 # @Issue43: Parser/config unification.
 from util.utils import Now, ellapsed_time, ask_sure_exit
