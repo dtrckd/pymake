@@ -3,19 +3,20 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import sys, os
 import inspect
-import logging
-lgg = logging.getLogger('root')
+import pickle, json # presence of this module here + in .frontend not zen
 
 # Model Manager Utilities
 import numpy as np
 from numpy import ma
-import pickle, json # presence of this module here + in .frontend not zen
 
 # Frontend Manager Utilities
 from .frontend import DataBase
 from .frontendtext import frontendText
 from .frontendnetwork import frontendNetwork
 from pymake import Model, Corpus, GramExp
+
+import logging
+lgg = logging.getLogger('root')
 
 class FrontendManager(object):
     """ Utility Class who aims at mananing/Getting the datastructure at the higher level.

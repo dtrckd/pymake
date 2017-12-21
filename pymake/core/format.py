@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os
 import re
-import logging
 from copy import copy
 import traceback,  importlib
 import numpy as np
@@ -15,6 +14,7 @@ from itertools import product
 from pymake.util.utils import colored, basestring, get_dest_opt_filled, make_path, hash_objects, ask_sure_exit
 from pymake.index.indexmanager import IndexManager as IX
 
+import logging
 lgg = logging.getLogger('root')
 
 

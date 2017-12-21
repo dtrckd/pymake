@@ -27,6 +27,7 @@ class Netw2(ExpDesign):
         hyper         = 'auto',
         testset_ratio = 20,
         homo = 0,
+        mask = 'unbalanced',
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
@@ -48,6 +49,7 @@ class Netw2(ExpDesign):
         #tau = [0.5, 1, 2, 16, 64, 256, 1024],
         #kappa = [0.51, 0.45, 1],
         homo = 0,
+        mask = 'unbalanced',
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
@@ -82,6 +84,7 @@ class Netw2(ExpDesign):
         #tau = [0.5, 1, 2, 16, 64, 256, 1024],
         #kappa = [0.51, 0.45, 1],
         homo = 0,
+        mask = 'unbalanced',
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb_1' , # it was done with i0.
@@ -101,7 +104,8 @@ class Netw2(ExpDesign):
         chi = [0.5, 1, 2, 10],
         tau = [0.5, 1, 2, 16, 64, 256, 1024],
         kappa = [0.51, 0.45, 1],
-        homo = 0,
+        #homo = 0,
+        #mask = 'unbalanced',
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb_chia_i1' ,
@@ -121,7 +125,8 @@ class Netw2(ExpDesign):
         chi = [0.5, 1, 2, 10],
         tau = [0.5, 1, 2, 16, 64, 256, 1024],
         kappa = [0.51, 0.45, 1],
-        homo = 0,
+        #homo = 0,
+        #mask = 'unbalanced',
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb_chi_i1' ,
