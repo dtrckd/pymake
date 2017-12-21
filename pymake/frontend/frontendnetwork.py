@@ -181,7 +181,7 @@ class frontendNetwork(DataBase):
         if mask_type == 'unbalanced':
             self.data_ma = self.get_masked(percent_hole, diag_off)
         elif mask_type == 'balanced':
-            self.data_ma = self.get_masked_1(percent_hole, diag_off)
+            self.data_ma = self.get_masked_balanced(percent_hole, diag_off)
         elif mask_type == 'zeros':
             self.data_ma = self.get_masked_zeros(diag_off)
         else:
@@ -216,8 +216,8 @@ class frontendNetwork(DataBase):
 
         return data_ma
 
-    def get_masked_1(self, percent_hole, diag_off=1):
-        ''' Construct Mask nased on the proportion of 1/links.
+    def get_masked_balanced(self, percent_hole, diag_off=1):
+        ''' Construct Mask based on the proportion of 1/links.
             Random training set on 20% on Data vertex (0.2 * data == 1) / debug6 - debug 10 -- Balanced
             '''
         data = self.data
