@@ -1,6 +1,5 @@
 #!/usr/bin/python3 -u
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 
 from pymake import ExpTensor, ModelManager, FrontendManager, GramExp
@@ -82,7 +81,6 @@ def generate(pt, expe, gramexp):
         ### Generate data from a fitted model
         model = ModelManager.from_expe(expe)
 
-        # __future__ remove
         try:
             # this try due to mthod modification entry in init not in picke object..
             expe.hyperparams = model.get_hyper()

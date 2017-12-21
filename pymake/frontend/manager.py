@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys, os
 import inspect
@@ -205,7 +204,6 @@ class ModelManager(object):
     @staticmethod
     def _load_model(fn):
 
-        # __future__ --> Purge
         #### @Debug/temp modules name changed in pickle model
         from pymake.model import hdp, ibp
         sys.modules['hdp'] = hdp

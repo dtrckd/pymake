@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os, shutil, logging
 from pymake.util.utils import get_global_settings, colored
