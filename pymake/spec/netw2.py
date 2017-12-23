@@ -21,7 +21,7 @@ class Netw2(ExpDesign):
     compare_scvb = ExpTensor (
         corpus        = ['clique6', 'BA'],
         model         = ['immsb_cgs', 'ilfm_cgs', 'rescal'],
-        N             = 200,
+        N             = 'all',
         K             = 6,
         iterations    = 150,
         hyper         = 'auto',
