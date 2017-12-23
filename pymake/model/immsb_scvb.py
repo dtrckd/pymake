@@ -49,12 +49,7 @@ class immsb_scvb(SVB):
         self._ss = self._random_s_init()
         #self._ss = self._random_ss_init()
 
-        # JUNK
-        # for loglikelihood bernoulli computation
-        data_ma = self.frontend.data_ma
-        self.data_A = data_ma.copy()
-        self.data_A.data[self.data_A.data == 0] = -1
-        self.data_B = np.ones(data_ma.shape) - data_ma
+        self.frontend._set_rawdata_for_likelihood_computation()
 
     def _init_gradient(self):
         self._timestep_a = 0
@@ -304,7 +299,7 @@ class immsb_scvb(SVB):
         pij = self.likelihood(*self._reduce_latent())
 
         # Log-likelihood
-        pij = self.data_A * pij + self.data_B
+        pij = self.frontend.data_A * pij + self.frontend.data_B
         ll = np.log(pij).sum()
 
         # Entropy
@@ -313,6 +308,20 @@ class immsb_scvb(SVB):
         # Perplexity is 2**H(X).
 
         return self._entropy
+
+    def entropy_t(self):
+        pij = self.likelihood(*self._reduce_latent())
+
+        # Log-likelihood
+        pij = self.frontend.data_A_t * pij + self.frontend.data_B_t
+        ll = np.log(pij).sum()
+
+        # Entropy
+        self._entropy_t = - ll / self._len['nnz']
+
+        # Perplexity is 2**H(X).
+
+        return self._entropy_t
 
     def update_hyper(self, hyper):
         pass

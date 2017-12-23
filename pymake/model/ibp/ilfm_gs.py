@@ -64,21 +64,15 @@ class IBPGibbsSampling(IBP, GibbsSampler):
     @param alpha: IBP hyper parameter
     @param sigma_w: standard derivation of the feature
     @param initialize_Z: seeded Z matrix """
-    def _initialize(self, data, alpha=1.0, sigma_w=1, initial_Z=None, initial_W=None, KK=None):
-        if data is None:
-            # @debug if data=None !
-            data = np.zeros((1,1))
+    def _initialize(self, frontend, alpha=1.0, sigma_w=1, initial_Z=None, initial_W=None, KK=None):
+        if frontend is None:
+            return
 
-        if type(data) is not ma.masked_array:
-            # Ignore Diagonal
-            data = np.ma.array(data, mask=np.zeros(data.shape))
-            np.fill_diagonal(data, ma.masked)
+        self.mask = frontend.data_ma.mask
 
-        self.mask = data.mask
-
-        self.symmetric = (data == data.T).all()
-        self.nnz = len(data.compressed())
-        super(IBPGibbsSampling, self)._initialize(data, alpha, initial_Z, KK=KK)
+        self.symmetric = frontend.is_symmetric()
+        self.nnz = len(frontend.data_ma.compressed())
+        super(IBPGibbsSampling, self)._initialize(frontend, alpha, initial_Z, KK=KK)
 
         self._mean_w = 0
         assert(type(sigma_w) is float)

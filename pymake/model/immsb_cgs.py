@@ -18,8 +18,7 @@ class immsb_cgs(GibbsRun):
         hyper_prior = expe.get('hyper_prior') # HDP hyper optimization
         K = expe.K
 
-        data = frontend.data_ma
-        likelihood = Likelihood(delta, data, assortativity=assortativity)
+        likelihood = Likelihood(delta, frontend, assortativity=assortativity)
         likelihood._symmetric = frontend.is_symmetric()
 
         # Nonparametric case
@@ -47,8 +46,7 @@ class mmsb_cgs(GibbsRun):
         hyper_prior = expe.get('hyper_prior') # HDP hyper optimization
         K = expe.K
 
-        data = frontend.data_ma
-        likelihood = Likelihood(delta, data, assortativity=assortativity)
+        likelihood = Likelihood(delta, frontend, assortativity=assortativity)
         likelihood._symmetric = frontend.is_symmetric()
 
         # Parametric case

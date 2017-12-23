@@ -39,14 +39,12 @@ class IBP(object):
     @param alpha: IBP hyper parameter
     @param initializ_Z: seeded Z matrix """
     #@abc.abstractmethod
-    def _initialize(self, data, alpha=1.0, initial_Z=None, KK=None):
+    def _initialize(self, frontend, alpha=1.0, initial_Z=None, KK=None):
         self._alpha = alpha
 
         # Data matrix
         #self._Y = self.center_data(data)
-        self._Y = data
-        if type(data) is not np.ma.masked_array:
-            data = np.ma.array(data)
+        self._Y = frontend.data_ma
 
         # Binary case
         Yd = self._Y.data
