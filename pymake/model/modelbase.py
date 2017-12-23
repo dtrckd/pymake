@@ -127,8 +127,6 @@ class ModelBase(object):
         likelihood = theta.dot(phi).dot(theta.T)
         return likelihood
 
-
-
     def similarity_matrix(self, theta=None, phi=None, sim='cos'):
         if theta is None:
             theta = self._theta
@@ -237,7 +235,7 @@ class ModelBase(object):
         else:
             masked = mask
 
-        ### @Debug Ignore the Diagonnal
+        ### @Debug Ignore the Diagonnal when predicting.
         np.fill_diagonal(masked, False)
 
         ground_truth = data[masked]
@@ -307,9 +305,10 @@ class GibbsSampler(ModelBase):
 
     @mmm
     def compute_measures(self):
+
         self._entropy = self.entropy()
-        #self._entropy_t = self.predictive_likelihood()
-        self._entropy_t = np.nan
+        if hasattr(self, 'entropy_t'):
+            self._entropy_t = np.nan
 
         self._alpha = np.nan
         self._gmma= np.nan
@@ -659,7 +658,8 @@ class SVB(ModelBase):
 
     def compute_measures(self):
         self.update_elbo()
-        self._entropy_t = 0
+        #self._entropy_t = np.nan
+        self.entropy_t()
 
 
     def update_elbo(self):

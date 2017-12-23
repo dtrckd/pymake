@@ -33,34 +33,25 @@ HDP: Teh et al. (2005) Gibbs sampler for the Hierarchical Dirichlet Process: Dir
 # Assume delta a scalar.
 class Likelihood(object):
 
-    def __init__(self, delta, data, nodes_list=None, assortativity=False):
+    def __init__(self, delta, fr, nodes_list=None, assortativity=False):
         """ Notes
             -----
             * Diagonal is ignored here for prediction
         """
-        if data is None:
-            # @debug if data=None !
-            data = np.zeros((1,1))
-
-        if nodes_list is None:
-            self.nodes_list = [np.arange(data.shape[0]), np.arange(data.shape[1])]
-        else:
-            self.nodes_list = nodes_list
-            raise ValueError('re order the networks ! to avoid using _nmap')
-
-        if type(data) is not np.ma.masked_array:
-            # Ignore Diagonal
-            data = np.ma.array(data, mask=np.zeros(data.shape))
-            np.fill_diagonal(data, ma.masked)
-
-        if data is None:
+        if fr is None:
             return
 
-        self.data_ma = data
+        self.data_ma = fr.data_ma
         self.data_dims = self.get_data_dims()
         self.nnz = self.get_nnz()
         # Vocabulary size
         self.nfeat = self.get_nfeat() or 0
+
+        if nodes_list is None:
+            self.nodes_list = [np.arange(self.data_ma.shape[0]), np.arange(self.data_ma.shape[1])]
+        else:
+            self.nodes_list = nodes_list
+            raise ValueError('re order the networks ! to avoid using _nmap')
 
         # assert for coocurence matric
         #assert(self.data_mat.shape[1] == self.nfeat)
@@ -77,10 +68,10 @@ class Likelihood(object):
         else:
             pass
 
-        # for loglikelihood bernoulli computation
-        self.data_A = self.data_ma.copy()
-        self.data_A.data[self.data_A.data == 0] = -1
-        self.data_B = np.ones(self.data_ma.shape) - self.data_ma
+        fr._set_rawdata_for_likelihood_computation()
+        hook = ['data_A', 'data_B', 'data_A_t', 'data_B_t']
+        for s in hook:
+            setattr(self, s, getattr(fr, s))
 
 
     def compute(self, j, i, k_ji, k_ij):
@@ -818,6 +809,21 @@ class GibbsRun(GibbsSampler):
 
         return self._entropy
 
+    def entropy_t(self):
+        buritos = self.s.zsampler
+        self._theta, self._phi = buritos.estimate_latent_variables()
+        pij = self.likelihood(self._theta, self._phi)
+
+        # Log-likelihood
+        pij = buritos.likelihood.data_A_t * pij + buritos.likelihood.data_B_t
+        ll = np.log(pij).sum()
+
+        # Entropy
+        self._entropy = - ll / buritos.likelihood.nnz
+
+        # Perplexity is 2**H(X).
+
+        return self._entropy
 
     def purge(self):
         self.s.zsampler.betasampler = None

@@ -15,8 +15,6 @@ class ilfm_cgs(IBPGibbsSampling):
         alpha_hyper_parameter = expe.hyper
         assortativity = expe.get('homo')
 
-        data = frontend.data_ma
-
         #if '_cgs' in expe.model:
         #    metropolis_hastings_k_new = False
         metropolis_hastings_k_new = True
@@ -30,7 +28,7 @@ class ilfm_cgs(IBPGibbsSampling):
                                        sigma_w_hyper_parameter,
                                        metropolis_hastings_k_new)
 
-        self._initialize(data, alpha, sigma_w, KK=expe.K)
+        self._initialize(frontend, alpha, sigma_w, KK=expe.K)
         self.update_hyper(expe.hyperparams)
 
         lgg.warn('Warning: K is IBP initialized...')

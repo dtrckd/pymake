@@ -38,7 +38,7 @@ class frontendNetwork(DataBase, DatasetDriver):
     """
 
     RANDOM_CORPUS = ('clique', 'alternate', 'BA')
-    _selfloop = True
+    _selfloop = False
 
     def __init__(self, expe=dict(), load=False):
         self.bdir = 'networks'
@@ -61,6 +61,24 @@ class frontendNetwork(DataBase, DatasetDriver):
 
         fr.update_data(data)
         return fr
+
+    #@mmm
+    def _set_rawdata_for_likelihood_computation(self):
+        ''' Format train and test data to compute some score. '''
+        # JUNK
+        # for loglikelihood bernoulli computation
+
+        # For measure on the training set
+        data_ma = self.data_ma.copy()
+        self.data_A = data_ma
+        self.data_A.data[self.data_A.data == 0] = -1
+        self.data_B = np.ones(data_ma.shape) - data_ma
+
+        # For measure on the training set
+        data_ma_t = ma.array(self.data_ma.data.copy(), mask=~self.data_ma.mask)
+        self.data_A_t = data_ma_t
+        self.data_A_t.data[self.data_A_t.data == 0] = -1
+        self.data_B_t = np.ones(data_ma_t.shape) - data_ma_t
 
 
     def load_data(self, corpus_name=None, randomize=False):
