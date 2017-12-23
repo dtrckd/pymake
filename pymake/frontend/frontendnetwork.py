@@ -160,7 +160,11 @@ class frontendNetwork(DataBase, DatasetDriver):
         return self.data
 
     def update_data(self, data):
-        ''' node list order will be lost '''
+        ''' Node list order will be lost '''
+
+        if data.dtype != self._dtype:
+            data = data.astype(self._dtype) * 1 # Bool operation are painfull
+
         self.data = data
         N, M = self.data.shape
         self.N = N
@@ -333,7 +337,7 @@ class frontendNetwork(DataBase, DatasetDriver):
 
         if self._load_data and os.path.isfile(fn+'.pk'):
             try:
-                data = self._load(fn).astype(self._dtype)
+                data = self._load(fn)
             except Exception as e:
                 self.log.error('Error : %s on %s' % (e, fn+'.pk'))
                 data = None

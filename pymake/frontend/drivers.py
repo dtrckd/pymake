@@ -37,10 +37,11 @@ class DatasetDriver(object):
             #edges = [l.strip().split(sep)[-3:-1] for l in lines]
 
         edges = np.array([ (e.split('.')[0], e.split('.')[1], w+1) for e, w in edges.items()], dtype=int) -1
-        N = edges.max() +1
-        #N = max(list(itertools.chain(*edges))) + 1
 
-        g = np.zeros((N,N), dtype=self._dtype)
+        edges[:, 0:2] -= edges[:, 0:2].min()
+        N = edges[:, 0:2].max()+1
+
+        g = np.zeros((N,N))
         g[tuple(edges[:, :2].T)] = edges[:, 2]
         return g
 
@@ -59,10 +60,11 @@ class DatasetDriver(object):
         #edges = [l.strip().split(sep)[0:2] for l in lines]
         #edges = np.array([ (e[0], e[1]) for e in edges], dtype=int) -1
         edges = np.array([ (e.split('.')[0], e.split('.')[1], w+1) for e, w in edges.items()], dtype=int) -1
-        N = edges.max() +1
-        #N = max(list(itertools.chain(*edges))) + 1
 
-        g = np.zeros((N,N), dtype=self._dtype)
+        edges[:, 0:2] -= edges[:, 0:2].min()
+        N = edges[:, 0:2].max()+1
+
+        g = np.zeros((N,N))
         g[tuple(edges[:, :2].T)] = edges[:, 2]
         return g
 
@@ -82,7 +84,7 @@ class DatasetDriver(object):
 
         data[:, 0:2] -= data[:, 0:2].min()
         N = data[:, 0:2].max()+1
-        y = np.zeros((N,N), dtype=self._dtype)
+        y = np.zeros((N,N))
         e_l = data[:,2] > 0
         e_ix = data[:, 0:2][e_l]
         ix = list(zip(*e_ix))
@@ -144,7 +146,7 @@ class DatasetDriver(object):
 
         data[:, 0:2] -= data[:, 0:2].min()
         N = data[:, 0:2].max()+1
-        y = np.zeros((N,N), dtype=self._dtype)
+        y = np.zeros((N,N))
         e_l = data[:,2] > 0
         e_ix = data[:, 0:2][e_l]
         ix = list(zip(*e_ix))
@@ -188,7 +190,7 @@ class RawDatasetDriver(object):
         N = edges.max() +1
         #N = max(list(itertools.chain(*edges))) + 1
 
-        g = np.zeros((N,N), dtype=self._dtype)
+        g = np.zeros((N,N))
         g[tuple(edges[:, :2].T)] = edges[:, 2]
         return g
 
@@ -209,7 +211,7 @@ class RawDatasetDriver(object):
         N = edges.max() +1
         #N = max(list(itertools.chain(*edges))) + 1
 
-        g = np.zeros((N,N), dtype=self._dtype)
+        g = np.zeros((N,N))
         g[tuple(edges[:, :2].T)] = edges[:, 2]
         return g
 
@@ -249,7 +251,7 @@ class RawDatasetDriver(object):
         f.close()
 
         edges = np.array([tuple(row.split(sep)) for row in data]).astype(int)
-        g = np.zeros((N,N), dtype=self._dtype)
+        g = np.zeros((N,N))
         g[[e[0] for e in edges], [e[1] for e in edges]] = 1
         g[[e[1] for e in edges], [e[0] for e in edges]] = 1
         # ?! .T
@@ -321,7 +323,7 @@ class RawDatasetDriver(object):
 
         edges = np.array([ (e.split('.')[0], e.split('.')[1], w+1) for e, w in edges.items()], dtype=int) -1
         N = edges.max() +1
-        g = np.zeros((N,N), dtype=self._dtype)
+        g = np.zeros((N,N))
         g[tuple(edges[:, :2].T)] = edges[:, 2]
         return g
 
