@@ -4,7 +4,8 @@
 import time
 import numpy as np
 from numpy import ma
-from pymake import ModelManager, FrontendManager, GramExp, ExpeFormat
+from pymake import GramExp, ExpeFormat
+from pymake.frontend.manager import ModelManager, FrontendManager
 
 
 USAGE = """\

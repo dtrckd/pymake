@@ -3,7 +3,8 @@
 
 import numpy as np
 from numpy import ma
-from pymake import ExpTensor, ModelManager, FrontendManager, GramExp, ExpeFormat
+from pymake import ExpTensor, GramExp, ExpeFormat
+from pymake.frontend.manager import ModelManager, FrontendManager
 
 import logging
 lgg = logging.getLogger('root')

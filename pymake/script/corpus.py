@@ -1,4 +1,5 @@
-from pymake import ModelManager, FrontendManager, ExpeFormat
+from pymake import  ExpeFormat
+from pymake.frontend.manager import ModelManager, FrontendManager
 
 
 import matplotlib.pyplot as plt

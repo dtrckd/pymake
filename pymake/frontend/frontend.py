@@ -162,11 +162,11 @@ class DataBase(object):
         return bow
 
     @staticmethod
-    def save(data, fn, silent=False):
+    def _save(data, fn, silent=False):
         GramExp.save(data, fn, silent)
 
     @staticmethod
-    def load(fn):
+    def _load(fn):
         return GramExp.load(fn)
 
     # convert ndarray to list.

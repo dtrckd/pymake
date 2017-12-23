@@ -5,7 +5,8 @@ import os
 import numpy as np
 import scipy as sp
 from numpy import ma
-from pymake import ExpTensor, ModelManager, FrontendManager, GramExp, ExpeFormat, ExpSpace
+from pymake import ExpTensor, GramExp, ExpeFormat, ExpSpace
+from pymake.frontend.manager import ModelManager, FrontendManager
 
 import logging
 lgg = logging.getLogger('root')

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from util.utils import argParse
-from frontend.manager import ModelManager, FrontendManager
+from pymake.frontend.manager import ModelManager, FrontendManager
 
 from numpy import ma
 import numpy as np

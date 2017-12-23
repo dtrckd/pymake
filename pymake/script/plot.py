@@ -5,7 +5,8 @@
 import os
 import numpy as np
 from numpy import ma
-from pymake import ModelManager, FrontendManager, GramExp, ExpeFormat, ExpSpace
+from pymake import GramExp, ExpeFormat, ExpSpace
+from pymake.frontend.manager import ModelManager, FrontendManager
 from pymake.plot import _markers, _colors, _linestyle
 
 import matplotlib.pyplot as plt

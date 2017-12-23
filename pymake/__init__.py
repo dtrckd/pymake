@@ -15,7 +15,6 @@ from pymake.core.format import Spec, Corpus, Model, Script, ExpSpace, ExpVector,
 #__spec = SpecLoader.get_atoms()
 
 from pymake.core.gramexp import GramExp
-from pymake.frontend.manager import ModelManager, FrontendManager
 
 #
 # Erckelfault

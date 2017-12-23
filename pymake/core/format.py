@@ -17,11 +17,9 @@ import logging
 lgg = logging.getLogger('root')
 
 
-
-
 ''' Structure of Pymake Objects.
 
-This is what Pandas does ? So here is a Lama.
+    This is what Pandas does ? no, but it add semantics structure, like a Lama does.
 '''
 
 

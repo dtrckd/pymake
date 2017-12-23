@@ -1,3 +1,5 @@
+terminal
+tabulate
 Whoosh
 scikit-learn
 numpy
@@ -6,6 +8,7 @@ networkx
 nltk
 sympy
 matplotlib
+pandas
 #plotly ?
 #pystan ?
 #pymc ?
@@ -16,5 +19,3 @@ matplotlib
 #python-louvain ?
 #    // pip install hg+https://bitbucket.org/taynaud/python-louvain
 #    // hg clone https://bitbucket.org/taynaud/python-louvain
-terminal
-tabulate
