@@ -1,7 +1,7 @@
 #!/usr/bin/python3 -u
 # -*- coding: utf-8 -*-
 
-from frontend.manager import ModelManager, FrontendManager
+from pymake.frontend.manager import ModelManager, FrontendManager
 from frontend.frontendnetwork import frontendNetwork
 from util.utils import *
 from util.math import *

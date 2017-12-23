@@ -15,6 +15,7 @@ except:
 from .frontend import DataBase
 from pymake.util.utils import parse_file_conf
 from pymake.util.math import *
+from .drivers import DatasetDriver
 
 def getClique(N=100, K=4):
     from scipy.linalg import block_diag
@@ -26,10 +27,12 @@ def getClique(N=100, K=4):
     C = block_diag(*b)
     return C
 
+
 ### @Issue42: fronteNetwork should be imported fron frontend
 ### =====> : resolve this with @class_method (from_hardrive etc...)
 
-class frontendNetwork(DataBase):
+
+class frontendNetwork(DataBase, DatasetDriver):
     """ Frontend for network data.
         Symmetric network support.
     """
@@ -324,20 +327,24 @@ class frontendNetwork(DataBase):
             self.log.error("Corpus `%s' Not found." % (bdir))
             print('please run "fetch_networks"')
             self.data = None
-            #exit(2)
             return
 
         fn = os.path.join(bdir, corpus_name)
 
         if self._load_data and os.path.isfile(fn+'.pk'):
             try:
-                data = self.load(fn)
+                data = self._load(fn).astype(self._dtype)
             except Exception as e:
                 self.log.error('Error : %s on %s' % (e, fn+'.pk'))
                 data = None
         if data is None:
             ext = format
             fn = os.path.join(bdir, corpus_name +'.'+ ext)
+            if os.path.isfile(fn) and os.stat(fn).st_size == 0:
+                self.log.warning('Duh, Corpus file is empty at: %s' % fn)
+                self.data = None
+                return
+
             if ext == 'graph': # Dancer
                 fn = os.path.join(bdir, 't0.graph')
                 data = self.parse_dancer(fn)
@@ -359,179 +366,9 @@ class frontendNetwork(DataBase):
             self.Symmetrize(data)
 
         if self._save_data:
-            self.save(data, fn[:-len('.'+ext)])
+            self._save(data, fn[:-len('.'+ext)])
 
         return data
-
-    def parse_tnet(self, fn):
-        ''' Grammar retro-ingennired from fb/emaileu.txt '''
-        sep = ' '
-        self.log.debug('opening file: %s' % fn)
-        with open(fn) as f:
-            content = f.read()
-        lines = list(filter(None, content.split('\n')))
-        line1_length = lines[0].strip().split(sep)
-        edges = {}
-        if len(line1_length) == 2:
-            # format 'i j' if edges.
-            self._data_file_format = 'txt'
-            for line in lines:
-                dyad = line.strip().split(sep)[:]
-                dyad = '.'.join(dyad)
-                edges[dyad] = edges.get(dyad, 0) + 1
-            #edges = [l.strip().split(sep)[:] for l in lines]
-        elif len(line1_length) == 5:
-            # format '"date" i j weight'.
-            self._data_file_format = 'tnet'
-            for line in lines:
-                _line = line.strip().split(sep)
-                dyad = _line[-3:-1]
-                dyad = '.'.join(dyad)
-                w = int(_line[-1])
-                edges[dyad] = edges.get(dyad, 0) + w
-            #edges = [l.strip().split(sep)[-3:-1] for l in lines]
-
-        edges = np.array([ (e.split('.')[0], e.split('.')[1], w+1) for e, w in edges.items()], dtype=int) -1
-        N = edges.max() +1
-        #N = max(list(itertools.chain(*edges))) + 1
-
-        g = np.zeros((N,N), dtype=self._dtype)
-        g[tuple(edges[:, :2].T)] = edges[:, 2]
-        return g
-
-    def parse_csv(self, fn):
-        ''' Grammar retro-ingennired from manufacturing.csv '''
-        sep = ';'
-        self.log.debug('opening file: %s' % fn)
-        with open(fn, 'r') as f:
-            content = f.read()
-        lines = list(filter(None, content.split('\n')))[1:]
-        edges = {}
-        for line in lines:
-            dyad = line.strip().split(sep)[0:2]
-            dyad = '.'.join(dyad)
-            edges[dyad] = edges.get(dyad, 0) + 1
-        #edges = [l.strip().split(sep)[0:2] for l in lines]
-        #edges = np.array([ (e[0], e[1]) for e in edges], dtype=int) -1
-        edges = np.array([ (e.split('.')[0], e.split('.')[1], w+1) for e, w in edges.items()], dtype=int) -1
-        N = edges.max() +1
-        #N = max(list(itertools.chain(*edges))) + 1
-
-        g = np.zeros((N,N), dtype=self._dtype)
-        g[tuple(edges[:, :2].T)] = edges[:, 2]
-        return g
-
-    def parse_dancer(self, fn, sep=';'):
-        """ Parse Network data depending on type/extension """
-        self.log.debug('opening file: %s' % fn)
-        f = open(fn, 'r')
-        data = []
-        inside = {'vertices':False, 'edges':False }
-        clusters = []
-        features = []
-        for line in f:
-            if line.startswith('# Vertices') or inside['vertices']:
-                if not inside['vertices']:
-                    inside['vertices'] = True
-                    N = 0
-                    continue
-                if line.startswith('#') or not line.strip() :
-                    inside['vertices'] = False # break
-                else:
-                    # Parsing assignation
-                    elements = line.strip().split(sep)
-                    clust = int(elements[-1])
-                    feats = list(map(float, elements[-2].split('|')))
-                    clusters.append(clust)
-                    features.append(feats)
-                    N += 1
-            elif line.startswith('# Edges') or inside['edges']:
-                if not inside['edges']:
-                    inside['edges'] = True
-                    continue
-                if line.startswith('#') or not line.strip() :
-                    inside['edges'] = False # break
-                else:
-                    # Parsing assignation
-                    data.append( line.strip() )
-        f.close()
-
-        edges = np.array([tuple(row.split(sep)) for row in data]).astype(int)
-        g = np.zeros((N,N), dtype=self._dtype)
-        g[[e[0] for e in edges], [e[1] for e in edges]] = 1
-        g[[e[1] for e in edges], [e[0] for e in edges]] = 1
-        # ?! .T
-
-        try:
-            parameters = parse_file_conf(os.path.join(os.path.dirname(fn), 'parameters'))
-            parameters['devs'] = list(map(float, parameters['devs'].split(sep)))
-        except IOError:
-            parameters = {}
-        finally:
-            self.parameters_ = parameters
-
-        self.clusters = clusters
-        self.features = np.array(features)
-        return g
-
-    def parse_dat(self, fn, sep=' '):
-        """ Parse Network data depending on type/extension """
-        self.log.debug('opening file: %s' % fn)
-        f = open(fn, 'rb')
-        data = []
-        inside = {'vertices':False, 'edges':False }
-        clusters = []
-        features = []
-        for _line in f:
-            line = _line.strip().decode('utf8') #python 2..
-            if line.startswith(('ROW LABELS:', '*vertices')) or inside['vertices']:
-                if not inside['vertices']:
-                    inside['vertices'] = True
-                    continue
-                if line.startswith('#') or not line.strip():
-                    inside['vertices'] = False # break
-                elif line.startswith(('DATA','*edges' )):
-                    inside['vertices'] = False # break
-                    inside['edges'] = True
-                else:
-                    # todo if needed
-                    continue
-            elif line.startswith(('DATA','*edges' )) or inside['edges']:
-                if not inside['edges']:
-                    inside['edges'] = True # break
-                    continue
-                if line.startswith('#') or not line.strip() or len(line.split(sep)) < 2 :
-                    inside['edges'] = False
-                else:
-                    # Parsing assignation
-                    data.append( line.strip() )
-        f.close()
-
-        row_size = len(data[0].split(sep))
-        edges = np.array([tuple(row.split(sep)) for row in data]).astype(int)-1
-        edges = {}
-        if row_size == 2:
-            # like .txt
-            for line in data:
-                dyad = line.strip().split(sep)[:]
-                dyad = '.'.join(dyad)
-                edges[dyad] = edges.get(dyad, 0) + 1
-        elif row_size == 3:
-            for line in data:
-                _line = line.strip().split(sep)
-                dyad = _line[0:2]
-                dyad = line.strip().split(sep)[:]
-                dyad = '.'.join(dyad)
-                w = int(_line[-1]) # can be zeros
-                edges[dyad] = edges.get(dyad, 0) + int(w)
-        else:
-            raise NotImplementedError
-
-        edges = np.array([ (e.split('.')[0], e.split('.')[1], w+1) for e, w in edges.items()], dtype=int) -1
-        N = edges.max() +1
-        g = np.zeros((N,N), dtype=self._dtype)
-        g[tuple(edges[:, :2].T)] = edges[:, 2]
-        return g
 
     def _old_communities_analysis(self):
         clusters = self.clusters
@@ -754,9 +591,11 @@ class frontendNetwork(DataBase):
         return self.clusters
 
     def get_partition(self, clusters=None):
-        clusters = self.clusters or clusters
-        if not clusters:
+        if getattr(self, 'clusters', None) is None:
             return {}
+        else:
+            clusters = self.clusters
+
         N = len(clusters)
         return dict(zip(*[np.arange(N), clusters]))
 

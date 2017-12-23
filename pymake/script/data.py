@@ -1,4 +1,5 @@
-from pymake import ModelManager, FrontendManager, ExpeFormat
+from pymake.frontend.manager import ModelManager, FrontendManager
+from pymake import ExpeFormat
 
 from collections import OrderedDict
 
