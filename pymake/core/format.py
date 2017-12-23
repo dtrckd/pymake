@@ -104,6 +104,8 @@ class ExpSpace(dict):
 
     def __copy__(self):
         return self.__class__(**self)
+    def __deepcopy__(self):
+        return self.copy()
 
     def __getattr__(self, key):
         try:
@@ -112,15 +114,16 @@ class ExpSpace(dict):
             lgg.warning('an ExpSpace request exceptions occured for key :%s ' % (key))
             raise AttributeError(key)
 
+    # Scratch method because __hasattr__ catch an error in getattr.
     def hasattr(self, key):
         return key in self
 
     # For Piclking
     def __getstate__(self):
         return self
-    #def __setstate__(self, state):
-    #    self.update(state)
-    #    self.__dict__ = self
+    def __setstate__(self, state):
+        self.update(state)
+        self.__dict__ = self
 
 class ExpVector(list, BaseObject):
     ''' A List of elements of an ExpTensor. '''

@@ -56,15 +56,13 @@ class Netw2(ExpDesign):
         _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}-{_name}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
     )
-
-
-    scvb_pre = ExpTensor (
-        corpus        = data_net_all,
-        model         = 'immsb_scvb',
-        N             = 'all',
+    cvb = ExpTensor (
+        corpus        = ['clique6'],
+        model         = 'immsb_cvb',
+        N             = 200,
         chunk         = 'adaptative_1',
         K             = 6,
-        iterations    = 3,
+        iterations    = 42,
         hyper         = 'auto',
         testset_ratio = 20,
         #chi = [0.5, 1, 2, 10],
@@ -76,7 +74,7 @@ class Netw2(ExpDesign):
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
         _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}-{_name}',
-        _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
+        _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
     )
 
 
