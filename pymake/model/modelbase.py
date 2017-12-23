@@ -308,6 +308,8 @@ class GibbsSampler(ModelBase):
 
         self._entropy = self.entropy()
         if hasattr(self, 'entropy_t'):
+            self._entropy_t = self.entropy_t()
+        else:
             self._entropy_t = np.nan
 
         self._alpha = np.nan
