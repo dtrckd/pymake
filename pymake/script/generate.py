@@ -135,8 +135,8 @@ class GenNetwork(ExpeFormat):
     def init_fit_tables(self,_type, Y=[]):
         expe = self.expe
         if not hasattr(self.gramexp, 'tables'):
-            corpuses = self.specname(self.gramexp.get_all('corpus'))
-            models = self.gramexp.get_all('model')
+            corpuses = self.specname(self.gramexp.get_set('corpus'))
+            models = self.gramexp.get_set('model')
             Meas = [ 'pvalue', 'alpha', 'x_min', 'n_tail']
             tables = {}
             for m in models:
@@ -158,7 +158,7 @@ class GenNetwork(ExpeFormat):
     def init_roc_tables(self):
         expe = self.expe
         if not hasattr(self.gramexp, 'tables'):
-            corpuses = self.specname(self.gramexp.get_all('corpus'))
+            corpuses = self.specname(self.gramexp.get_set('corpus'))
             if not 'testset_ratio' in self.pt:
                 Meas = ['20']
             else:
@@ -431,7 +431,7 @@ class GenNetwork(ExpeFormat):
                 table = table_mean + b' $\pm$ ' + table_std
 
                 # Table formatting
-                corpuses = self.specname(self.gramexp.get_all('corpus'))
+                corpuses = self.specname(self.gramexp.get_set('corpus'))
                 table = np.column_stack((self.specname(corpuses), table))
                 tablefmt = 'simple'
                 table = tabulate(table, headers=['__'+_model.upper()+'__']+Meas, tablefmt=tablefmt, floatfmt='.3f')
@@ -486,10 +486,10 @@ class GenNetwork(ExpeFormat):
         lgg.info('using `%s\' type' % _type)
 
         if not hasattr(self.gramexp, 'tables'):
-            corpuses = self.specname(self.gramexp.get_all('corpus'))
-            models = self.gramexp.get_all('model')
+            corpuses = self.specname(self.gramexp.get_set('corpus'))
+            models = self.gramexp.get_set('model')
             tables = {}
-            corpuses = self.specname(self.gramexp.get_all('corpus'))
+            corpuses = self.specname(self.gramexp.get_set('corpus'))
             for m in models:
                 if _type == 'pearson':
                     Meas = [ 'pearson coeff', '2-tailed pvalue' ]
@@ -527,7 +527,7 @@ class GenNetwork(ExpeFormat):
             d, dc, yerr = random_degree(Y)
             sim_nat = model.similarity_matrix(sim='natural')
             sim_lat = model.similarity_matrix(sim='latent')
-            step_tab = len(self.specname(self.gramexp.get_all('corpus')))
+            step_tab = len(self.specname(self.gramexp.get_set('corpus')))
             for it_dat, data in enumerate(Y):
 
                 #homo_object = data
@@ -551,7 +551,7 @@ class GenNetwork(ExpeFormat):
                 table = table_mean + b' $\pm$ ' + table_std
 
                 # Table formatting
-                corpuses = self.specname(self.gramexp.get_all('corpus'))
+                corpuses = self.specname(self.gramexp.get_set('corpus'))
                 try:
                     table = np.column_stack((corpuses, table))
                 except:
@@ -578,10 +578,10 @@ class GenNetwork(ExpeFormat):
 
 
         if not hasattr(self.gramexp, 'tables'):
-            corpuses = self.specname(self.gramexp.get_all('corpus'))
-            models = self.gramexp.get_all('model')
+            corpuses = self.specname(self.gramexp.get_set('corpus'))
+            models = self.gramexp.get_set('model')
             tables = {}
-            corpuses = self.specname(self.gramexp.get_all('corpus'))
+            corpuses = self.specname(self.gramexp.get_set('corpus'))
             for m in models:
                 sim = [ 'natural', 'latent']
                 Meas = ['links', 'non-links']
@@ -600,7 +600,7 @@ class GenNetwork(ExpeFormat):
         d, dc, yerr = random_degree(Y)
         sim_nat = model.similarity_matrix(sim='natural')
         sim_lat = model.similarity_matrix(sim='latent')
-        step_tab = len(self.specname(self.gramexp.get_all('corpus')))
+        step_tab = len(self.specname(self.gramexp.get_set('corpus')))
 
         if not hasattr(self.gramexp._figs[expe.model], 'damax'):
             damax = -np.inf
@@ -785,7 +785,7 @@ class GenNetwork(ExpeFormat):
                 table_std = [None] * len(table_std)
 
             fig = plt.figure()
-            corpuses = self.specname(self.gramexp.get_all('corpus'))
+            corpuses = self.specname(self.gramexp.get_set('corpus'))
             for i in range(len(corpuses)):
                 if _type3 == 'errorbar':
                     plt.errorbar(list(map(int, Meas)), table_mean[i], yerr=table_std[i],
@@ -803,7 +803,7 @@ class GenNetwork(ExpeFormat):
             #table = table_mean + b' $\pm$ ' + table_std
             table = table_mean
 
-            corpuses = self.specname(self.gramexp.get_all('corpus'))
+            corpuses = self.specname(self.gramexp.get_set('corpus'))
             table = np.column_stack((self.specname(corpuses), table))
             tablefmt = 'simple'
             headers = ['']+Meas
