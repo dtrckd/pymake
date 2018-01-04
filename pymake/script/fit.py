@@ -1,6 +1,3 @@
-#!/usr/bin/python3 -u
-# -*- coding: utf-8 -*-
-
 import time
 import numpy as np
 from numpy import ma
@@ -36,22 +33,18 @@ class Fit(ExpeFormat):
     def __call__(self):
         self.init_run()
         expe = self.expe
-
         t0 = time.time()
 
         frontend = FrontendManager.load(expe)
 
-        # @Debug: Obsolete / Inside model
+        ### @Debug: Obsolete / Inside model
         alpha = expe.get('alpha', .1)
         gmma = expe.get('gmma', .1)
-        delta = expe.get('delta', (0.1, 0.9))
-
+        delta = expe.get('delta', (0.5, 0.5))
         hyperparams = {'alpha': alpha, 'delta': delta, 'gmma': gmma}
         expe['hyperparams'] = hyperparams
+        #############################################################
 
-        ### Feature Porcessing
-        #frontend.data = frontend.data.astype(float)
-        #/
 
         self.model = ModelManager.from_expe_frontend(expe, frontend)
         self.configure_model(self.model)
@@ -59,9 +52,7 @@ class Fit(ExpeFormat):
         for i in range(1):
             self.model.fit()
 
-
         #model.predict(frontend=frontend)
-
         self.log.info('Expe %d finished in %.1f' % (self.pt['expe']+1, time.time()-t0))
 
 

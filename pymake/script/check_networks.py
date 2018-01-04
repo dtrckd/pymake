@@ -1,6 +1,3 @@
-#!/usr/bin/python3 -u
-# -*- coding: utf-8 -*-
-
 import numpy as np
 from numpy import ma
 from pymake import ExpTensor, GramExp, ExpeFormat
@@ -286,7 +283,7 @@ class CheckNetwork(ExpeFormat):
                 #    fn = '%s' % (clusters_org)
                 #    self.write_table(table, _fn=fn, ext='.md')
 
-    @ExpeFormat.tabulate
+    #@ExpeFormat.tabulate
     def pvalue(self):
         ''' Compute Goodness of fit statistics '''
         expe = self.expe
@@ -315,7 +312,7 @@ class CheckNetwork(ExpeFormat):
             print(colored('\nPvalue Table:', 'green'))
             print (tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
 
-    @ExpeFormat.tabulate
+    #@ExpeFormat.tabulate
     def stats(self):
         ''' Show data stats '''
         expe = self.expe
