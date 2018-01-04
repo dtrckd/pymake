@@ -28,7 +28,7 @@ class FrontendManager(object):
     """
     @staticmethod
     def get(expe, load=False):
-        """ Return: The frontend suited for the given expeuration"""
+        """ Return: The frontend suited for the given expe"""
 
         corpus_name = expe.get('corpus') or expe.get('random')
 

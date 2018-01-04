@@ -340,9 +340,9 @@ class GramExp(object):
                 if not issubclass(type(v), (list, tuple, set)):
                     raise ValueError('error, exp value should be iterable: %s' % k, v)
 
-    def get_all(self, key, default=[]):
+    def get_set(self, key, default=[]):
         ''' Return the set of values of expVector of that {key}. '''
-        return self.exp_tensor.get_all(key, default)
+        return sorted(set(self.exp_tensor.get_all(key, default)))
 
     def get_array_loc(self, key1, key2, params):
         ''' Construct an 2d sink array.
@@ -352,12 +352,12 @@ class GramExp(object):
         loc = []
 
         d1 = dict()
-        for i, k in enumerate(self.get_all(key1)):
+        for i, k in enumerate(self.get_set(key1)):
             d1[k] = i
         loc.append(d1)
 
         d2 = dict()
-        for i, k in enumerate(self.get_all(key2)):
+        for i, k in enumerate(self.get_set(key2)):
             d2[k] = i
         loc.append(d2)
 
@@ -365,7 +365,6 @@ class GramExp(object):
         for i, k in enumerate(params):
             d3[k] = i
         loc.append(d3)
-
 
         floc = lambda k1, k2, z:(d1[k1], d2[k2], d3[z])
         array = np.empty(list(map(len, loc))) * np.nan

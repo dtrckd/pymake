@@ -442,7 +442,7 @@ class ExpTensor(OrderedDict, BaseObject):
 
 # @debug : Rename this class to ?
 class ExpTensorV2(BaseObject):
-    ''' Represent a set of Experiences (**expe**). '''
+    ''' Represent a set of Experiences (**expe**) of type ExpTensor... '''
     def __init__(self, private_keywords=[]):
         BaseObject.__init__(self)
         self._private_keywords = private_keywords
@@ -929,7 +929,7 @@ class ExpeFormat(object):
                 # Init Figs Sink
                 if not hasattr(self.gramexp, '_figs'):
                     figs = dict()
-                    for c in self.gramexp.get_all(group):
+                    for c in self.gramexp.get_set(group):
                         figs[c] = ExpSpace()
                         figs[c].fig = plt.figure()
                         figs[c].linestyle = _linestyle.copy()
@@ -987,8 +987,8 @@ class ExpeFormat(object):
                 if self._it == self.expe_size -1:
                     for zpos, z in enumerate(_z):
                         tablefmt = 'latex'
-                        Meas = self.gramexp.get_all(y)
-                        table = np.column_stack((self.gramexp.get_all(x), array[:,:,zpos]))
+                        Meas = self.gramexp.get_set(y)
+                        table = np.column_stack((self.gramexp.get_set(x), array[:,:,zpos]))
                         Table = tabulate(table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f')
                         print(colored('\n%s Table:'%(z), 'green'))
                         print(Table)
