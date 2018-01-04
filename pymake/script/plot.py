@@ -1,7 +1,3 @@
-
-#!/usr/bin/python3 -u
-# -*- coding: utf-8 -*-
-
 import os
 import numpy as np
 from numpy import ma
@@ -32,7 +28,9 @@ class Plot(ExpeFormat):
 
     @ExpeFormat.plot('corpus')
     def __call__(self, attribute='_entropy'):
-        ''' likelihood/perplexity convergence report '''
+        ''' Plot figure group by :corpus:.
+            Notes: likelihood/perplexity convergence report
+        '''
         expe = self.expe
 
         data = self.load_some()
@@ -46,17 +44,18 @@ class Plot(ExpeFormat):
         burnin = 5
         description = '/'.join((expe._refdir, os.path.basename(self.output_path)))
 
-        frame = self.gramexp.figs[expe.corpus]
+        frame = self.gramexp._figs[expe.corpus]
         ax = frame.fig.gca()
 
-        ax = self.gramexp.figs[expe.corpus].fig.gca()
+        ax = self.gramexp._figs[expe.corpus].fig.gca()
         ax.plot(data, label=description, marker=frame.markers.next())
         ax.legend(loc='upper right',prop={'size':7})
 
 
     @ExpeFormat.plot
     def plot_unique(self, attribute='_entropy'):
-        ''' likelihood/perplexity convergence report '''
+        ''' Plot all figure in the same window.
+            Notes: likelihood/perplexity convergence report '''
         expe = self.expe
 
         data = self.load_some()
@@ -72,6 +71,60 @@ class Plot(ExpeFormat):
 
         plt.plot(data, label=description, marker=_markers.next())
         plt.legend(loc='upper right',prop={'size':1})
+
+
+
+    @ExpeFormat.tabulate(1,2) # improve ergonomy ?
+    def table(self, array, floc, x, y, z):
+        ''' Plot table according to parameter `x:y:z(param)'  '''
+        expe = self.expe
+
+        data = self.load_some()
+        if not data:
+            self.log.warning('No data for expe : %s' % self.output_path)
+            return
+        elif z not in data:
+            func_name = 'get_'+z
+            if hasattr(self, func_name):
+                data = getattr(self, func_name)()
+            else:
+                print('attribute unknown: %s' % z)
+                return
+        else:
+            data = data[z][-1]
+            #data = np.ma.masked_invalid(np.array(data, dtype='float'))
+
+        loc = floc(expe[x], expe[y], z)
+        array[loc] = data
+
+
+
+    def get_roc(self, _ratio=100):
+        from sklearn.metrics import roc_curve, auc, precision_recall_curve
+        expe = self.expe
+        model = self.model
+
+        frontend = FrontendManager.load(expe)
+        data = frontend.data
+
+        _ratio = int(_ratio)
+        _predictall = (_ratio >= 100) or (_ratio < 0)
+        if not hasattr(expe, 'testset_ratio'):
+            setattr(expe, 'testset_ratio', 20)
+
+        y_true, probas = model.mask_probas(data)
+        theta, phi = model.get_params()
+
+        try:
+            fpr, tpr, thresholds = roc_curve(y_true, probas)
+        except Exception as e:
+            print(e)
+            self.log.error('can format expe : %s' % (self.output_path))
+            return
+
+        roc_auc = auc(fpr, tpr)
+        return roc_auc
+
 
 if __name__ == '__main__':
     GramExp.generate().pymake(Plot)

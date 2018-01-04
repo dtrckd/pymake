@@ -1,7 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-# @Issue43: Parser/config unification.
 from util.utils import Now, ellapsed_time, ask_sure_exit
 from util.argparser import argparser
 import os

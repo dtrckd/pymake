@@ -916,65 +916,102 @@ class ExpeFormat(object):
         if len(groups[1:]) == 0 and callable(groups[0]):
             # decorator whithout arguments
             return ExpeFormat.plot_simple(groups[0])
-        else:
-            def decorator(fun):
-                @wraps(fun)
-                def wrapper(*args, **kwargs):
-                    import matplotlib.pyplot as plt
-                    from pymake.plot import _linestyle, _markers
-                    group = groups[0]
-                    self = args[0]
-                    expe = self.expe
 
-                    # Init Figs Sink
-                    if not hasattr(self.gramexp, 'figs'):
-                        figs = dict()
-                        for c in self.gramexp.get_all(group):
-                            figs[c] = ExpSpace()
-                            figs[c].fig = plt.figure()
-                            figs[c].linestyle = _linestyle.copy()
-                            figs[c].markers = _markers.copy()
+        def decorator(fun):
+            @wraps(fun)
+            def wrapper(*args, **kwargs):
+                import matplotlib.pyplot as plt
+                from pymake.plot import _linestyle, _markers
+                group = groups[0]
+                self = args[0]
+                expe = self.expe
 
-                        self.gramexp.figs = figs
-                    kernel = fun(*args, **kwargs)
+                # Init Figs Sink
+                if not hasattr(self.gramexp, '_figs'):
+                    figs = dict()
+                    for c in self.gramexp.get_all(group):
+                        figs[c] = ExpSpace()
+                        figs[c].fig = plt.figure()
+                        figs[c].linestyle = _linestyle.copy()
+                        figs[c].markers = _markers.copy()
 
-                    # Set title and filename
-                    title = ' '.join('{{{0}}}'.format(w) for w in groups).format(**self.specname(expe))
-                    expfig = self.gramexp.figs[expe[group]]
-                    expfig.fn = '%s_%s' % (fun.__name__, title.replace(' ', '_'))
-                    expfig.fig.gca().set_title(title)
+                    self.gramexp._figs = figs
+                kernel = fun(*args, **kwargs)
 
-                    # Save on last call
-                    if self._it == self.expe_size -1:
-                        if expe.write:
-                            self.write_figs(expe, self.gramexp.figs)
+                # Set title and filename
+                title = ' '.join('{{{0}}}'.format(w) for w in groups).format(**self.specname(expe))
+                expfig = self.gramexp._figs[expe[group]]
+                expfig.fn = '%s_%s' % (fun.__name__, title.replace(' ', '_'))
+                expfig.fig.gca().set_title(title)
 
-                    return kernel
-                return wrapper
+                # Save on last call
+                if self._it == self.expe_size -1:
+                    if expe.write:
+                        self.write_figs(expe, self.gramexp._figs)
+
+                return kernel
+            return wrapper
+
         return decorator
 
     @staticmethod
-    #tensor in decorator to build SINK thiis th new tensor !!!!
-    def tabulate(*groups):
-        ''' TODO
-        '''
-        if len(groups[1:]) == 0 and callable(groups[0]):
-            # decorator whithout arguments
-            return groups[0]
-        else:
-            row = groups[0]
-            column = groups[1]
-            def decorator(fun):
-                @wraps(fun)
-                def wrapper(*args, **kwargs):
-                    kernel = fun(*args, **kwargs)
-                    return kernel
-                return wrapper
+    def tabulate(*a, **b):
+        ''' Doc todo (plot alignement...) '''
+
+        def decorator(fun):
+            @wraps(fun)
+            def wrapper(*args, **kwargs):
+                self = args[0]
+                if len(args[1:]) == 0:
+                    x, y, z = 'corpus', 'model', '_entropy'
+                else:
+                    x, y, z = args[1].split(':')
+
+                _z = z.split('-')
+
+                if not fun.__name__ in self.gramexp._tables:
+                    table = ExpSpace()
+                    array, floc = self.gramexp.get_array_loc(x, y, _z)
+                    table['array'] = array
+                    table['floc'] = floc
+                    self.gramexp._tables[fun.__name__] = table
+                else:
+                    table = self.gramexp._tables[fun.__name__]
+
+                array = table.array
+                floc = table.floc
+
+                for z in _z:
+                    kernel = fun(self, array, floc, x, y, z, **kwargs)
+
+                if self._it == self.expe_size -1:
+                    for zpos, z in enumerate(_z):
+                        tablefmt = 'latex'
+                        Meas = self.gramexp.get_all(y)
+                        table = np.column_stack((self.gramexp.get_all(x), array[:,:,zpos]))
+                        Table = tabulate(table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f')
+                        print(colored('\n%s Table:'%(z), 'green'))
+                        print(Table)
+
+                        fn = '%s_%s' % tuple(map(lambda x:self.expe.get(x, x), [z, 'mask']))
+                        euh = {'table': ExpSpace({'table': Table, 'fn':fn})}
+                        if self.expe.write:
+                            self.write_table(euh, ext='.md')
+
+
+                return kernel
+            return wrapper
+
+
         return decorator
 
     @classmethod
     def _preprocess_(cls, gramexp):
         ''' This method has **write** access to Gramexp '''
+
+        # Create the global container for expe decorator.
+        gramexp._tables = {}
+        #gramex._figs = {} # @TODO: adapt ExpeFormat.plot like ExpeFormat.table
 
         # update exp_tensor in gramexp
         if hasattr(cls, '_default_expe'):

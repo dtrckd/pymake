@@ -34,7 +34,7 @@ class IR(ExpeFormat):
             fullpath = hit['fullpath']
             score = hit.score
 
-            print('%d: '% (rank+1), colored(shortpath, 'green'), '%.1f' % score)
+            print('%d: '% (rank+1), colored(shortpath, 'green'), '%.2f' % score)
             if 'title' in hit:
                 print('Title: %s: '% (colored(colored(hit['title'], 'bold'), 'red')))
             if expe.highlight:

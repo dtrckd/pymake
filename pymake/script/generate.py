@@ -1,6 +1,3 @@
-#!/usr/bin/python3 -u
-# -*- coding: utf-8 -*-
-
 import os
 import numpy as np
 import scipy as sp
@@ -605,11 +602,11 @@ class GenNetwork(ExpeFormat):
         sim_lat = model.similarity_matrix(sim='latent')
         step_tab = len(self.specname(self.gramexp.get_all('corpus')))
 
-        if not hasattr(self.gramexp.figs[expe.model], 'damax'):
+        if not hasattr(self.gramexp._figs[expe.model], 'damax'):
             damax = -np.inf
         else:
-            damax = self.gramexp.figs[expe.model].damax
-        self.gramexp.figs[expe.model].damax = max(sim_nat.max(), sim_lat.max(), damax)
+            damax = self.gramexp._figs[expe.model].damax
+        self.gramexp._figs[expe.model].damax = max(sim_nat.max(), sim_lat.max(), damax)
         for it_dat, data in enumerate(Y):
 
             #homo_object = data
@@ -623,7 +620,7 @@ class GenNetwork(ExpeFormat):
 
         if self._it == self.expe_size -1:
             for _model, table in self.gramexp.tables.items():
-                ax = self.gramexp.figs[_model].fig.gca()
+                ax = self.gramexp._figs[_model].fig.gca()
 
                 bp = ax.boxplot([table['natural']['links']    ], widths=0.5,  positions = [1], whis='range')
                 bp = ax.boxplot([table['natural']['non-links']], widths=0.5,  positions = [2], whis='range')
@@ -636,7 +633,7 @@ class GenNetwork(ExpeFormat):
                 ax.set_xlim(0,6)
 
                 nbox = 4
-                top = self.gramexp.figs[_model].damax
+                top = self.gramexp._figs[_model].damax
                 pos = [1,2,4,5]
                 upperLabels = ['linked','    non-linked']*2
                 #weights = ['light', 'ultralight']
@@ -663,7 +660,7 @@ class GenNetwork(ExpeFormat):
         if not hasattr(expe, 'testset_ratio'):
             setattr(expe, 'testset_ratio', 20)
 
-        frame = self.gramexp.figs[expe.corpus]
+        frame = self.gramexp._figs[expe.corpus]
         ax = frame.fig.gca()
 
         if _type == 'testset':
@@ -709,7 +706,7 @@ class GenNetwork(ExpeFormat):
         #plt.plot(precision, recall, label='PR curve; %s' % (expe.model ))
 
         if self._it == self.expe_size -1:
-            for c, f in self.gramexp.figs.items():
+            for c, f in self.gramexp._figs.items():
                 ax = f.fig.gca()
                 ax.plot([0, 1], [0, 1], linestyle='--', color='k', label='Luck')
                 ax.legend(loc="lower right", prop={'size':10})
