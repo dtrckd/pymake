@@ -1,12 +1,5 @@
-# -*- coding: utf-8 -*-
-
 from pymake import ExpSpace, ExpTensor, Corpus, ExpDesign, ExpGroup
 
-__plot_font_size = 14
-
-### PLOTLIB CONFIG
-import matplotlib.pyplot as plt
-plt.rc('font', size=__plot_font_size)  # controls default text sizes
 
 class Netw2(ExpDesign):
 
@@ -152,4 +145,9 @@ class Netw2(ExpDesign):
         _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}-{_name}-{_id}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
     )
+
+
+    # Noel expe
+    noel = ExpGroup([scvb, cvb, compare_scvb], N='all', corpus=data_net_all,
+                    mask=['balanced', 'unbalanced'], _refdir='noel')
 

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import uuid
 import sys
 import os
 from datetime import datetime
@@ -367,7 +368,7 @@ class GramExp(object):
         loc.append(d3)
 
         floc = lambda k1, k2, z:(d1[k1], d2[k2], d3[z])
-        array = np.empty(list(map(len, loc))) * np.nan
+        array = np.ma.array(np.empty(list(map(len, loc)))*np.nan, mask=True)
         return array, floc
 
 
@@ -939,7 +940,7 @@ class GramExp(object):
                 cmd = ' '.join(basecmd[:idx] + [Target + ' '+ id_cmd] + basecmd[idx+1:])
             cmdlines.append(cmd)
 
-        n_cores = str(self._conf.get('_cores', 0))
+        n_cores = str(self._conf.get('_cores', 1))
 
         # remove the --cores options
         for i, cmd in enumerate(cmdlines):
@@ -956,13 +957,16 @@ class GramExp(object):
         for line in self.subexecute(cmd):
             print(line, end='')
 
-    def execute_parallel_net(self):
-        ''' run X process by machine ! '''
+    def execute_parallel_net(self, nhosts=None):
+        ''' run X process by machine !
+            if :nhosts: (int) is given, limit the numner of remote machines.
+        '''
 
         basecmd = sys.argv.copy()
         Target = './zymake.py' # add remote binary in .pymake.cfg
         basecmd = ['python3', Target] + basecmd[1:]
         #basecmd = ['pymake'] + basecmd[1:] # PATH and PYTHONPATH varible missing to be able to execute "pymake"
+        cmdlines = None
 
         # Create commands indexs
         indexs = self._conf['_run_indexs']
@@ -972,32 +976,56 @@ class GramExp(object):
             [basecmd.remove(str(i)) for i in indexs]
 
         # Get chunked indexs
-        n_cores = int(self._conf.get('_cores', 1))
-        indexs = list(map(str, indexs))
-        indexs = [indexs[i:i+n_cores] for i in range(0, len(indexs), n_cores)]
-        n_cores = str(n_cores)
+        if nhosts is None:
+            # cores by host
+            n_cores = int(self._conf.get('_cores', 1))
+        else:
+            # share run per host
+            n_cores = len(indexs) // int(nhosts)
 
-        # Creates a list of commands that pick each index
-        # from base requests commands.
-        cmdlines = []
-        for index in indexs:
-            id_cmd = '%s' % (' '.join(index))
-            if 'runpara' in basecmd:
-                cmd = ' '.join(basecmd).replace('runpara', id_cmd, 1)
+            # Only --net 1, implement/understood from now.
+            if int(nhosts) == 1:
+                indexs = []
+                cmdlines = [' '.join(basecmd)]
             else:
-                idx = basecmd.index(Target)
-                cmd = ' '.join(basecmd[:idx] + [Target + ' '+ id_cmd] + basecmd[idx+1:])
+                raise NotImplementedError
 
-            cmdlines.append(cmd)
+        if cmdlines is None:
+            indexs = list(map(str, indexs))
+            indexs = [indexs[i:i+n_cores] for i in range(0, len(indexs), n_cores)]
 
-            # remove the --net options
-            for i, cmd in enumerate(cmdlines):
-                cmdlines[i] = cmd.replace('--net', '').strip()
+            # Creates a list of commands that pick each index
+            # from base requests commands.
+            cmdlines = []
+            for index in indexs:
+                id_cmd = '%s' % (' '.join(index))
+                if 'runpara' in basecmd:
+                    cmd = ' '.join(basecmd).replace('runpara', id_cmd, 1)
+                else:
+                    idx = basecmd.index(Target)
+                    cmd = ' '.join(basecmd[:idx] + [Target + ' '+ id_cmd] + basecmd[idx+1:])
 
-            NDL = get_global_settings('loginfile')
-            PWD = get_global_settings('remote_pwd')
-            cmd = ['parallel', '-u', '-C', "' '", '--eta', '--progress',
-                   '--sshloginfile', NDL, '--workdir', PWD, '--env', 'OMP_NUM_THREADS', ':::', '%s'%('\n'.join(cmdlines))]
+                cmdlines.append(cmd)
+
+        # remove the --net options
+        for i, cmd in enumerate(cmdlines):
+            #cmdlines[i] = cmd.replace('--net', '').strip()
+            cmdlines[i] = re.sub(r'--net\s+[0-9]*', '', cmd).strip()
+
+        NDL = get_global_settings('loginfile')
+        if nhosts is not None:
+            tempf = '/tmp/pmk_' + uuid.uuid4().hex
+            nhosts = int(nhosts)
+            with open(tempf, 'w') as _f_w:
+                with open(NDL) as _f_r:
+                    for i, l in enumerate(_f_r.readlines()):
+                        if i >= nhosts:
+                            break
+                        _f_w.write(l)
+            NDL = tempf
+        PWD = get_global_settings('remote_pwd')
+        cmd = ['parallel', '-u', '-C', "' '", '--eta', '--progress',
+               '--sshloginfile', NDL, '--workdir', PWD, '--env', 'OMP_NUM_THREADS', ':::', '%s'%('\n'.join(cmdlines))]
 
         #stdout = subprocess.check_output(cmd)
         #print(stdout.decode())

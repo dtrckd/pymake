@@ -37,7 +37,11 @@ def main():
     elif zyvar['_do'] == 'runpara':
         is_distrib = zyvar.get('_net')
         if is_distrib:
-            lines = zymake.execute_parallel_net()
+            if is_distrib != True:
+                nhosts = int(is_distrib)
+            else:
+                nhosts = None
+            lines = zymake.execute_parallel_net(nhosts)
         else:
             lines = zymake.execute_parallel()
         zymake.pushcmd2hist()
