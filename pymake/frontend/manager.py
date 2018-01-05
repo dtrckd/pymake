@@ -15,7 +15,6 @@ from .frontendnetwork import frontendNetwork
 from pymake import Model, Corpus, GramExp
 
 import logging
-lgg = logging.getLogger('root')
 
 class FrontendManager(object):
     """ Utility Class who aims at mananing/Getting the datastructure at the higher level.
@@ -26,6 +25,9 @@ class FrontendManager(object):
         load: return a frontend object where data are
               loaded and filtered (sampled...) according to expe.
     """
+
+    log = logging.getLogger('root')
+
     @staticmethod
     def get(expe, load=False):
         """ Return: The frontend suited for the given expe"""
@@ -54,6 +56,9 @@ class FrontendManager(object):
 class ModelManager(object):
     """ Utility Class for Managing I/O and debugging Models
     """
+
+    log = logging.getLogger('root')
+
     def __init__(self, expe=None, frontend=None, data_t=None):
         self.expe = expe
 
@@ -70,7 +75,7 @@ class ModelManager(object):
 
         if 'text' in str(type(data)).lower():
             #if issubclass(type(data), DataBase):
-            lgg.warning('check WHY and WHEN overflow in stirling matrix !?')
+            self.log.warning('check WHY and WHEN overflow in stirling matrix !?')
             print('debug why error and i get walue superior to 6000 in the striling matrix ????')
             if testset_ratio is None:
                 data = data.data
@@ -80,7 +85,7 @@ class ModelManager(object):
         elif 'network' in str(type(data)).lower():
             data_t = None
             if testset_ratio is None:
-                lgg.warning("testset-ratio option options unknow, data won't be masked array")
+                self.log.warning("testset-ratio option options unknow, data won't be masked array")
                 data = data.data
             else:
                 data = data.set_masked(testset_ratio)
@@ -120,7 +125,7 @@ class ModelManager(object):
 
         _model = Model.get(self.expe.model)
         if not _model:
-            lgg.error('Model Unknown : %s' % (self.expe.model))
+            self.log.error('Model Unknown : %s' % (self.expe.model))
             raise NotImplementedError()
 
         ### Learn to match signature ?!?
@@ -187,7 +192,7 @@ class ModelManager(object):
         if self.expe.write:
             frontend.save_json(res)
         else:
-            lgg.debug(res)
+            self.log.debug(res)
 
     def initialization_test(self):
         ''' Measure perplexity on different initialization '''
@@ -201,8 +206,8 @@ class ModelManager(object):
 
         np.savetxt('t.out', np.log(pp))
 
-    @staticmethod
-    def _load_model(fn):
+    @classmethod
+    def _load_model(cls, fn):
 
         #### @Debug/temp modules name changed in pickle model
         from pymake.model import hdp, ibp
@@ -213,19 +218,24 @@ class ModelManager(object):
         sys.modules['model'] = _model
 
         if not os.path.isfile(fn) or os.stat(fn).st_size == 0:
-            lgg.error('No file for this model : %s' %fn)
-            lgg.debug('The following are available :')
+            cls.log.error('No file for this model : %s' %fn)
+            cls.log.debug('The following are available :')
             for f in GramExp.model_walker(os.path.dirname(fn), fmt='list'):
-                lgg.debug(f)
+                cls.log.debug(f)
             return None
-        lgg.info('Loading Model: %s' % fn)
+        cls.log.info('Loading Model: %s' % fn)
         with open(fn, 'rb') as _f:
             try:
                 model =  pickle.load(_f)
             except:
                 # python 2to3 bug
                 _f.seek(0)
-                model =  pickle.load(_f, encoding='latin1')
+                try:
+                    model =  pickle.load(_f, encoding='latin1')
+                except OSError as e:
+                    cls.log.critical("Unknonw error while opening  while `_load_model' at file: %s" % (fn))
+                    cls.log.error(e)
+                    return
         return model
 
 
@@ -249,7 +259,7 @@ class ModelManager(object):
         modelname = expe.model
         _model =  Model.get(modelname)
         if _model is None:
-            lgg.error('model unknown: %s' % modelname)
+            cls.log.error('model unknown: %s' % modelname)
             exit(3)
         return _model
 

@@ -67,7 +67,9 @@ class BaseObject(object):
     ''' Notes : Avoid method conflict by ALWAYS settings this class in last
                 at class definitions.
     '''
-    def __init__(self, name='BaseObject'):
+
+    def __init__(self, *args, **kwargs):
+    #def __init__(self, name='BaseObject'):
         # Le ruban est infini...
         #if name is None:
         #    print(traceback.extract_stack()[-2])
@@ -134,6 +136,24 @@ class ExpVector(list, BaseObject):
 
 class ExpGroup(list, BaseObject):
     ''' A List of elements of an ExpTensor. '''
+
+    def __init__(self, args, **kwargs):
+        list.__init__(self, args)
+        BaseObject.__init__(args, **kwargs)
+
+        # Recursively update value if kwargs found.
+        if len(kwargs) > 0:
+            self.update_all(self, kwargs)
+
+    def update_all(self, l, d):
+        for o in l:
+            if isinstance(o, list):
+                self.update_all(o, d)
+            elif isinstance(o, dict):
+                for k, v in d.items():
+                    o[k] = v
+        return
+
     def __add__(self, other):
         return self.__class__(list.__add__(self, other))
     def __sub__(self, other):
@@ -985,25 +1005,39 @@ class ExpeFormat(object):
                     kernel = fun(self, array, floc, x, y, z, **kwargs)
 
                 if self._it == self.expe_size -1:
+                    frame = {}
                     for zpos, z in enumerate(_z):
+                        # Format table
                         tablefmt = 'latex'
                         Meas = self.gramexp.get_set(y)
-                        table = np.column_stack((self.gramexp.get_set(x), array[:,:,zpos]))
+                        arr = self.highlight_table(array[:,:,zpos])
+                        table = np.column_stack((self.gramexp.get_set(x), arr))
                         Table = tabulate(table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f')
                         print(colored('\n%s Table:'%(z), 'green'))
                         print(Table)
 
-                        fn = '%s_%s' % tuple(map(lambda x:self.expe.get(x, x), [z, 'mask']))
-                        euh = {'table': ExpSpace({'table': Table, 'fn':fn})}
-                        if self.expe.write:
-                            self.write_table(euh, ext='.md')
+                        fn = '%s' % tuple(map(lambda x:self.expe.get(x, x), ['mask']))
+                        frame[z] = ExpSpace({'table': Table, 'fn':fn})
 
+                    if self.expe.write:
+                        self.write_table(frame, ext='.md')
 
                 return kernel
             return wrapper
 
 
         return decorator
+
+    def highlight_table(self, array, highlight_dim=1):
+        hack_float = np.vectorize(lambda x : '{:.3f}'.format(float(x)))
+        table = np.char.array(hack_float(array), itemsize=42)
+        # vectorize
+        for i, col in enumerate(array.argmax(1)):
+            table[i, col] = colored(table[i, col], 'bold')
+        for i, col in enumerate(array.argmin(1)):
+            table[i, col] = colored(table[i, col], 'magenta')
+
+        return table
 
     @classmethod
     def _preprocess_(cls, gramexp):
@@ -1086,6 +1120,9 @@ class ExpeFormat(object):
             print('ERROR : type of Figure unknow, passing')
 
     def write_table(self, table, _fn=None, ext='.txt'):
+
+        caption = '\caption{{{title}}}\n'
+
         if isinstance(table, (list, np.ndarray)):
             _fn = '' if _fn is None else self.specname(_fn)+'_'
             fn = ''.join([_fn, 'table', ext])
@@ -1094,10 +1131,12 @@ class ExpeFormat(object):
                 _f.write(table)
         elif isinstance(table, dict):
             for c, t in table.items():
-                fn = ''.join([t.fn ,'_', self.specname(c), '_table', ext])
+                fn = t.get('fn', 'void')
+                fn = ''.join([fn ,'_', self.specname(c), '_table', ext])
                 fn = self.full_fig_path(fn)
                 with open(fn, 'w') as _f:
-                    _f.write(t.table)
+                    _f.write(caption.format(title=c))
+                    _f.write(t.table+'\n')
         else:
             print('ERROR : type `%s\' of Table unknow, passing' % (type(table)))
 
