@@ -187,7 +187,7 @@ class GramExp(object):
         fit.py -m immsb -c alternate -n 100 -i 10'''
 
     # has special semantics on **output_path**.
-    _special_keywords = [ '_refdir', '_base_type',
+    _special_keywords = [ '_refdir', '_data_type',
                          '_format', '_csv_typo',
                          '_repeat',
                         ] # output_path => pmk-basedire/{base_type}/{refdir}/{repeat}/${format}:${csv_typo}
@@ -395,16 +395,16 @@ class GramExp(object):
         return targets
 
     @classmethod
-    def make_output_path(cls, expe, _type=None, status=None, base_dir='results'):
+    def make_output_path(cls, expe, _type=None, status=None):
         """ Make a single output path from a expe/dict
             @status: f finished
             @type: pk, json or inference.
         """
         expe = defaultdict(lambda: None, expe)
         base = expe.get('_data_type', 'pmk-temp')
-        hook = expe.get('_refdir', '')
+        hook = expe.get('_refdir', '_default')
 
-        basedir = os.path.join(_DATA_PATH, base, base_dir)
+        basedir = os.path.join(_DATA_PATH, base, 'results')
 
         rep = ''
         if '_repeat' in expe and ( expe['_repeat'] is not None and expe['_repeat'] is not False):
@@ -433,9 +433,8 @@ class GramExp(object):
             return filen
 
     @classmethod
-    def make_input_path(cls, expe, _type=None, status=None, base_dir='training'):
-        """ Make a single input path from a expe/dict
-        """
+    def make_input_path(cls, expe, _type=None, status=None):
+        """ Make a single input path from a expe/dict """
         expe = defaultdict(lambda: None, expe)
         filen = None
         base = expe.get('_data_type', 'pmk-temp')
@@ -450,7 +449,7 @@ class GramExp(object):
             c = c.replace('graph', 'Graph')
             c = 'generator/' + c
 
-        input_dir = os.path.join(_DATA_PATH, base, base_dir, c)
+        input_dir = os.path.join(_DATA_PATH, base, 'training', c)
 
         return input_dir
 
