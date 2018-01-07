@@ -2,7 +2,7 @@
 
 import os
 import re
-from copy import copy
+from copy import copy, deepcopy
 import traceback,  importlib
 import numpy as np
 from collections import OrderedDict, defaultdict
@@ -106,7 +106,7 @@ class ExpSpace(dict):
 
     def __copy__(self):
         return self.__class__(**self)
-    def __deepcopy__(self):
+    def __deepcopy__(self, memo):
         return self.copy()
 
     def __getattr__(self, key):
@@ -138,6 +138,13 @@ class ExpGroup(list, BaseObject):
     ''' A List of elements of an ExpTensor. '''
 
     def __init__(self, args, **kwargs):
+        if isinstance(args, dict):
+            args = [args]
+
+        for i, o in enumerate(args):
+            if isinstance(o, dict):
+                args[i] = deepcopy(o)
+
         list.__init__(self, args)
         BaseObject.__init__(args, **kwargs)
 
@@ -967,7 +974,7 @@ class ExpeFormat(object):
                 # Save on last call
                 if self._it == self.expe_size -1:
                     if expe.write:
-                        self.write_figs(expe, self.gramexp._figs)
+                        self.write_figs(self.gramexp._figs)
 
                 return kernel
             return wrapper
@@ -1103,12 +1110,12 @@ class ExpeFormat(object):
 
 
     @formatName
-    def write_figs(self, expe, figs, _suffix=None, _fn=None, ext='.pdf'):
+    def write_figs(self, figs, _suffix=None, _fn=None, ext='.pdf'):
         if type(figs) is list:
             _fn = '' if _fn is None else self.specname(_fn)+'_'
             for i, f in enumerate(figs):
                 suffix = '_'+ _suffix if _suffix and len(figs)>1 else ''
-                fn = ''.join([_fn, '%s_%s', ext]) % (expe.corpus, str(i) + suffix)
+                fn = ''.join([_fn, '%s_%s', ext]) % (self.expe.corpus, str(i) + suffix)
                 print('Writings figs: %s' % fn)
                 f.savefig(self.full_fig_path(fn));
         elif issubclass(type(figs), dict):

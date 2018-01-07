@@ -1,7 +1,10 @@
 from numpy import ma
 import numpy as np
 
-import pandas as pd
+try:
+    import pandas as pd
+except Exception as e:
+    print('Error while importing pandas: %s' % e)
 
 class DatasetDriver(object):
     ''' Parse dataset file using pandas'''
