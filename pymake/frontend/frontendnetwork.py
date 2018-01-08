@@ -591,6 +591,7 @@ class frontendNetwork(DataBase, DatasetDriver):
     # Contains the index of nodes with who it interact.
     # @debug no more true for bipartite networks
     def ma_dims(self):
+        ''' Number of non masked values by row/nodes. '''
         #data_dims = np.vectorize(len)(self.data)
         #data_dims = [r.count() for r in self.data_ma]
         data_dims = []
