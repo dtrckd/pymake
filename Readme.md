@@ -16,16 +16,17 @@ Pymake (pmk) is a machine friendly environment for making reproducible research.
 
 ## Features [](#1)
 * Specification of design of experimentations with a simple grammar,
-* Indexation of specifications, models, scripts and corpus,
+* Indexation of specifications, models, scripts and corpus, powered by [Whoosh](https://whoosh.readthedocs.io/en/latest/)
 * Command-line toolkit for quick design and experiment testing,
-* Simple grid gearch specification and naviguation,
-* Support experiments parallelization powered by [gnu-parallel](https://www.gnu.org/software/parallel/),
+* Simple grid search specification and navigation,
 * Support experiments rules filtering,
+* Support disks I/O management for training/input data and outputs results,
+* Support experiments parallelization powered by [gnu-parallel](https://www.gnu.org/software/parallel/),
 * Browse, design and test several models and corpus found in the literature.
 
 Perspectives :
 
-* Web server UI and notebook automatic builder
+* Web server UI and notebook automatic builder,
 * An online repo to push/fetch/search in design of experimentations, models, scripts and corpus,
 * Better documentation (or just a documentation, needs feedback!).
 
@@ -49,9 +50,9 @@ We provide an example of a design workflow with pymake by providing a **Search E
 The context of the experiment is as follows :
 * **Data** : documents to search-in are pdf documents (like articles for example),
 * **Model** : A bm25 model, that assumes a information model of bag of words representation.
-* **Script** : There is two scripts :
-    + a fit script that builds the index,
-    + a search script that returns relevant documents.
+* **Script** : There are two scripts :
+    + a fit script that builds the index of the *input data*,
+    + a search script that returns relevant documents, given a *query*.
 * Experiment Parameters are defined in the attribute `_default_expe` in each scripts.
 
 Setup the experiment (needed just once) :
@@ -69,7 +70,14 @@ Then a typical pymake usage :
 pymake run --script fit --path path/to/your/pdfs/   # index your pdf documents, take a coffe
 pymake run --script search "your text search request"  # show relevant information
 ```
-Or show only the first match :  `pymake run --script search "your text search request" --limit 1`
+
+Or equivalently (aliases):
+```bash
+pymake -x fit --path path/to/your/pdfs/
+pymake -x search "your text search request"
+```
+
+Or show only the first match :  `pymake -x search "your text search request" --limit 1`
 
 To add new models, new scripts, or specs,  you need to create it in the dedicated folder following the base class implementations.
 
@@ -136,13 +144,13 @@ Run experiments :
 
 ```bash
 pymake run [expe_name] --script script_name [script options...]
-# Or shortly:
+# Or shortly (alias):
 pymake [expe_name] -x script_name
 # Run in parallel:
 pymake [expe_name] -x script_name --cores N_CORES
 ```
 
-Show Paths :
+Show Paths for disks I/O:
 
     pymake path [expe_name] [script options...]
 
