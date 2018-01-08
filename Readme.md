@@ -117,8 +117,8 @@ In a pymake project there is 4 main components, associated to 4 directories :
     + contains specification of (design) experiments (`ExpSpace`,`ExpTensor` and `ExpGroup`), -- can be given as an argument of pymake.
 
 Along with those directory there is two system files :
-* pymake.cfg : at the root of a project (basically define a project) specify the default and contrib : data | model | script | spec, and other global options, <!-- document each entry -->
-* gramarg.py : define the command-line options for a project. <!-- explaine the exp_append type -->
+* pymake.cfg : at the root of a project (basically define a project) specify the paths for the `data | model | script | spec`  and other global options, <!-- document each entry -->
+* gramarg.py : defines the command-line options for a project. <!-- explaine the exp_append type -->
 
 
 ##### Pymake Commands
