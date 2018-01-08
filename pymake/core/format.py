@@ -142,7 +142,7 @@ class ExpGroup(list, BaseObject):
             args = [args]
 
         for i, o in enumerate(args):
-            if isinstance(o, dict):
+            if isinstance(o, (dict, ExpGroup)):
                 args[i] = deepcopy(o)
 
         list.__init__(self, args)
