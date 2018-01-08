@@ -16,7 +16,7 @@ Pymake (pmk) is a machine friendly environment for making reproducible research.
 
 ## Features [](#1)
 * Specification of design of experimentations with a simple grammar,
-* Indexation of specifications, models, scripts and corpus, powered by [Whoosh](https://whoosh.readthedocs.io/en/latest/)
+* Indexation of specifications, models, scripts and corpus, powered by [Whoosh](https://whoosh.readthedocs.io/en/latest/),
 * Command-line toolkit for quick design and experiment testing,
 * Simple grid search specification and navigation,
 * Support experiments rules filtering,
@@ -127,7 +127,7 @@ Create your own project:
 
     pymake init
 
-If new models or script are added in the project, you'll need to update the pymake index :
+If new models or scripts are added in the project, you'll need to update the pymake index :
 
     pymake update
 
@@ -163,18 +163,18 @@ Show individuals commands for asynchronously purpose (@deprecated) :
 ##### Specifications
 
 
-A design a experience is defined as one of the following type:
+A design of experiment is defined as one of the following type:
 * ExpSpace : A subclass of `dict` => 1 experiment
 * ExpTensor : A subclass of `dict` => many experiments (Cartesian Product of all `list` entrie of the dict)
 * ExpGroup : A subclass of `list` => group of ExpSpace or ExpTensor.
 
-Designs of experience (ExpSpace, ExpTensor or ExpGroup) must live inside a class that inherit `ExpDesign`. Those class live in files x inside the `spec/` directory. You'll need the following import :
+Design of experiment (ExpSpace, ExpTensor or ExpGroup) must live inside a class that inherit `ExpDesign`. Those classes live in files inside the `spec/` directory. You'll need the following import :
 `from pymake import ExpDesign, ExpSpace, ExpTensor, ExpGroup`
 
 
 The following examples need to be instantiated in class that inherits `ExpDesign`: `class MyDesign(ExpDesign)`.
 
-To specify an unique experiment (expe), one can use the `ExpSpace` class :
+To specify an unique experiment, one can use the `ExpSpace` class :
 
 ```python
 exp1 = ExpSpace(name = 'myexpe',
@@ -214,11 +214,11 @@ Basically, A model is a class inside `model/` that have a method `fit`.
 
 ##### Designing Script
 
-A scipt is a piece of code that you execute are parametrised by a **specification**. More specifically, Scripts are methods of class that inherits a `ExpeFormat` and lives inside the `script/` folder.
+A scipt is a piece of code that you execute which is parametrised by a **specification**. More specifically, Scripts are methods of class that inherits a `ExpeFormat` and that lives inside the `script/` folder.
 
-Once you defined some script, you'll be able to list them with `pymake -l script`, and to run them, by their name with `pymake [specification_id] -x script_name`.
+Once you defined some scripts, you'll be able to list them with `pymake -l script`, and to run them, by their name, with `pymake [specification_id] -x script_name`.
 
-Then each experiences defined in your design (or _default_expe if no specification_id is given) , will go through the script method. Then, a bunch of facilities are living inside the method a runtime :
+Then each experiments defined in your design (or _default_expe if no specification_id is given), will go through the script method. Then, a bunch of facilities are living inside the method at runtime :
 
 * `self.expe`:  The settings of the current experiment,
 * `self._it`: The ith script rennung inside the script,
@@ -227,10 +227,10 @@ Then each experiences defined in your design (or _default_expe if no specificati
 
 ##### Track your data and results
 
-In order to  save and analyse your results, each unique experiment need to be identified in a file. To do so, Pymake comes with its own mechanism to map the settings/specification of unique experiments unique <filename>s. Pymake use the following conventions:
+In order to save and analyse your results, each unique experiment need to be identified in a file. To do so, Pymake comes with its own mechanism to map the settings/specification to an unique <filename>s. Pymake use the following conventions:
 
-* <filename>.inf : csv file where each line contains the state of iterative process of an experiment,
-* <filename>.pk : to save complex object usually at the end of an experiments, to load it after for analysis/visualisation,
+* <filename>.inf : csv file where each lines contains the state of the iterative process of an experiment,
+* <filename>.pk : to save complex objects usually at the end of an experiments, and load it after for analysis/visualisation,
 * <filename>.json : to save information of an experiments ("database friendly").
 
 ###### formatting the filename -- _format
