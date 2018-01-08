@@ -94,9 +94,9 @@ Then you can list some informations about pymake objects :
 
 1. Workflow / directory structure
 2. pymake commands
-3. pymake.cfg
-4. ExpSpace, ExpTensor and ExpGroup
+4. Designing Experiments
 5. Track your data and results
+3. pymake.cfg
 6. Search and indexation
 
 (to be completed)
@@ -160,12 +160,21 @@ Show individuals commands for asynchronously purpose (@deprecated) :
 
 ##### Designing experiments
 
-Design of experiments are specified inside the `spec/` directory. Where you need the following import :
+##### Specifications
+
+
+A design a experience is defined as one of the following type:
+* ExpSpace : A subclass of `dict` => 1 experiment
+* ExpTensor : A subclass of `dict` => many experiments (Cartesian Product of all `list` entrie of the dict)
+* ExpGroup : A subclass of `list` => group of ExpSpace or ExpTensor.
+
+Designs of experience (ExpSpace, ExpTensor or ExpGroup) must live inside a class that inherit `ExpDesign`. Those class live in files x inside the `spec/` directory. You'll need the following import :
 `from pymake import ExpDesign, ExpSpace, ExpTensor, ExpGroup`
+
 
 The following examples need to be instantiated in class that inherits `ExpDesign`: `class MyDesign(ExpDesign)`.
 
-To specify an unique experiment (expe), one can use the `ExpSapce` class :
+To specify an unique experiment (expe), one can use the `ExpSpace` class :
 
 ```python
 exp1 = ExpSpace(name = 'myexpe',
@@ -181,7 +190,7 @@ To specify a **grid search**, one can use the `ExpTensor` class :
 ```python
 exp2 = ExpTensor(name = 'myexpe',
         size = [42, 100],
-        key1 = [100, 1000]
+        key1 = list(range(20, 1000))
         key2 = 'johndoe'
         _format = '{name}-{size}-{key1}_{key2}'
         )
@@ -189,7 +198,7 @@ exp2 = ExpTensor(name = 'myexpe',
 
 Which will results in four experiments where "size" and "key1" settings take different values.
 
-The third class is the `ExpGroup` which allows to group several design of experiments (for example if they have different settings name:
+The third class is the `ExpGroup` which allows to group several design of experiments (for example if they have different settings name):
 
 ```python
 exp3 = ExpGroup([exp1, exp2])
@@ -197,9 +206,28 @@ exp3 = ExpGroup([exp1, exp2])
 
 You can then run `pymake -l` to see our design of experiments.
 
+##### Designing Model
+
+Basically, A model is a class inside `model/` that have a method `fit`.
+
+(Doc in progress for more fancy use cases of design.)
+
+##### Designing Script
+
+A scipt is a piece of code that you execute are parametrised by a **specification**. More specifically, Scripts are methods of class that inherits a `ExpeFormat` and lives inside the `script/` folder.
+
+Once you defined some script, you'll be able to list them with `pymake -l script`, and to run them, by their name with `pymake [specification_id] -x script_name`.
+
+Then each experiences defined in your design (or _default_expe if no specification_id is given) , will go through the script method. Then, a bunch of facilities are living inside the method a runtime :
+
+* `self.expe`:  The settings of the current experiment,
+* `self._it`: The ith script rennung inside the script,
+* and more (doc in progress)
+
+
 ##### Track your data and results
 
-In order to  save and analyse your results, each unique experiment need to be identified in a file. To do so we propose a mechanism to map settings/specification of an unique experiment to a <filename>. Depending on what the developer want to write, the extension of this file can be modified. Pymake use three conventions :
+In order to  save and analyse your results, each unique experiment need to be identified in a file. To do so, Pymake comes with its own mechanism to map the settings/specification of unique experiments unique <filename>s. Pymake use the following conventions:
 
 * <filename>.inf : csv file where each line contains the state of iterative process of an experiment,
 * <filename>.pk : to save complex object usually at the end of an experiments, to load it after for analysis/visualisation,
@@ -223,7 +251,7 @@ settings = ExpSpace(name = 'myexpe',
 The filename for this unique experiment will be 'myexpe-42-100_johndoe'
 
 
-To give an unique identifier of an  expe belonging to a group of experiments (`ExpTensor` or `ExpGroup`) one can use the special term `{_id}` (unique counter identifier) and `${name}` (name of experiment as given in the ExpDesign class) in the `_format` attribute.
+To give an unique identifier of an expe belonging to a group of experiments (`ExpTensor` or `ExpGroup`) one can use the special term `{_id}` (unique counter identifier) and `${name}` (name of experiment as given in the ExpDesign class) in the `_format` attribute.
 
 ###### settings the path -- _refdir
 
@@ -247,7 +275,7 @@ pymake (pmk) command-line reference.
 
 ```bash
 init = command$;
-command = 'pmk' command_name [expedesign_id]* [expe_id]* [pmk_options];
+command = 'pmk' [command_name] [expedesign_id]* [expe_id]* [pmk_options];
 command_name = 'run' | 'runpara' | 'path' | 'cmd' | 'update' | 'show' | 'hist' |  '' ;
 expe_id = int; # int identifier of an expe from 0 to; size(exp) -1.
 expedesign_id = [exp id/name]; # string identifier to an exp
@@ -255,7 +283,7 @@ pmk_options = [pymake special options + project options];
 ```
 
 ### Command_name
-If empty, a default settings a taken from {_default_expe} define as a constant in a script (ExpeFormat). All settings undefined in a design but defined in the {_default_exp} will take this value.
+If 'expe_name' is empty and `-x` is given, pymake assumes `run` command. If 'expedesing_id is empty', then the parameters are empty unless the script defines a `_default_expe` expe settings. All settings undefined in a design but defined in the `_default_exp` will take this value.
 
 Remark : -l and -s (--simulate) options don't execute, they just show things up.
 
