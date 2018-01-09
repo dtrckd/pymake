@@ -561,7 +561,8 @@ class frontendNetwork(DataBase, DatasetDriver):
 
     def degree(self):
         g = self.getG()
-        return nx.degree(g)
+        degree = list(dict(nx.degree(g)).values())
+        return degree
 
     def degree_histogram(self):
         g = self.getG()

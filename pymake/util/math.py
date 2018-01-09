@@ -139,13 +139,17 @@ def adj_to_degree(y):
     # To convert normalized degrees to raw degrees
     #ba_c = {k:int(v*(len(ba_g)-1)) for k,v in ba_c.iteritems()}
     G = nxG(y)
-    #degree = sorted(nx.degree(G).values(), reverse=True)
+    #degree = sorted(dict(nx.degree(G)).values(), reverse=True)
 
     #ba_c = nx.degree_centrality(G)
-    return nx.degree(G)
+    return dict(nx.degree(G))
 
 def degree_hist(_degree, filter_zeros=False):
-    degree = list(_degree.values()) if type(_degree) is dict else _degree
+    if isinstance(_degree, list):
+        degree = _degree
+    else:
+        # networkx
+        degree = list(dict(_degree).values())
 
     max_c = np.max(degree)
     d = np.arange(max_c+1)

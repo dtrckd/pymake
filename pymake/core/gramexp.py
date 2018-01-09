@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import shlex
 import uuid
 import sys
 import os
@@ -344,6 +345,17 @@ class GramExp(object):
     def get_set(self, key, default=[]):
         ''' Return the set of values of expVector of that {key}. '''
         return sorted(set(self.exp_tensor.get_all(key, default)))
+
+    def get_nounique_keys(self, *args):
+        ''' return list of keys that are non unique in expe_tensor
+            except if present in :args:.
+        '''
+        nk = self.exp_tensor.get_nounique_keys()
+        for o in args:
+            if o in nk:
+                nk.remove(o)
+
+        return nk
 
     def get_array_loc(self, key1, key2, params):
         ''' Construct an 2d sink array.
@@ -953,8 +965,10 @@ class GramExp(object):
 
         #stdout = subprocess.check_output(cmd)
         #print(stdout.decode())
-        for line in self.subexecute(cmd):
+        for line in self.subexecute1(cmd):
             print(line, end='')
+
+        #self.subexecute2(cmd)
 
     def execute_parallel_net(self, nhosts=None):
         ''' run X process by machine !
@@ -1028,11 +1042,11 @@ class GramExp(object):
 
         #stdout = subprocess.check_output(cmd)
         #print(stdout.decode())
-        for line in self.subexecute(cmd):
+        for line in self.subexecute1(cmd):
             print(line, end='')
 
     @staticmethod
-    def subexecute(cmd):
+    def subexecute1(cmd):
         popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
         for stdout_line in iter(popen.stdout.readline, ""):
             yield stdout_line
@@ -1040,6 +1054,18 @@ class GramExp(object):
         return_code = popen.wait()
         if return_code:
             raise subprocess.CalledProcessError(return_code, cmd)
+
+    @staticmethod
+    def subexecute2(cmd):
+        ''' trying to print colors here ...'''
+        popen = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, universal_newlines=True)
+        while True:
+            output = popen.stdout.readline()
+            if output == '' and popen.poll() is not None:
+                break
+            if output:
+                print(popen.strip())
+        return process.poll()
 
     def notebook(self):
         from nbformat import v4 as nbf

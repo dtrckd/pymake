@@ -75,8 +75,10 @@ class Plot(ExpeFormat):
 
 
     @ExpeFormat.tabulate(1,2) # improve ergonomy ?
-    def table(self, array, floc, x, y, z):
-        ''' Plot table according to parameter `x:y:z(param)'  '''
+    def table(self, array, floc, x, y, z, *args):
+        ''' Plot table according to parameter `x:y:z(param)'
+            if args is given, use for filename discrimination `key1[/key2]...'
+        '''
         expe = self.expe
 
         data = self.load_some()
