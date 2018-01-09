@@ -122,30 +122,6 @@ def log_binning(counter_dict,bin_count=35):
     bin_means_x = np.histogram(counter_dict.keys(),bins,weights=counter_dict.keys())[0]
     return bin_means_x,bin_means_y
 
-#def plot_degree(y, title=None, noplot=False):
-#    if len(y) > 6000:
-#        return
-#    G = nxG(y)
-#    degree = sorted(nx.degree(G).values(), reverse=True)
-#    if noplot:
-#        return degree
-#    #plt.plot(degree)
-#    x = np.arange(1, y.shape[0] + 1)
-#    fig = plt.figure()
-#    plt.loglog(x, degree)
-#    if title:
-#        plt.title(title)
-#    plt.draw()
-#
-#def plot_degree_(y, title=None):
-#    if len(y) > 6000:
-#        return
-#    G = nxG(y)
-#    degree = sorted(nx.degree(G).values(), reverse=True)
-#    x = np.arange(1, y.shape[0] + 1)
-#    plt.loglog(x, degree)
-#    if title:
-#        plt.title(title)
 
 def plot_degree(y, spec=False,logscale=True, title=None, ax=None):
     """ Degree plot """

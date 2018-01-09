@@ -568,6 +568,23 @@ class ExpTensorV2(BaseObject):
         else:
             return vec
 
+    def get_nounique_keys(self):
+        keys = defaultdict(set)
+        for tensor in self._tensors:
+            for k in tensor:
+                o = tensor.get(k, [])
+                for v in o:
+                    if isinstance(v, str) and not v.startswith('_'):
+                        keys[k].add(v)
+
+        nounique_keys = []
+        for k, _set in keys.items():
+            if len(_set) > 1:
+                nounique_keys.append(k)
+
+        return nounique_keys
+
+
     def get_conf(self):
         _conf = {}
         for tensor in self._tensors:
@@ -974,7 +991,7 @@ class ExpeFormat(object):
                 # Save on last call
                 if self._it == self.expe_size -1:
                     if expe.write:
-                        self.write_figs(self.gramexp._figs)
+                        self.write_figs_deprecated(self.gramexp._figs)
 
                 return kernel
             return wrapper
@@ -989,10 +1006,14 @@ class ExpeFormat(object):
             @wraps(fun)
             def wrapper(*args, **kwargs):
                 self = args[0]
+                # discriminant keys (to distinguish filename)
+                discr_args = []
                 if len(args[1:]) == 0:
                     x, y, z = 'corpus', 'model', '_entropy'
                 else:
                     x, y, z = args[1].split(':')
+                    if len(args) > 1:
+                        discr_args = args[2].split('/')
 
                 _z = z.split('-')
 
@@ -1016,15 +1037,18 @@ class ExpeFormat(object):
                     for zpos, z in enumerate(_z):
                         # Format table
                         tablefmt = 'latex'
-                        Meas = self.gramexp.get_set(y)
+                        Meas = self.specname(self.gramexp.get_set(y))
                         arr = self.highlight_table(array[:,:,zpos])
-                        table = np.column_stack((self.gramexp.get_set(x), arr))
+                        table = np.column_stack((self.specname(self.gramexp.get_set(x)), arr))
                         Table = tabulate(table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f')
                         print(colored('\n%s Table:'%(z), 'green'))
                         print(Table)
 
-                        fn = '%s' % tuple(map(lambda x:self.expe.get(x, x), ['mask']))
-                        frame[z] = ExpSpace({'table': Table, 'fn':fn})
+                        frame[z] = ExpSpace({'table': Table,
+                                             'args': discr_args,
+                                             #'args':self.gramexp.get_nounique_keys(x, y),
+                                             'base':'_'.join((fun.__name__, x,y))},
+                                           )
 
                     if self.expe.write:
                         self.write_table(frame, ext='.md')
@@ -1089,65 +1113,65 @@ class ExpeFormat(object):
 
     def full_fig_path(self, fn):
         from pymake.frontend.frontend_io import _FIGS_PATH
-        path = os.path.join(_FIGS_PATH, self.specname(fn))
+        path = os.path.join(_FIGS_PATH, self.expe.get('_refdir',''),  self.specname(fn))
         make_path(path)
         return path
 
-    def formatName(fun):
-        def wrapper(self, *args, **kwargs):
-            args = list(args)
-            expe = copy(args[0])
-            for k, v in expe.items():
-                if isinstance(v, basestring):
-                    nn = self.specname(v)
-                else:
-                    nn = v
-                setattr(expe, k, nn)
-            args[0] = expe
-            f = fun(self, *args, **kwargs)
-            return f
-        return wrapper
+    def formatName(self, expe):
+        expe = copy(expe)
+        for k, v in expe.items():
+            if isinstance(v, basestring):
+                nn = self.specname(v)
+            else:
+                nn = v
+            setattr(expe, k, nn)
+        return expe
 
 
-    @formatName
-    def write_figs(self, figs, _suffix=None, _fn=None, ext='.pdf'):
+    def write_figs_deprecated(self, figs, base=None, suffix=None, ext='.pdf'):
+        expe = self.formatName(self.expe)
         if type(figs) is list:
-            _fn = '' if _fn is None else self.specname(_fn)+'_'
+            base = '' if base is None else self.specname(base)+'_'
             for i, f in enumerate(figs):
-                suffix = '_'+ _suffix if _suffix and len(figs)>1 else ''
-                fn = ''.join([_fn, '%s_%s', ext]) % (self.expe.corpus, str(i) + suffix)
+                suffix = '_'+ suffix if suffix and len(figs)>1 else ''
+                fn = ''.join([base, '%s_%s', ext]) % (expe.corpus, str(i) + suffix)
+                fn = self.full_fig_path(fn)
                 print('Writings figs: %s' % fn)
-                f.savefig(self.full_fig_path(fn));
+                f.savefig(fn);
         elif issubclass(type(figs), dict):
             for c, f in figs.items():
                 fn = ''.join([f.fn , ext])
+                fn = self.full_fig_path(fn)
                 print('Writings figs: %s' % fn)
-                f.fig.savefig(self.full_fig_path(fn));
+                f.fig.savefig(fn);
         else:
             print('ERROR : type of Figure unknow, passing')
 
-    def write_table(self, table, _fn=None, ext='.txt'):
-
+    def write_table(self, table, base='', suffix='', ext='.txt'):
+        expe = self.formatName(self.expe)
         caption = '\caption{{{title}}}\n'
-
-        if isinstance(table, (list, np.ndarray)):
-            _fn = '' if _fn is None else self.specname(_fn)+'_'
-            fn = ''.join([_fn, 'table', ext])
+        if isinstance(table, (str)):
+            base = self.specname(base)
+            fn = '_'.join(filter(None, ['table', base, suffix])) + ext
             fn = self.full_fig_path(fn)
+            print('Writings table: %s' % fn)
             with open(fn, 'w') as _f:
                 _f.write(table)
         elif isinstance(table, dict):
             for c, t in table.items():
-                fn = t.get('fn', 'void')
-                fn = ''.join([fn ,'_', self.specname(c), '_table', ext])
+                if t.base:
+                    base = self.specname(t.base)
+                if t.args:
+                    s = '_'.join(['%s'] * len(t.args))
+                    args = s % tuple(map(lambda x:expe.get(x, x), t.args))
+                fn = '_'.join(filter(None, ['table', self.specname(c), base, args, suffix])) + ext
                 fn = self.full_fig_path(fn)
+                print('Writings table: %s' % fn)
                 with open(fn, 'w') as _f:
                     _f.write(caption.format(title=c))
                     _f.write(t.table+'\n')
         else:
             print('ERROR : type `%s\' of Table unknow, passing' % (type(table)))
-
-
 
 
     def _format_line_out(self, model, comments=('#','%')):
