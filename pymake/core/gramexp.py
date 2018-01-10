@@ -19,7 +19,7 @@ import numpy as np
 
 import argparse
 
-from pymake import ExpDesign, ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, Script, Spec, ExpVector, ExpGroup
+from pymake import ExpDesign, ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, Script, Spec, ExpVector
 from pymake.util.utils import colored, basestring, get_global_settings
 
 # @debug name integration
@@ -638,7 +638,7 @@ class GramExp(object):
         request['_run_indexs'] = run_indexs
 
         if len(expgroup) >= 1:
-            request['_spec'] = ExpGroup(expgroup)
+            request['_spec'] = expgroup
 
         if len(expgroup) > 0 and len(do) == 0:
             request['_do'] = 'show'

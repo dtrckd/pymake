@@ -106,8 +106,8 @@ class ExpSpace(dict):
 
     def __copy__(self):
         return self.__class__(**self)
-    def __deepcopy__(self, memo):
-        return self.copy()
+    #def __deepcopy__(self, memo):
+    #    return self.copy()
 
     def __getattr__(self, key):
         try:
@@ -138,12 +138,16 @@ class ExpGroup(list, BaseObject):
     ''' A List of elements of an ExpTensor. '''
 
     def __init__(self, args, **kwargs):
+        if kwargs:
+            args = deepcopy(args)
+
         if isinstance(args, dict):
             args = [args]
 
-        for i, o in enumerate(args):
-            if isinstance(o, (dict, ExpGroup)):
-                args[i] = deepcopy(o)
+        # Don't work well, why ?
+        #for i, o in enumerate(args):
+        #    if isinstance(o, (dict, ExpGroup)):
+        #        args[i] = deepcopy(o)
 
         list.__init__(self, args)
         BaseObject.__init__(args, **kwargs)
@@ -485,7 +489,7 @@ class ExpTensorV2(BaseObject):
         self._size = None
 
     @classmethod
-    def from_conf(cls, conf, _max_expe=150000, private_keywords=[]):
+    def from_conf(cls, conf, _max_expe=2e6, private_keywords=[]):
         gt = cls(private_keywords=private_keywords)
         _spec = conf.pop('_spec', None)
         if not _spec:
@@ -493,15 +497,15 @@ class ExpTensorV2(BaseObject):
             return gt
 
         exp = []
-        max_expe = len(_spec)
+        size_expe = len(_spec)
         consume_expe = 0
-        while consume_expe < max_expe:
+        while consume_expe < size_expe:
             o = _spec[consume_expe]
             if isinstance(o, tuple):
                 name, o = o
 
             if isinstance(o, ExpGroup):
-                max_expe += len(o) -1
+                size_expe += len(o) -1
                 _spec = _spec[:consume_expe] + o + _spec[consume_expe+1:]
             elif isinstance(o, list):
                 exp.append(o)
@@ -511,8 +515,8 @@ class ExpTensorV2(BaseObject):
                 exp.append(o)
                 consume_expe += 1
 
-            if max_expe > _max_expe:
-                lgg.warning('Number of experiences exceeds the hard limit of %d.' % _max_expe)
+            if size_expe > _max_expe:
+                lgg.warning('Number of experiences exceeds the hard limit of %d (please review ExpTensor).' % _max_expe)
 
         gt._tensors.extend([ExpTensor.from_expe(conf, spec) for spec in exp])
         return gt
@@ -1209,8 +1213,8 @@ class ExpeFormat(object):
                 f.savefig(fn);
         elif issubclass(type(figs), dict):
             for c, f in figs.items():
-                base = t.get('base') or base
-                args = t.get('args') or args
+                base = f.get('base') or base
+                args = f.get('args') or args
                 if base:
                     base = self.specname(base)
                 if args:
