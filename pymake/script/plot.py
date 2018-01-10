@@ -26,7 +26,7 @@ class Plot(ExpeFormat):
             # get _csv_type is any ...
             self.configure_model(self.model)
 
-    @ExpeFormat.plot('corpus')
+    @ExpeFormat.plot_obsolete('corpus')
     def __call__(self, attribute='_entropy'):
         ''' Plot figure group by :corpus:.
             Notes: likelihood/perplexity convergence report
@@ -47,12 +47,12 @@ class Plot(ExpeFormat):
         frame = self.gramexp._figs[expe.corpus]
         ax = frame.fig.gca()
 
-        ax = self.gramexp._figs[expe.corpus].fig.gca()
+        ax = frame.fig.gca()
         ax.plot(data, label=description, marker=frame.markers.next())
-        ax.legend(loc='upper right',prop={'size':7})
+        ax.legend(loc='upper right',prop={'size':5})
 
 
-    @ExpeFormat.plot
+    @ExpeFormat.plot_obsolete
     def plot_unique(self, attribute='_entropy'):
         ''' Plot all figure in the same window.
             Notes: likelihood/perplexity convergence report '''
@@ -73,10 +73,34 @@ class Plot(ExpeFormat):
         plt.legend(loc='upper right',prop={'size':1})
 
 
+    @ExpeFormat.plot(1,2) # improve ergonomy ?
+    def fig(self, frame, attribute, *args):
+        ''' Plot all figure args is  `a:b..:c' (plot c by grouping by a, b...),
+            if args is given, use for filename discrimination `key1[/key2]...'.
+        '''
+        expe = self.expe
+
+        data = self.load_some()
+        if not data:
+            self.log.warning('No data for expe : %s' % self.output_path)
+            return
+
+        data = data[attribute]
+        data = np.ma.masked_invalid(np.array(data, dtype='float'))
+
+        burnin = 5
+        description = '/'.join((expe._refdir, os.path.basename(self.output_path)))
+
+        ax = frame.fig.gca()
+
+        ax = frame.fig.gca()
+        ax.plot(data, label=description, marker=frame.markers.next())
+        ax.legend(loc='upper right',prop={'size':5})
+
 
     @ExpeFormat.tabulate(1,2) # improve ergonomy ?
     def table(self, array, floc, x, y, z, *args):
-        ''' Plot table according to parameter `x:y:z(param)'
+        ''' Plot table according to parameter `x:y:z[-z2](param)'
             if args is given, use for filename discrimination `key1[/key2]...'
         '''
         expe = self.expe

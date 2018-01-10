@@ -951,13 +951,13 @@ class ExpeFormat(object):
         return kernel
 
     @staticmethod
-    def plot(*groups):
+    def plot_obsolete(*groups, **_kwargs):
         ''' If no argument, simple plot.
             If arguments :
                 * [0] : group figure by this
                 * [1] : key for id (title and filename)
         '''
-        if len(groups[1:]) == 0 and callable(groups[0]):
+        if groups and len(groups[1:]) == 0 and callable(groups[0]):
             # decorator whithout arguments
             return ExpeFormat.plot_simple(groups[0])
 
@@ -969,6 +969,9 @@ class ExpeFormat(object):
                 group = groups[0]
                 self = args[0]
                 expe = self.expe
+                discr_args = []
+                if len(args) > 1:
+                    discr_args = args[2].split('/')
 
                 # Init Figs Sink
                 if not hasattr(self.gramexp, '_figs'):
@@ -985,13 +988,91 @@ class ExpeFormat(object):
                 # Set title and filename
                 title = ' '.join('{{{0}}}'.format(w) for w in groups).format(**self.specname(expe))
                 expfig = self.gramexp._figs[expe[group]]
-                expfig.fn = '%s_%s' % (fun.__name__, title.replace(' ', '_'))
+                expfig.base = '%s_%s' % (fun.__name__, title.replace(' ', '_'))
+                expfig.args = discr_args
                 expfig.fig.gca().set_title(title)
 
                 # Save on last call
                 if self._it == self.expe_size -1:
                     if expe.write:
-                        self.write_figs_deprecated(self.gramexp._figs)
+                        self.write_figs(self.gramexp._figs)
+
+                return kernel
+            return wrapper
+
+        return decorator
+
+    @staticmethod
+    def plot(*a, **b):
+        ''' Doc todo (plot alignement...) '''
+
+        def decorator(fun):
+            @wraps(fun)
+            def wrapper(*args, **kwargs):
+                import matplotlib.pyplot as plt
+                from pymake.plot import _linestyle, _markers
+
+                self = args[0]
+                discr_args = [] # discriminant keys (to distinguish filename)
+                if len(args) == 1:
+                    groups = ['corpus']
+                    attribute = '_entropy'
+                else:
+                    groups = args[1].split(':')
+                    if len(groups) == 1:
+                        attribute = groups[0]
+                        groups = None
+                    else:
+                        attribute = groups.pop(-1)
+                        groups = groups[0]
+                    if len(args) > 2:
+                        discr_args = args[2].split('/')
+
+                if groups:
+                    groups = groups.split('/')
+                    ggroup = '-'.join(filter(None, [self.expe.get(g) for g in groups]))
+                else:
+                    ggroup = None
+
+                # Init Figs Sink
+                if not hasattr(self.gramexp, '_figs'):
+                    figs = dict()
+                    if groups:
+                        gset = product(*filter(None, [self.gramexp.get_set(g) for g in groups]))
+                    else:
+                        gset = [None]
+
+                    for g in gset:
+                        gg = '-'.join(g) if g else None
+                        figs[gg] = ExpSpace()
+                        figs[gg].fig = plt.figure()
+                        figs[gg].linestyle = _linestyle.copy()
+                        figs[gg].markers = _markers.copy()
+
+                    self.gramexp._figs = figs
+
+                frame = self.gramexp._figs[ggroup]
+                kernel = fun(self, frame, attribute)
+
+                # Set title and filename
+                if self.expe.get(groups[0]):
+                    #title = ' '.join('{{{0}}}'.format(w) for w in groups).format(**self.specname(self.expe))
+                    ctitle = tuple(filter(None,map(lambda x:self.specname(self.expe.get(x, x)), groups)))
+                    s = '_'.join(['%s'] * len(ctitle))
+                    title = s % ctitle
+                else:
+                    title = ' '.join(self.gramexp.get_nounique_keys())
+                    if not title:
+                        title = '%s %s' % tuple(map(lambda x:self.expe.get(x, x), ['corpus', 'model']))
+
+                frame.base = '%s_%s' % (fun.__name__, title.replace(' ', '_'))
+                frame.args = discr_args
+                frame.fig.gca().set_title(title)
+
+                # Save on last call
+                if self._it == self.expe_size -1:
+                    if self.expe.write:
+                        self.write_figs(self.gramexp._figs)
 
                 return kernel
             return wrapper
@@ -1006,52 +1087,73 @@ class ExpeFormat(object):
             @wraps(fun)
             def wrapper(*args, **kwargs):
                 self = args[0]
-                # discriminant keys (to distinguish filename)
-                discr_args = []
-                if len(args[1:]) == 0:
+                discr_args = [] # discriminant keys (to distinguish filename)
+                if len(args) == 1:
                     x, y, z = 'corpus', 'model', '_entropy'
                 else:
                     x, y, z = args[1].split(':')
-                    if len(args) > 1:
+                    if len(args) > 2:
                         discr_args = args[2].split('/')
+
+                if discr_args:
+                    groups = discr_args
+                    # or None if args not in expe (tex option...)
+                    ggroup = '-'.join(filter(None, [self.expe.get(g) for g in groups])) or None
+                else:
+                    groups = None
+                    ggroup = None
 
                 _z = z.split('-')
 
-                if not fun.__name__ in self.gramexp._tables:
-                    table = ExpSpace()
-                    array, floc = self.gramexp.get_array_loc(x, y, _z)
-                    table['array'] = array
-                    table['floc'] = floc
-                    self.gramexp._tables[fun.__name__] = table
-                else:
-                    table = self.gramexp._tables[fun.__name__]
+                if not hasattr(self.gramexp, '_tables'):
+                    tables = dict()
+                    if groups:
+                        gset = product(*filter(None, [self.gramexp.get_set(g) for g in groups]))
+                    else:
+                        gset = [None]
 
-                array = table.array
-                floc = table.floc
+                    for g in gset:
+                        gg = '-'.join(g) if g else None
+                        tables[gg] = ExpSpace()
+                        array, floc = self.gramexp.get_array_loc(x, y, _z)
+                        tables[gg].array = array
+                        tables[gg].floc = floc
+
+                    self.gramexp._tables = tables
+
+                frame = self.gramexp._tables[ggroup]
+                array = frame.array
+                floc = frame.floc
 
                 for z in _z:
                     kernel = fun(self, array, floc, x, y, z, **kwargs)
 
                 if self._it == self.expe_size -1:
-                    frame = {}
-                    for zpos, z in enumerate(_z):
-                        # Format table
-                        tablefmt = 'latex'
-                        Meas = self.specname(self.gramexp.get_set(y))
-                        arr = self.highlight_table(array[:,:,zpos])
-                        table = np.column_stack((self.specname(self.gramexp.get_set(x)), arr))
-                        Table = tabulate(table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f')
-                        print(colored('\n%s Table:'%(z), 'green'))
-                        print(Table)
+                    for ggroup in list(self.gramexp._tables):
+                        _table = self.gramexp._tables.pop(ggroup)
+                        array = _table.array
+                        for zpos, z in enumerate(_z):
+                            # Format table
+                            #tablefmt = 'latex' # 'simple'
+                            tablefmt = 'latex' if 'tex' in discr_args else 'simple'
+                            Meas = self.specname(self.gramexp.get_set(y))
+                            arr = self.highlight_table(array[:,:,zpos])
+                            table = np.column_stack((self.specname(self.gramexp.get_set(x)), arr))
+                            Table = tabulate(table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f')
 
-                        frame[z] = ExpSpace({'table': Table,
-                                             'args': discr_args,
-                                             #'args':self.gramexp.get_nounique_keys(x, y),
-                                             'base':'_'.join((fun.__name__, x,y))},
-                                           )
+                            gg = z +'-'+ ggroup if ggroup else z
+                            self.gramexp._tables[gg] = ExpSpace({'table': Table,
+                                                                 'base':'_'.join((fun.__name__, x,y))})
+                            #_table.args = discr_args
+                            #_table.args = self.gramexp.get_nounique_keys(x, y)
+
+                            print(colored('\n%s Table:'%(z), 'green'))
+                            print(Table)
+
 
                     if self.expe.write:
-                        self.write_table(frame, ext='.md')
+                        tablefmt_ext = dict(simple='.md', latex='.tex')
+                        self.write_table(self.gramexp._tables, ext=tablefmt_ext[tablefmt])
 
                 return kernel
             return wrapper
@@ -1069,43 +1171,6 @@ class ExpeFormat(object):
             table[i, col] = colored(table[i, col], 'magenta')
 
         return table
-
-    @classmethod
-    def _preprocess_(cls, gramexp):
-        ''' This method has **write** access to Gramexp '''
-
-        # Create the global container for expe decorator.
-        gramexp._tables = {}
-        #gramex._figs = {} # @TODO: adapt ExpeFormat.plot like ExpeFormat.table
-
-        # update exp_tensor in gramexp
-        if hasattr(cls, '_default_expe'):
-            gramexp.exp_tensor.set_default_all(cls._default_expe)
-
-        # Put a valid expe a the end.
-        gramexp.reorder_firstnonvalid()
-
-        if not gramexp._conf.get('simulate'):
-            print(gramexp.exptable())
-
-        return
-
-    @classmethod
-    def _postprocess_(cls, gramexp):
-        cls.display(gramexp._conf)
-        return
-
-
-    def _preprocess(self):
-        # heere, do a wrapper ?
-        pass
-
-    def _postprocess(self):
-        # heere, do a wrapper ?
-        pass
-
-    def __call__(self):
-        raise NotImplementedError
 
     def specname(self, n):
         #return self.gramexp._expdesign._name(n).lower().replace(' ', '')
@@ -1128,43 +1193,61 @@ class ExpeFormat(object):
         return expe
 
 
-    def write_figs_deprecated(self, figs, base=None, suffix=None, ext='.pdf'):
+    def write_figs(self, figs, base='', suffix='', ext='.pdf', args=''):
         expe = self.formatName(self.expe)
+
         if type(figs) is list:
-            base = '' if base is None else self.specname(base)+'_'
+            if base:
+                base = self.specname(base)
+            if args:
+                s = '_'.join(['%s'] * len(args))
+                args = s % tuple(map(lambda x:self.specname(expe.get(x, x)), args))
             for i, f in enumerate(figs):
-                suffix = '_'+ suffix if suffix and len(figs)>1 else ''
-                fn = ''.join([base, '%s_%s', ext]) % (expe.corpus, str(i) + suffix)
+                fn = '_'.join(filter(None, [base, args, suffix])) + ext
                 fn = self.full_fig_path(fn)
                 print('Writings figs: %s' % fn)
                 f.savefig(fn);
         elif issubclass(type(figs), dict):
             for c, f in figs.items():
-                fn = ''.join([f.fn , ext])
+                base = t.get('base') or base
+                args = t.get('args') or args
+                if base:
+                    base = self.specname(base)
+                if args:
+                    s = '_'.join(['%s'] * len(args))
+                    args = s % tuple(map(lambda x:self.specname(expe.get(x, x)), args))
+                fn = '_'.join(filter(None, [self.specname(c), base, args, suffix])) + ext
                 fn = self.full_fig_path(fn)
                 print('Writings figs: %s' % fn)
                 f.fig.savefig(fn);
         else:
             print('ERROR : type of Figure unknow, passing')
 
-    def write_table(self, table, base='', suffix='', ext='.txt'):
+    def write_table(self, table, base='', suffix='', ext='.md', args=''):
         expe = self.formatName(self.expe)
         caption = '\caption{{{title}}}\n'
+
         if isinstance(table, (str)):
-            base = self.specname(base)
-            fn = '_'.join(filter(None, ['table', base, suffix])) + ext
+            if base:
+                base = self.specname(base)
+            if args:
+                s = '_'.join(['%s'] * len(args))
+                args = s % tuple(map(lambda x:self.specname(expe.get(x, x)), args))
+            fn = '_'.join(filter(None, [base, args, suffix])) + ext
             fn = self.full_fig_path(fn)
             print('Writings table: %s' % fn)
             with open(fn, 'w') as _f:
                 _f.write(table)
         elif isinstance(table, dict):
             for c, t in table.items():
-                if t.base:
-                    base = self.specname(t.base)
-                if t.args:
-                    s = '_'.join(['%s'] * len(t.args))
-                    args = s % tuple(map(lambda x:expe.get(x, x), t.args))
-                fn = '_'.join(filter(None, ['table', self.specname(c), base, args, suffix])) + ext
+                base = t.get('base') or base
+                args = t.get('args') or args
+                if base:
+                    base = self.specname(base)
+                if args:
+                    s = '_'.join(['%s'] * len(args))
+                    args = s % tuple(map(lambda x:self.specname(expe.get(x, x)), args))
+                fn = '_'.join(filter(None, [self.specname(c), base, args, suffix])) + ext
                 fn = self.full_fig_path(fn)
                 print('Writings table: %s' % fn)
                 with open(fn, 'w') as _f:
@@ -1172,6 +1255,45 @@ class ExpeFormat(object):
                     _f.write(t.table+'\n')
         else:
             print('ERROR : type `%s\' of Table unknow, passing' % (type(table)))
+
+
+
+
+
+
+
+
+    @classmethod
+    def _preprocess_(cls, gramexp):
+        ''' This method has **write** access to Gramexp '''
+
+        # update exp_tensor in gramexp
+        if hasattr(cls, '_default_expe'):
+            gramexp.exp_tensor.set_default_all(cls._default_expe)
+
+        # Put a valid expe a the end.
+        gramexp.reorder_firstnonvalid()
+
+        if not gramexp._conf.get('simulate'):
+            print(gramexp.exptable())
+
+        return
+
+    @classmethod
+    def _postprocess_(cls, gramexp):
+        cls.display(gramexp._conf)
+        return
+
+    def _preprocess(self):
+        # heere, do a wrapper ?
+        pass
+
+    def _postprocess(self):
+        # heere, do a wrapper ?
+        pass
+
+    def __call__(self):
+        raise NotImplementedError
 
 
     def _format_line_out(self, model, comments=('#','%')):

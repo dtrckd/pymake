@@ -24,9 +24,10 @@ class Netw2(ExpDesign):
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
-        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}-{_name}',
+        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
     )
+    compare_scvb_m = ExpGroup(compare_scvb, model='immsb_cgs')
 
 
     scvb = ExpTensor (
@@ -46,16 +47,15 @@ class Netw2(ExpDesign):
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
-        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}-{_name}',
+        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
     )
     cvb = ExpTensor (
         corpus        = ['clique6'],
         model         = 'immsb_cvb',
         N             = 200,
-        chunk         = 'adaptative_1',
         K             = 6,
-        iterations    = 42,
+        iterations    = 150,
         hyper         = 'auto',
         testset_ratio = 20,
         #chi = [0.5, 1, 2, 10],
@@ -66,7 +66,7 @@ class Netw2(ExpDesign):
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
-        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}-{_name}',
+        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
     )
 
@@ -100,7 +100,7 @@ class Netw2(ExpDesign):
 
         _data_type    = 'networks',
         _refdir       = 'debug_scvb_1' , # it was done with i0.
-        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}-{_name}',
+        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
     )
 
@@ -149,5 +149,12 @@ class Netw2(ExpDesign):
 
     # Noel expe
     noel = ExpGroup([scvb, cvb, compare_scvb], N='all', corpus=data_net_all,
+                    mask=['balanced', 'unbalanced'], _refdir='noel')
+
+    noel_cvb = ExpGroup(cvb, N='all', corpus=data_net_all, mask=['balanced', 'unbalanced'], _refdir='noel')
+    noel_scvb = ExpGroup(scvb, N='all', corpus=data_net_all, mask=['balanced', 'unbalanced'], _refdir='noel')
+    noel_scvb_ada = ExpGroup(noel_scvb, chunk=['adaptative_0.1', 'adaptative_0.5', 'adaptative_10'])
+
+    noel_mmsb = ExpGroup([scvb, cvb, compare_scvb_m], N='all', corpus=data_net_all,
                     mask=['balanced', 'unbalanced'], _refdir='noel')
 
