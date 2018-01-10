@@ -273,14 +273,14 @@ class Netw(ExpDesign):
 
     default_expe = ExpTensor(
         _data_type   = 'networks',
-        corpus      = 'clique2',
+        corpus      = 'clique4',
         model       = 'immsb_cgs',
         hyper       = 'auto',
         _refdir      = 'debug',
         testset_ratio = 20,
-        K           = 4,
-        N           = 42,
-        iterations  = 3,
+        K           = 5,
+        N           = 50,
+        iterations  = 10,
         homo = 0,
         _format = '{model}_{corpus}_{K}_{hyper}_{homo}_{N}',
         _csv_typo = '# _iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
@@ -288,7 +288,7 @@ class Netw(ExpDesign):
 
     debug = ExpTensor(
         _data_type   = 'networks',
-        corpus      = 'clique2',
+        corpus      = 'clique4',
         model       = ['immsb_cgs', 'ilfm_cgs', 'immsb_scvb'],
         hyper       = 'auto',
         _refdir      = 'debug',
