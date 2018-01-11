@@ -1147,11 +1147,12 @@ class ExpeFormat(object):
 
                             gg = z +'-'+ ggroup if ggroup else z
                             self.gramexp._tables[gg] = ExpSpace({'table': Table,
-                                                                 'base':'_'.join((fun.__name__, x,y))})
-                            #_table.args = discr_args
-                            #_table.args = self.gramexp.get_nounique_keys(x, y)
+                                                                 'base':'_'.join((fun.__name__, x,y)),
+                                                                 'args':discr_args,
+                                                                 #'args':self.gramexp.get_nounique_keys(x, y),
+                                                                })
 
-                            print(colored('\n%s Table:'%(z), 'green'))
+                            print(colored('\n%s Table:'%(gg), 'green'))
                             print(Table)
 
 
