@@ -67,7 +67,7 @@ You may also need the following package : `apt-get install poppler-utils`
 Then a typical pymake usage :
 
 ```bash
-pymake run --script fit --path path/to/your/pdfs/   # index your pdf documents, take a coffe
+pymake run --script fit --path path/to/your/pdfs/   # index your pdf documents, take a coffee
 pymake run --script search "your text search request"  # show relevant information
 ```
 

@@ -699,7 +699,7 @@ class GenNetwork(ExpeFormat):
         description = '/'.join((expe._refdir, os.path.basename(self.output_path)))
         #description = self.specname(expe.model)
         ax.plot(fpr, tpr, label='ROC %s (area = %0.2f)' % (description, roc_auc), ls=frame.linestyle.next())
-        plt.legend(loc='upper right',prop={'size':1})
+        plt.legend(loc='upper right',prop={'size':5})
         self.noplot = True
 
         #precision, recall, thresholds = precision_recall_curve( y_true, probas)
@@ -709,7 +709,7 @@ class GenNetwork(ExpeFormat):
             for c, f in self.gramexp._figs.items():
                 ax = f.fig.gca()
                 ax.plot([0, 1], [0, 1], linestyle='--', color='k', label='Luck')
-                ax.legend(loc="lower right", prop={'size':10})
+                ax.legend(loc="lower right", prop={'size':5})
 
     def roc_evolution(self, _type='testset', _type2='max', _ratio=20, _type3='errorbar'):
         ''' AUC difference between two models against testset_ratio

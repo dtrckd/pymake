@@ -14,7 +14,7 @@ class Netw2(ExpDesign):
     compare_scvb = ExpTensor (
         corpus        = ['clique6', 'BA'],
         model         = ['immsb_cgs', 'ilfm_cgs', 'rescal'],
-        N             = 'all',
+        N             = 200,
         K             = 6,
         iterations    = 150,
         hyper         = 'auto',
@@ -39,9 +39,9 @@ class Netw2(ExpDesign):
         iterations    = 3,
         hyper         = 'auto',
         testset_ratio = 20,
-        #chi = [0.5, 1, 2, 10],
-        #tau = [0.5, 1, 2, 16, 64, 256, 1024],
-        #kappa = [0.51, 0.45, 1],
+        #chi_a = 5,       #chi_b = 1,
+        #tau_a = 10,      #tau_b = 100,
+        #kappa_a = 0.9,   #kappa_b = 0.9,
         homo = 0,
         mask = 'unbalanced',
 
@@ -50,6 +50,9 @@ class Netw2(ExpDesign):
         _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
     )
+    scvb_t = ExpGroup(scvb, _refdir='debug_')
+
+
     cvb = ExpTensor (
         corpus        = ['clique6'],
         model         = 'immsb_cvb',
@@ -58,9 +61,6 @@ class Netw2(ExpDesign):
         iterations    = 150,
         hyper         = 'auto',
         testset_ratio = 20,
-        #chi = [0.5, 1, 2, 10],
-        #tau = [0.5, 1, 2, 16, 64, 256, 1024],
-        #kappa = [0.51, 0.45, 1],
         homo = 0,
         mask = 'unbalanced',
 
@@ -82,30 +82,8 @@ class Netw2(ExpDesign):
     #
 
 
-
-    scvb1_validation = ExpTensor ( # i0 experiments.
-        corpus        = data_net_all,
-        model         = 'immsb_scvb',
-        N             = 'all',
-        chunk         = ['adaptative_0.33','adaptative_1', 'adaptative_3'], # best seemes to be _1 !
-        K             = 6,
-        iterations    = [1, 10], # relaunch with 3 to see if any difference. not many ! but some fluctuation...!
-        hyper         = 'auto',
-        testset_ratio = 25,
-        #chi = [0.5, 1, 2, 10],
-        #tau = [0.5, 1, 2, 16, 64, 256, 1024],
-        #kappa = [0.51, 0.45, 1],
-        homo = 0,
-        mask = 'unbalanced',
-
-        _data_type    = 'networks',
-        _refdir       = 'debug_scvb_1' , # it was done with i0.
-        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}',
-        _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
-    )
-
     scvb1_chi_a = ExpTensor (
-        corpus        = data_net_all,
+        corpus        = ['blogs', 'manufacturing', 'generator7', 'generator10'],
         model         = 'immsb_scvb',
         N             = 'all',
         chunk         = 'adaptative_1',
@@ -113,9 +91,9 @@ class Netw2(ExpDesign):
         iterations    = 1,
         hyper         = 'auto',
         testset_ratio = 20,
-        chi = [0.5, 1, 2, 10],
-        tau = [0.5, 1, 2, 16, 64, 256, 1024],
-        kappa = [0.51, 0.45, 1],
+        chi_a = [0.5, 1, 2, 10],
+        tau_a = [0.5, 1, 2, 16, 64, 256, 1024],
+        kappa_a = [0.51, 0.45, 1],
         #homo = 0,
         #mask = 'unbalanced',
 
@@ -126,7 +104,7 @@ class Netw2(ExpDesign):
     )
 
     scvb1_chi_b = ExpTensor (
-        corpus        = data_net_all,
+        corpus        = ['blogs', 'manufacturing', 'generator7', 'generator10'],
         model         = 'immsb_scvb',
         N             = 'all',
         chunk         = 'adaptative_1',
@@ -134,14 +112,14 @@ class Netw2(ExpDesign):
         iterations    = 1,
         hyper         = 'auto',
         testset_ratio = 20,
-        chi = [0.5, 1, 2, 10],
-        tau = [0.5, 1, 2, 16, 64, 256, 1024],
-        kappa = [0.51, 0.45, 1],
+        chi_b = [0.5, 1, 2, 10],
+        tau_b = [0.5, 1, 2, 16, 64, 256, 1024],
+        kappa_b = [0.51, 0.45, 1],
         #homo = 0,
         #mask = 'unbalanced',
 
         _data_type    = 'networks',
-        _refdir       = 'debug_scvb_chi_i1' ,
+        _refdir       = 'debug_scvb_chib_i1' ,
         _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}-{_name}-{_id}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
     )

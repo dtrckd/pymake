@@ -48,18 +48,19 @@ class immsb_scvb(SVB):
         # Sufficient Statistics
         self._ss = self._random_s_init()
         #self._ss = self._random_ss_init()
+        #self._random_cvb_init()
 
         self.frontend._set_rawdata_for_likelihood_computation()
 
     def _init_gradient(self):
         self._timestep_a = 0
         self._timestep_b = 0
-        self._chi_a =  5
-        self._tau_a =  10
-        self._kappa_a = 0.9
-        self._chi_b = self.expe.get('chi', 1)
-        self._tau_b = self.expe.get('tau', 100)
-        self._kappa_b = self.expe.get('kappa', 0.9)
+        self._chi_a = self.expe.get('chi_a', 5)
+        self._tau_a = self.expe.get('tau_a', 10)
+        self._kappa_a = self.expe.get('kappa_a', 0.9)
+        self._chi_b = self.expe.get('chi_b', 1)
+        self._tau_b = self.expe.get('tau_b', 100)
+        self._kappa_b = self.expe.get('kappa_b', 0.9)
         self._update_gstep_theta()
         self._update_gstep_phi()
 
@@ -183,6 +184,44 @@ class immsb_scvb(SVB):
         # Return sufficient statistics
         return [N_phi, N_theta_left, N_theta_right]
 
+    def _random_cvb_init(self):
+        K = self._len['K']
+        N = self._len['N']
+        nfeat = self._len['nfeat']
+        dims = self._len['dims']
+        zeros = self._len['zeros']
+        ones = self._len['ones']
+        nnz = self._len['nnz']
+
+        if self._is_symmetric:
+            self.gamma = np.zeros((N,N,K,K))
+            for i, j in self.data_iter():
+                gmma = np.random.randint(1, 2*N, (K,K))
+                self.frontend.symmetrize(gmma)
+                gmma = gmma / gmma.sum()
+                self.gamma[i,j] = gmma
+
+                #self.gamma[j,i] = gmma # data_iter 2
+                gmma = np.random.randint(1, 2*N, (K,K))
+                self.frontend.symmetrize(gmma)
+                gmma = gmma / gmma.sum()
+                self.gamma[j,i] = gmma
+        else:
+            self.gamma = np.random.dirichlet(np.ones(K**2)*0.5, (N,N))
+            self.gamma.resize(N,N,K,K)
+            #self.gamma[self.frontend.data_ma == np.ma.masked] = 0 # ???
+
+        #self._symmetric_pt = self._is_symmetric +1 # ???
+        self._symmetric_pt = 1
+
+        self.N_theta_left = self.gamma.sum(1).sum(2)
+        self.N_theta_right = self.gamma.sum(0).sum(1)
+
+        self.N_phi = np.zeros((nfeat, K, K))
+        self.N_phi[0] = self.gamma[self.frontend.data_ma == 0].sum(0)
+        self.N_phi[1] = self.gamma[self.frontend.data_ma == 1].sum(0)
+
+
     def _reset_containers(self):
         self._N_phi *= 0
         self.samples = []
@@ -234,7 +273,9 @@ class immsb_scvb(SVB):
     def maximization(self, iter):
         ''' Variational Objective '''
         i,j = iter
+        #self.pull_current(i, j)
         variational = self._reduce_one(i,j).reshape(self._len['K'], self._len['K'])
+        #self.push_current(i, j, variational)
         self.samples.append(variational)
 
     def expectation(self, iter, burnin=False):
@@ -340,6 +381,43 @@ class immsb_scvb(SVB):
         Y = sp.stats.bernoulli.rvs(pij)
 
         return Y
+
+
+
+
+
+
+
+    def pull_current(self, i, j):
+        xij = self._xij
+
+        self.N_theta_left[i] -= self.gamma[i,j].sum(1)* self._symmetric_pt
+        self.N_theta_right[j] -= self.gamma[i,j].sum(0)* self._symmetric_pt
+        self.N_phi[xij] -= self.gamma[i,j]
+
+        if self._is_symmetric:
+            self.N_theta_left[j] -= self.gamma[j,i].sum(1)* self._symmetric_pt
+            self.N_theta_right[i] -= self.gamma[j,i].sum(0)* self._symmetric_pt
+            self.N_phi[xij] -= self.gamma[j,i]
+
+
+    def push_current(self, i, j, qij):
+        xij = self._xij
+
+        q_left = qij.sum(1)
+        q_right = qij.sum(0)
+        self.N_theta_left[i] += q_left * self._symmetric_pt
+        self.N_theta_right[j] += q_right* self._symmetric_pt
+        self.N_phi[xij] += qij
+
+        self.gamma[i, j] = qij
+
+        if self._is_symmetric:
+            self.N_theta_left[j] += q_left* self._symmetric_pt
+            self.N_theta_right[i] += q_right* self._symmetric_pt
+            self.N_phi[xij] += qij
+
+            self.gamma[j, i] = qij
 
 
 if __name__ == "__main__":

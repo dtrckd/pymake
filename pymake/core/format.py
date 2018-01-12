@@ -106,8 +106,8 @@ class ExpSpace(dict):
 
     def __copy__(self):
         return self.__class__(**self)
-    #def __deepcopy__(self, memo):
-    #    return self.copy()
+    def __deepcopy__(self, memo):
+        return self.copy()
 
     def __getattr__(self, key):
         try:
@@ -1034,7 +1034,7 @@ class ExpeFormat(object):
 
                 if groups:
                     groups = groups.split('/')
-                    ggroup = '-'.join(filter(None, [self.expe.get(g) for g in groups]))
+                    ggroup = self._file_part([self.expe.get(g) for g in groups], sep='-')
                 else:
                     ggroup = None
 
@@ -1047,7 +1047,7 @@ class ExpeFormat(object):
                         gset = [None]
 
                     for g in gset:
-                        gg = '-'.join(g) if g else None
+                        gg = '-'.join(map(str,g)) if g else None
                         figs[gg] = ExpSpace()
                         figs[gg].fig = plt.figure()
                         figs[gg].linestyle = _linestyle.copy()
@@ -1102,7 +1102,7 @@ class ExpeFormat(object):
                 if discr_args:
                     groups = discr_args
                     # or None if args not in expe (tex option...)
-                    ggroup = '-'.join(filter(None, [self.expe.get(g) for g in groups])) or None
+                    ggroup = self._file_part([self.expe.get(g) for g in groups], sep='-') or None
                 else:
                     groups = None
                     ggroup = None
@@ -1117,7 +1117,8 @@ class ExpeFormat(object):
                         gset = [None]
 
                     for g in gset:
-                        gg = '-'.join(g) if g else None
+                        gg = '-'.join(map(str,g)) if g else None
+                        print(gg)
                         tables[gg] = ExpSpace()
                         array, floc = self.gramexp.get_array_loc(x, y, _z)
                         tables[gg].array = array
@@ -1166,6 +1167,12 @@ class ExpeFormat(object):
 
         return decorator
 
+
+    @staticmethod
+    def _file_part(group, sep='_'):
+        part = sep.join(map(str, filter(None, group)))
+        return part
+
     def highlight_table(self, array, highlight_dim=1):
         hack_float = np.vectorize(lambda x : '{:.3f}'.format(float(x)))
         table = np.char.array(hack_float(array), itemsize=42)
@@ -1208,7 +1215,7 @@ class ExpeFormat(object):
                 s = '_'.join(['%s'] * len(args))
                 args = s % tuple(map(lambda x:self.specname(expe.get(x, x)), args))
             for i, f in enumerate(figs):
-                fn = '_'.join(filter(None, [base, args, suffix])) + ext
+                fn = self._file_part([base, args, suffix]) + ext
                 fn = self.full_fig_path(fn)
                 print('Writings figs: %s' % fn)
                 f.savefig(fn);
@@ -1221,7 +1228,7 @@ class ExpeFormat(object):
                 if args:
                     s = '_'.join(['%s'] * len(args))
                     args = s % tuple(map(lambda x:self.specname(expe.get(x, x)), args))
-                fn = '_'.join(filter(None, [self.specname(c), base, args, suffix])) + ext
+                fn = self._file_part([self.specname(c), base, args, suffix]) + ext
                 fn = self.full_fig_path(fn)
                 print('Writings figs: %s' % fn)
                 f.fig.savefig(fn);
@@ -1238,7 +1245,7 @@ class ExpeFormat(object):
             if args:
                 s = '_'.join(['%s'] * len(args))
                 args = s % tuple(map(lambda x:self.specname(expe.get(x, x)), args))
-            fn = '_'.join(filter(None, [base, args, suffix])) + ext
+            fn = self._file_part([base, args, suffix]) + ext
             fn = self.full_fig_path(fn)
             print('Writings table: %s' % fn)
             with open(fn, 'w') as _f:
@@ -1252,7 +1259,7 @@ class ExpeFormat(object):
                 if args:
                     s = '_'.join(['%s'] * len(args))
                     args = s % tuple(map(lambda x:self.specname(expe.get(x, x)), args))
-                fn = '_'.join(filter(None, [self.specname(c), base, args, suffix])) + ext
+                fn = self._file_part([self.specname(c), base, args, suffix]) + ext
                 fn = self.full_fig_path(fn)
                 print('Writings table: %s' % fn)
                 with open(fn, 'w') as _f:

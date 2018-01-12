@@ -45,7 +45,7 @@ class ModelBase(object):
         'thinning' : 1,
     }
     log = logging.getLogger('root')
-    def __init__(self, frontend, **expe):
+    def __init__(self, frontend, expe):
         """ Model Initialization strategy:
             1. self lookup from child initalization
             2. kwargs lookup
@@ -169,7 +169,7 @@ class ModelBase(object):
 
 
     def update_hyper(self):
-        lgg.error('no method to update hyperparams')
+        lgg.warning('no method to update hyperparams')
         return
 
     def get_hyper(self):
@@ -301,7 +301,7 @@ class GibbsSampler(ModelBase):
     '''
     __abstractmethods__ = 'model'
     def __init__(self, expe, frontend):
-        super(GibbsSampler, self).__init__(frontend, **expe)
+        super(GibbsSampler, self).__init__(frontend, expe)
 
     @mmm
     def compute_measures(self):
@@ -338,7 +338,8 @@ class GibbsSampler(ModelBase):
 
             self.compute_measures()
             print('.', end='')
-            lgg.info('Iteration %d,  Entropy: %f \t\t K=%d  alpha: %f gamma: %f' % (_it, self._entropy, self._K,self._alpha, self._gmma))
+            lgg.info('Iteration %d, %s, Entropy: %f \t\t K=%d  alpha: %f gamma: %f' % (_it, '/'.join((self.expe.model, self.expe.corpus)),
+                                                                                    self._entropy, self._K,self._alpha, self._gmma))
             if self.write:
                 self.write_it_step(self)
                 if _it > 0 and _it % self.snapshot_freq == 0:
@@ -519,7 +520,7 @@ class SVB(ModelBase):
 
     def __init__(self, expe, frontend):
         #self.fmt = '%d %.4f %.8f %.8f %d'
-        super(SVB, self).__init__(frontend, **expe)
+        super(SVB, self).__init__(frontend, expe)
 
     def _init_params(self):
         raise NotImplementedError
@@ -607,7 +608,8 @@ class SVB(ModelBase):
 
             self.compute_measures()
             print('.', end='')
-            lgg.info('Minibatch %d/%d,  ELBO: %f,  elbo diff: %f' % (_id_mnb+1, self.chunk_len, self.elbo, self.elbo_diff))
+            lgg.info('Minibatch %d/%d, %s, ELBO: %f,  elbo diff: %f' % (_id_mnb+1, self.chunk_len, '/'.join((self.expe.model, self.expe.corpus)),
+                                                                        self.elbo, self.elbo_diff))
             if self.expe.get('write'):
                 self.write_it_step(self)
                 if _id_mnb > 0 and _id_mnb % self.snapshot_freq == 0:
@@ -642,7 +644,8 @@ class SVB(ModelBase):
 
             self.compute_measures()
             if self._iteration != self.iterations-1 and self.expe.get('verbose', 20) < 20:
-                lgg.debug('it %d,  ELBO: %f, elbo diff: %f \t K=%d' % (_it, self.elbo, self.elbo_diff, self._K))
+                lgg.debug('it %d,  ELBO: %f, elbo diff: %f \t K=%d' % (_it,
+                                                                       self.elbo, self.elbo_diff, self._K))
                 if self.expe.get('write'):
                     self.write_it_step(self)
 
