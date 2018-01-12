@@ -118,7 +118,7 @@ class MMSB(object):
 class mmsb_vb(ModelBase):
 
     def __init__(self, expe, frontend):
-        super().__init__(frontend, **expe)
+        super().__init__(frontend, expe)
 
         self.expe = expe
 

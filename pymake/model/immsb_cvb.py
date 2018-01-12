@@ -41,12 +41,12 @@ class immsb_cvb(GibbsSampler):
         self.hyper_theta_sum = self.hyper_theta.sum()
 
         # Sufficient Statistics
-        self._ss = self._random_s2_init()
+        self._ss = self._random_cvb_init()
 
         self.frontend._set_rawdata_for_likelihood_computation()
 
 
-    def _random_s2_init(self):
+    def _random_cvb_init(self):
         K = self._len['K']
         N = self._len['N']
         nfeat = self._len['nfeat']

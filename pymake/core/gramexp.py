@@ -961,6 +961,10 @@ class GramExp(object):
             cmd.pop(idx); cmd.pop(idx) # pop --cores int
             cmdlines[i] = ' '.join(cmd)
 
+
+        if self._conf.get('simulate'):
+            self.simulate()
+
         cmd = ['parallel', '-j', n_cores, '-u', '-C', "' '", '--eta', '--progress', ':::', '%s'%('\n'.join(cmdlines))]
 
         #stdout = subprocess.check_output(cmd)
@@ -1039,6 +1043,9 @@ class GramExp(object):
         PWD = get_global_settings('remote_pwd')
         cmd = ['parallel', '-u', '-C', "' '", '--eta', '--progress',
                '--sshloginfile', NDL, '--workdir', PWD, '--env', 'OMP_NUM_THREADS', ':::', '%s'%('\n'.join(cmdlines))]
+
+        if self._conf.get('simulate'):
+            self.simulate()
 
         #stdout = subprocess.check_output(cmd)
         #print(stdout.decode())
