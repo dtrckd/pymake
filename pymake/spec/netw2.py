@@ -16,7 +16,7 @@ class Netw2(ExpDesign):
         model         = ['immsb_cgs', 'ilfm_cgs', 'rescal'],
         N             = 200,
         K             = 6,
-        iterations    = 150,
+        iterations    = 30,
         hyper         = 'auto',
         testset_ratio = 20,
         homo = 0,
@@ -39,9 +39,13 @@ class Netw2(ExpDesign):
         iterations    = 3,
         hyper         = 'auto',
         testset_ratio = 20,
-        #chi_a = 5,       #chi_b = 1,
-        #tau_a = 10,      #tau_b = 100,
-        #kappa_a = 0.9,   #kappa_b = 0.9,
+        #chi_a = 1,
+        #tau_a = 42,
+        kappa_a = 0.75,
+        #chi_b = 42,
+        #tau_b = 300,
+        #kappa_b = 0.9,
+
         homo = 0,
         mask = 'unbalanced',
 
@@ -51,6 +55,12 @@ class Netw2(ExpDesign):
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
     )
     scvb_t = ExpGroup(scvb, _refdir='debug_')
+
+    scvb_chi = ExpGroup(scvb, chi_a = 1, tau_a = 42, kappa_a = [ 0.7],
+                        chi_b = 42, tau_b = 300, kappa_b = [0.6, 0.7, 0.9],
+                        _format='{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}_{chi_a}-{tau_a}-{kappa_a}_{chi_b}-{tau_b}-{kappa_b}'
+                       )
+
 
 
     cvb = ExpTensor (

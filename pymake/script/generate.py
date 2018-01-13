@@ -693,7 +693,7 @@ class GenNetwork(ExpeFormat):
             fpr, tpr, thresholds = roc_curve(y_true, probas)
         except Exception as e:
             print(e)
-            self.log.error('can format expe : %s' % (self.output_path))
+            self.log.error('cant format expe : %s' % (self.output_path))
             return
         roc_auc = auc(fpr, tpr)
         description = '/'.join((expe._refdir, os.path.basename(self.output_path)))
