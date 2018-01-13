@@ -22,9 +22,6 @@ class Plot(ExpeFormat):
 
     def _preprocess(self):
         self.model = ModelManager.from_expe(self.expe)
-        if self.model:
-            # get _csv_type is any ...
-            self.configure_model(self.model)
 
     @ExpeFormat.plot_obsolete('corpus')
     def __call__(self, attribute='_entropy'):
@@ -108,8 +105,8 @@ class Plot(ExpeFormat):
         data = self.load_some()
         if not data:
             self.log.warning('No data for expe : %s' % self.output_path)
-            return
-        elif z not in data:
+
+        if not data or z not in data:
             func_name = 'get_'+z
             if hasattr(self, func_name):
                 data = getattr(self, func_name)()
@@ -145,7 +142,7 @@ class Plot(ExpeFormat):
             fpr, tpr, thresholds = roc_curve(y_true, probas)
         except Exception as e:
             print(e)
-            self.log.error('can format expe : %s' % (self.output_path))
+            self.log.error('cant format expe : %s' % (self.output_path))
             return
 
         roc_auc = auc(fpr, tpr)

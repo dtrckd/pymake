@@ -68,6 +68,7 @@ class Fit(ExpeFormat):
 
         is_fitted = self.gramexp.make_output_path(self.expe, _type=_type, status='f')
         if not is_fitted:
+            self.expe['write'] = True
             self()
         else:
             self.log.info("Expe `%s' already fitted, passing..." % self._it)

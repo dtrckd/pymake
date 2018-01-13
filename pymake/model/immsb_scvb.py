@@ -37,7 +37,8 @@ class immsb_scvb(SVB):
             self.chunk_size = self._len['nnz']
             self.chunk_len = 1
 
-        self._init_gradienta()
+        self._init_gradient()
+        #self._init_gradienta()
 
         # Hyperparams
         delta = self.expe['hyperparams']['delta']
@@ -236,14 +237,14 @@ class immsb_scvb(SVB):
         tau = self._tau_a
         kappa = self._kappa_a
 
-        self.gstep_theta = chi / (tau + self._timestep_a)**kappa
+        self.gstep_theta = chi / ((tau + self._timestep_a)**kappa)
 
     def _update_gstep_phi(self):
         chi = self._chi_b
         tau = self._tau_b
         kappa = self._kappa_b
 
-        self.gstep_phi =  chi / (tau + self._timestep_b)**kappa
+        self.gstep_phi =  chi / ((tau + self._timestep_b)**kappa)
 
 
     def _reduce_latent(self):

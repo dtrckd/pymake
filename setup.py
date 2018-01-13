@@ -34,6 +34,6 @@ setuptools.setup(
     entry_points = {
         'console_scripts': ['pymake=pymake.zymake:main'],
     },
-    package_data = {'pymake' : ['pymake.cfg', 'expe/*.template', 'util/stopwords.txt']},
+    package_data = {'pymake' : ['pymake.cfg', 'core/*.template', 'util/stopwords.txt']},
     include_package_data=True,
 )
