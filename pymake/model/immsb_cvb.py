@@ -20,6 +20,7 @@ class immsb_cvb(GibbsSampler):
         _len['nfeat'] = self.frontend.get_nfeat()
         data_ma = self.frontend.data_ma
         _len['nnz'] = self.frontend.ma_nnz()
+        _len['nnz_t'] = self.frontend.ma_nnz_t()
         _len['dims'] = self.frontend.ma_dims()
         _len['ones'] = (data_ma == 1).sum()
         _len['zeros'] = (data_ma == 0).sum()
@@ -55,7 +56,7 @@ class immsb_cvb(GibbsSampler):
         ones = self._len['ones']
         nnz = self._len['nnz']
 
-        if self._is_symmetric:
+        if self._is_symmetric and False:
             self.gamma = np.zeros((N,N,K,K))
             for i, j in self.data_iter():
                 gmma = np.random.randint(1, 2*N, (K,K))
@@ -71,13 +72,13 @@ class immsb_cvb(GibbsSampler):
         else:
             self.gamma = np.random.dirichlet(np.ones(K**2)*0.5, (N,N))
             self.gamma.resize(N,N,K,K)
-            #self.gamma[self.frontend.data_ma == np.ma.masked] = 0 # ???
+            self.gamma[self.frontend.data_ma == np.ma.masked] = 0 # ???
 
-        #self._symmetric_pt = self._is_symmetric +1 # ???
-        self._symmetric_pt = 1
+        #self._symmetric_pt = self._is_symmetric +1
+        #self._symmetric_pt = 1
 
-        self.N_theta_left = self.gamma.sum(1).sum(2)
-        self.N_theta_right = self.gamma.sum(0).sum(1)
+        self.N_theta_left = self.gamma.sum(0).sum(1)
+        self.N_theta_right = self.gamma.sum(1).sum(2)
 
         self.N_phi = np.zeros((nfeat, K, K))
         self.N_phi[0] = self.gamma[self.frontend.data_ma == 0].sum(0)
@@ -137,30 +138,32 @@ class immsb_cvb(GibbsSampler):
     def pull_current(self, i, j):
         xij = self._xij
 
-        self.N_theta_left[i] -= self.gamma[i,j].sum(1)* self._symmetric_pt
-        self.N_theta_right[j] -= self.gamma[i,j].sum(0)* self._symmetric_pt
+        q_left = self.gamma[i,j].sum(0)
+        q_right = self.gamma[i,j].sum(1)
+        self.N_theta_left[i] -= q_left
+        self.N_theta_right[j] -= q_right
         self.N_phi[xij] -= self.gamma[i,j]
 
         if self._is_symmetric:
-            self.N_theta_left[j] -= self.gamma[j,i].sum(1)* self._symmetric_pt
-            self.N_theta_right[i] -= self.gamma[j,i].sum(0)* self._symmetric_pt
+            self.N_theta_left[j] -= self.gamma[j,i].sum(0)
+            self.N_theta_right[i] -= self.gamma[j,i].sum(1)
             self.N_phi[xij] -= self.gamma[j,i]
 
 
     def push_current(self, i, j, qij):
         xij = self._xij
 
-        q_left = qij.sum(1)
-        q_right = qij.sum(0)
-        self.N_theta_left[i] += q_left * self._symmetric_pt
-        self.N_theta_right[j] += q_right* self._symmetric_pt
+        q_left = qij.sum(0)
+        q_right = qij.sum(1)
+        self.N_theta_left[i] += q_left
+        self.N_theta_right[j] += q_right
         self.N_phi[xij] += qij
 
         self.gamma[i, j] = qij
 
         if self._is_symmetric:
-            self.N_theta_left[j] += q_left* self._symmetric_pt
-            self.N_theta_right[i] += q_right* self._symmetric_pt
+            self.N_theta_left[j] += q_left
+            self.N_theta_right[i] += q_right
             self.N_phi[xij] += qij
 
             self.gamma[j, i] = qij
@@ -187,7 +190,7 @@ class immsb_cvb(GibbsSampler):
         ll = np.log(pij).sum()
 
         # Entropy
-        self._entropy_t = - ll / self._len['nnz']
+        self._entropy_t = - ll / self._len['nnz_t']
 
         # Perplexity is 2**H(X).
 

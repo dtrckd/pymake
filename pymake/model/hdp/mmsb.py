@@ -832,34 +832,6 @@ class GibbsRun(GibbsSampler):
         self.s.betasampler = None
         self.s.zsampler.likelihood = None
 
-
-
-
-    def fdebug(self):
-
-        lkl = self.s.zsampler.likelihood
-
-        theta = self.s.zsampler.doc_topic_counts
-        phi = lkl.word_topic_counts
-        dma = lkl.data_ma
-
-        _theta = (theta.T / theta.sum(axis=1)).T
-        _phi = (phi / phi.sum(0))[1]
-
-        print(_theta.sum())
-        print(_phi.sum())
-
-        p_ij = _theta.dot(_phi).dot(_theta.T)
-        pij = lkl.data_A * p_ij + lkl.data_B
-
-        print(np.log(pij))
-        ll = - np.log(pij).sum() / lkl.nnz
-
-        print(dma.sum())
-        print(p_ij.sum())
-        print(pij.sum())
-        print(ll)
-
     def get_hyper(self):
         if not hasattr(self, '_alpha'):
             try:

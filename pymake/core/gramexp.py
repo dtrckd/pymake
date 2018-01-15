@@ -347,6 +347,10 @@ class GramExp(object):
         ''' Return the set of values of expVector of that {key}. '''
         return sorted(set(self.exp_tensor.get_all(key, default)))
 
+    def get_list(self, key, default=[]):
+        ''' Return the set of values of expVector of that {key}. '''
+        return self.exp_tensor.get_all(key, default)
+
     def get_nounique_keys(self, *args):
         ''' return list of keys that are non unique in expe_tensor
             except if present in :args:.
