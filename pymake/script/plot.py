@@ -101,12 +101,15 @@ class Plot(ExpeFormat):
             if args is given, use for filename discrimination `key1[/key2]...'
         '''
         expe = self.expe
-
         data = self.load_some()
         if not data:
             self.log.warning('No data for expe : %s' % self.output_path)
 
         if not data or z not in data:
+            if not self.model:
+                self.log.warning('No model for expe : %s' % self.output_path)
+                return
+
             func_name = 'get_'+z
             if hasattr(self, func_name):
                 data = getattr(self, func_name)()

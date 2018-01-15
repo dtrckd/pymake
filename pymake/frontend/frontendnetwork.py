@@ -69,16 +69,15 @@ class frontendNetwork(DataBase, DatasetDriver):
         # for loglikelihood bernoulli computation
 
         # For measure on the training set
-        data_ma = self.data_ma.copy()
-        self.data_A = data_ma
+        self.data_A = self.data_ma.copy()
         self.data_A.data[self.data_A.data == 0] = -1
-        self.data_B = np.ones(data_ma.shape) - self.data_ma # don't remove self
+        self.data_B = np.ones(self.data_ma.shape) - self.data_ma
 
         # For measure on the training set
-        data_ma_t = ma.array(self.data_ma.data, mask=~self.data_ma.mask).copy()
-        self.data_A_t = data_ma_t
+        data_ma_t = ma.array(self.data_ma.data, mask=~self.data_ma.mask)
+        self.data_A_t = data_ma_t.copy()
         self.data_A_t.data[self.data_A_t.data == 0] = -1
-        self.data_B_t = np.ones(data_ma_t.shape) - self.data_ma # don't remove self
+        self.data_B_t = np.ones(data_ma_t.shape) - data_ma_t
 
 
     def load_data(self, corpus_name=None, randomize=False):
@@ -588,6 +587,9 @@ class frontendNetwork(DataBase, DatasetDriver):
 
     def ma_nnz(self):
         return len(self.data_ma.compressed())
+
+    def ma_nnz_t(self):
+        return self.data_ma.mask.sum()
 
     # Contains the index of nodes with who it interact.
     # @debug no more true for bipartite networks

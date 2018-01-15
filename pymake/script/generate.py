@@ -695,6 +695,7 @@ class GenNetwork(ExpeFormat):
             print(e)
             self.log.error('cant format expe : %s' % (self.output_path))
             return
+
         roc_auc = auc(fpr, tpr)
         description = '/'.join((expe._refdir, os.path.basename(self.output_path)))
         #description = self.specname(expe.model)

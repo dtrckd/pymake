@@ -163,6 +163,10 @@ _Gram = [
         nargs='*', action=unaggregate_append,
         help='Script request : name *args.'),
 
+    '--pmk', dict(
+        nargs='*', dest='_pmk', action=unaggregate_append,
+        help='force a an expe settings ex: --pmk myvar=2'),
+
     '--bind', dict(
         type=str, dest='_bind', action='append',
         help='Rules to filter the Exp Request.'),

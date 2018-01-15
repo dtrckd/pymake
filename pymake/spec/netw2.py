@@ -13,7 +13,7 @@ class Netw2(ExpDesign):
     # compare perplexity and rox curve from those baseline.
     compare_scvb = ExpTensor (
         corpus        = ['clique6', 'BA'],
-        model         = ['immsb_cgs', 'ilfm_cgs', 'rescal'],
+        model         = ['immsb_cgs', 'ilfm_cgs', 'rescal', 'immsb_cvb'],
         N             = 200,
         K             = 6,
         iterations    = 30,
@@ -27,8 +27,8 @@ class Netw2(ExpDesign):
         _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}',
         _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
     )
-    compare_scvb_m = ExpGroup(compare_scvb, model='immsb_cgs')
-
+    compare_scvb_m = ExpGroup(compare_scvb, model=['immsb_cgs', 'immsb_cvb'])
+    cvb = ExpGroup(compare_scvb, model='immsb_cvb')
 
     scvb = ExpTensor (
         corpus        = ['clique6'],
@@ -56,29 +56,22 @@ class Netw2(ExpDesign):
     )
     scvb_t = ExpGroup(scvb, _refdir='debug_')
 
-    scvb_chi = ExpGroup(scvb, chi_a = 1, tau_a = 42, kappa_a = [ 0.7],
-                        chi_b = 42, tau_b = 300, kappa_b = [0.6, 0.7, 0.9],
+    scvb_chi = ExpGroup(scvb, chi_a=1, tau_a=42, kappa_a=[0.6, 0.7, 0.9],
+                        chi_b=42, tau_b=300, kappa_b=[0.6, 0.7, 0.9],
+                        _format='{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}_{chi_a}-{tau_a}-{kappa_a}_{chi_b}-{tau_b}-{kappa_b}'
+                       )
+
+    scvb_chi_g7 = ExpGroup(scvb, chi_a=[10], tau_a=[100], kappa_a=[0.6],
+                        chi_b=[10], tau_b=[500], kappa_b=[0.9],
+                        _format='{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}_{chi_a}-{tau_a}-{kappa_a}_{chi_b}-{tau_b}-{kappa_b}'
+                       )
+
+    scvb_chi_2 = ExpGroup(scvb, chi_a=[1, 10], tau_a=[42, 100, 500], kappa_a=[0.6],
+                        chi_b=[1, 10], tau_b=[42, 100, 500], kappa_b=[0.6, 0.7, 0.9],
                         _format='{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}_{chi_a}-{tau_a}-{kappa_a}_{chi_b}-{tau_b}-{kappa_b}'
                        )
 
 
-
-    cvb = ExpTensor (
-        corpus        = ['clique6'],
-        model         = 'immsb_cvb',
-        N             = 200,
-        K             = 6,
-        iterations    = 150,
-        hyper         = 'auto',
-        testset_ratio = 20,
-        homo = 0,
-        mask = 'unbalanced',
-
-        _data_type    = 'networks',
-        _refdir       = 'debug_scvb' ,
-        _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}',
-        _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
-    )
 
 
     #
@@ -136,13 +129,17 @@ class Netw2(ExpDesign):
 
 
     # Noel expe
-    noel = ExpGroup([scvb, cvb, compare_scvb], N='all', corpus=data_net_all, mask=['balanced', 'unbalanced'], _refdir='noel')
+    noel = ExpGroup([scvb, compare_scvb], N='all', corpus=data_net_all, mask=['balanced', 'unbalanced'], _refdir='noel')
 
     noel_cvb = ExpGroup(cvb, N='all', corpus=data_net_all, mask=['balanced', 'unbalanced'], _refdir='noel')
     noel_scvb = ExpGroup(scvb, N='all', corpus=data_net_all, mask=['balanced', 'unbalanced'], _refdir='noel')
     noel_scvb_ada = ExpGroup(noel_scvb, chunk=['adaptative_0.1', 'adaptative_0.5', 'adaptative_1', 'adaptative_10'])
 
-    noel_mmsb = ExpGroup([scvb, cvb, compare_scvb_m], N='all', corpus=data_net_all,
+    noel_mmsb = ExpGroup([scvb, compare_scvb_m], N='all', corpus=data_net_all,
                     mask=['balanced', 'unbalanced'], _refdir='noel')
+
+    compare_scvb2 = ExpGroup(compare_scvb, iterations=150)
+    noel2 = ExpGroup([scvb_chi_g7, compare_scvb2], N='all', corpus=data_net_all,
+                    mask=['unbalanced'], _refdir='noel2')
 
 

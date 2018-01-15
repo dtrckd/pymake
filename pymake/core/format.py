@@ -1395,6 +1395,9 @@ class ExpeFormat(object):
         if filename is None:
             filename = self.output_path + '.inf'
 
+        if not os.path.exists(filename):
+            return None
+
         with open(filename) as f:
             data = f.read()
 
