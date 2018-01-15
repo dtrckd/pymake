@@ -78,12 +78,13 @@ class DatasetDriver(object):
 
         data = pd.read_csv(fn, sep=sep, names=['n', 'feat', 'cluster' ], comment=self._comment)
         parameters = data.dropna()
-        self.clusters = parameters['cluster'].values
+        self.clusters = parameters['cluster'].values.astype(int)
         self.features = np.array([list(map(float, f.split('|'))) for f in parameters['feat'].values])
 
         data = data.ix[data['cluster'].isna()]
         data['cluster'] = 1 # <= the weight
         data = data.loc[pd.to_numeric(data['n'], errors='coerce').dropna().index].as_matrix().astype(int)
+
 
         data[:, 0:2] -= data[:, 0:2].min()
         N = data[:, 0:2].max()+1
@@ -92,6 +93,7 @@ class DatasetDriver(object):
         e_ix = data[:, 0:2][e_l]
         ix = list(zip(*e_ix))
         y[ix] = data[:,2][e_l]
+
         return y
 
     def parse_dat(self, fn, sep="\s+"):

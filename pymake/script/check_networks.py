@@ -97,7 +97,7 @@ class CheckNetwork(ExpeFormat):
 
         if clusters is None:
             lgg.error('No clusters here...passing')
-            return
+            data_r = frontend.data
         else:
             block_hist = np.bincount(clusters)
             K = (block_hist != 0).sum()
@@ -105,7 +105,6 @@ class CheckNetwork(ExpeFormat):
             data_r = reorder_mat(frontend.data, clusters)
 
         np.fill_diagonal(data_r, 0)
-
 
         from pymake.util.math import dilate
         dlt = lambda x : dilate(x) if x.sum()/x.shape[0]**2 < 0.1 else x
@@ -323,7 +322,9 @@ class CheckNetwork(ExpeFormat):
             Table = self.gramexp.Table
             Meas = self.gramexp.Meas
         except AttributeError:
-            corpuses = self.specname(self.gramexp.get_set('corpus'))
+            # Warning order sensitive @deprecated Table.
+            #corpuses = self.specname(self.gramexp.get_set('corpus'))
+            corpuses = self.specname(self.gramexp.get_list('corpus'))
             Meas = ['nodes', 'edges', 'density']
             Meas += ['is_symmetric', 'modularity', 'clustering_coefficient', 'net_type']
             Table = np.zeros((len(corpuses), len(Meas))) * np.nan

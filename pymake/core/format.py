@@ -1118,7 +1118,6 @@ class ExpeFormat(object):
 
                     for g in gset:
                         gg = '-'.join(map(str,g)) if g else None
-                        print(gg)
                         tables[gg] = ExpSpace()
                         array, floc = self.gramexp.get_array_loc(x, y, _z)
                         tables[gg].array = array

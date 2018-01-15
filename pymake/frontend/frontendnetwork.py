@@ -150,9 +150,16 @@ class frontendNetwork(DataBase, DatasetDriver):
 
     def reorder_node(self, nodes_l):
         """ Subsample the data with reordoring of rows and columns """
-        self.data = self.data[nodes_l[0], :][:, nodes_l[1]]
         # Track the original nodes
         self.nodes_list = [self.nodes_list[0][nodes_l[0]], self.nodes_list[1][nodes_l[1]]]
+
+        self.data = self.data[nodes_l[0], :][:, nodes_l[1]]
+
+        if hasattr(self, 'features') and self.features is not None:
+            self.features = self.features[nodes_l[0]]
+
+        if hasattr(self, 'clusters') and self.clusters is not None:
+            self.clusters = self.clusters[nodes_l[0]]
 
     def sample(self, N=None, symmetric=False, randomize=False):
         """ Write self ! """
@@ -189,6 +196,9 @@ class frontendNetwork(DataBase, DatasetDriver):
 
         if hasattr(self, 'features') and self.features is not None:
             self.features = self.features[:N]
+
+        if hasattr(self, 'clusters') and self.clusters is not None:
+            self.clusters = self.clusters[:N]
 
     def set_masked(self, percent_hole, diag_off=1):
 
@@ -314,7 +324,7 @@ class frontendNetwork(DataBase, DatasetDriver):
             data = getClique(N, K=K)
             #Data = nx.adjacency_matrix(G, np.random.permutation(range(N))).A
         elif rnd in ('BA', 'barabasi-albert'):
-            data = nx.adjacency_matrix(nx.barabasi_albert_graph(N, m=int(0.95*N)) ).A
+            data = nx.adjacency_matrix(nx.barabasi_albert_graph(N, m=int(0.92*N)) ).A
         elif rnd ==  'alternate':
             #data = np.empty((N,N),int)
             data = np.zeros((N,N), int)
@@ -343,6 +353,7 @@ class frontendNetwork(DataBase, DatasetDriver):
         """
         data = None
         bdir = self.input_path
+
 
         if not os.path.exists(bdir):
             self.log.error("Corpus `%s' Not found." % (bdir))
