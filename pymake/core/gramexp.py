@@ -197,6 +197,7 @@ class GramExp(object):
     _reserved_keywords = ['_spec', # for nested specification.
                           '_id_expe', # unique expe identifier.
                           '_name_expe', # exp name identifier.
+                          '_pmk', # force to set some settings out of grammarg.
                          ]
     _private_keywords = _reserved_keywords + _special_keywords
 
@@ -548,9 +549,29 @@ class GramExp(object):
         # Assume None value are non-filled options
         settings = dict((key,value) for key, value in vars(s).items() if value is not None)
 
+        pmk_opts = cls.pmk_extra_opts(settings)
+        settings.update(pmk_opts)
         expdesign = GramExp.expVectorLookup(settings)
 
         return settings, parser, expdesign
+
+    @staticmethod
+    def pmk_extra_opts(settings):
+        opts = {}
+        pmk = settings.get('_pmk')
+        if not pmk:
+            return opts
+
+        for s in pmk:
+            k, v = s.split('=')
+            try:
+                v = int(v)
+            except:
+                try: v = float(v)
+                except: pass
+            opts[k] = v
+
+        return opts
 
     @classmethod
     def zymake(cls, request={}, usage='', firsttime=True, expdesign=None):

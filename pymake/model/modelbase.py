@@ -338,7 +338,7 @@ class GibbsSampler(ModelBase):
 
             self.compute_measures()
             print('.', end='')
-            lgg.info('Iteration %d, %s, Entropy: %f \t\t K=%d  alpha: %f gamma: %f' % (_it, '/'.join((self.expe.model, self.expe.corpus)),
+            lgg.info('iteration %d, %s, Entropy: %f \t\t K=%d  alpha: %f gamma: %f' % (_it, '/'.join((self.expe.model, self.expe.corpus)),
                                                                                     self._entropy, self._K,self._alpha, self._gmma))
             if self.write:
                 self.write_it_step(self)

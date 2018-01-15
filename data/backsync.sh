@@ -13,6 +13,7 @@ T="networks"
 #FILTER='--include "*/" --include "**pnas[23]**" --exclude "*"'
 #FILTER='--include "*/" --include "*scvb***"  --exclude "*"'
 FILTER='--include "*/" --include "*noel***"  --exclude "*"'
+FILTER='--include "*/" --include "*lambda***"  --exclude "*"'
 #FILTER=
 
 SIMUL="-n"

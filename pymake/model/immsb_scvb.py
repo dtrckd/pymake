@@ -21,6 +21,7 @@ class immsb_scvb(SVB):
         _len['nfeat'] = self.frontend.get_nfeat()
         data_ma = self.frontend.data_ma
         _len['nnz'] = self.frontend.ma_nnz()
+        _len['nnz_t'] = self.frontend.ma_nnz_t()
         _len['dims'] = self.frontend.ma_dims()
         _len['ones'] = (data_ma == 1).sum()
         _len['zeros'] = (data_ma == 0).sum()
@@ -118,6 +119,8 @@ class immsb_scvb(SVB):
         theta_right = np.zeros((N, K), dtype=float)
 
         self._symmetric_pt = self._is_symmetric +1
+        #self._symmetric_pt = 1
+
         for i, j in self.data_iter(self.frontend.data_ma):
             k_i = z[i, j, 0]
             k_j = z[i, j, 1]
@@ -194,16 +197,16 @@ class immsb_scvb(SVB):
         ones = self._len['ones']
         nnz = self._len['nnz']
 
-        if self._is_symmetric:
+        if self._is_symmetric and False:
             self.gamma = np.zeros((N,N,K,K))
             for i, j in self.data_iter():
-                gmma = np.random.randint(1, 2*N, (K,K))
+                gmma = np.random.randint(1, N, (K,K))
                 self.frontend.symmetrize(gmma)
                 gmma = gmma / gmma.sum()
                 self.gamma[i,j] = gmma
 
                 #self.gamma[j,i] = gmma # data_iter 2
-                gmma = np.random.randint(1, 2*N, (K,K))
+                gmma = np.random.randint(1, N, (K,K))
                 self.frontend.symmetrize(gmma)
                 gmma = gmma / gmma.sum()
                 self.gamma[j,i] = gmma
@@ -212,11 +215,10 @@ class immsb_scvb(SVB):
             self.gamma.resize(N,N,K,K)
             #self.gamma[self.frontend.data_ma == np.ma.masked] = 0 # ???
 
-        #self._symmetric_pt = self._is_symmetric +1 # ???
-        self._symmetric_pt = 1
+        #self._symmetric_pt = 1
 
-        self.N_theta_left = self.gamma.sum(1).sum(2)
-        self.N_theta_right = self.gamma.sum(0).sum(1)
+        self.N_theta_left = self.gamma.sum(0).sum(1)
+        self.N_theta_right = self.gamma.sum(1).sum(2)
 
         self.N_phi = np.zeros((nfeat, K, K))
         self.N_phi[0] = self.gamma[self.frontend.data_ma == 0].sum(0)
@@ -300,12 +302,16 @@ class immsb_scvb(SVB):
         _len = self._len
 
         # Sum ?
-        self.N_theta_left[i] = (1 - self.gstep_theta)*self.N_theta_left[i] + (self.gstep_theta * _len['dims'][i] * qij.sum(1))
-        self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * _len['dims'][j] * qij.sum(0))
+        q_left = qij.sum(0)
+        q_right = qij.sum(1)
+
+
+        self.N_theta_left[i] = (1 - self.gstep_theta)*self.N_theta_left[i] + (self.gstep_theta * _len['dims'][i] * q_left)
+        self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * _len['dims'][j] * q_right)
 
         if self._is_symmetric:
-            self.N_theta_left[j] = (1 - self.gstep_theta)*self.N_theta_left[j] + (self.gstep_theta * _len['dims'][j] * qij.sum(1))
-            self.N_theta_right[i] = (1 - self.gstep_theta)*self.N_theta_right[i] + (self.gstep_theta * _len['dims'][i] * qij.sum(0))
+            self.N_theta_left[j] = (1 - self.gstep_theta)*self.N_theta_left[j] + (self.gstep_theta * _len['dims'][j] * q_left)
+            self.N_theta_right[i] = (1 - self.gstep_theta)*self.N_theta_right[i] + (self.gstep_theta * _len['dims'][i] * q_right)
 
 
         # or Mean ?
@@ -359,7 +365,7 @@ class immsb_scvb(SVB):
         ll = np.log(pij).sum()
 
         # Entropy
-        self._entropy_t = - ll / self._len['nnz']
+        self._entropy_t = - ll / self._len['nnz_t']
 
         # Perplexity is 2**H(X).
 
@@ -383,42 +389,6 @@ class immsb_scvb(SVB):
 
         return Y
 
-
-
-
-
-
-
-    def pull_current(self, i, j):
-        xij = self._xij
-
-        self.N_theta_left[i] -= self.gamma[i,j].sum(1)* self._symmetric_pt
-        self.N_theta_right[j] -= self.gamma[i,j].sum(0)* self._symmetric_pt
-        self.N_phi[xij] -= self.gamma[i,j]
-
-        if self._is_symmetric:
-            self.N_theta_left[j] -= self.gamma[j,i].sum(1)* self._symmetric_pt
-            self.N_theta_right[i] -= self.gamma[j,i].sum(0)* self._symmetric_pt
-            self.N_phi[xij] -= self.gamma[j,i]
-
-
-    def push_current(self, i, j, qij):
-        xij = self._xij
-
-        q_left = qij.sum(1)
-        q_right = qij.sum(0)
-        self.N_theta_left[i] += q_left * self._symmetric_pt
-        self.N_theta_right[j] += q_right* self._symmetric_pt
-        self.N_phi[xij] += qij
-
-        self.gamma[i, j] = qij
-
-        if self._is_symmetric:
-            self.N_theta_left[j] += q_left* self._symmetric_pt
-            self.N_theta_right[i] += q_right* self._symmetric_pt
-            self.N_phi[xij] += qij
-
-            self.gamma[j, i] = qij
 
 
 if __name__ == "__main__":
