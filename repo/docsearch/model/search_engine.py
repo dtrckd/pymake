@@ -112,7 +112,7 @@ class tfidf(IndexManager):
         fullpath = hit['fullpath']
         shortpath = hit['shortpath']
         pwd = os.getenv('PWD')
-        os.chdir(os.path.join(pwd, 'data/cermine/'))
+        os.chdir(os.path.join(pwd, 'data/lib/cermine/'))
         cermine_tar_dir = 'pdf_temp/'+filename.rpartition('.')[0] + '/'
         if not os.path.exists(cermine_tar_dir):
             os.makedirs(cermine_tar_dir)

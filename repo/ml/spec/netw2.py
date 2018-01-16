@@ -142,6 +142,7 @@ class Netw2(ExpDesign):
     noel2 = ExpGroup([scvb_chi_g7, compare_scvb2], N='all', corpus=data_net_all,
                     mask=['unbalanced'], _refdir='noel2')
 
+
     pd = ExpGroup(compare_scvb, iterations=150, model='immsb_cvb', _repeat='debug_cvb',
                   N='all', corpus=data_net_all,
                   mask=['unbalanced'], _refdir='noel2')

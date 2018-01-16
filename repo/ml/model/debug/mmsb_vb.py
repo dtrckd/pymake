@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.special import psi
 
-from pymake.model.modelbase import ModelBase
+from ml.model.modelbase import ModelBase
 
 class MMSB(object):
     """

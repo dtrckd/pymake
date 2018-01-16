@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-from pymake.model.hdp.lda import GibbsRun, Likelihood, ZSampler, MSampler, BetaSampler, NP_CGS
+from ml.model.hdp.lda import GibbsRun, Likelihood, ZSampler, MSampler, BetaSampler, NP_CGS
 
 # @idem than immsb_cgs
 class ilda_cgs(GibbsRun):

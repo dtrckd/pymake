@@ -3,7 +3,7 @@
 import logging
 lgg = logging.getLogger('root')
 
-from pymake.model.ibp.ilfm_gs import IBPGibbsSampling
+from ml.model.ibp.ilfm_gs import IBPGibbsSampling
 
 class ilfm_cgs(IBPGibbsSampling):
     def __init__(self, expe, frontend):

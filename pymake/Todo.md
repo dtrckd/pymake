@@ -1,19 +1,26 @@
-# IN DOIING
+# WIP
 
 
-### @Debug
-* there is a random effect when doing checknetworks zipf. Class re-ordering is stochastik f. why ?!
 
-# @v0.3
+# @v0.4 ?
 * ipython builder helper
 * web server interface and visualization  (flask...)
+* spec swagger integratin ? https://swagger.io
 
-@CLI
+
+Debug
+----------
+* there is a random effect when doing checknetworks zipf. Class re-ordering is stochastik f. why ?!
+
+
+CLI
+---
 * pmk diff expe1 expe2 # show diff between expe...
 * pmk push [spec] [opts] # push expe in spec !!! (Update MAN)
-* pmk expe_id1 expe_id2 # merge exp => We need expGroup for that
 
-### Bash Completion
+Bash auto-Completion
+---------------
+* complete opts and args (in spec) (and -x and -m and -c) depending on where iam on the pymak.cfg to get the autompletion file that generate pymake update yeah !
 echo /etc/bash_completion.d/pymake
     _pymake() 
     {
@@ -31,24 +38,24 @@ echo /etc/bash_completion.d/pymake
     complete -F _pymake pymake
     complete -F _pymake pmk
 
-* complete opts and args (in spec) (and -x and -m and -c) depending on where iam on the pymak.cfg to get the autompletion file that generate pymake update yeah !
 
-* feature --> autocompletion yeah !!!
 
-@Core
+Core
+----
 * print warning on duplicate class name duplicate for Scipt, Model, Spec or Copus, but especially for Script and Spec class définition wich is more probable to happen
 
 
-@Frontend
+Frontend
+--------
 * merge vocabulary and frontendtext
-* build_corpus and build_networks are identical : wrap in DataBase
+* build_corpus and build_networks (and broken !) are identical : wrap in DataBase
 * @issue42
 
-@Model
-* move entropy() to modelBase. 
-    * review _reduce_latent vs get_params...!
+Model
+-----
+* Model structure ?
 
-@MODEL Specification:
+### MODEL Specification:
 * -> catch type error in manager.get_model._model.__init,:
         1. first find the number of required argument andt cut the expe surplus
         2. find a way to pass the argument  from signature **kwargs to command-line. (index the signature)
@@ -57,17 +64,15 @@ echo /etc/bash_completion.d/pymake
 * print help/signature from command_line (model/corpus)
 * ILFM create sampler and proper inhheritance form GibbsSampler.
 
-@Corpus/Dataset : 
+Corpus/Dataset
+--------------
+* check 'jbenet/data' !
 * expe_meas script ("*" specification obsolete ???? )
 * CorpusModules :load from package (sklearn) and disk (
 * Whoosh integration !!!
 * LDA on my own paper !
 
 
-@format_plot etc
-* decorator for tabulate in ExpFormat ?
-* plotManager (same scenario, axe, title, **kwargs**)
-* OBJECT ! change frontendNetwork to Graph(Object), it is clear ?! (implement morphism in Object for example. (issue42)
 
 @purge: 
 * model/lda
@@ -75,14 +80,12 @@ echo /etc/bash_completion.d/pymake
 * import models -> import pymake.models ?
 
 
-@bigdata 
+@web3
 * How should be the backend to make big scale learning with database and search engine interface...
 * Spark/Hadoop interface... (hdfs = htable)
 * MPI / pymake integration ?
+* ipfs dataset packaging/broadcasting
 
 @Examples
 * [docsearch] own pdftotext ? quickest ? multi platform !?
 
-## Expe missing
-* isolate my expe (but keep general model AND frontend, and manager...)....hyperprior testing
-Model evolution with K as well as hyperprior nonparametric model
