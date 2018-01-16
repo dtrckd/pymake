@@ -1,43 +1,46 @@
 # Temporary Files
 *.sw[mnopl]
-*.py[co]
-*.[ao]
+tags
 *~
 *.session.vim
+
+# Build
+__pycache__/
+dist/
+build/
+*.egg*
+*cpython*.so
+*.py[co]
+*.[ao]
+*.aux
+*.bb[lg]
 
 # Volatile project file
 .pymake_hist
 .pymake-errors
 
-# Build
-*.egg-info/
-*.egg-info
-/build/
-/dist/
+repo/ml/ID
+
 
 # Doc
 doc/html/
 doc/graph/
 
 # Data
-repo/ml/data/*/*/**
+repo/*/data/lib/
+repo/*/data/lut/
+repo/*/data/*/results/
+repo/*/data/*/training/
+repo/*/data/reports/
+!repo/*/data/reports/Makefile
+!repo/*/data/reports/backsync.sh
+!repo/*/data/reports/filter.py
+
+## Index
+repo/*/data/**/*_index/
+
 repo/ml/data/**/*.zip
 repo/ml/data/**/*.tgz
 repo/ml/data/**/*.gz
-
-repo/ml/results/*
-!repo/ml/results/Makefile
-!repo/ml/results/backsync.sh
-!repo/ml/results/filter.py
-
-repo/docsearch/data
-
-
-
-# Automatic generation
-stirling.pk
-stirling.npy
-autobuild/
-ir_index/
 
 

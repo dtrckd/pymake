@@ -13,7 +13,7 @@ from scipy.sparse import lil_matrix
 sp_dot = csr_matrix.dot
 
 from .ibp import IBP
-from pymake.model.modelbase import GibbsSampler
+from ml.model.modelbase import GibbsSampler
 from pymake.util.algo import *
 
 # We will be taking log(0) = -Inf, so turn off this warning

@@ -4,7 +4,7 @@ import numpy as np
 import scipy as sp
 
 from pymake.util.math import lognormalize, categorical, sorted_perm, adj_to_degree, gem
-from pymake.model.modelbase import GibbsSampler
+from ml.model.modelbase import GibbsSampler
 
 #@network class frontend :
 #   * pb of method conlicts, save, purge etc..fond a way

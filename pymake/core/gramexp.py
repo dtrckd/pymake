@@ -658,7 +658,8 @@ class GramExp(object):
         if checksum != 0:
             if (request.get('_do') or request.get('do_list')) and not GramExp.is_pymake_dir():
                 print('fatal: Not a pymake directory: %s not found.' % (cls._cfg_name))
-            exit(10)
+                exit(10)
+
             if  firsttime == True:
                 lgg.warning('Spec not found, re-building Spec indexes...')
                 cls.update_index('spec')
@@ -960,11 +961,11 @@ class GramExp(object):
     def execute_parallel(self):
 
         basecmd = sys.argv.copy()
-        try:
-            Target = subprocess.check_output(['which','pymake']).strip().decode()
-            #Target = 'pymake'
-        except:
-            Target = 'python3 ./zymake.py'
+        #try:
+        #    Target = subprocess.check_output(['which','pymake']).strip().decode()
+        #except:
+        #    Target = 'python3 /home/ama/adulac/.local/bin/pymake'
+        Target = 'pymake'
         basecmd = [Target] + basecmd[1:]
 
         # Create commands indexs
@@ -1015,9 +1016,10 @@ class GramExp(object):
         '''
 
         basecmd = sys.argv.copy()
-        Target = './zymake.py' # add remote binary in .pymake.cfg
-        basecmd = ['python3', Target] + basecmd[1:]
-        #basecmd = ['pymake'] + basecmd[1:] # PATH and PYTHONPATH varible missing to be able to execute "pymake"
+        #Target = './zymake.py'
+        #basecmd = ['python3', Target] + basecmd[1:]
+        Target = 'pymake'
+        basecmd = [Target] + basecmd[1:]
         cmdlines = None
 
         # Create commands indexs
@@ -1075,21 +1077,29 @@ class GramExp(object):
                             break
                         _f_w.write(l)
             NDL = tempf
+
         PWD = get_pymake_settings('remote_pwd')
         cmd = ['parallel', '-u', '-C', "' '", '--eta', '--progress',
-               '--sshloginfile', NDL, '--workdir', PWD, '--env', 'OMP_NUM_THREADS', ':::', '%s'%('\n'.join(cmdlines))]
+               '--sshloginfile', NDL, '--workdir', PWD,
+               '--env', 'OMP_NUM_THREADS', '--env', 'PYTHONPATH', '--env', 'PATH',
+               ':::', '%s'%('\n'.join(cmdlines))]
+
+        env = {'PYTHONPATH': '~/.local/lib/:',
+               'PATH': '~/.local/bin:/usr/local/bin:/usr/bin:/bin:'}
 
         if self._conf.get('simulate'):
             self.simulate()
 
         #stdout = subprocess.check_output(cmd)
         #print(stdout.decode())
-        for line in self.subexecute1(cmd):
+        for line in self.subexecute1(cmd, **env):
             print(line, end='')
 
     @staticmethod
-    def subexecute1(cmd):
-        popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
+    def subexecute1(cmd, **env):
+        _env = os.environ
+        _env.update(env)
+        popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True, env=_env)
         for stdout_line in iter(popen.stdout.readline, ""):
             yield stdout_line
         popen.stdout.close()

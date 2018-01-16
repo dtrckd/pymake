@@ -10,7 +10,7 @@ from decorator import decorator
 from functools import wraps
 from itertools import product
 
-from pymake.util.utils import colored, basestring, get_dest_opt_filled, make_path, hash_objects, ask_sure_exit
+from pymake.util.utils import colored, basestring, get_dest_opt_filled, make_path, hash_objects, ask_sure_exit, get_pymake_settings
 from pymake.index.indexmanager import IndexManager as IX
 
 import logging
@@ -636,8 +636,18 @@ class ExpTensorV2(BaseObject):
         for tensor in self._tensors:
             models = tensor.get('model', [])
             for i, m in enumerate(models):
+
                 if not '.' in m:
-                    models[i] = 'pmk.%s'%(m)
+                    # Set the model ref name
+                    pkg = get_pymake_settings('default_model')
+                    if len(pkg) > 8:
+                        prefix = pkg[:3]
+                        if '.' in pkg:
+                            prefix  += ''.join(map(lambda x:x[0], pkg.split('.')[1:]))
+                    else:
+                        prefix = pkg.split('.')[0]
+
+                    models[i] = '%s.%s'%(prefix, m)
 
     def check_null(self):
         ''' Filter _null '''
@@ -799,7 +809,7 @@ class ExpDesign(dict, BaseObject):
                 use when self._name is called to translate keywords
     '''
 
-    # @debug, this a global temp variable
+    # @debug, This is a porject settings !
     _alias = dict((
         ('propro'   , 'Protein')  ,
         ('blogs'    , 'Blogs')    ,
@@ -813,8 +823,8 @@ class ExpDesign(dict, BaseObject):
 
         ('generator4'     , 'Network4' ),
         #('generator4'     , 'Network2' ),
-        ('pmk.ilfm_cgs'     , 'ILFM' ),
-        ('pmk.immsb_cgs'     , 'IMMSB' ),
+        #('pmk.ilfm_cgs'     , 'ILFM' ),
+        #('pmk.immsb_cgs'     , 'IMMSB' ),
     ))
 
     def __init__(self,  *args, **kwargs):
@@ -1188,7 +1198,6 @@ class ExpeFormat(object):
         return self.gramexp._expdesign._name(n)
 
     def full_fig_path(self, fn):
-        from pymake.util.utils import get_pymake_settings
         figs_path = get_pymake_settings('project_figs')
         path = os.path.join(figs_path, self.expe.get('_refdir',''),  self.specname(fn))
         make_path(path)

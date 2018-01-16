@@ -7,7 +7,7 @@ Implements uncollapsed Gibbs sampling for the linear-Gaussian infinite latent fe
 
 import numpy, scipy;
 import math, random;
-from ibp.gs import GibbsSampling;
+from .gs import GibbsSampling;
 import scipy.stats;
 
 # We will be taking log(0) = -Inf, so turn off this warning

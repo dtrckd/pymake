@@ -193,7 +193,7 @@ def nxG(y):
 
 # Global settings
 __default_config = defaultdict(lambda: '', dict(project_data = os.path.expanduser('data/'),
-                                                project_figs = os.path.expanduser('results/figs/') ,
+                                                project_figs = os.path.expanduser('data/reports/figs/') ,
                                                 # @debug repo access ??
                                                 default_spec = 'pymake.spec',
                                                 default_script = 'pymake.script',
