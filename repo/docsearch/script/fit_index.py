@@ -1,4 +1,5 @@
-from pymake import ExpeFormat, ModelManager
+from pymake import ExpeFormat
+from pymake.manager import ModelManager
 from pymake.util.utils import ask_sure_exit
 
 

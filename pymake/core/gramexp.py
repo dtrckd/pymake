@@ -20,14 +20,14 @@ import numpy as np
 import argparse
 
 from pymake import ExpDesign, ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, Script, Spec, ExpVector
-from pymake.util.utils import colored, basestring, get_global_settings
+from pymake.util.utils import colored, basestring, get_pymake_settings
 
 # @debug name integration
 from pymake.core.format import ExpTensorV2
 
 import pymake.frontend.frontend_io as mloader
 
-from pymake.frontend.frontend_io import _DATA_PATH, ext_status, is_empty_file
+from pymake.frontend.frontend_io import ext_status, is_empty_file
 
 
 ''' Grammar Expe '''
@@ -209,8 +209,15 @@ class GramExp(object):
         #'_save_data' : False, # save corpus as .pk.
     }
 
+
+    _cfg_name = 'pymake.cfg'
     _pmk_error_file = '.pymake-errors'
-    _spec = Spec.get_all() #_spec = mloader.SpecLoader.default_spec()
+    _data_path = get_pymake_settings('project_data')
+
+    if os.path.isfile(os.path.join(os.getenv('PWD'), _cfg_name)):
+        _spec = Spec.get_all() #_spec = mloader.SpecLoader.default_spec()
+    else:
+        _spec = {}
 
     def __init__(self, conf, usage=None, parser=None, parseargs=True, expdesign=None):
         # @logger One logger by Expe ! # in preinit
@@ -393,8 +400,8 @@ class GramExp(object):
         #return reduce(operator.mul, [len(v) for v in self.exp_tensor.values()], 1)
         return len(self.lod)
 
-    @staticmethod
-    def make_forest_path(lod, _type, status='f', full_path=False):
+    @classmethod
+    def make_forest_path(cls, lod, _type, status='f', full_path=False):
         """ Make a list of path from a spec/dict, the filename are
             oredered need to be align with the get_from_conf_file.
 
@@ -404,10 +411,10 @@ class GramExp(object):
         for spec in lod:
             filen = GramExp.make_output_path(spec, _type, status=status)
             if filen:
-                s = filen.find(_DATA_PATH)
+                s = filen.find(cls._data_path)
                 pt = 0
                 if not full_path and s >= 0:
-                    pt = s + len(_DATA_PATH)
+                    pt = s + len(cls._data_path)
                 targets.append(filen[pt:])
         return targets
 
@@ -421,7 +428,7 @@ class GramExp(object):
         base = expe.get('_data_type', 'pmk-temp')
         hook = expe.get('_refdir', '_default')
 
-        basedir = os.path.join(_DATA_PATH, base, 'results')
+        basedir = os.path.join(cls._data_path, base, 'results')
 
         rep = ''
         if '_repeat' in expe and ( expe['_repeat'] is not None and expe['_repeat'] is not False):
@@ -466,7 +473,7 @@ class GramExp(object):
             c = c.replace('graph', 'Graph')
             c = 'generator/' + c
 
-        input_dir = os.path.join(_DATA_PATH, base, 'training', c)
+        input_dir = os.path.join(cls._data_path, base, 'training', c)
 
         return input_dir
 
@@ -544,7 +551,7 @@ class GramExp(object):
         # Push pymake grmarg.
         cls.push_gramarg(parser)
         # third-party
-        gramarg = get_global_settings('gramarg')
+        gramarg = get_pymake_settings('gramarg')
         if gramarg:
             cls.push_gramarg(parser, gramarg)
 
@@ -647,8 +654,11 @@ class GramExp(object):
                         checksum -= 1
                         break
 
-        # Check erros in th command line
+        # Check erros in the command line
         if checksum != 0:
+            if (request.get('_do') or request.get('do_list')) and not GramExp.is_pymake_dir():
+                print('fatal: Not a pymake directory: %s not found.' % (cls._cfg_name))
+            exit(10)
             if  firsttime == True:
                 lgg.warning('Spec not found, re-building Spec indexes...')
                 cls.update_index('spec')
@@ -920,7 +930,7 @@ class GramExp(object):
         except ValueError as e:
             lgg.warning('Script not found, re-building Scripts indexes...')
             self.update_index('script')
-            #cls._spec = Spec.get_all()
+            #self._spec = Spec.get_all()
             try:
                 _script, script_args = Script.get(script[0], script[1:])
             except:
@@ -1054,7 +1064,7 @@ class GramExp(object):
             #cmdlines[i] = cmd.replace('--net', '').strip()
             cmdlines[i] = re.sub(r'--net\s+[0-9]*', '', cmd).strip()
 
-        NDL = get_global_settings('loginfile')
+        NDL = get_pymake_settings('loginfile')
         if nhosts is not None:
             tempf = '/tmp/pmk_' + uuid.uuid4().hex
             nhosts = int(nhosts)
@@ -1065,7 +1075,7 @@ class GramExp(object):
                             break
                         _f_w.write(l)
             NDL = tempf
-        PWD = get_global_settings('remote_pwd')
+        PWD = get_pymake_settings('remote_pwd')
         cmd = ['parallel', '-u', '-C', "' '", '--eta', '--progress',
                '--sshloginfile', NDL, '--workdir', PWD, '--env', 'OMP_NUM_THREADS', ':::', '%s'%('\n'.join(cmdlines))]
 
@@ -1112,21 +1122,29 @@ class GramExp(object):
                        nbf.new_code_cell(code) ]
         return
 
+    @classmethod
+    def is_pymake_dir(cls):
+        pwd = os.getenv('PWD')
+        return os.path.isfile(os.path.join(pwd, cls._cfg_name))
+
+
     def init_folders(self):
         from string import Template
-        from os.path import join
-        from pymake.util.utils import set_global_settings
+        from pymake.util.utils import set_pymake_settings
+        join = os.path.join
 
-        pwd = os.getenv('PWD')
-        if os.path.isfile(join(pwd, 'pymake.cfg')):
-            print('pymake.cfg file already exists.')
+        if self.is_pymake_dir():
+            print('fatal: %s file already exists.' % (self._cfg_name))
             exit(11)
 
 
+        pwd = os.getenv('PWD')
         cwd = os.path.dirname(__file__)
         folders = ['spec', 'script', 'model']
         open(join(pwd, '__init__.py'), 'a').close()
         spec = {'projectname':os.path.basename(pwd)}
+        print('Creating project: {projectname}'.format(**spec))
+
         settings = {}
         for d in folders:
             os.makedirs(d, exist_ok=True)
@@ -1137,19 +1155,17 @@ class GramExp(object):
             with open(join(pwd, d,  'template_%s.py'%(d)), 'a') as _f:
                 _f.write(template.substitute(spec))
 
-            if d in ['spec', 'script']:
+            if d in ['model', 'spec', 'script']:
                 settings.update({'default_%s'%(d):'.'.join((spec['projectname'], d))})
             else: # share model
                 settings.update({'contrib_%s'%(d):'.'.join((spec['projectname'], d))})
 
-        settings.update(project_data='data')
-        set_global_settings(settings)
-        print('update project: {projectname}'.format(**spec))
+        set_pymake_settings(settings)
         return self.update_index()
 
     def pushcmd2hist(self):
         from pymake.util.utils import tail
-        bdir = self.data_path
+        bdir = self._data_path
         fn = os.path.join(bdir, '.pymake_hist')
         if not os.path.isfile(fn):
             open(fn, 'a').close()
@@ -1168,7 +1184,7 @@ class GramExp(object):
     def show_history(self):
         from pymake.util.utils import tail
         n_lines = int(self._conf.get('N', 42))
-        bdir = self.data_path
+        bdir = self._data_path
         fn = os.path.join(bdir, '.pymake_hist')
         if not os.path.isfile(fn):
             lgg.error('hist file does not exist.')
@@ -1268,7 +1284,4 @@ class GramExp(object):
 
         return sandbox._postprocess_(self)
 
-    @property
-    def data_path(self):
-        return get_global_settings('project_data')
 

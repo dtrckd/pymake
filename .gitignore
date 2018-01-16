@@ -20,18 +20,24 @@ doc/html/
 doc/graph/
 
 # Data
-results/*
-!results/Makefile
-!results/backsync.sh
-!results/filter.py
-data/*/*/**
-data/**/*.zip
-data/**/*.tgz
-data/**/*.gz
-examples/docsearch/data
+repo/ml/data/*/*/**
+repo/ml/data/**/*.zip
+repo/ml/data/**/*.tgz
+repo/ml/data/**/*.gz
+
+repo/ml/results/*
+!repo/ml/results/Makefile
+!repo/ml/results/backsync.sh
+!repo/ml/results/filter.py
+
+repo/docsearch/data
+
+
 
 # Automatic generation
 stirling.pk
 stirling.npy
 autobuild/
 ir_index/
+
+

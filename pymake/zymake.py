@@ -22,12 +22,18 @@ def main():
         # same as show !
         zymake.simulate()
 
-    ### Makes OUT Files
+
     lines = None
     line_prefix = ''
     if zyvar['_do'] == 'init':
         zymake.init_folders()
-    elif zyvar['_do'] == 'update':
+        exit()
+    else:
+        if (zyvar['_do'] or zyvar.get('do_list')) and not GramExp.is_pymake_dir():
+            print('fatal: Not a pymake directory: %s not found.' % (GramExp._cfg_name))
+            exit(10)
+
+    if zyvar['_do'] == 'update':
         zymake.update_index()
     elif zyvar['_do'] == 'show':
         zymake.simulate()

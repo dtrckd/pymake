@@ -3,7 +3,7 @@ import setuptools, sys
 from codecs import open
 from os import path
 
-__version__ = '0.2'
+__version__ = '0.3'
 #__version__ = subprocess.check_output(["git", "describe"]).strip()
 
 try:

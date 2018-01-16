@@ -1188,8 +1188,9 @@ class ExpeFormat(object):
         return self.gramexp._expdesign._name(n)
 
     def full_fig_path(self, fn):
-        from pymake.frontend.frontend_io import _FIGS_PATH
-        path = os.path.join(_FIGS_PATH, self.expe.get('_refdir',''),  self.specname(fn))
+        from pymake.util.utils import get_pymake_settings
+        figs_path = get_pymake_settings('project_figs')
+        path = os.path.join(figs_path, self.expe.get('_refdir',''),  self.specname(fn))
         make_path(path)
         return path
 

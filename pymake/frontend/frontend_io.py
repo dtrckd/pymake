@@ -9,14 +9,11 @@ import numpy as np
 import logging
 lgg = logging.getLogger('root')
 
-from pymake.util.utils import get_global_settings
+from pymake.util.utils import get_pymake_settings
 from pymake import ExpDesign, ExpeFormat
 
 ''' Tensor method nned to be merged with Gramexp '''
 
-_STIRLING_PATH = get_global_settings('project_stirling')
-_FIGS_PATH = get_global_settings('project_figs')
-_DATA_PATH = get_global_settings('project_data')
 
 ### The following global variable need to be cleared
 
@@ -126,9 +123,10 @@ def get_conf_from_file(target, mp):
     template_file = masterkeys.keys()
     ##template_file = 'networks/generator/Graph13/debug11/immsb_10_auto_0_all.*'
 
+    data_path = get_pymake_settings('project_data')
     # Relative path ignore
-    if target.startswith(_DATA_PATH):
-        target.replace(_DATA_PATH, '')
+    if target.startswith(data_path):
+        target.replace(data_path, '')
 
     path = target.lstrip('/').split('/')
 
@@ -231,7 +229,7 @@ def forest_tensor(target_files, map_parameters):
                 raise ValueError
             pt[rez_map.index(k)] = idx
 
-        f = os.path.join(_DATA_PATH, _f)
+        f = os.path.join(get_pymake_settings('project_data'), _f)
         d = get_json(f)
         if not d:
             not_finished.append( '%s not finish...\n' % _f)
@@ -495,11 +493,8 @@ class ModelsLoader(PackageWalker):
         elif _type == 'topos':
             shrink_module_name = False
 
-        packages = get_global_settings('_model')
-        if 'pymake.model' in packages:
-            atoms = cls.get_packages(packages.pop(packages.index('pymake.model')), prefix='pmk')
-        else:
-            atoms = OrderedDict()
+        packages = get_pymake_settings('_model')
+        atoms = OrderedDict()
         for pkg in packages:
             if len(pkg) > 8:
                 prefix = pkg[:3]
@@ -526,7 +521,7 @@ class ScriptsLoader(PackageWalker):
 
     @classmethod
     def get_packages(cls, **kwargs):
-        module_name = get_global_settings('_script')
+        module_name = get_pymake_settings('_script')
         if not 'class_filter' in kwargs:
             kwargs['class_filter'] = ExpeFormat
 
@@ -541,7 +536,7 @@ class ScriptsLoader(PackageWalker):
     @classmethod
     def get_atoms(cls):
         atoms = dict()
-        modules = get_global_settings('_script')
+        modules = get_pymake_settings('_script')
         modules = [modules] if type(modules) is str else modules
         for module in modules:
 
@@ -593,7 +588,7 @@ class SpecLoader(PackageWalker):
 
     #@staticmethod
     #def _default_spec():
-    #    #module_name = get_global_settings('_spec')
+    #    #module_name = get_pymake_settings('_spec')
     #    module_name = 'pymake.spec.netw'
     #    spec = importlib.import_module(module_name)
     #    for m in dir(spec):
@@ -603,7 +598,7 @@ class SpecLoader(PackageWalker):
 
     @classmethod
     def get_packages(cls, **kwargs):
-        module_name = get_global_settings('_spec')
+        module_name = get_pymake_settings('_spec')
         if not 'class_filter' in kwargs:
             kwargs['class_filter'] = ExpDesign
 
@@ -620,7 +615,7 @@ class SpecLoader(PackageWalker):
         expe_designs = []
         atoms = dict()
 
-        modules = get_global_settings('_spec')
+        modules = get_pymake_settings('_spec')
         modules = [modules] if type(modules) is str else modules
         for module in modules:
 

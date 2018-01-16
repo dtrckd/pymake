@@ -1,7 +1,7 @@
-from frontend.frontendtext import frontendText
+from pymake.frontend.frontendtext import frontendText
 # @Issue43: Parser/config unification.
-from util.utils import Now, ellapsed_time, ask_sure_exit
-from util.argparser import argparser
+from pymake.util.utils import Now, ellapsed_time, ask_sure_exit
+from pymake.util.argparser import argparser
 import os
 
 import numpy as np
