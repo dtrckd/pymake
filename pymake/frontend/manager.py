@@ -210,12 +210,12 @@ class ModelManager(object):
     def _load_model(cls, fn):
 
         #### @Debug/temp modules name changed in pickle model
-        from pymake.model import hdp, ibp
-        sys.modules['hdp'] = hdp
-        sys.modules['ibp'] = ibp
-        from pymake import model as _model
-        sys.modules['models'] = _model
-        sys.modules['model'] = _model
+        #from pymake.model import hdp, ibp
+        #sys.modules['hdp'] = hdp
+        #sys.modules['ibp'] = ibp
+        #from pymake import model as _model
+        #sys.modules['models'] = _model
+        #sys.modules['model'] = _model
 
         if not os.path.isfile(fn) or os.stat(fn).st_size == 0:
             cls.log.error('No file for this model : %s' %fn)

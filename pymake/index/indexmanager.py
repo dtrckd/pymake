@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os, shutil, logging
-from pymake.util.utils import get_global_settings, colored
+from pymake.util.utils import get_pymake_settings, colored
 
 
 import whoosh as ws
@@ -23,7 +23,7 @@ class TerminalFormatter(ws.highlight.Formatter):
 
 class IndexManager(object):
 
-    _DATA_PATH = get_global_settings('project_data')
+    _DATA_PATH = get_pymake_settings('project_data')
 
     _SCHEMA   = {'model' : ws.fields.Schema(name      = ws.fields.ID(stored = True),
                                             surname   = ws.fields.ID(stored = True),

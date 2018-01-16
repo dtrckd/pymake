@@ -7,6 +7,7 @@ from collections import defaultdict
 import logging
 import hashlib
 import json
+from string import Template
 
 import numpy as np
 import scipy as sp
@@ -191,22 +192,28 @@ def nxG(y):
 
 
 # Global settings
-__default_config = defaultdict(lambda: '', dict(project_data = os.path.expanduser('~/.pymake/data'),
-                                                  project_figs = os.path.expanduser('~/.pymake/results/figs') ,
-                                                  default_spec = 'pymake.spec',
-                                                  default_script = 'pymake.script',
-                                                  default_model = 'pymake.model',
-                                                  default_corpus = '?')
-                               )
-def set_global_settings(settings, default_config=__default_config, cfg_name='pymake.cfg'):
+__default_config = defaultdict(lambda: '', dict(project_data = os.path.expanduser('data/'),
+                                                project_figs = os.path.expanduser('results/figs/') ,
+                                                # @debug repo access ??
+                                                default_spec = 'pymake.spec',
+                                                default_script = 'pymake.script',
+                                                default_model = 'pymake.model',
+                                                default_corpus = '?')
+                              )
+def set_pymake_settings(settings, default_config=__default_config, cfg_name='pymake.cfg'):
     _settings = default_config.copy()
     _settings.update(settings)
-    ctnt = '\n'.join(('{0} = {1}'.format(k,v) for k,v in _settings.items()))
+    #ctnt = '\n'.join(('{0} = {1}'.format(k,v) for k,v in _settings.items()))
+    cwd = os.path.dirname(__file__)
+    with open(os.path.join(cwd, '..', 'core', '%s.template'%(cfg_name))) as _f:
+        template = Template(_f.read())
+        ctnt = template.substitute(_settings)
+
     cfg_file = os.path.join(os.getenv('PWD') , cfg_name)
     with open(cfg_file, 'wb') as _f:
         return _f.write(ctnt.encode('utf8'))
 
-def get_global_settings(key=None, default_config=__default_config, cfg_name='pymake.cfg'):
+def get_pymake_settings(key=None, default_config=__default_config, cfg_name='pymake.cfg'):
     #dir =  os.path.dirname(os.path.realpath(__file__))
     #dir = os.getcwd()
     dir = os.getenv('PWD')
@@ -216,7 +223,8 @@ def get_global_settings(key=None, default_config=__default_config, cfg_name='pym
         cfg_file = os.path.join(os.path.expanduser('~') ,'.pymake', cfg_name)
         if not os.path.isfile(cfg_file):
             dir_cfg = make_path(cfg_file)
-            ctnt = '\n'.join(('{0} = {1}'.format(k,v) for k,v in  default_config.items()))
+            #ctnt = '\n'.join(('{0} = {1}'.format(k,v) for k,v in  default_config.items()))
+            ctnt = ''
             with open(cfg_file, 'wb') as _f:
                 _f.write(ctnt.encode('utf8'))
 
@@ -239,7 +247,6 @@ def get_global_settings(key=None, default_config=__default_config, cfg_name='pym
     else:
         settings = config.get(key, default_config[key])
 
-    #print(settings)
     return settings
 
 def retrieve_git_info():

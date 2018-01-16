@@ -1,5 +1,5 @@
 from pymake.util.vocabulary import Vocabulary
-from pymake.util.utils import get_global_settings, hash_objects
+from pymake.util.utils import get_pymake_settings, hash_objects
 from pymake.index.indexmanager import IndexManager
 
 
@@ -61,7 +61,7 @@ class tfidf(IndexManager):
             * pdf
     '''
 
-    _DATA_PATH = os.path.join(get_global_settings('project_data'), 'tfidf')
+    _DATA_PATH = os.path.join(get_pymake_settings('project_data'), 'tfidf')
 
     _SCHEMA   = {'document' : ws.fields.Schema(hash   = ws.fields.ID(stored = True, unique=True),
                                                shortpath = ws.fields.ID(stored = True, unique=True),

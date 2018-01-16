@@ -11,11 +11,12 @@ try:
 except:
     pass
 
-from pymake.frontend.frontend_io import _STIRLING_PATH
+from pymake.util.utils import get_pymake_settings
 
 
 def load_stirling(style='npy'):
-    fn = os.path.join(os.path.dirname(__file__), _STIRLING_PATH,'stirling.npy')
+    stirling_path = get_pymake_settings('project_stirling')
+    fn = os.path.join(stirling_path,'stirling.npy')
     npy_exists = os.path.isfile(fn)
     if style == 'npy' and npy_exists:
         return np.load(fn)

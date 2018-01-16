@@ -32,14 +32,15 @@ class Vocabulary(object):
         self.docfreq = []      # id to document frequency
         self.exclude_stopwords = exclude_stopwords
 
-        self.stopwords_list = []
+        stopwords_list = []
         if exclude_stopwords:
             # Too much strict
             #with open (os.path.join(os.path.dirname(__file__), 'stopwords.txt'), "r") as _f:
             #    stopwords_list = _f.read().replace('\n', '').split()
             if not _NLTK_DISABLED:
                 stopwords_list += nltk.corpus.stopwords.words('english')
-            self.stopwords_list = set(stopwords_list)
+            stopwords_list = set(stopwords_list)
+        self.stopwords_list = stopwords_list
 
         if lemmatize:
             if not _NLTK_DISABLED:

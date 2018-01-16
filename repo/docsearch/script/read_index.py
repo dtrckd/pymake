@@ -1,4 +1,5 @@
-from pymake import ExpeFormat, ModelManager
+from pymake import ExpeFormat
+from pymake.manager import ModelManager
 from pymake.util.utils import colored
 import textwrap
 from ..model.search_engine import extract_pdf, glob_path
