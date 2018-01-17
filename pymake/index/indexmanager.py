@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import os, shutil, logging
 from pymake.util.utils import get_pymake_settings, colored
 

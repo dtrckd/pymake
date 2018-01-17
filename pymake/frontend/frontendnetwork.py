@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import sys, os
 import itertools
 from string import Template

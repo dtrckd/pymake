@@ -145,7 +145,7 @@ def adj_to_degree(y):
     return dict(nx.degree(G))
 
 def degree_hist(_degree, filter_zeros=False):
-    if isinstance(_degree, list):
+    if isinstance(_degree, (list, np.ndarray)):
         degree = _degree
     else:
         # networkx

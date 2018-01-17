@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import sys, os
 import inspect
 import pickle, json # presence of this module here + in .frontend not zen

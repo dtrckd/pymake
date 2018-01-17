@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import os
 import re
 from copy import copy, deepcopy
@@ -18,8 +16,7 @@ lgg = logging.getLogger('root')
 
 
 ''' Structure of Pymake Objects.
-
-    This is what Pandas does ? no, but it add semantics structure, like a Lama does.
+    This is what Pandas does ? no, but we provide a semantics structure, like a Lama does.
 '''
 
 
@@ -965,7 +962,7 @@ class ExpeFormat(object):
         return kernel
 
     @staticmethod
-    def plot_obsolete(*groups, **_kwargs):
+    def raw_plot(*groups, **_kwargs):
         ''' If no argument, simple plot.
             If arguments :
                 * [0] : group figure by this
@@ -1486,9 +1483,8 @@ class ExpeFormat(object):
 
 
     def write_it_step(self, model):
-        if not self.expe.get('write'):
-            return
-        self.write_current_state(model)
+        if self.expe.get('write'):
+            self.write_current_state(model)
 
     def configure_model(self, model):
         # Inject the writing some method

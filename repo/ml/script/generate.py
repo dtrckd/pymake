@@ -172,7 +172,7 @@ class GenNetwork(ExpeFormat):
 
         return tables, Meas
 
-    @ExpeFormat.plot_obsolete
+    @ExpeFormat.raw_plot
     def burstiness(self, _type='all'):
         '''Zipf Analysis
            (global burstiness) + local burstiness + feature burstiness
@@ -441,7 +441,7 @@ class GenNetwork(ExpeFormat):
                     base = '%s_%s' % (self.specname(_model), _type)
                     self.write_table(table, base=base, ext='.md')
 
-    @ExpeFormat.plot_obsolete
+    @ExpeFormat.raw_plot
     def draw(self):
         expe = self.expe
         #if expe._mode == 'predictive':
@@ -564,7 +564,7 @@ class GenNetwork(ExpeFormat):
                     base = '%s_homo_%s' % (self.specname(_model), _type)
                     self.write_table(table, base=base, ext='.md')
 
-    @ExpeFormat.plot_obsolete('model')
+    @ExpeFormat.raw_plot('model')
     def homo_mustach(self,):
         """ Hmophily mustach
         """
@@ -648,7 +648,7 @@ class GenNetwork(ExpeFormat):
                 print(t1)
                 print(t2)
 
-    @ExpeFormat.plot_obsolete('corpus', 'testset_ratio')
+    @ExpeFormat.raw_plot('corpus', 'testset_ratio')
     def roc(self, _type='testset', _ratio=100):
         ''' AUC/ROC test report '''
         from sklearn.metrics import roc_curve, auc, precision_recall_curve
@@ -817,7 +817,7 @@ class GenNetwork(ExpeFormat):
                 self.write_table(figs, ext='.md')
                 self.write_figs(figs)
 
-    @ExpeFormat.plot_obsolete
+    @ExpeFormat.raw_plot
     def clustering(self):
         algo = 'Louvain'
         algo = 'Annealing'

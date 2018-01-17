@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import os, re
 from string import punctuation
 from pymake.util.utils import basestring

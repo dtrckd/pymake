@@ -62,7 +62,7 @@ class CheckNetwork(ExpeFormat):
 
         return Table, Meas
 
-    @ExpeFormat.plot_obsolete
+    @ExpeFormat.raw_plot
     def zipf(self, clusters_org='source'):
         ''' Zipf Analysis
             Local/Global Preferential attachment effect analysis
@@ -121,7 +121,7 @@ class CheckNetwork(ExpeFormat):
         if expe.write:
             self.write_figs([fig], suffix='dd')
 
-    @ExpeFormat.plot_obsolete
+    @ExpeFormat.raw_plot
     def burstiness(self, clusters_org='source', _type='local'):
         '''Zipf Analisis
            (global burstiness) + local burstiness + feature burstiness
