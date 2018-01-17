@@ -23,7 +23,7 @@ class Plot(ExpeFormat):
     def _preprocess(self):
         self.model = ModelManager.from_expe(self.expe)
 
-    @ExpeFormat.plot_obsolete('corpus')
+    @ExpeFormat.raw_plot('corpus')
     def __call__(self, attribute='_entropy'):
         ''' Plot figure group by :corpus:.
             Notes: likelihood/perplexity convergence report
@@ -49,7 +49,7 @@ class Plot(ExpeFormat):
         ax.legend(loc='upper right',prop={'size':5})
 
 
-    @ExpeFormat.plot_obsolete
+    @ExpeFormat.raw_plot
     def plot_unique(self, attribute='_entropy'):
         ''' Plot all figure in the same window.
             Notes: likelihood/perplexity convergence report '''

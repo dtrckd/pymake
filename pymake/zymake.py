@@ -1,11 +1,5 @@
-#!/usr/bin/python3 -u
-# -*- coding: utf-8 -*-
-
-
-# __remove__ -> INTERNAL !
-#from joblib import Parallel, delayed
-import sys, multiprocessing
-
+#!/usr/bin/python3
+import sys
 from pymake import GramExp
 
 

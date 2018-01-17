@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import sys, os, re, importlib, pkgutil, pyclbr, inspect, ast
 from collections import OrderedDict
 from itertools import groupby

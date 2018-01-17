@@ -1,7 +1,4 @@
-# -*- coding: utf-8 -*-
-
 import re, os, json
-from multiprocessing import Process
 
 import numpy as np
 import networkx as nx
@@ -25,8 +22,6 @@ lgg = logging.getLogger('root')
 
 
 def display(block=False):
-    #p = Process(target=_display)
-    #p.start()
     plt.show(block=block)
 
 def _display():

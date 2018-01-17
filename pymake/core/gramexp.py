@@ -1,37 +1,29 @@
-# -*- coding: utf-8 -*-
-
-import shlex
-import uuid
-import sys
-import os
+import sys, os, re, uuid
+import argparse
 from datetime import datetime
-import re
 import logging
 import operator
 import fnmatch
 import pickle
 import subprocess
+import shlex
 import inspect, traceback, importlib
 from collections import defaultdict
 from functools import reduce, wraps
 from copy import deepcopy
 import numpy as np
 
-import argparse
-
 from pymake import ExpDesign, ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, Script, Spec, ExpVector
+from pymake.frontend.frontend_io import ext_status, is_empty_file
 from pymake.util.utils import colored, basestring, get_pymake_settings
 
 # @debug name integration
 from pymake.core.format import ExpTensorV2
 
-import pymake.frontend.frontend_io as mloader
 
-from pymake.frontend.frontend_io import ext_status, is_empty_file
 
 
 ''' Grammar Expe '''
-_version = 0.1
 lgg = logging.getLogger('root')
 
 # Custom formatter
@@ -215,7 +207,7 @@ class GramExp(object):
     _data_path = get_pymake_settings('project_data')
 
     if os.path.isfile(os.path.join(os.getenv('PWD'), _cfg_name)):
-        _spec = Spec.get_all() #_spec = mloader.SpecLoader.default_spec()
+        _spec = Spec.get_all()
     else:
         _spec = {}
 
@@ -467,7 +459,7 @@ class GramExp(object):
         c = expe.get('corpus')
         if not c:
             c = ''
-            lgg.debug('warning: No Corpus given')
+            lgg.debug('No Corpus is given.')
         if c.lower().startswith(('clique', 'graph', 'generator')):
             c = c.replace('generator', 'Graph')
             c = c.replace('graph', 'Graph')
@@ -498,9 +490,11 @@ class GramExp(object):
     @staticmethod
     def get_parser(description=None, usage=None):
         import pymake.core.gram as _gram
+        import pkg_resources
+        _version = pkg_resources.get_distribution('pymake').version
         parser = _gram.ExpArgumentParser(description=description, epilog=usage,
                                         formatter_class=argparse.RawDescriptionHelpFormatter)
-        parser.add_argument('--version', action='version', version='%(prog)s '+str(_version))
+        parser.add_argument('--version', action='version', version='%(prog)s '+_version)
 
         return parser
 
@@ -1151,7 +1145,7 @@ class GramExp(object):
         pwd = os.getenv('PWD')
         cwd = os.path.dirname(__file__)
         folders = ['spec', 'script', 'model']
-        open(join(pwd, '__init__.py'), 'a').close()
+        #open(join(pwd, '__init__.py'), 'a').close()
         spec = {'projectname':os.path.basename(pwd)}
         print('Creating project: {projectname}'.format(**spec))
 

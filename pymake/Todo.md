@@ -1,11 +1,12 @@
 # WIP
 
 
-
 # @v0.4 ?
 * ipython builder helper
 * web server interface and visualization  (flask...)
 * spec swagger integratin ? https://swagger.io
+* [system interface]save and update the repo seen by pmk in .pymak.cfg in file
+* [system interface]makes ablee to list them, and to selecto one by default => it wil enable to execute pmk from anywhere for that script. (end to swtich/cd to them)
 
 
 Debug

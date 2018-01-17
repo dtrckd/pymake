@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import sys, argparse
 from functools import partial
 from pymake import ExpVector
