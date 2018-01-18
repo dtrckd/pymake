@@ -198,7 +198,7 @@ __default_config = defaultdict(lambda: '', dict(project_data = os.path.expanduse
                                                 default_model = 'pymake.model',
                                                 default_corpus = '?')
                               )
-def set_pymake_settings(settings, default_config=__default_config, cfg_name='pymake.cfg'):
+def reset_pymake_settings(settings, default_config=__default_config, cfg_name='pymake.cfg'):
     _settings = default_config.copy()
     _settings.update(settings)
     #ctnt = '\n'.join(('{0} = {1}'.format(k,v) for k,v in _settings.items()))
@@ -232,11 +232,13 @@ def get_pymake_settings(key=None, default_config=__default_config, cfg_name='pym
         v = config[k]
         if '~' in v:
             config[k] = os.path.expanduser(v)
-        if './' in v or '../' in v:
-            config[k] = os.path.join(dir, v)
+        elif v and (v.startswith(('./', '../')) or not v.startswith('/')):
+            fpath = os.path.join(dir, v)
+            if os.path.exists(fpath):
+                config[k] = fpath
 
     if not key:
-        settings =  config
+        settings = config
     elif key.startswith('_'):
         res = []
         for k in ['default'+key, 'contrib'+key]:

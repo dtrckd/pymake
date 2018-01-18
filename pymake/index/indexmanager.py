@@ -21,7 +21,7 @@ class TerminalFormatter(ws.highlight.Formatter):
 
 class IndexManager(object):
 
-    _DATA_PATH = get_pymake_settings('project_data')
+    _DATA_PATH = os.path.join(get_pymake_settings('project_data'), '.pymake')
 
     _SCHEMA   = {'model' : ws.fields.Schema(name      = ws.fields.ID(stored = True),
                                             surname   = ws.fields.ID(stored = True),
@@ -45,7 +45,7 @@ class IndexManager(object):
     log = logging.getLogger('root')
 
     def __init__(self, default_index='model'):
-        self._index_basename = 'ir_index/'
+        self._index_basename = 'ir_index'
         self._default_index = default_index
         self._ix = {} # Index store by key
 
@@ -122,7 +122,6 @@ class IndexManager(object):
             schemas = [index_name]
 
         for name  in schemas:
-
             func = 'update_' + name + '_index'
             builder = getattr(idx, func)
             builder()
