@@ -584,14 +584,14 @@ class GramExp(object):
         ----------------
         Communicate with the data :
         ----------------
-         |   zymake update  : update the pymake index
-         |   zymake -l [spec(default)|model|script|topo]
-         |   zymake show SPEC : show one spec details
-         |   zymake run SPEC [--script [fun][*args]] ... : execute tasks (default is fit)
-         |   zymake runpara SPEC [--script [fun][*args]] ...: parallelize tasks
-         |   zymake hist [-n n_lines] : show command history
-         |   zymake cmd SPEC ... : generate command-line
-         |   zymake path SPEC Filetype(pk|json|inf) [status] ... : show output_path
+         |   pmk update  : update the pymake index
+         |   pmk -l [spec(default)|model|script|topo]
+         |   pmk show SPEC : show one spec details
+         |   pmk run SPEC [--script [fun][*args]] ... : execute tasks (default is fit)
+         |   pmk runpara SPEC [--script [fun][*args]] ...: parallelize tasks
+         |   pmk hist [-n n_lines] : show command history
+         |   pmk cmd SPEC ... : generate command-line
+         |   pmk path SPEC Filetype(pk|json|inf) [status] ... : show output_path
         ''' + '\n' + usage
 
         s, parser, expdesign_lkp = GramExp.parseargsexpe(usage)
@@ -1072,9 +1072,9 @@ class GramExp(object):
                         _f_w.write(l)
             NDL = tempf
 
-        PWD = get_pymake_settings('remote_pwd')
+        workdir = get_pymake_settings('remote_pwd')
         cmd = ['parallel', '-u', '-C', "' '", '--eta', '--progress',
-               '--sshloginfile', NDL, '--workdir', PWD,
+               '--sshloginfile', NDL, '--workdir', workdir,
                '--env', 'OMP_NUM_THREADS', '--env', 'PYTHONPATH', '--env', 'PATH',
                ':::', '%s'%('\n'.join(cmdlines))]
 
@@ -1134,7 +1134,7 @@ class GramExp(object):
 
     def init_folders(self):
         from string import Template
-        from pymake.util.utils import set_pymake_settings
+        from pymake.util.utils import reset_pymake_settings
         join = os.path.join
 
         if self.is_pymake_dir():
@@ -1164,12 +1164,12 @@ class GramExp(object):
             else: # share model
                 settings.update({'contrib_%s'%(d):'.'.join((spec['projectname'], d))})
 
-        set_pymake_settings(settings)
+        reset_pymake_settings(settings)
         return self.update_index()
 
     def pushcmd2hist(self):
         from pymake.util.utils import tail
-        bdir = self._data_path
+        bdir = os.path.join(self._data_path, '.pymake')
         fn = os.path.join(bdir, '.pymake_hist')
         if not os.path.isfile(fn):
             open(fn, 'a').close()
@@ -1187,9 +1187,14 @@ class GramExp(object):
 
     def show_history(self):
         from pymake.util.utils import tail
-        n_lines = int(self._conf.get('N', 42))
+        n = self._conf.get('N', 42)
+        if n == 'all':
+            n_lines = -1
+        else:
+            n_lines = int(n)
+
         bdir = self._data_path
-        fn = os.path.join(bdir, '.pymake_hist')
+        fn = os.path.join(bdir, '.pymake', '.pymake_hist')
         if not os.path.isfile(fn):
             lgg.error('hist file does not exist.')
             return
@@ -1207,8 +1212,8 @@ class GramExp(object):
         if len(index_name) == 0:
             IX.build_indexes()
         else:
-            for i in index_name:
-                IX.build_indexes(i)
+            for name in index_name:
+                IX.build_indexes(name)
 
 
     def pymake(self, sandbox=ExpeFormat):

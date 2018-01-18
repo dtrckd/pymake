@@ -16,8 +16,8 @@ build/
 *.bb[lg]
 
 # Volatile project file
-.pymake_hist
 .pymake-errors
+.pymake/
 
 repo/ml/ID
 
