@@ -666,6 +666,9 @@ class SVB(ModelBase):
         #self._entropy_t = np.nan
         self.entropy_t()
 
+        # "true elbo"
+        self.compute_elbo()
+
 
     def update_elbo(self):
         ## Get real ELBO instead of ll
@@ -674,8 +677,6 @@ class SVB(ModelBase):
         self.elbo = nelbo
         return self.elbo
 
-    def compute_elbo(self):
-        raise NotImplementedError
 
     def maximization(self):
         raise NotImplementedError
