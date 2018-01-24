@@ -25,7 +25,7 @@ class Netw2(ExpDesign):
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
         _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}',
-        _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
+        _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var _elbo'
     )
     compare_scvb_m = ExpGroup(compare_scvb, model=['immsb_cgs', 'immsb_cvb'])
     cvb = ExpGroup(compare_scvb, model='immsb_cvb')
@@ -52,7 +52,7 @@ class Netw2(ExpDesign):
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
         _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}',
-        _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
+        _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b _elbo'
     )
     scvb_t = ExpGroup(scvb, _refdir='debug_')
 

@@ -417,7 +417,7 @@ class GramExp(object):
             @type: pk, json or inference.
         """
         expe = defaultdict(lambda: None, expe)
-        base = expe.get('_data_type', 'pmk-temp')
+        base = expe.get('_data_type', 'pmk-dump')
         hook = expe.get('_refdir', '_default')
 
         basedir = os.path.join(cls._data_path, base, 'results')

@@ -371,6 +371,20 @@ class immsb_scvb(SVB):
 
         return self._entropy_t
 
+    def compute_elbo(self):
+
+        pij = self.likelihood(*self._reduce_latent())
+
+        # Log-likelihood
+        ll = self.frontend.data_A_t * pij + self.frontend.data_B_t
+
+        hq = (pij * np.log(pij)).sum()
+
+        self._elbo = (pij * np.log(ll)).sum() - hq
+
+        return self._elbo
+
+
     def update_hyper(self, hyper):
         pass
 
