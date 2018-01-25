@@ -6,6 +6,11 @@ Pymake (pmk) is a machine friendly environment for making reproducible research.
 * Models and workflows for Machine Learning experiments, as a **framework**.
 
 <!-- Build Powerfull CLI | Create Beautiful UI | Browse your Experiments  -->
+This repo contains two main directories:
+
+* pymake/ -- Code source of pymake
+* repo/ -- Poc project that are structured with pymake
+
 
 # Table of Contents
 1. [Features](#1)
@@ -58,7 +63,7 @@ The context of the experiment is as follows :
 Setup the experiment (needed just once) :
 
 ```bash
-cd examples/docsearch/
+cd repo/docsearch/
 make setup
 ```
 
