@@ -2,7 +2,7 @@
 
 #SSH='dulac@pitmanyor'
 SSH='adulac@tiger'
-IN="~/workInProgress/networkofgraphs/process/pymake/repo/ml/results/"
+IN="~/workInProgress/networkofgraphs/process/pymake/repo/ml/data/reports/"
 
 
 OUT="./"

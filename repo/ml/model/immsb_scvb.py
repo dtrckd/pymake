@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
-
 import numpy as np
 import scipy as sp
+from numpy import ma
 
 from pymake.util.math import lognormalize, categorical, sorted_perm, adj_to_degree, gem
 from ml.model.modelbase import SVB
@@ -48,8 +47,8 @@ class immsb_scvb(SVB):
         self.hyper_theta /= self.hyper_theta.sum()
 
         # Sufficient Statistics
-        self._ss = self._random_s_init()
-        #self._ss = self._random_ss_init()
+        #self._ss = self._random_s_init()
+        self._ss = self._random_ss_init()
         #self._random_cvb_init()
 
         self.frontend._set_rawdata_for_likelihood_computation()
@@ -184,6 +183,7 @@ class immsb_scvb(SVB):
         self.hyper_theta_sum = self.hyper_theta.sum()
 
         #self._qij = self.likelihood(*self.reduce_latent())
+        self._symmetric_pt = self._is_symmetric +1
 
         # Return sufficient statistics
         return [N_phi, N_theta_left, N_theta_right]
@@ -241,6 +241,7 @@ class immsb_scvb(SVB):
 
         self.gstep_theta = chi / ((tau + self._timestep_a)**kappa)
 
+
     def _update_gstep_phi(self):
         chi = self._chi_b
         tau = self._tau_b
@@ -288,6 +289,7 @@ class immsb_scvb(SVB):
         qij = self.samples[-1]
 
         self._update_local_gradient(i, j, qij)
+        self._timestep_a += 1
 
         if burnin:
             self.samples = []
@@ -295,6 +297,7 @@ class immsb_scvb(SVB):
         else:
             self._update_global_gradient(i, j, qij, xij)
             #self._purge_minibatch()
+            #self._timestep_b += 1
             pass
 
 
@@ -329,6 +332,7 @@ class immsb_scvb(SVB):
     def _update_global_gradient(self, i, j, qij, xij):
         self._N_phi[xij] += qij * self._symmetric_pt
 
+
     def _purge_minibatch(self):
         ''' Update the global gradient then purge containers '''
         if not self._is_container_empty():
@@ -342,17 +346,21 @@ class immsb_scvb(SVB):
 
         self._reset_containers()
 
+        self._timestep_b += 1
+
 
     def entropy(self):
         pij = self.likelihood(*self._reduce_latent())
 
         # Log-likelihood
         pij = self.frontend.data_A * pij + self.frontend.data_B
+        #ll = np.log(pij).sum()
         ll = np.log(pij).sum()
 
         # Entropy
-        self._entropy = - ll / self._len['nnz']
+        self._entropy = ll
 
+        #self._entropy = - ll / self._len['nnz']
         # Perplexity is 2**H(X).
 
         return self._entropy
@@ -365,8 +373,9 @@ class immsb_scvb(SVB):
         ll = np.log(pij).sum()
 
         # Entropy
-        self._entropy_t = - ll / self._len['nnz_t']
+        self._entropy_t = ll
 
+        #self._entropy_t = - ll / self._len['nnz_t']
         # Perplexity is 2**H(X).
 
         return self._entropy_t
@@ -375,12 +384,16 @@ class immsb_scvb(SVB):
 
         pij = self.likelihood(*self._reduce_latent())
 
-        # Log-likelihood
-        ll = self.frontend.data_A_t * pij + self.frontend.data_B_t
+        pij = ma.array(pij, mask=self.get_mask())
 
+        # Log-likelihood
+        ll = self.frontend.data_A * pij + self.frontend.data_B
+
+
+        eq = (pij * np.log(ll)).sum()
         hq = (pij * np.log(pij)).sum()
 
-        self._elbo = (pij * np.log(ll)).sum() - hq
+        self._elbo = eq - hq
 
         return self._elbo
 

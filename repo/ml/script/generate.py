@@ -303,7 +303,7 @@ class GenNetwork(ExpeFormat):
         figs.append(plt.gcf())
 
         if expe.write:
-            self.write_figs(figs, base=expe.model)
+            self.write_frames(figs, base=expe.model)
             return
 
 
@@ -439,7 +439,7 @@ class GenNetwork(ExpeFormat):
                 print(table)
                 if expe.write:
                     base = '%s_%s' % (self.specname(_model), _type)
-                    self.write_table(table, base=base, ext='.md')
+                    self.write_frames(table, base=base, ext='md')
 
     @ExpeFormat.raw_plot
     def draw(self):
@@ -562,7 +562,7 @@ class GenNetwork(ExpeFormat):
                 print(table)
                 if expe.write:
                     base = '%s_homo_%s' % (self.specname(_model), _type)
-                    self.write_table(table, base=base, ext='.md')
+                    self.write_frames(table, base=base, ext='md')
 
     @ExpeFormat.raw_plot('model')
     def homo_mustach(self,):
@@ -814,8 +814,7 @@ class GenNetwork(ExpeFormat):
             if expe.write:
                 base = '%s_%s_%s' % ( _type, _type2, _ratio)
                 figs = {'roc_evolution': ExpSpace({'fig':fig, 'table':table, 'base':base})}
-                self.write_table(figs, ext='.md')
-                self.write_figs(figs)
+                self.write_frames(figs)
 
     @ExpeFormat.raw_plot
     def clustering(self):

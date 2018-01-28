@@ -596,8 +596,7 @@ class SVB(ModelBase):
 
         #self.fdebug()
 
-        self.elbo = self.entropy()
-        print('__init__ Entropy %f' % self.elbo)
+        print( '__init__ Entropy: %f' % self.entropy())
         for _id_mnb, minibatch in enumerate(chunk_groups):
 
             self.mnb_size = self._nnz_vector[_id_mnb]
@@ -608,8 +607,8 @@ class SVB(ModelBase):
 
             self.compute_measures()
             print('.', end='')
-            lgg.info('Minibatch %d/%d, %s, ELBO: %f,  elbo diff: %f' % (_id_mnb+1, self.chunk_len, '/'.join((self.expe.model, self.expe.corpus)),
-                                                                        self.elbo, self.elbo_diff))
+            lgg.info('Minibatch %d/%d, %s, Entropy: %f,  diff: %f' % (_id_mnb+1, self.chunk_len, '/'.join((self.expe.model, self.expe.corpus)),
+                                                                        self._entropy, self.entropy_diff))
             if self.expe.get('write'):
                 self.write_it_step(self)
                 if _id_mnb > 0 and _id_mnb % self.snapshot_freq == 0:
@@ -623,11 +622,13 @@ class SVB(ModelBase):
         * self.iterations is actually the burnin phase of SVB.
         '''
 
+        # not good
+        #self._timestep_a = 0
+
         # self.iterations is actually the burnin phase of SVB.
         for _it in range(self.iterations+1):
             self.log.debug('init timestep A ?')
-            # --refdir: i0: set timesetpa to 0, i1 not.
-            #self._timestep_a = 0 # better convergence when setting to 0, but better roc ?
+            #self._timestep_a = 0 # test, not good
             self._iteration = _it
             burnin = (_it < self.iterations)
             np.random.shuffle(minibatch)
@@ -636,16 +637,13 @@ class SVB(ModelBase):
                 self._xij = self.frontend.data_ma[tuple(iter)]
                 self.maximization(iter)
                 self.expectation(iter, burnin=burnin)
-                self._timestep_a += 1
 
-
-                #self.entropy()
-                #print(self._pp)
 
             self.compute_measures()
+
             if self._iteration != self.iterations-1 and self.expe.get('verbose', 20) < 20:
                 lgg.debug('it %d,  ELBO: %f, elbo diff: %f \t K=%d' % (_it,
-                                                                       self.elbo, self.elbo_diff, self._K))
+                                                                       self._entropy, self.entropy_diff, self._K))
                 if self.expe.get('write'):
                     self.write_it_step(self)
 
@@ -655,27 +653,38 @@ class SVB(ModelBase):
         minibashed_finished = True
         if minibashed_finished:
             self._purge_minibatch()
-            self._timestep_b += 1
 
         #if self.elbo_diff < self.limit_elbo_diff:
         #    print('ELBO get stuck during data iteration : Sampling useless, return ?!')
 
 
     def compute_measures(self):
-        self.update_elbo()
+
+        old_entropy = self._entropy
+        self.entropy()
+        self.entropy_diff = self._entropy - old_entropy
+
         #self._entropy_t = np.nan
         self.entropy_t()
 
         # "true elbo"
         self.compute_elbo()
 
+        self.compute_roc()
 
-    def update_elbo(self):
-        ## Get real ELBO instead of ll
-        nelbo = self.entropy()
-        self.elbo_diff = nelbo - self.elbo
-        self.elbo = nelbo
-        return self.elbo
+
+
+    def compute_roc(self):
+        from sklearn.metrics import roc_curve, auc, precision_recall_curve
+
+        data = self.frontend.data
+
+        y_true, probas = self.mask_probas(data)
+        theta, phi = self.get_params()
+        fpr, tpr, thresholds = roc_curve(y_true, probas)
+
+        self._roc = auc(fpr, tpr)
+
 
 
     def maximization(self):

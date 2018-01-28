@@ -119,7 +119,7 @@ class CheckNetwork(ExpeFormat):
         plot_degree_poly(data_r, ax=ax2)
 
         if expe.write:
-            self.write_figs([fig], suffix='dd')
+            self.write_frames([fig], suffix='dd')
 
     @ExpeFormat.raw_plot
     def burstiness(self, clusters_org='source', _type='local'):
@@ -261,7 +261,7 @@ class CheckNetwork(ExpeFormat):
         figs.append(plt.gcf())
 
         if expe.write:
-            self.write_figs(figs)
+            self.write_frames(figs)
 
         if self._it == self.expe_size -1:
             for _model, table in self.gramexp.tables.items():
@@ -280,7 +280,7 @@ class CheckNetwork(ExpeFormat):
                 print(table)
                 #if expe.write:
                 #    base = '%s' % (clusters_org)
-                #    self.write_table(table, base=base, ext='.md')
+                #    self.write_frames(table, base=base)
 
     #@ExpeFormat.tabulate
     def pvalue(self):

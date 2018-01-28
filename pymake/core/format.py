@@ -1006,7 +1006,7 @@ class ExpeFormat(object):
                 # Save on last call
                 if self._it == self.expe_size -1:
                     if expe.write:
-                        self.write_figs(self.gramexp._figs)
+                        self.write_frames(self.gramexp._figs)
 
                 return kernel
             return wrapper
@@ -1076,14 +1076,16 @@ class ExpeFormat(object):
                     if not title:
                         title = '%s %s' % tuple(map(lambda x:self.expe.get(x, x), ['corpus', 'model']))
 
-                frame.base = '%s_%s' % (fun.__name__, title.replace(' ', '_'))
+                frame.base = '%s_%s' % (fun.__name__, attribute)
                 frame.args = discr_args
                 frame.fig.gca().set_title(title)
+                frame.fig.gca().set_xlabel('iterations')
+                frame.fig.gca().set_ylabel(attribute)
 
                 # Save on last call
                 if self._it == self.expe_size -1:
                     if self.expe.write:
-                        self.write_figs(self.gramexp._figs)
+                        self.write_frames(self.gramexp._figs)
 
                 return kernel
             return wrapper
@@ -1154,7 +1156,9 @@ class ExpeFormat(object):
 
                             gg = z +'-'+ ggroup if ggroup else z
                             self.gramexp._tables[gg] = ExpSpace({'table': Table,
-                                                                 'base':'_'.join((fun.__name__, x,y)),
+                                                                 'base':'_'.join((fun.__name__,
+                                                                                  str(self.expe[x]),
+                                                                                  str(self.expe[y]))),
                                                                  'args':discr_args,
                                                                  #'args':self.gramexp.get_nounique_keys(x, y),
                                                                 })
@@ -1164,8 +1168,8 @@ class ExpeFormat(object):
 
 
                     if self.expe.write:
-                        tablefmt_ext = dict(simple='.md', latex='.tex')
-                        self.write_table(self.gramexp._tables, ext=tablefmt_ext[tablefmt])
+                        tablefmt_ext = dict(simple='md', latex='tex')
+                        self.write_frames(self.gramexp._tables, ext=tablefmt_ext[tablefmt])
 
                 return kernel
             return wrapper
@@ -1211,73 +1215,68 @@ class ExpeFormat(object):
         return expe
 
 
-    def write_figs(self, figs, base='', suffix='', ext='.pdf', args=''):
+    def write_frames(self, frames, base='', suffix='', ext=None, args=''):
         expe = self.formatName(self.expe)
 
-        if type(figs) is list:
+        if isinstance(frames, str):
+            frames = [frames]
+
+        if type(frames) is list:
             if base:
                 base = self.specname(base)
             if args:
                 s = '_'.join(['%s'] * len(args))
-                args = s % tuple(map(lambda x:self.specname(expe.get(x, x)), args))
-            for i, f in enumerate(figs):
-                fn = self._file_part([base, args, suffix]) + ext
+                args = s % tuple(map(lambda x:expe.get(x, x), args))
+            for i, f in enumerate(frames):
+                idi = i if len(frames) > 1 else None
+                fn = self._file_part([base, args, suffix, idi])
                 fn = self.full_fig_path(fn)
-                print('Writings figs: %s' % fn)
-                f.savefig(fn);
-        elif issubclass(type(figs), dict):
-            for c, f in figs.items():
+                self._kernel_write(f, fn, ext=ext)
+        elif issubclass(type(frames), dict):
+            for c, f in frames.items():
                 base = f.get('base') or base
                 args = f.get('args') or args
                 if base:
                     base = self.specname(base)
                 if args:
                     s = '_'.join(['%s'] * len(args))
-                    args = s % tuple(map(lambda x:self.specname(expe.get(x, x)), args))
-                fn = self._file_part([self.specname(c), base, args, suffix]) + ext
+                    args = s % tuple(map(lambda x:expe.get(x, x), args))
+                fn = self._file_part([self.specname(c), base, args, suffix])
                 fn = self.full_fig_path(fn)
-                print('Writings figs: %s' % fn)
-                f.fig.savefig(fn);
+                self._kernel_write(f, fn, ext=ext, title=c)
         else:
-            print('ERROR : type of Figure unknow, passing')
+            print('Error : type of Frame unknow, passing: %s' % type(frame))
 
-    def write_table(self, table, base='', suffix='', ext='.md', args=''):
-        expe = self.formatName(self.expe)
-        caption = '\caption{{{title}}}\n'
 
-        if isinstance(table, (str)):
-            if base:
-                base = self.specname(base)
-            if args:
-                s = '_'.join(['%s'] * len(args))
-                args = s % tuple(map(lambda x:self.specname(expe.get(x, x)), args))
-            fn = self._file_part([base, args, suffix]) + ext
-            fn = self.full_fig_path(fn)
-            print('Writings table: %s' % fn)
-            with open(fn, 'w') as _f:
-                _f.write(table)
-        elif isinstance(table, dict):
-            for c, t in table.items():
-                base = t.get('base') or base
-                args = t.get('args') or args
-                if base:
-                    base = self.specname(base)
-                if args:
-                    s = '_'.join(['%s'] * len(args))
-                    args = s % tuple(map(lambda x:self.specname(expe.get(x, x)), args))
-                fn = self._file_part([self.specname(c), base, args, suffix]) + ext
-                fn = self.full_fig_path(fn)
-                print('Writings table: %s' % fn)
+    def _kernel_write(self, frame, fn, title=None, ext=None):
+        if isinstance(frame, dict):
+            if 'fig' in frame:
+                ext = ext or 'pdf'
+                fn = fn +'.'+ ext
+                print('Writing frame: %s' % fn)
+                frame.fig.savefig(fn)
+            elif 'table' in frame:
+                ext = ext or 'md'
+                fn = fn +'.'+ ext
+                print('Writing frame: %s' % fn)
+                caption = '\caption{{{title}}}\n'
                 with open(fn, 'w') as _f:
-                    _f.write(caption.format(title=c))
-                    _f.write(t.table+'\n')
+                    if  title:
+                        _f.write(caption.format(title=title))
+                    _f.write(frame.table+'\n')
+
+        elif isinstance(frame, str):
+            ext = ext or 'md'
+            fn = fn +'.'+ ext
+            print('Writing frame: %s' % fn)
+            with open(fn, 'w') as _f:
+                _f.write(frame)
         else:
-            print('ERROR : type `%s\' of Table unknow, passing' % (type(table)))
-
-
-
-
-
+            # assume figure
+            ext = ext or 'pdf'
+            fn = fn +'.'+ ext
+            print('Writing frame: %s' % fn)
+            frame.savefig(fn)
 
 
 
@@ -1293,7 +1292,7 @@ class ExpeFormat(object):
         gramexp.reorder_firstnonvalid()
 
         if not gramexp._conf.get('simulate'):
-            print(gramexp.exptable())
+            cls.log.info(gramexp.exptable())
 
         return
 
