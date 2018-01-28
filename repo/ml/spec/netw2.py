@@ -25,7 +25,7 @@ class Netw2(ExpDesign):
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
         _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}',
-        _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var _elbo'
+        _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
     )
     compare_scvb_m = ExpGroup(compare_scvb, model=['immsb_cgs', 'immsb_cvb'])
     cvb = ExpGroup(compare_scvb, model='immsb_cvb')
@@ -52,7 +52,7 @@ class Netw2(ExpDesign):
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
         _format       = '{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}',
-        _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b _elbo'
+        _csv_typo     = '# _iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b _elbo _roc'
     )
     scvb_t = ExpGroup(scvb, _refdir='debug_')
 
@@ -61,7 +61,7 @@ class Netw2(ExpDesign):
                         _format='{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}_{chi_a}-{tau_a}-{kappa_a}_{chi_b}-{tau_b}-{kappa_b}'
                        )
 
-    scvb_chi_g7 = ExpGroup(scvb, chi_a=[10], tau_a=[100], kappa_a=[0.6],
+    scvb_chi2 = ExpGroup(scvb, chi_a=[10], tau_a=[100], kappa_a=[0.6],
                         chi_b=[10], tau_b=[500], kappa_b=[0.9],
                         _format='{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}_{chi_a}-{tau_a}-{kappa_a}_{chi_b}-{tau_b}-{kappa_b}'
                        )
@@ -139,10 +139,13 @@ class Netw2(ExpDesign):
                     mask=['balanced', 'unbalanced'], _refdir='noel')
 
     compare_scvb2 = ExpGroup(compare_scvb, iterations=150)
-    noel2 = ExpGroup([scvb_chi_g7, compare_scvb2], N='all', corpus=data_net_all,
+    noel2 = ExpGroup([scvb_chi2, compare_scvb2], N='all', corpus=data_net_all,
                     mask=['unbalanced'], _refdir='noel2')
 
+    noel3 = ExpGroup(scvb_chi2, N='all', chunk=['adaptative_0.1', 'adaptative_1'], corpus=data_net_all, mask=['unbalanced'], _refdir='noel3')
 
+
+    # cvb debug
     pd = ExpGroup(compare_scvb, iterations=150, model='immsb_cvb', _repeat='debug_cvb',
                   N='all', corpus=data_net_all,
                   mask=['unbalanced'], _refdir='noel2')

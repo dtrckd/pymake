@@ -182,9 +182,9 @@ _Gram = [
         dest='_data_type',
         help='Name to prepend in data/<data-type>/<refdir>/ for the output path.'),
 
-    '--data-format', dict(
+    '--type', '--data-format', dict(
         dest='_data_format',
-        help='The type/format of data to use.'),
+        help='The type/format of data to use [b|w].'),
 
     '--format', dict(
         dest='_format', type=str,

@@ -1,10 +1,7 @@
 #!/bin/bash
 
 SSH='adulac@tiger'
-IN="/home/ama/adulac/workInProgress/networkofgraphs/process/pymake/data/"
-
-#SSH='dulac@pitmanyor'
-#IN="/home/dulac/Desktop/workInProgress/networkofgraphs/process/pymake/data/"
+IN="/home/ama/adulac/workInProgress/networkofgraphs/process/pymake/repo/ml/data/"
 
 OUT="./"
 T="networks"
@@ -13,6 +10,7 @@ T="networks"
 #FILTER='--include "*/" --include "**pnas[23]**" --exclude "*"'
 #FILTER='--include "*/" --include "*scvb***"  --exclude "*"'
 FILTER='--include "*/" --include "*noel2***"  --exclude "*"'
+FILTER='--include "*/" --include "*noel3***"  --exclude "*"'
 #FILTER=
 
 SIMUL="-n"
