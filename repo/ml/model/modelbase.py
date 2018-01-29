@@ -77,6 +77,7 @@ class ModelBase(object):
             self._init_params()
 
 
+
     def _init(self, key, expe, default):
         if hasattr(self, key):
             value = getattr(self, key)
@@ -118,6 +119,29 @@ class ModelBase(object):
             np.random.shuffle(order)
         return order
 
+    def getK(self):
+        theta, _ = self.get_params()
+        return theta.shape[1]
+
+    def getN(self):
+        theta, _ = self.get_params()
+        return theta.shape[0]
+
+
+    def check_measures(self):
+        if self.expe.get('deactivate_measures'):
+            for m in self.expe.get('_csv_typo', '').split():
+                if not hasattr(self, m):
+                    setattr(self, m, None)
+
+
+    #  Relate with transform in sklearn ?
+    def get_params(self):
+        if hasattr(self, '_theta') and hasattr(self, '_phi'):
+            return np.asarray(self._theta), np.asarray(self._phi)
+        else:
+            return self._reduce_latent()
+
     @mmm #frontend
     def likelihood(self, theta=None, phi=None):
         if theta is None:
@@ -127,6 +151,7 @@ class ModelBase(object):
         likelihood = theta.dot(phi).dot(theta.T)
         return likelihood
 
+    @mmm
     def similarity_matrix(self, theta=None, phi=None, sim='cos'):
         if theta is None:
             theta = self._theta
@@ -149,23 +174,10 @@ class ModelBase(object):
             sim = self.normalization_fun(sim)
         return sim
 
-    def get_params(self):
-        if hasattr(self, '_theta') and hasattr(self, '_phi'):
-            return np.asarray(self._theta), np.asarray(self._phi)
-        else:
-            return self._reduce_latent()
 
     def _reduce_latent(self):
         ''' Estimate global parameters of a model '''
         raise NotImplementedError
-
-    def getK(self):
-        theta, _ = self.get_params()
-        return theta.shape[1]
-
-    def getN(self):
-        theta, _ = self.get_params()
-        return theta.shape[0]
 
 
     def update_hyper(self):
@@ -274,11 +286,13 @@ class ModelBase(object):
 
     def fit(self):
         raise NotImplementedError
-    # Just for MCMC ?():
+
+    # or Infer, Search ??
     def predict(self):
         raise NotImplementedError
 
-    # get_params ~ transform ?sklearn
+    def compute_measures(self):
+        raise NotImplementedError
 
     def generate(self):
         raise NotImplementedError
@@ -306,9 +320,12 @@ class GibbsSampler(ModelBase):
     @mmm
     def compute_measures(self):
 
-        self._entropy = self.entropy()
+        if self.expe.get('deactivate_measures'):
+            return
+
+        self._entropy = self.compute_entropy()
         if hasattr(self, 'entropy_t'):
-            self._entropy_t = self.entropy_t()
+            self._entropy_t = self.compute_entropy_t()
         else:
             self._entropy_t = np.nan
 
@@ -322,8 +339,11 @@ class GibbsSampler(ModelBase):
     def fit(self):
 
         #self.fdebug()
+        self.check_measures()
 
-        print( '__init__ Entropy: %f' % self.entropy())
+        self._entropy = self.compute_entropy()
+        print( '__init__ Entropy: %f' % _entropy)
+
         for _it in range(self.iterations):
             self._iteration = _it
 
@@ -519,8 +539,11 @@ class SVB(ModelBase):
     __abstractmethods__ = 'model'
 
     def __init__(self, expe, frontend):
-        #self.fmt = '%d %.4f %.8f %.8f %d'
         super(SVB, self).__init__(frontend, expe)
+
+        self.entropy_diff = 0
+
+
 
     def _init_params(self):
         raise NotImplementedError
@@ -595,8 +618,10 @@ class SVB(ModelBase):
         self._update_chunk_nnz(chunk_groups)
 
         #self.fdebug()
+        self.check_measures()
 
-        print( '__init__ Entropy: %f' % self.entropy())
+        self._entropy = self.compute_entropy()
+        print( '__init__ Entropy: %f' % self._entropy)
         for _id_mnb, minibatch in enumerate(chunk_groups):
 
             self.mnb_size = self._nnz_vector[_id_mnb]
@@ -639,11 +664,9 @@ class SVB(ModelBase):
                 self.expectation(iter, burnin=burnin)
 
 
-            self.compute_measures()
-
             if self._iteration != self.iterations-1 and self.expe.get('verbose', 20) < 20:
-                lgg.debug('it %d,  ELBO: %f, elbo diff: %f \t K=%d' % (_it,
-                                                                       self._entropy, self.entropy_diff, self._K))
+                self.compute_measures()
+                lgg.debug('it %d,  ELBO: %f, elbo diff: %f \t K=%d' % (_it, self._entropy, self.entropy_diff, self._K))
                 if self.expe.get('write'):
                     self.write_it_step(self)
 
@@ -660,18 +683,20 @@ class SVB(ModelBase):
 
     def compute_measures(self):
 
+        if self.expe.get('deactivate_measures'):
+            return
+
         old_entropy = self._entropy
-        self.entropy()
+        self._entropy = self.compute_entropy()
         self.entropy_diff = self._entropy - old_entropy
 
         #self._entropy_t = np.nan
-        self.entropy_t()
+        self._entropt_t = self.compute_entropy_t()
 
         # "true elbo"
-        self.compute_elbo()
+        self._elbo = self.compute_elbo()
 
-        #self.compute_roc()
-        self._roc = None
+        self._roc = self.compute_roc()
 
 
 
@@ -684,7 +709,8 @@ class SVB(ModelBase):
         theta, phi = self.get_params()
         fpr, tpr, thresholds = roc_curve(y_true, probas)
 
-        self._roc = auc(fpr, tpr)
+        roc = auc(fpr, tpr)
+        return roc
 
 
 

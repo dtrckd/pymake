@@ -248,38 +248,40 @@ class iwmmsb_scvb(SVB):
         #likelihood = theta.dot(kern).dot(theta.T)
         return likelihood
 
-    def entropy(self):
+    def compute_entropy(self):
         pij = self.likelihood(*self._reduce_latent())
 
         # Log-likelihood
         ll = np.log(pij).sum()
 
         # Entropy
-        self._entropy = ll
+        entropy = ll
 
         #self._entropy = - ll / self._len['nnz']
         # Perplexity is 2**H(X).
 
-        return self._entropy
+        return entropy
 
-    def entropy_t(self):
+    def compute_entropy_t(self):
         pij = self.likelihood(*self._reduce_latent())
 
         # Log-likelihood
         ll = np.log(pij).sum()
 
         # Entropy
-        self._entropy_t = ll
+        entropy_t = ll
 
         #self._entropy_t = - ll / self._len['nnz_t']
         # Perplexity is 2**H(X).
 
-        return self._entropy_t
+        return entropy_t
 
     def compute_elbo(self):
         # how to compute elbo for all possible links wheigts, mean?
-        self._elbo = None
-        return self._elbo
+        return None
+
+    def compute_roc(self):
+        return None
 
 
     def update_hyper(self, hyper):

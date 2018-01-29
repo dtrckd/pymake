@@ -349,7 +349,7 @@ class immsb_scvb(SVB):
         self._timestep_b += 1
 
 
-    def entropy(self):
+    def compute_entropy(self):
         pij = self.likelihood(*self._reduce_latent())
 
         # Log-likelihood
@@ -358,14 +358,14 @@ class immsb_scvb(SVB):
         ll = np.log(pij).sum()
 
         # Entropy
-        self._entropy = ll
+        entropy = ll
 
-        #self._entropy = - ll / self._len['nnz']
+        #entropy = - ll / self._len['nnz']
         # Perplexity is 2**H(X).
 
-        return self._entropy
+        return entropy
 
-    def entropy_t(self):
+    def compute_entropy_t(self):
         pij = self.likelihood(*self._reduce_latent())
 
         # Log-likelihood
@@ -373,12 +373,12 @@ class immsb_scvb(SVB):
         ll = np.log(pij).sum()
 
         # Entropy
-        self._entropy_t = ll
+        entropy_t = ll
 
-        #self._entropy_t = - ll / self._len['nnz_t']
+        #entropy_t = - ll / self._len['nnz_t']
         # Perplexity is 2**H(X).
 
-        return self._entropy_t
+        return entropy_t
 
     def compute_elbo(self):
 
@@ -393,9 +393,9 @@ class immsb_scvb(SVB):
         eq = (pij * np.log(ll)).sum()
         hq = (pij * np.log(pij)).sum()
 
-        self._elbo = eq - hq
+        elbo = eq - hq
 
-        return self._elbo
+        return elbo
 
 
     def update_hyper(self, hyper):

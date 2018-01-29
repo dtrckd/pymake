@@ -1313,7 +1313,7 @@ class ExpeFormat(object):
         raise NotImplementedError
 
 
-    def _format_line_out(self, model, comments=('#','%')):
+    def _format_line_out(self, model):
         ''' extract data in model from variable name declared in {self.scv_typo}.
             The iterable build constitute the csv-like line, for **one iteration**, to be written in the outputfile.
 
@@ -1329,9 +1329,7 @@ class ExpeFormat(object):
         '''
         line = []
         for o in self.expe._csv_typo.split():
-            if o in comments:
-                continue
-            elif o.startswith('{'): # is a list
+            if o.startswith('{'): # is a list
                 obj = o[1:-1]
                 brak_pt = obj.find('[')
                 if brak_pt != -1: # assume  nested dictionary
@@ -1413,7 +1411,7 @@ class ExpeFormat(object):
         data = [re.sub("\s\s+" , " ", x.strip()).split() for l,x in enumerate(data) if not x.startswith(comments)]
 
         # Grammar dude ?
-        col_typo = self.expe._csv_typo.split()[1:]
+        col_typo = self.expe._csv_typo.split()
         array = []
         last_elt_size = None
         # Format the data in a list of dict by entry
@@ -1466,7 +1464,7 @@ class ExpeFormat(object):
             self.log.warning('No csv_typo, for this model %s, no inference file...')
         else:
             self._fitit_f = open(self.fname_i, 'wb')
-            self._fitit_f.write((self.expe._csv_typo + '\n').encode('utf8'))
+            self._fitit_f.write(('#' + self.expe._csv_typo + '\n').encode('utf8'))
 
 
     def clear_fitfile(self):
