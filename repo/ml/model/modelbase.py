@@ -670,7 +670,8 @@ class SVB(ModelBase):
         # "true elbo"
         self.compute_elbo()
 
-        self.compute_roc()
+        #self.compute_roc()
+        self._roc = None
 
 
 
