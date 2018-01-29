@@ -326,7 +326,7 @@ class CheckNetwork(ExpeFormat):
             #corpuses = self.specname(self.gramexp.get_set('corpus'))
             corpuses = self.specname(self.gramexp.get_list('corpus'))
             Meas = ['nodes', 'edges', 'density']
-            Meas += ['is_symmetric', 'modularity', 'clustering_coefficient', 'net_type']
+            Meas += ['is_symmetric', 'modularity', 'clustering_coefficient', 'net_type', 'feat_len']
             Table = np.zeros((len(corpuses), len(Meas))) * np.nan
             Table = np.column_stack((corpuses, Table))
             self.gramexp.Table = Table

@@ -31,7 +31,7 @@ class Netw2(ExpDesign):
     cvb = ExpGroup(compare_scvb, model='immsb_cvb')
 
     scvb = ExpTensor (
-        corpus        = ['clique6'],
+        corpus        = ['BA'],
         model         = 'immsb_scvb',
         N             = 200,
         chunk         = 'adaptative_1',

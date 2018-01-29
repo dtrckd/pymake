@@ -537,6 +537,9 @@ class frontendNetwork(DataBase, DatasetDriver):
     def net_type(self):
         return '%s / max value: %s' % (self._net_type, np.max(self.data))
 
+    def feat_len(self):
+        return len(np.unique(self.data))
+
 
     @property
     def _type(self):
