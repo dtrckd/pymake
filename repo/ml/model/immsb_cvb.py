@@ -168,7 +168,7 @@ class immsb_cvb(GibbsSampler):
 
             self.gamma[j, i] = qij
 
-    def entropy(self):
+    def compute_entropy(self):
         pij = self.likelihood(*self._reduce_latent())
 
         # Log-likelihood
@@ -176,13 +176,13 @@ class immsb_cvb(GibbsSampler):
         ll = np.log(pij).sum()
 
         # Entropy
-        self._entropy = - ll / self._len['nnz']
+        entropy = - ll / self._len['nnz']
 
         # Perplexity is 2**H(X).
 
-        return self._entropy
+        return entropy
 
-    def entropy_t(self):
+    def compute_entropy_t(self):
         pij = self.likelihood(*self._reduce_latent())
 
         # Log-likelihood
@@ -190,11 +190,11 @@ class immsb_cvb(GibbsSampler):
         ll = np.log(pij).sum()
 
         # Entropy
-        self._entropy_t = - ll / self._len['nnz_t']
+        entropy_t = - ll / self._len['nnz_t']
 
         # Perplexity is 2**H(X).
 
-        return self._entropy_t
+        return entropy_t
 
     def update_hyper(self, hyper):
         pass

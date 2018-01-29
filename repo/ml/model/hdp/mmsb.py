@@ -773,7 +773,7 @@ class GibbsRun(GibbsSampler):
     def compute_measures(self):
         self._K = self.s.zsampler._K
 
-        self._entropy = self.entropy()
+        self._entropy = self.compute_entropy()
         #self._entropy_t = self.predictive_likelihood()
         self._entropy_t = np.nan
 
@@ -793,7 +793,7 @@ class GibbsRun(GibbsSampler):
         self.delta_var = self.s.zsampler.likelihood.delta.var()
 
     # Mean can be arithmetic or geometric
-    def entropy(self):
+    def compute_entropy(self):
         buritos = self.s.zsampler
         self._theta, self._phi = buritos.estimate_latent_variables()
         pij = self.likelihood(self._theta, self._phi)
@@ -803,13 +803,13 @@ class GibbsRun(GibbsSampler):
         ll = np.log(pij).sum()
 
         # Entropy
-        self._entropy = - ll / buritos.likelihood.nnz
+        entropy = - ll / buritos.likelihood.nnz
 
         # Perplexity is 2**H(X).
 
-        return self._entropy
+        return entropy
 
-    def entropy_t(self):
+    def compute_entropy_t(self):
         buritos = self.s.zsampler
         self._theta, self._phi = buritos.estimate_latent_variables()
         pij = self.likelihood(self._theta, self._phi)
@@ -819,11 +819,11 @@ class GibbsRun(GibbsSampler):
         ll = np.log(pij).sum()
 
         # Entropy
-        self._entropy = - ll / buritos.likelihood.nnz
+        entropy = - ll / buritos.likelihood.nnz
 
         # Perplexity is 2**H(X).
 
-        return self._entropy
+        return entropy
 
     def purge(self):
         self.s.zsampler.betasampler = None

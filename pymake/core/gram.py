@@ -143,10 +143,10 @@ _Gram = [
         nargs='?', dest='_net', const=True,
         help='[with runpara, send run to remote via loginfile. Max number of remote can be specified.'),
 
+    # @Debug allocate unique filname for expe base on a hash of its spec.
     '--ifu', '--ignore-format-unique', dict(
         action='store_true', dest='_ignore_format_unique',
-        help='dont check that if _format overllaping expe outpath name.'),
-
+        help='dont check that if there is some outputpath overlaping due to lacking parameters in  _format.'),
 
 
     #  Context-sensitive
@@ -179,15 +179,17 @@ _Gram = [
         help='Name to append in data/<data-typer>/<refdir>/ for the output path.'),
 
     '--data-type', dict(
-        dest='_data_type',
-        help='Name to prepend in data/<data-type>/<refdir>/ for the output path.'),
-
-    '--type', '--data-format', dict(
-        dest='_data_format',
-        help='The type/format of data to use [b|w].'),
+        dest='_data_type', help='Name to prepend in data/<data-type>/<refdir>/ for the output path.'),
 
     '--format', dict(
-        dest='_format', type=str,
-        help='File format for saving results and models.'),
+        dest='_format', help='File format for saving results and models.'),
+
+    '--type', '--data-format', dict(
+        dest='_data_format', help='The type/format of data to use [b|w].'),
+
+    '--fast', '--deactivate-measures', dict(
+        dest='deactivate_measures', action='store_true',
+        help='Do not compute measures (log-likelihood/entropy etc) during fitting to speed up the process.'),
+
 
     ]
