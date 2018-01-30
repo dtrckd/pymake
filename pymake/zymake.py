@@ -51,6 +51,8 @@ def main():
         lines = zymake.make_path(ftype=zyvar.get('_ftype'), status=zyvar.get('_status'))
     elif zyvar['_do'] == 'hist':
         lines = zymake.show_history()
+    elif zyvar['_do'] == 'diff':
+        lines = zymake.show_diff()
     elif zyvar['_do'] == 'notebook': # @Todo
         lines = zymake.notebook()
     else: # list things
