@@ -18,7 +18,8 @@ class frontendText(DataBase):
     """ Frontend for text Corpus """
 
     def __init__(self, config=dict(), load=False):
-        self.bdir = 'text'
+        if not expe.get('_data_type'):
+            expe['_data_type'] = 'text'
         super(frontendText, self).__init__(config, load)
 
     def load_data(self, corpus_name=None, randomize=False):

@@ -39,7 +39,8 @@ class frontendNetwork(DataBase, DatasetDriver):
     _selfloop = False
 
     def __init__(self, expe=dict(), load=False):
-        self.bdir = 'networks'
+        if not expe.get('_data_type'):
+            expe['_data_type'] = 'networks'
         super(frontendNetwork, self).__init__(expe, load)
 
     @classmethod

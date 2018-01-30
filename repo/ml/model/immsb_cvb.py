@@ -176,7 +176,8 @@ class immsb_cvb(GibbsSampler):
         ll = np.log(pij).sum()
 
         # Entropy
-        entropy = - ll / self._len['nnz']
+        entropy = ll
+        #entropy = - ll / self._len['nnz']
 
         # Perplexity is 2**H(X).
 
@@ -190,11 +191,12 @@ class immsb_cvb(GibbsSampler):
         ll = np.log(pij).sum()
 
         # Entropy
-        entropy_t = - ll / self._len['nnz_t']
+        entropy = ll
+        #entropy_t = - ll / self._len['nnz_t']
 
         # Perplexity is 2**H(X).
 
-        return entropy_t
+        return entropy
 
     def update_hyper(self, hyper):
         pass

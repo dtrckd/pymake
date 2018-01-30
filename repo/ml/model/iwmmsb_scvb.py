@@ -256,8 +256,8 @@ class iwmmsb_scvb(SVB):
 
         # Entropy
         entropy = ll
-
         #self._entropy = - ll / self._len['nnz']
+
         # Perplexity is 2**H(X).
 
         return entropy
@@ -270,8 +270,8 @@ class iwmmsb_scvb(SVB):
 
         # Entropy
         entropy_t = ll
-
         #self._entropy_t = - ll / self._len['nnz_t']
+
         # Perplexity is 2**H(X).
 
         return entropy_t
