@@ -560,6 +560,7 @@ class ExpTensorV2(BaseObject):
                 self._conf[k] = v
 
     def get_all(self, key, default=[]):
+        ''' Get all values associated to a given key. '''
         vec = []
         for tensor in self._tensors:
             vec.extend(tensor.get(key, []))
@@ -570,6 +571,7 @@ class ExpTensorV2(BaseObject):
             return vec
 
     def get_nounique_keys(self):
+        ''' Return key that has gridded (different value occurence in the set of tensor). '''
         keys = defaultdict(set)
         for tensor in self._tensors:
             for k in tensor:
@@ -656,14 +658,14 @@ class ExpTensorV2(BaseObject):
                     _null.append(k)
             self._null.append(_null)
 
-    def make_lod(self):
+    def make_lod(self, skip_check=False):
         ''' Make a list of Expe from tensor, with filtering '''
 
         self._lod = []
         for _id, tensor in enumerate(self._tensors):
             self._lod.extend(self._make_lod(tensor, _id))
 
-        self._make_hash()
+        self._make_hash(skip_check)
         return self._lod
 
     def _make_lod(self, tensor, _id):
@@ -737,7 +739,7 @@ class ExpTensorV2(BaseObject):
         return lod
 
     # @todo; lhs for clustering expe applications.
-    def _make_hash(self):
+    def _make_hash(self, skip_check=False):
         _hash = []
         n_duplicate = 0
         for _id, _d in enumerate(self._lod):
@@ -749,7 +751,7 @@ class ExpTensorV2(BaseObject):
             _hash.append(o)
 
 
-        if n_duplicate > 0:
+        if n_duplicate > 0 and not skip_check:
             lgg.warning('Duplicate experience: %d' % (n_duplicate))
             ask_sure_exit('Continue [y/n]?')
         self._hash = _hash
@@ -782,6 +784,9 @@ class ExpTensorV2(BaseObject):
                 _v = gt.get(k,[])
                 gt[k] = _v + v
         return gt
+
+    def get_keys(self):
+       return list(self.get_gt())
 
     def table(self):
         tables = []

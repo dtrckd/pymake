@@ -251,7 +251,8 @@ class GramExp(object):
         self._preprocess_exp()
 
         # Make lod
-        self.lod = self.exp_tensor.make_lod()
+        skip_check = self._conf['_do'] in ['diff']
+        self.lod = self.exp_tensor.make_lod(skip_check)
 
         indexs = self._conf['_run_indexs']
         if indexs:
@@ -347,7 +348,7 @@ class GramExp(object):
         return sorted(set(self.exp_tensor.get_all(key, default)))
 
     def get_list(self, key, default=[]):
-        ''' Return the set of values of expVector of that {key}. '''
+        ''' Return the list of values of expVector of that {key}. '''
         return self.exp_tensor.get_all(key, default)
 
     def get_nounique_keys(self, *args):
@@ -598,7 +599,7 @@ class GramExp(object):
         request.update(s)
 
         ontology = dict(
-            _do    = ['cmd', 'show', 'path', 'burn', 'run', 'update', 'init', 'runpara', 'hist'],
+            _do    = ['cmd', 'show', 'path', 'run', 'update', 'init', 'runpara', 'hist', 'diff'],
             _spec   = list(cls._spec),
             _ftype = ['json', 'pk', 'inf']
         )
@@ -1202,6 +1203,40 @@ class GramExp(object):
         _tail = tail(fn, n_lines)
 
         print('\n'.join(_tail))
+
+    def show_diff(self):
+        from tabulate import tabulate
+        import itertools
+
+        diff_expe = dict()
+        for tensor in self.exp_tensor:
+            for k in self.exp_tensor.get_keys():
+
+                if k not in diff_expe:
+                    diff_expe[k] = tensor.get(k, ['--'])
+                    continue
+
+                v = tensor.get(k, ['--'])
+                s = diff_expe[k]
+                r = list(itertools.filterfalse(lambda x: x in v, s)) + list(itertools.filterfalse(lambda x: x in s, v))
+                #try:
+                #    r = (set(s) - set(v)).union(set(v) - set(s))
+                #except TypeError as e:
+                #    r = list(itertools.filterfalse(lambda x: x in v, s)) + list(itertools.filterfalse(lambda x: x in s, v))
+
+
+                diff_expe[k] = r
+
+
+        for k in list(diff_expe):
+            if len(diff_expe[k]) == 0:
+                diff_expe.pop(k)
+
+        if diff_expe:
+            print('exp differs:')
+            print(tabulate(diff_expe.items()))
+
+        exit()
 
 
     @staticmethod
