@@ -138,9 +138,8 @@ class Netw2(ExpDesign):
     noel_mmsb = ExpGroup([scvb, compare_scvb_m], N='all', corpus=data_net_all,
                     mask=['balanced', 'unbalanced'], _refdir='noel')
 
-    compare_scvb2 = ExpGroup(compare_scvb, iterations=150)
-    noel2 = ExpGroup([scvb_chi2, compare_scvb2], N='all', corpus=data_net_all,
-                    mask=['unbalanced'], _refdir='noel2')
+    compare_scvb2 = ExpGroup(compare_scvb, N='all', corpus=data_net_all, iterations=100,
+                    mask=['balanced', 'unbalanced'], _refdir='noel2')
 
     noel3 = ExpGroup(scvb_chi2, N='all', chunk=['adaptative_0.1', 'adaptative_1'], corpus=data_net_all, mask=['unbalanced'], _refdir='noel3')
 

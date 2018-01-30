@@ -361,6 +361,7 @@ class immsb_scvb(SVB):
         entropy = ll
 
         #entropy = - ll / self._len['nnz']
+
         # Perplexity is 2**H(X).
 
         return entropy

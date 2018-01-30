@@ -238,6 +238,20 @@ class ModelBase(object):
         probas = p_ji[mask]
         return y_test, probas
 
+    def compute_roc(self):
+        from sklearn.metrics import roc_curve, auc, precision_recall_curve
+
+        data = self.frontend.data
+
+        y_true, probas = self.mask_probas(data)
+        theta, phi = self.get_params()
+        fpr, tpr, thresholds = roc_curve(y_true, probas)
+
+        roc = auc(fpr, tpr)
+        return roc
+
+
+
 
     def predictMask(self, data, mask=True):
         lgg.info('Reducing latent variables...')
@@ -324,10 +338,13 @@ class GibbsSampler(ModelBase):
             return
 
         self._entropy = self.compute_entropy()
-        if hasattr(self, 'entropy_t'):
+
+        if hasattr(self, 'compute_entropy_t'):
             self._entropy_t = self.compute_entropy_t()
         else:
             self._entropy_t = np.nan
+
+        self._roc = self.compute_roc()
 
         self._alpha = np.nan
         self._gmma= np.nan
@@ -342,7 +359,7 @@ class GibbsSampler(ModelBase):
         self.check_measures()
 
         self._entropy = self.compute_entropy()
-        print( '__init__ Entropy: %f' % _entropy)
+        print( '__init__ Entropy: %f' % self._entropy)
 
         for _it in range(self.iterations):
             self._iteration = _it
@@ -691,28 +708,12 @@ class SVB(ModelBase):
         self.entropy_diff = self._entropy - old_entropy
 
         #self._entropy_t = np.nan
-        self._entropt_t = self.compute_entropy_t()
+        self._entropy_t = self.compute_entropy_t()
 
         # "true elbo"
         self._elbo = self.compute_elbo()
 
         self._roc = self.compute_roc()
-
-
-
-    def compute_roc(self):
-        from sklearn.metrics import roc_curve, auc, precision_recall_curve
-
-        data = self.frontend.data
-
-        y_true, probas = self.mask_probas(data)
-        theta, phi = self.get_params()
-        fpr, tpr, thresholds = roc_curve(y_true, probas)
-
-        roc = auc(fpr, tpr)
-        return roc
-
-
 
     def maximization(self):
         raise NotImplementedError

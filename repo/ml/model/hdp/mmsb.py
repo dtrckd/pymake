@@ -519,7 +519,7 @@ class GibbsRun(GibbsSampler):
     __abstractmethods__ = 'model'
     def __init__(self, expe, frontend):
         self.comm = dict() # Empty dict to store communities and blockmodel structure
-        #self._csv_typo = '# it it_time likelihood likelihood_t K alpha gamma alpha_mean delta_mean alpha_var delta_var'
+        #self._csv_typo = 'it it_time likelihood likelihood_t K alpha gamma alpha_mean delta_mean alpha_var delta_var'
         self.fmt = '%d %.4f %.8f %.8f %d %.8f %.8f %.4f %.4f %.4f %.4f'
         #self.fmt = '%s %s %s %s %s %s %s %s %s %s %s'
         GibbsSampler.__init__(self, expe, frontend)
@@ -803,7 +803,8 @@ class GibbsRun(GibbsSampler):
         ll = np.log(pij).sum()
 
         # Entropy
-        entropy = - ll / buritos.likelihood.nnz
+        entropy = ll
+        #entropy = - ll / buritos.likelihood.nnz
 
         # Perplexity is 2**H(X).
 
@@ -819,7 +820,8 @@ class GibbsRun(GibbsSampler):
         ll = np.log(pij).sum()
 
         # Entropy
-        entropy = - ll / buritos.likelihood.nnz
+        entropy = ll
+        #entropy = - ll / buritos.likelihood.nnz
 
         # Perplexity is 2**H(X).
 

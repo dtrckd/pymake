@@ -56,7 +56,6 @@ class DataBase(object):
         ### Update settings Operations
         ########
         self.expe = expe
-        expe['_data_type'] = self.bdir
         self.make_io_path()
         # There is some dynamic settings
         # Yes, use gramexp to setup path !!!
