@@ -17,8 +17,8 @@ Debug
 
 CLI
 ---
-* pmk diff expe1 expe2 # show diff between expe...
 * pmk push [spec] [opts] # push expe in spec !!! (Update MAN)
+* pmk fetch text/hugh (corpus etc !)
 
 Bash auto-Completion
 ---------------

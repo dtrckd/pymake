@@ -1,7 +1,11 @@
 .ONESHELL:
 SHELL = /bin/bash
 
-default: 
+default:  install
+
+install:
+	pip3 install --user -r requirements.txt
+
 
 fetch_data: net_data text_data lut
 

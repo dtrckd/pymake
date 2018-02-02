@@ -72,26 +72,26 @@ You may also need the following package : `apt-get install poppler-utils`
 Then a typical pymake usage :
 
 ```bash
-pymake run --script fit --path path/to/your/pdfs/   # index your pdf documents, take a coffee
-pymake run --script search "your text search request"  # show relevant information
+pmk run --script fit --path path/to/your/pdfs/   # index your pdf documents, take a coffee
+pmk run --script search "your text search request"  # show relevant information
 ```
 
 Or equivalently (aliases):
 ```bash
-pymake -x fit --path path/to/your/pdfs/
-pymake -x search "your text search request"
+pmk -x fit --path path/to/your/pdfs/
+pmk -x search "your text search request"
 ```
 
-Or show only the first match :  `pymake -x search "your text search request" --limit 1`
+Or show only the first match :  `pmk -x search "your text search request" --limit 1`
 
 To add new models, new scripts, or specs,  you need to create it in the dedicated folder following the base class implementations.
 
 Then you can list some informations about pymake objects :
 
-* What experiments are there: `pymake -l spec`
-* What models are there: `pymake -l model`
-* What scripts are there: `pymake -l script`
-* Show signatures of methods in scripts ('ir' script): `pymake -l --script ir`
+* What experiments are there: `pmk -l spec`
+* What models are there: `pmk -l model`
+* What scripts are there: `pmk -l script`
+* Show signatures of methods in scripts ('ir' script): `pmk -l --script ir`
 
 
 ## Documentation [](#4)
@@ -139,29 +139,29 @@ If new models or scripts are added in the project, you'll need to update the pym
 List/Search information :
 
 ```bash
-pymake -l spec   # (or just `pymake -l`) show available designs of experimentation
-pymake -l model  # show available models
-pymake -l script # show available scripts
-pymake show expe_name # or just pymake expe_name
+pmk -l spec   # (or just `pymake -l`) show available designs of experimentation
+pmk -l model  # show available models
+pmk -l script # show available scripts
+pmk show expe_name # or just pymake expe_name
 ```
 
 Run experiments :
 
 ```bash
-pymake run [expe_name] --script script_name [script options...]
+pmk run [expe_name] --script script_name [script options...]
 # Or shortly (alias):
-pymake [expe_name] -x script_name
+pmk [expe_name] -x script_name
 # Run in parallel:
-pymake [expe_name] -x script_name --cores N_CORES
+pmk [expe_name] -x script_name --cores N_CORES
 ```
 
 Show Paths for disks I/O:
 
-    pymake path [expe_name] [script options...]
+    pmk path [expe_name] [script options...]
 
 Show individuals commands for asynchronously purpose (@deprecated) :
 
-    pymake cmd [expe_name] [script options...]
+    pmk cmd [expe_name] [script options...]
 
 ##### Designing experiments
 
@@ -209,7 +209,7 @@ The third class is the `ExpGroup` which allows to group several design of experi
 exp3 = ExpGroup([exp1, exp2])
 ```
 
-You can then run `pymake -l` to see our design of experiments.
+You can then run `pmk -l` to see our design of experiments.
 
 ##### Designing Model
 
@@ -221,7 +221,7 @@ Basically, A model is a class inside `model/` that have a method `fit`.
 
 A scipt is a piece of code that you execute which is parametrised by a **specification**. More specifically, Scripts are methods of class that inherits a `ExpeFormat` and that lives inside the `script/` folder.
 
-Once you defined some scripts, you'll be able to list them with `pymake -l script`, and to run them, by their name, with `pymake [specification_id] -x script_name`.
+Once you defined some scripts, you'll be able to list them with `pmk -l script`, and to run them, by their name, with `pmk [specification_id] -x script_name`.
 
 Then each experiments defined in your design (or _default_expe if no specification_id is given), will go through the script method. Then, a bunch of facilities are living inside the method at runtime :
 

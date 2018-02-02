@@ -1,7 +1,7 @@
 .ONESHELL:
 SHELL = /bin/bash
 
-PACKAGE := pymake
+PACKAGE := pmk
 # Assumes Python3
 pip3_version := $(shell pip3 --version 2>/dev/null)
 
@@ -26,11 +26,14 @@ endif
 install_short:
 	python3 setup.py install --user
 
+push_pip:
+	#python3 setup.py register -r pypi
+	python3 setup.py sdist upload -r pypi
 
 
 uninstall:
 	pip3 uninstall $(PACKAGE)
-	rm -vf $(HOME)/.local/bin/pymake 
+	rm -vf $(HOME)/.local/bin/$(PACKAGE)
 
 build:
 	python3 setup.py build
@@ -43,7 +46,7 @@ clean: clean_cython
 	#find -name "*.orig" | xargs rm -fi
 	-@rm -rf build/
 	-@rm -rf dist/
-	-@rm -rf $(PACKAGE).egg-info/
+	-@rm -rf *.egg-info/
 
 clean_cython:
 

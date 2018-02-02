@@ -1,7 +1,10 @@
 #!/bin/bash
 
-#############
 ### GNU Parallel parameters
+#
+# @Deprecated script
+# 
+# 
 JOBS="3"
 
 COMMAND="python3 ./fit.py -w -i 200 --refdir debug"
