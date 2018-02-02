@@ -492,7 +492,7 @@ class GramExp(object):
     def get_parser(description=None, usage=None):
         import pymake.core.gram as _gram
         import pkg_resources
-        _version = pkg_resources.get_distribution('pymake').version
+        _version = pkg_resources.get_distribution('pmk').version
         parser = _gram.ExpArgumentParser(description=description, epilog=usage,
                                         formatter_class=argparse.RawDescriptionHelpFormatter)
         parser.add_argument('--version', action='version', version='%(prog)s '+_version)
@@ -960,7 +960,7 @@ class GramExp(object):
         #    Target = subprocess.check_output(['which','pymake']).strip().decode()
         #except:
         #    Target = 'python3 /home/ama/adulac/.local/bin/pymake'
-        Target = 'pymake'
+        Target = 'pmk'
         basecmd = [Target] + basecmd[1:]
 
         # Create commands indexs
@@ -1013,7 +1013,7 @@ class GramExp(object):
         basecmd = sys.argv.copy()
         #Target = './zymake.py'
         #basecmd = ['python3', Target] + basecmd[1:]
-        Target = 'pymake'
+        Target = 'pmk'
         basecmd = [Target] + basecmd[1:]
         cmdlines = None
 

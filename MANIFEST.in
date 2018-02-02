@@ -1,0 +1,3 @@
+include LICENSE README.md requirements.txt Makefile
+include pymake/core/*.template
+recursive-include repo Makefile requirements.txt pymake.cfg

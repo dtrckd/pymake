@@ -6,7 +6,6 @@ numpy
 scipy
 networkx 
 nltk
-sympy
 matplotlib
 pandas
 #plotly ?
