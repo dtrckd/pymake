@@ -26,7 +26,6 @@ from pymake.util.math import reorder_mat, sorted_perm
 import matplotlib.pyplot as plt
 from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2
 from pymake.util.utils import colored
-from pymake.core.format import tabulate
 
 class CheckNetwork(ExpeFormat):
 
@@ -275,14 +274,14 @@ class CheckNetwork(ExpeFormat):
                 corpuses = self.specname(self.gramexp.get_set('corpus'))
                 table = np.column_stack((self.specname(corpuses), table))
                 tablefmt = 'simple'
-                table = tabulate(table, headers=['__'+_model.upper()+'__']+Meas, tablefmt=tablefmt, floatfmt='.3f')
+                table = self.tabulate(table, headers=['__'+_model.upper()+'__']+Meas, tablefmt=tablefmt, floatfmt='.3f')
                 print()
                 print(table)
                 #if expe.write:
                 #    base = '%s' % (clusters_org)
                 #    self.write_frames(table, base=base)
 
-    #@ExpeFormat.tabulate
+    #@ExpeFormat.table
     def pvalue(self):
         ''' Compute Goodness of fit statistics '''
         expe = self.expe
@@ -309,9 +308,9 @@ class CheckNetwork(ExpeFormat):
         if self._it == self.expe_size -1:
             tablefmt = 'latex'
             print(colored('\nPvalue Table:', 'green'))
-            print (tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
+            print (self.tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
 
-    #@ExpeFormat.tabulate
+    #@ExpeFormat.table
     def stats(self):
         ''' Show data stats '''
         expe = self.expe
@@ -342,7 +341,7 @@ class CheckNetwork(ExpeFormat):
         if self._it == self.expe_size -1:
             tablefmt = 'simple' # 'latex'
             print(colored('\nStats Table :', 'green'))
-            print (tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
+            print (self.tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
 
 
 

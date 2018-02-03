@@ -95,7 +95,7 @@ class Plot(ExpeFormat):
         ax.legend(loc='upper right',prop={'size':5})
 
 
-    @ExpeFormat.tabulate(1,2) # improve ergonomy ?
+    @ExpeFormat.table(1,2) # improve ergonomy ?
     def table(self, array, floc, x, y, z, *args):
         ''' Plot table according to parameter `x:y:z[-z2](param)'
             if args is given, use for filename discrimination `key1[/key2]...'
