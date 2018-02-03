@@ -910,6 +910,11 @@ class ExpeFormat(object):
             self.log_expe()
             self.log.info('-'*10)
 
+    def get_data_path(self):
+        path = get_pymake_settings('project_data')
+        path = os.path.join(path, self.expe.get('_data_type', ''))
+        return path
+
     def log_expe(self):
         expe = self.expe
         self.log.info(''.join([colored('Expe %d/%d', 'red'),
@@ -948,6 +953,10 @@ class ExpeFormat(object):
             return True
         else:
             return False
+
+    @classmethod
+    def tabulate(cls, *args, **kwargs):
+        return tabulate(*args, **kwargs)
 
     @classmethod
     def display(cls, conf):
@@ -1098,7 +1107,7 @@ class ExpeFormat(object):
         return decorator
 
     @staticmethod
-    def tabulate(*a, **b):
+    def table(*a, **b):
         ''' Doc todo (plot alignement...) '''
 
         def decorator(fun):

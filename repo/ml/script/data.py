@@ -6,7 +6,6 @@ from collections import OrderedDict
 
 import matplotlib.pyplot as plt
 from pymake.util.utils import colored
-from pymake.core.format import tabulate
 
 class Data(ExpeFormat):
 
@@ -28,7 +27,7 @@ class Data(ExpeFormat):
             table = OrderedDict([('missing', [self.gramexp.n_exp_missing]),
                                  ('total', [self.gramexp.n_exp_total]),
                                 ])
-            print (tabulate(table, headers='keys', tablefmt='simple', floatfmt='.3f'))
+            print (self.tabulate(table, headers='keys', tablefmt='simple', floatfmt='.3f'))
 
 
     # @need an expe
@@ -47,7 +46,7 @@ class Data(ExpeFormat):
             table = OrderedDict([('completed', [self.gramexp.n_exp_completed]),
                                  ('total', [self.gramexp.n_exp_total]),
                                 ])
-            print (tabulate(table, headers='keys', tablefmt='simple', floatfmt='.3f'))
+            print (self.tabulate(table, headers='keys', tablefmt='simple', floatfmt='.3f'))
 
 
 
