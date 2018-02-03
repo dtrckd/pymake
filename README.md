@@ -6,11 +6,19 @@ Pymake (pmk) is a machine friendly environment for making reproducible research.
 * Models and workflows for Machine Learning experiments, as a **framework**.
 
 <!-- Build Powerfull CLI | Create Beautiful UI | Browse your Experiments  -->
-This repo contains two main directories:
 
-* pymake/ -- Code source of pymake
-* repo/ -- Poc project that are structured with pymake
 
+<!--  DMSA Data-Model-Specification-Action
+
+Web develloppment methods introduced Model-View-Controller (MVC) paradigm (and others) to help and improve the workflow of devellopers.
+
+Pymake comes with a similar idea but with a more general, high level point of view, by saying that a a lot of use-cases in computer science can be embedded whitin the following paradigm: 
+
+-Schema-
+
+Explain the model workflow...
+
+-->
 
 # Table of Contents
 1. [Features](#1)
@@ -38,6 +46,11 @@ Perspectives :
 
 ## Install [](#2)
 
+#### Short
+
+    pip3 install pmk 
+
+#### From source
 
 System dependencies : `apt-get install python3-setuptools python3-pip python3-tk`
 
@@ -45,12 +58,19 @@ Numpy/scipy dependencies : `apt-get install libopenblas-dev gfortran`
 
 ```bash
 git clone https://github.com/dtrckd/pymake
-cd pymake && make install
+cd pymake && make
 ```
+
+The repo contains two main directories:
+
+* pymake/ -- Code source of pymake,
+* repo/ -- Poc projects that are structured with pymake,
+    * repo/docsearch: A search-engine in local file (pdf).
+    * repo/ml: Machine learning models and experiments.
 
 ## Examples [](#3)
 
-We provide an example of a design workflow with pymake by providing a **Search Engine** experience.
+We provide an example of a design workflow with pymake by providing a **Search Engine** experience. 
 
 The context of the experiment is as follows :
 * **Data** : documents to search-in are pdf documents (like articles for example),
@@ -58,9 +78,10 @@ The context of the experiment is as follows :
 * **Script** : There are two scripts :
     + a fit script that builds the index of the *input data*,
     + a search script that returns relevant documents, given a *query*.
-* Experiment Parameters are defined in the attribute `_default_expe` in each scripts.
+* Experiment **Spec** are defined individually for each scripts in the attribute `_default_expe` in the class headers.
 
-Setup the experiment (needed just once) :
+
+Setup the experiment (needed just once). You may first need to clone the repo:
 
 ```bash
 cd repo/docsearch/
