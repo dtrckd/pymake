@@ -106,7 +106,7 @@ class ModelManager(object):
 
 
     def _get_model(self, frontend=None, data_t=None):
-        ''' Get model wit lookup in the following order :
+        ''' Get model with lookup in the following order :
             * pymake.model
             * mla
             * scikit-learn

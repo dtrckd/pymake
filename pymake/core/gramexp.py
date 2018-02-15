@@ -585,13 +585,13 @@ class GramExp(object):
         ----------------
         Communicate with the data :
         ----------------
-         |   pmk update  : update the pymake index
-         |   pmk -l [spec(default)|model|script|topo]
-         |   pmk show SPEC : show one spec details
-         |   pmk run SPEC [--script [fun][*args]] ... : execute tasks (default is fit)
-         |   pmk runpara SPEC [--script [fun][*args]] ...: parallelize tasks
-         |   pmk hist [-n n_lines] : show command history
-         |   pmk cmd SPEC ... : generate command-line
+         |   pmk update                                       : update the pymake index
+         |   pmk -l [spec(default)|model|script|topo]         : list available component
+         |   pmk show SPEC                                    : show one spec details (default if no arguments)
+         |   pmk run SPEC [--script [fun][*args]] ...         : execute tasks (default if -x is given)
+         |   pmk runpara SPEC [--script [fun][*args]] ...     : parallelize tasks (implicit if --cores is given)
+         |   pmk hist [-n n_lines]                            : show command history
+         |   pmk cmd SPEC ...                                 : generate command-line
          |   pmk path SPEC Filetype(pk|json|inf) [status] ... : show output_path
         ''' + '\n' + usage
 
@@ -1300,7 +1300,9 @@ class GramExp(object):
             # Launch handler
             args = do[1:]
             try:
-                pmk(*args)
+                res = pmk(*args)
+                if res:
+                    print(res)
             except KeyboardInterrupt:
                 # it's hard to detach matplotlib...
                 break
