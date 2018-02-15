@@ -8,7 +8,7 @@ Pymake (pmk) is a machine friendly environment for making reproducible research.
 <!-- Build Powerfull CLI | Create Beautiful UI | Browse your Experiments  -->
 
 
-<!--  DMSA Data-Model-Specification-Action
+<!--  MSA Model-Specification-Action (or DMSA to add the layer data...)
 
 Web develloppment methods introduced Model-View-Controller (MVC) paradigm (and others) to help and improve the workflow of devellopers.
 
@@ -70,7 +70,7 @@ The repo contains two main directories:
 
 ## Examples [](#3)
 
-We provide an example of a design workflow with pymake by providing a **Search Engine** experience. 
+We provide an example of a design workflow with pymake by providing a **Search Engine** experience. The project is located in the `repo/docsearch` directory.
 
 The context of the experiment is as follows :
 * **Data** : documents to search-in are pdf documents (like articles for example),
