@@ -5,7 +5,7 @@ Pymake (pmk) is a machine friendly environment for making reproducible research.
 * Manage and navigate in your experiments, as a **command-line** interface.
 * Models and workflows for Machine Learning experiments, as a **framework**.
 
-It follows a Don't-Repeat-Yourself ([DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself)) philosophy and propose new workflow called Model-Spec-Action (MSA) which is in the spirit of former Model-View-Controller ([MVC](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller)) design pattern.
+It follows a Don't-Repeat-Yourself ([DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself)) philosophy and propose a workflow called Model-Spec-Action (MSA) which is in the spirit of former Model-View-Controller ([MVC](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller)) design pattern but adapted for computer simulations, generally speaking.
 
 It can be represented as follows:
 
