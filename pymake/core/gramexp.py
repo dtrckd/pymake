@@ -8,6 +8,7 @@ import pickle
 import subprocess
 import shlex
 import inspect, traceback, importlib
+import pkg_resources
 from collections import defaultdict
 from functools import reduce, wraps
 from copy import deepcopy
@@ -177,6 +178,9 @@ class GramExp(object):
         * bdir/refdir/rep/model_name_parameters.inf  <--> ModelBase
 
     '''
+
+    _version = pkg_resources.get_distribution('pmk').version
+
     _examples = '''Examples:
         >> Text fitting
         fit.py -k 6 -m ldafullbaye -p
@@ -489,14 +493,12 @@ class GramExp(object):
 
 
 
-    @staticmethod
-    def get_parser(description=None, usage=None):
+    @classmethod
+    def get_parser(cls, description=None, usage=None):
         import pymake.core.gram as _gram
-        import pkg_resources
-        _version = pkg_resources.get_distribution('pmk').version
         parser = _gram.ExpArgumentParser(description=description, epilog=usage,
                                         formatter_class=argparse.RawDescriptionHelpFormatter)
-        parser.add_argument('--version', action='version', version='%(prog)s '+_version)
+        parser.add_argument('--version', action='version', version='%(prog)s '+ cls._version)
 
         return parser
 
@@ -541,7 +543,7 @@ class GramExp(object):
             usage = GramExp._examples
 
         if parser is None:
-            parser = GramExp.get_parser(description, usage)
+            parser = cls.get_parser(description, usage)
         #s, remaining = parser.parse_known_args(args=args)
 
         # Push pymake grmarg.
@@ -1257,11 +1259,23 @@ class GramExp(object):
         cwd = os.path.dirname(__file__)
         pjt = os.path.basename(pwd)
 
+        template = None
         completion_fn = os.path.join(home, '.bash_completion.d', 'pymake_completion')
         if os.path.exists(completion_fn):
             with open(completion_fn) as _f:
                 template = _f.read()
-        else:
+
+            # Reset completion file if version differs
+            verpos = template.find('%%PMK')
+            _ver = re.search(r'version=([0-9\.\-a-zA-Z_]*)', template[verpos:])
+            if not _ver:
+                template = None
+            else:
+                _ver = _ver.groups()[0]
+                if _ver != cls._version:
+                    template = None
+
+        if template is None:
             with open(os.path.join(cwd, '..', 'template', 'pymake_completion.template')) as _f:
                 template = _f.read()
 
@@ -1301,7 +1315,7 @@ class GramExp(object):
         os.makedirs(os.path.join(home, '.bash_completion.d'), exist_ok=True)
         with open(completion_fn, 'w') as _f:
             template = PmkTemplate(template)
-            template = template.substitute(projectname=pjt,
+            template = template.substitute(projectname=pjt, version=cls._version,
                                            specs=specs, scripts=scripts)
             _f.write(template)
 

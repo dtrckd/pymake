@@ -14,7 +14,6 @@ docs:
 
 install:
 	# Dependancy: python3-tk
-	rm -f $(HOME)/.bash_completion.d/pymake_completion
 ifdef pip3_version
 	#python3 setup.py install --user --record .$(PACKAGE).egg-info
 	pip3 install --user -r requirements.txt
@@ -25,7 +24,6 @@ else
 endif
 
 install_short:
-	rm -f $(HOME)/.bash_completion.d/pymake_completion
 	python3 setup.py install --user
 
 push_pip:
@@ -36,6 +34,7 @@ push_pip:
 uninstall:
 	pip3 uninstall $(PACKAGE)
 	rm -vf $(HOME)/.local/bin/$(PACKAGE)
+	rm -f $(HOME)/.bash_completion.d/pymake_completion
 
 build:
 	python3 setup.py build
