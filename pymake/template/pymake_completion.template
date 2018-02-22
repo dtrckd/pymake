@@ -1,0 +1,58 @@
+#-*-shell-script-*-
+
+shopt -s extglob 
+
+#have pmk &&
+_pmk()
+{
+    local cur prev opts project specs scripts
+
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    if [[ "$cur" == --*=* ]]; then
+        prev="${cur%=*}"
+        cur="${cur##*=}"
+    else
+        prev="${COMP_WORDS[COMP_CWORD-1]}"
+    fi
+
+    opts="-l -x -v --cores --net --repeat --redfdir --pmk --type --fast"
+
+    project="$(basename $PWD)"
+
+    if [[ "$project" == "/" ]]; then
+        specs="where_do_you_come_from?"
+    # %%PMK
+    fi
+
+    # Look for options needing an argument.
+    # The used completion functions are defined in /etc/bash_completion.
+    case "$prev" in
+        pmk| run| runpara)
+            COMPREPLY=( $(compgen -W "$specs" -- $cur) )
+            return 0
+            ;;
+        -x)
+            COMPREPLY=( $(compgen -W "$scripts" -- $cur) )
+            return 0
+            ;;
+        *)
+            ;;
+    esac
+
+    local extspecs="+(""$(echo $specs|tr ' ' '|')"")"
+
+    # Look for options in :gramarg:
+    if [[ "$cur" == -* ]]; then
+        COMPREPLY=( $(compgen -W "$opts" -- $cur) )
+        return 0
+    elif [[ "$prev" == $extspecs ]]; then
+        COMPREPLY=( $(compgen -W "$specs" -- $cur) )
+        return 0
+    else
+        # Parse gramarg ?
+        COMPREPLY=( $(compgen -W "$opts" -- $cur) )
+        return 0
+    fi
+}
+complete -F _pmk -o filenames pmk

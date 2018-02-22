@@ -6,7 +6,7 @@ Template Script :
 ----------------
 """
 
-class ${projectname}_script(ExpeFormat):
+class $${projectname}_script(ExpeFormat):
 
     def _preprocess(self):
         expe = self.expe

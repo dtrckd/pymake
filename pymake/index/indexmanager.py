@@ -287,7 +287,7 @@ class IndexManager(object):
     # @debug : online searcher
     # @debug : get a list of terms (mongo projection equivalent ?!)
     def query(self, field=None, index=None, terms=False):
-        ''' return all object that have the filed entry set '''
+        ''' return all object that have the field entry set '''
         index = index or self._default_index
         ix = self.get_index(index)
         field = field or ix.schema.stored_names()[0]

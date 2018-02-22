@@ -1,6 +1,6 @@
 from pymake import ExpSpace, ExpTensor, ExpDesign
 
-class ${projectname}_demo_spec(ExpDesign):
+class $${projectname}_demo_spec(ExpDesign):
 
     demo_expe = ExpSpace(test=42)
 

@@ -1,5 +1,5 @@
 
-class ${projectname}_model():
+class $${projectname}_model():
 
     def fit(self):
         pass

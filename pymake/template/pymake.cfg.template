@@ -4,15 +4,20 @@
 #                         #
 ###########################
 
+#
+#  The project name/identifier is the name of the base directery.
+#  (the one who contains pymake.cfg)
+#
+
 
 ### Global Path for data storage
-project_data = ${project_data}
-project_figs = ${project_figs}
+project_data = $${project_data}
+project_figs = $${project_figs}
 
 ### Lookup Modules
-default_model = ${default_model}
-default_spec = ${default_spec}
-default_script = ${default_script}
+default_model = $${default_model}
+default_spec = $${default_spec}
+default_script = $${default_script}
 default_corpus = ?
 
 ### Third-Party Modules.

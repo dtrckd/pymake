@@ -378,6 +378,9 @@ class PackageWalker(object):
                     lgg.warning('Please report this error: pymake.frontend_io algo condition ?')
                     submodule = importlib.import_module(submodule_name)
                 continue
+            except Exception as e:
+                lgg.critical('Module Error: %s' % e)
+                continue
 
             spck = self.submodule_hook(submodule, prefix, name=name)
             if spck:
@@ -389,7 +392,12 @@ class PackageWalker(object):
         raise NotImplementedError
 
     def submodule_hook_by_attr(self, submodule, prefix, name=None):
-        _packages = pyclbr.readmodule(submodule.__name__)
+        try:
+            _packages = pyclbr.readmodule(submodule.__name__)
+        except:
+            sys.path.append(os.getenv('PWD'))
+            #_packages = pyclbr.readmodule(submodule.__name__)
+            _packages = pyclbr.readmodule('.'.join(submodule.__name__.split('.')[1:]))
         self._cls_browse.update(_packages)
         packages = {}
         for cls_name, cls  in _packages.items():
@@ -408,7 +416,12 @@ class PackageWalker(object):
         return packages
 
     def submodule_hook_by_class(self, submodule, prefix, name=None):
-        _packages = pyclbr.readmodule(submodule.__name__)
+        try:
+            _packages = pyclbr.readmodule(submodule.__name__)
+        except:
+            sys.path.append(os.getenv('PWD'))
+            #_packages = pyclbr.readmodule(submodule.__name__)
+            _packages = pyclbr.readmodule('.'.join(submodule.__name__.split('.')[1:]))
         self._cls_browse.update(_packages)
         packages = {}
         for cls_name, cls  in _packages.items():

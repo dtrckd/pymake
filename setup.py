@@ -4,7 +4,7 @@ from codecs import open
 from os import path
 
 #__version__ = subprocess.check_output(["git", "describe"]).strip()
-__version__ = '0.38'
+__version__ = '0.39'
 
 try:
     from Cython.Build import cythonize
@@ -34,7 +34,7 @@ setuptools.setup(
     entry_points = {
         'console_scripts': ['pmk=pymake.zymake:main'],
     },
-    package_data = {'pymake' : ['pymake.cfg', 'core/*.template']},
+    package_data = {'pymake' : ['pymake.cfg', 'template/*.template']},
     include_package_data=True,
     keywords=['pymake', 'learning', 'model'],
     classifiers=[

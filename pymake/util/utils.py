@@ -203,7 +203,7 @@ def reset_pymake_settings(settings, default_config=__default_config, cfg_name='p
     _settings.update(settings)
     #ctnt = '\n'.join(('{0} = {1}'.format(k,v) for k,v in _settings.items()))
     cwd = os.path.dirname(__file__)
-    with open(os.path.join(cwd, '..', 'core', '%s.template'%(cfg_name))) as _f:
+    with open(os.path.join(cwd, '..', 'template', '%s.template'%(cfg_name))) as _f:
         template = Template(_f.read())
         ctnt = template.substitute(_settings)
 

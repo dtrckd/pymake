@@ -20,6 +20,10 @@ from pymake.util.utils import colored, basestring, get_pymake_settings
 # @debug name integration
 from pymake.core.format import ExpTensorV2
 
+from string import Template
+class PmkTemplate(Template):
+    delimiter = '$$'
+    #idpattern = r'[a-z][_a-z0-9]*'
 
 
 
@@ -232,14 +236,11 @@ class GramExp(object):
         self._user_spec = conf.get('_spec', {})
 
         # Make main data structure
-        self.exp_tensor = ExpTensorV2.from_conf(conf, private_keywords=self._private_keywords)
+        self.exp_tensor = ExpTensorV2.from_conf(conf,
+                                                private_keywords=self._private_keywords,
+                                                expdesign=expdesign)
         self.exp_setup()
 
-        if expdesign is not None:
-            # Init or not init ?
-            self._expdesign = expdesign
-        else:
-            self._expdesign = ExpDesign
 
     def exp_setup(self):
         ''' work in self.exp_tensor '''
@@ -642,7 +643,7 @@ class GramExp(object):
                                 lgg.critical('=> Warning: conflict between name of ExpDesign and Pymake commands')
                             do.remove(v)
                             d, expdesign = Spec.load(v, cls._spec[v])
-                            expgroup.append((v,d))
+                            expgroup.append((v,d, expdesign))
                         else:
                             request[ont] = v
 
@@ -918,7 +919,7 @@ class GramExp(object):
             self.exp_tensor.remove_all('script')
             self.exp_tensor.remove_all('_do')
         else:
-            lgg.error('==> Error : Who need to specify a script. (--script)')
+            lgg.error('==> Error : You need to specify a script. (--script)')
             exit(10)
 
         try:
@@ -1134,7 +1135,6 @@ class GramExp(object):
 
 
     def init_folders(self):
-        from string import Template
         from pymake.util.utils import reset_pymake_settings
         join = os.path.join
 
@@ -1153,8 +1153,8 @@ class GramExp(object):
         settings = {}
         for d in folders:
             os.makedirs(d, exist_ok=True)
-            with open(join(cwd, '%s.template'%(d))) as _f:
-                template = Template(_f.read())
+            with open(join(cwd,'..', 'template', '%s.template'%(d))) as _f:
+                template = PmkTemplate(_f.read())
 
             open(join(pwd, d,  '__init__.py'), 'a').close()
             with open(join(pwd, d,  'template_%s.py'%(d)), 'a') as _f:
@@ -1239,20 +1239,76 @@ class GramExp(object):
         exit()
 
 
-    @staticmethod
-    def update_index(*index_name):
+    @classmethod
+    def update_index(cls, *index_name):
         from pymake.index.indexmanager import IndexManager as IX
         os.chdir(os.getenv('PWD'))
 
+        ## Update index
         if len(index_name) == 0:
             IX.build_indexes()
         else:
             for name in index_name:
                 IX.build_indexes(name)
 
+        ## Update bash_completion file
+        home = os.path.expanduser('~')
+        pwd = os.getenv('PWD')
+        cwd = os.path.dirname(__file__)
+        pjt = os.path.basename(pwd)
+
+        completion_fn = os.path.join(home, '.bash_completion.d', 'pymake_completion')
+        if os.path.exists(completion_fn):
+            with open(completion_fn) as _f:
+                template = _f.read()
+        else:
+            with open(os.path.join(cwd, '..', 'template', 'pymake_completion.template')) as _f:
+                template = _f.read()
+
+
+        specs = ' '.join(list(cls._spec))
+        scripts = ' '.join(Script.get_all())
+        models = None
+        corpus = None
+
+        hook = '''
+                elif [[ "$project" == "$$projectname" ]]; then
+                    specs="$$specs"
+                    scripts="$$scripts"
+               '''
+
+        _match = '[[ "$project" == "%s" ]]' % (pjt)
+        back_pos = template.find(_match)
+        if back_pos  >= 0:
+            # Remove old lines
+            template = template.split('\n')
+            pt = None
+            for pos, line in enumerate(template):
+                if _match in line:
+                    pt = pos
+                    break
+            _hook = hook.strip().split('\n')
+            n_lines = len(_hook)
+            template = template[:pt] +_hook+ template[pt+n_lines:]
+            template = '\n'.join(template)
+        else:
+            insert_pos = template.find('%%PMK')
+            insert_pos = insert_pos - template[:insert_pos][::-1].find('\n')
+            template = template[:insert_pos] +\
+                    hook +\
+                    template[insert_pos:]
+
+        os.makedirs(os.path.join(home, '.bash_completion.d'), exist_ok=True)
+        with open(completion_fn, 'w') as _f:
+            template = PmkTemplate(template)
+            template = template.substitute(projectname=pjt,
+                                           specs=specs, scripts=scripts)
+            _f.write(template)
+
+        #os.execl("/bin/bash", "/bin/bash", "-c", "source ~/.bash_completion.d/pymake_completion")
 
     def pymake(self, sandbox=ExpeFormat):
-        ''' Walk Trough experiments. '''
+        ''' Walk Through experiments. '''
 
         if 'do_list' in self._conf:
             print('Available methods for %s: ' % (sandbox))
@@ -1274,9 +1330,10 @@ class GramExp(object):
             pt['expe'] = id_expe
 
             # Init Expe
+            expdesign = self.exp_tensor._ds[id_expe]
             self.expe_init(expe)
             try:
-                expbox = sandbox(pt, expe, self)
+                expbox = sandbox(pt, expe, expdesign, self)
             except FileNotFoundError as e:
                 lgg.error('ignoring %s'%e)
                 continue
