@@ -13,17 +13,19 @@ docs:
 	pushd
 
 install:
-# Dependancy: python3-tk
+	# Dependancy: python3-tk
+	rm -f $(HOME)/.bash_completion.d/pymake_completion
 ifdef pip3_version
-#python3 setup.py install --user --record .$(PACKAGE).egg-info
-		pip3 install --user -r requirements.txt
-		python3 setup.py install --user
+	#python3 setup.py install --user --record .$(PACKAGE).egg-info
+	pip3 install --user -r requirements.txt
+	python3 setup.py install --user
 else
-		@echo "error: please install the \`pip3' package"
-		@exit 0
+	@echo "error: please install the \`pip3' package"
+	@exit 0
 endif
 
 install_short:
+	rm -f $(HOME)/.bash_completion.d/pymake_completion
 	python3 setup.py install --user
 
 push_pip:

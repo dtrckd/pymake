@@ -163,6 +163,18 @@ If new models or scripts are added in the project, you'll need to update the pym
 
     pymake update
 
+Furthermore, `pymake update` build the autocompletion file for bash. To enable it, put the following lines at the end of your `~/.bashrc`:
+
+```bash
+if [ -d $HOME/.bash_completion.d ]; then
+    if [ ! -z $(ls $HOME/.bash_completion.d) ]; then
+        for bcfile in $HOME/.bash_completion.d/*; do
+            . $bcfile
+        done
+    fi
+fi
+```
+
 List/Search information :
 
 ```bash

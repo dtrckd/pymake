@@ -173,7 +173,6 @@ class Spec(BaseObject):
         ix = IX(default_index='spec')
         raise NotImplementedError
 
-
     @staticmethod
     def get_all():
         ix = IX(default_index='spec')
@@ -236,6 +235,13 @@ class Spec(BaseObject):
 
 
 class Script(BaseObject):
+
+    @staticmethod
+    def get_all():
+        ix = IX(default_index='script')
+        _res = ix.query(field='method')
+        return _res
+
     @staticmethod
     def get(scriptname, arguments):
 
@@ -245,7 +251,14 @@ class Script(BaseObject):
             # get the first method that have this name
             topmethod = ix.getfirst(scriptname, field='method')
             if not topmethod:
-                raise ValueError('error: Unknown script: %s' % (scriptname))
+                try:
+                    raise ValueError('error: Unknown script: %s' % (scriptname))
+                except:
+                    # Exception from pyclbr
+                    # index commit race condition I guess.
+                    print('error: Unknown script: %s' % (scriptname))
+                    exit(42)
+
             arguments = [scriptname] + arguments
             #script_name = topmethod['scriptsurname']
 
@@ -480,17 +493,23 @@ class ExpTensorV2(BaseObject):
         self._bind = []
         self._null = []
         self._hash = []
-        #--------------------------
+        self._ds_ = [] # ExpDesign class per tensor
+        #
         self._lod = [] # list of dict
+        self._ds = [] # ExpDesign class per expe
+        # --- meta ---
         self._conf = {}
         self._size = None
 
     @classmethod
-    def from_conf(cls, conf, _max_expe=2e6, private_keywords=[]):
+    def from_conf(cls, conf, _max_expe=2e6, private_keywords=[], expdesign=None):
         gt = cls(private_keywords=private_keywords)
         _spec = conf.pop('_spec', None)
         if not _spec:
+            if not expdesign:
+                expdesign = ExpDesign
             gt._tensors.append(ExpTensor.from_expe(conf))
+            gt._ds_.append(expdesign)
             return gt
 
         exp = []
@@ -499,17 +518,20 @@ class ExpTensorV2(BaseObject):
         while consume_expe < size_expe:
             o = _spec[consume_expe]
             if isinstance(o, tuple):
-                name, o = o
+                # _type => expdesign
+                name, o, _type = o
 
             if isinstance(o, ExpGroup):
                 size_expe += len(o) -1
                 _spec = _spec[:consume_expe] + o + _spec[consume_expe+1:]
             elif isinstance(o, list):
                 exp.append(o)
+                gt._ds_.append(_type)
                 consume_expe += 1
             else:
                 o['_name_expe'] = name
                 exp.append(o)
+                gt._ds_.append(_type)
                 consume_expe += 1
 
             if size_expe > _max_expe:
@@ -663,7 +685,9 @@ class ExpTensorV2(BaseObject):
 
         self._lod = []
         for _id, tensor in enumerate(self._tensors):
-            self._lod.extend(self._make_lod(tensor, _id))
+            lods = self._make_lod(tensor, _id)
+            self._lod.extend(lods)
+            self._ds.extend([self._ds_[_id]]*len(lods))
 
         self._make_hash(skip_check)
         return self._lod
@@ -811,24 +835,6 @@ class ExpDesign(dict, BaseObject):
                 use when self._name is called to translate keywords
     '''
 
-    # @debug, This is a porject settings !
-    _alias = dict((
-        ('propro'   , 'Protein')  ,
-        ('blogs'    , 'Blogs')    ,
-        ('euroroad' , 'Euroroad') ,
-        ('emaileu'  , 'Emaileu') ,
-        ('manufacturing'  , 'Manufacturing'),
-        ('fb_uc'          , 'UC Irvine' ),
-        ('generator7'     , 'Network1' ),
-        ('generator12'    , 'Network2' ),
-        ('generator10'    , 'Network3' ),
-
-        ('generator4'     , 'Network4' ),
-        #('generator4'     , 'Network2' ),
-        #('pmk.ilfm_cgs'     , 'ILFM' ),
-        #('pmk.immsb_cgs'     , 'IMMSB' ),
-    ))
-
     def __init__(self,  *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
 
@@ -886,7 +892,22 @@ class ExpeFormat(object):
     log = logging.getLogger('root')
     _logfile = False # for external integration @deprcated ?
 
-    def __init__(self, pt, expe, gramexp):
+    def __init__(self, pt, expe, expdesign, gramexp):
+        ''' Sandbox class for scripts/actions.
+
+            Parameters
+            ----------
+            pt: int
+                Positional indicator for current run
+            expe: ExpSpace
+                Current spec
+            expdesign: ExpDesign
+                Current design class
+            gramexp: Global object
+        '''
+
+        self._expdesign = expdesign
+
         # @debug this, I dont know whyiam in lib/package sometimes, annoying !
         os.chdir(os.getenv('PWD'))
 
@@ -1209,8 +1230,8 @@ class ExpeFormat(object):
         return table
 
     def specname(self, n):
-        #return self.gramexp._expdesign._name(n).lower().replace(' ', '')
-        return self.gramexp._expdesign._name(n)
+        #return self._expdesign._name(n).lower().replace(' ', '')
+        return self._expdesign._name(n)
 
     def full_fig_path(self, fn):
         figs_path = get_pymake_settings('project_figs')
