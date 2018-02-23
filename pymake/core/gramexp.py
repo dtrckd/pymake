@@ -16,7 +16,7 @@ import numpy as np
 
 from pymake import ExpDesign, ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, Script, Spec, ExpVector
 from pymake.frontend.frontend_io import ext_status, is_empty_file
-from pymake.util.utils import colored, basestring, get_pymake_settings
+from pymake.util.utils import colored, basestring, get_pymake_settings, hash_objects
 
 # @debug name integration
 from pymake.core.format import ExpTensorV2
@@ -195,7 +195,7 @@ class GramExp(object):
 
     # Reserved by GramExp for expe identification
     _reserved_keywords = ['_spec', # for nested specification.
-                          '_id_expe', # unique expe identifier.
+                          '_id_expe', # unique (locally) expe identifier.
                           '_name_expe', # exp name identifier.
                           '_pmk', # force to set some settings out of grammarg.
                          ]
@@ -480,6 +480,7 @@ class GramExp(object):
         fmt_expe = expe.copy()
         # iteration over {expe} trow a 'RuntimeError: dictionary changed size during iteration',
         # maybe due to **expe pass in argument ?
+
         id_str = 'expe' + str(expe['_id_expe'])
         id_name = expe['_name_expe']
 
@@ -487,7 +488,9 @@ class GramExp(object):
         fmt_expe['_name'] = id_name
         for k, v in fmt_expe.items():
             if isinstance(v, (list, dict)):
-                fmt_expe[k] = id_str
+                #fmt_expe[k] = id_str # don't do that, no robust get back expe.
+                _hash = int((hash_objects(v)), 16) % 10**8
+                fmt_expe[k] = k + str(_hash) +'h'
 
         return fmt_expe
 

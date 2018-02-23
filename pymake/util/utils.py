@@ -1,5 +1,4 @@
 import sys, os
-from os.path import dirname
 from datetime import datetime
 from collections import defaultdict
 import logging
@@ -43,17 +42,6 @@ class Cycle(object):
     def copy(self):
         return self.__class__(self.seq)
 
-def ask_sure_exit(question):
-
-    while True:
-        a = input(question+' ').lower()
-        if a in ('yes', 'y'):
-            break
-        elif a in ('no', 'n'):
-            exit(2)
-        else:
-            print("Enter either [y|n]")
-
 def get_dest_opt_filled(parser):
     ''' Return the {dest} name of the options filled in the command line
 
@@ -70,21 +58,6 @@ def get_dest_opt_filled(parser):
     opt2dest_dict = dict( (opt, act.dest) for act in parser._get_optional_actions() for opt in act.option_strings )
     dests_in = set([opt2dest_dict[opt] for opt in opts_in])
     return dests_in
-
-def Now():
-    return  datetime.now()
-def nowDiff(last):
-    return datetime.now() - last
-def ellapsed_time(text, since):
-    current = datetime.now()
-    delta = current - since
-    print(text + ' : %s' % (delta))
-    return current
-
-def jsondict(d):
-    if isinstance(d, dict):
-        return {str(k):v for k,v in d.items()}
-    return d
 
 def parse_file_conf(fn, sep=':', comments=('#','%')):
     with open(fn) as f:
@@ -159,15 +132,6 @@ def map_class2cluster_from_confusion(confu, map=None, cpt=0, minmax='max'):
         map[cpt] = (map[cpt][0], c_l)
         cpt += 1
         return map_class2cluster_from_confusion(confu, map, cpt)
-
-def make_path(f):
-    bdir = os.path.dirname(f)
-    if not os.path.exists(bdir) and bdir:
-        os.makedirs(bdir)
-    #fn = os.path.basename(bdir)
-    #if not os.path.exists(fn) and fn:
-    #    open(fn, 'a').close()
-    return bdir
 
 
 def drop_zeros(a_list):
@@ -249,6 +213,13 @@ def get_pymake_settings(key=None, default_config=__default_config, cfg_name='pym
 
     return settings
 
+
+#
+#
+# Common/Utils
+#
+#
+
 def retrieve_git_info():
     git_branch = subprocess.check_output(['git', 'rev-parse','--abbrev-ref' ,'HEAD']).strip().decode()
     git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode()
@@ -272,7 +243,45 @@ def hash_objects(obj, algo='md5'):
 
     return hashed_obj
 
+def ask_sure_exit(question):
 
+    while True:
+        a = input(question+' ').lower()
+        if a in ('yes', 'y'):
+            break
+        elif a in ('no', 'n'):
+            exit(2)
+        else:
+            print("Enter either [y|n]")
+
+def make_path(f):
+    bdir = os.path.dirname(f)
+    if not os.path.exists(bdir) and bdir:
+        os.makedirs(bdir)
+    #fn = os.path.basename(bdir)
+    #if not os.path.exists(fn) and fn:
+    #    open(fn, 'a').close()
+    return bdir
+
+
+
+def Now():
+    return  datetime.now()
+def nowDiff(last):
+    return datetime.now() - last
+def ellapsed_time(text, since):
+    current = datetime.now()
+    delta = current - since
+    print(text + ' : %s' % (delta))
+    return current
+
+def tail(filename, n_lines):
+    _tail = []
+    for i, line in enumerate(reverse_readline(filename)):
+        if i == n_lines:
+            break
+        _tail.append(line)
+    return _tail[::-1]
 #import mmap
 #def tail(filename, nlines):
 #    """Returns last n lines from the filename. No exception handling"""
@@ -290,14 +299,6 @@ def hash_objects(obj, algo='md5'):
 #        finally:
 #            pass
 #
-
-def tail(filename, n_lines):
-    _tail = []
-    for i, line in enumerate(reverse_readline(filename)):
-        if i == n_lines:
-            break
-        _tail.append(line)
-    return _tail[::-1]
 
 def reverse_readline(filename, buf_size=8192):
     """a generator that returns the lines of a file in reverse order"""
