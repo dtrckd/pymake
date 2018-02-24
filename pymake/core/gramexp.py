@@ -833,9 +833,18 @@ class GramExp(object):
         lines = []
         for m in  GramExp.tb_expeformat(obj):
             name = m[0]
-            opts = ['%s [%s]'% (o.name, o.default) for o in m[1] if o]
-            opts = ' '.join(opts)
-            line = name + ' ' + opts
+            opts = []
+            for o in m[1]:
+                if not o:
+                    continue
+                if o.default is inspect._empty:
+                    # args
+                    opts.append(o.name)
+                else:
+                    # kwargs
+                    opts.append('%s [%s]'% (o.name, o.default))
+            opts = ', '.join(opts)
+            line = '  ' + name + ': ' + opts
             lines.append(line)
         return lines
 
