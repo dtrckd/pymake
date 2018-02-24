@@ -508,6 +508,7 @@ class ExpTensorV2(BaseObject):
         if not _spec:
             if not expdesign:
                 expdesign = ExpDesign
+            conf['_name_expe'] = '_default_expe'
             gt._tensors.append(ExpTensor.from_expe(conf))
             gt._ds_.append(expdesign)
             return gt
@@ -815,12 +816,18 @@ class ExpTensorV2(BaseObject):
     def table(self):
         tables = []
         for id, group in enumerate(self._tensors):
+            src = self._ds[id].__name__
+            spec = group.get('_name_expe', ['void'])[0]
+            h = '=== %s > %s ===' % (src, spec)
+            tables.append(h)
             if self._bind:
                 extra = [('_bind', self._bind[id])]
+
             if id == 0:
                 headers = ['Params','Values']
             else:
                 headers = ''
+
             tables.append(tabulate(extra+sorted(group.items(), key=lambda x:x[0]), headers=headers))
 
         return '\n'.join(tables)

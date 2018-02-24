@@ -34,7 +34,7 @@ _pmk()
         return 0
     else
         case "$prev" in
-            pmk| run| runpara)
+            pmk| run| runpara| show| path)
                 COMPREPLY=( $(compgen -W "$specs" -- $cur) )
                 return 0
                 ;;
