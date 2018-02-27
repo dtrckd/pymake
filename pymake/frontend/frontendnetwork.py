@@ -39,8 +39,8 @@ class frontendNetwork(DataBase, DatasetDriver):
     _selfloop = False
 
     def __init__(self, expe=dict(), load=False):
-        if not expe.get('_data_type'):
-            expe['_data_type'] = 'networks'
+        #if not expe.get('_data_type'):
+        #    expe['_data_type'] = 'networks'
         super(frontendNetwork, self).__init__(expe, load)
 
     @classmethod
@@ -79,22 +79,17 @@ class frontendNetwork(DataBase, DatasetDriver):
         self.data_B_t = np.ones(data_ma_t.shape) - data_ma_t
 
 
-    def load_data(self, corpus_name=None, randomize=False):
+    def load_data(self, randomize=False):
         """ Load data according to different scheme,
             by order of priority (if several specification in settings)
             * Corpus from random generator
             * Corpus from file dataset
         """
-        if corpus_name is not None:
-            self.update_spec(**{'corpus_name': corpus_name})
-        else:
-            corpus_name = self.corpus_name
-        self.make_io_path()
+        corpus_name = self.corpus_name
 
         if self.corpus_name.startswith(self.RANDOM_CORPUS):
             data = self.random_corpus(corpus_name)
         else:
-            self.make_io_path()
             data = self._get_corpus(corpus_name)
 
         if data is None:
@@ -351,8 +346,7 @@ class frontendNetwork(DataBase, DatasetDriver):
             Corpus are in special path : {pmk/data/training/corpus_name}
         """
         data = None
-        bdir = self.input_path
-
+        bdir = self.expe._input_path
 
         if not os.path.exists(bdir):
             self.log.error("Corpus `%s' Not found." % (bdir))

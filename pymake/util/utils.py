@@ -21,6 +21,12 @@ except ImportError:
     lgg.debug("needs `terminal' module for colors printing")
     colored = lambda *x : x[0]
 
+
+class PmkTemplate(Template):
+    delimiter = '$$'
+    #idpattern = r'[a-z][_a-z0-9]*'
+
+
 #from itertools import cycle
 class Cycle(object):
     def __init__(self, seq):
@@ -168,7 +174,7 @@ def reset_pymake_settings(settings, default_config=__default_config, cfg_name='p
     #ctnt = '\n'.join(('{0} = {1}'.format(k,v) for k,v in _settings.items()))
     cwd = os.path.dirname(__file__)
     with open(os.path.join(cwd, '..', 'template', '%s.template'%(cfg_name))) as _f:
-        template = Template(_f.read())
+        template = PmkTemplate(_f.read())
         ctnt = template.substitute(_settings)
 
     cfg_file = os.path.join(os.getenv('PWD') , cfg_name)

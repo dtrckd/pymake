@@ -19,16 +19,21 @@ class immsb_cgs(GibbsRun):
         K = expe.K
 
         likelihood = Likelihood(delta, frontend, assortativity=assortativity)
-        likelihood._symmetric = frontend.is_symmetric()
 
-        # Nonparametric case
-        zsampler = ZSampler(alpha, likelihood, K_init=K)
-        msampler = MSampler(zsampler)
-        betasampler = BetaSampler(gmma, msampler)
-        jointsampler = NP_CGS(zsampler, msampler, betasampler,
-                              hyper=hyper, hyper_prior=hyper_prior)
+        if frontend:
+            likelihood._symmetric = frontend.is_symmetric()
 
-        self.s = jointsampler
+            # Nonparametric case
+            zsampler = ZSampler(alpha, likelihood, K_init=K)
+            msampler = MSampler(zsampler)
+            betasampler = BetaSampler(gmma, msampler)
+            jointsampler = NP_CGS(zsampler, msampler, betasampler,
+                                  hyper=hyper, hyper_prior=hyper_prior)
+
+            self.s = jointsampler
+        else:
+            likelihood._symmetric = None
+
 
         super().__init__(expe, frontend)
         self.update_hyper(expe.hyperparams)
@@ -47,12 +52,17 @@ class mmsb_cgs(GibbsRun):
         K = expe.K
 
         likelihood = Likelihood(delta, frontend, assortativity=assortativity)
-        likelihood._symmetric = frontend.is_symmetric()
 
-        # Parametric case
-        jointsampler = CGS(ZSamplerParametric(alpha, likelihood, K))
+        if frontend:
+            likelihood._symmetric = frontend.is_symmetric()
 
-        self.s = jointsampler
+            # Parametric case
+            jointsampler = CGS(ZSamplerParametric(alpha, likelihood, K))
+
+            self.s = jointsampler
+        else:
+            likelihood._symmetric = None
 
         super().__init__(expe, frontend)
         self.update_hyper(expe.hyperparams)
+

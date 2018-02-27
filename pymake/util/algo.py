@@ -424,7 +424,7 @@ def gofit(x, y, model='powerlaw', precision=0.03):
         # no enough point
         lgg.error('Not enough samples %s' % n_tail)
         return
-    #elif n_tail / float(N) < 3/4.0:
+    #elif n_tail / N < 3/4.0:
     #    # tail not relevant
     #    index_min = len(y) - np.argmax(y[::-1]) # max from left
     #    #index_min = 0 # all the distribution
@@ -438,7 +438,7 @@ def gofit(x, y, model='powerlaw', precision=0.03):
         ### Discrete CDF (gives worse p-value)
         cdf = lambda x: 1 - zeta(alpha, x) / zeta(alpha, x_min)
         ### Continious CDF
-        #cdf = lambda x:1-(x/float(x_min))**(-alpha+1)
+        #cdf = lambda x:1-(x/x_min)**(-alpha+1)
     else:
         lgg.error('Godfit: Hypothese Unknow %s' % model)
         return
@@ -490,7 +490,7 @@ def gofit(x, y, model='powerlaw', precision=0.03):
     #frontend.DataBase.save(d, 'd.pk')
     #frontend.DataBase.save(sync_samples, 'sc.pk')
 
-    pvalue = float(sum(pvalue)) / len(pvalue)
+    pvalue = sum(pvalue) / len(pvalue)
     estim = {'alpha': alpha, 'x_min':x_min, 'y_max':y_max,
              'n_tail': int(n_tail),'n_head':N - n_tail,
              'pvalue':pvalue}

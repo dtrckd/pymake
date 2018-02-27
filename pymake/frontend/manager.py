@@ -33,21 +33,23 @@ class FrontendManager(object):
         corpus_name = expe.get('corpus') or expe.get('random')
 
         _corpus = Corpus.get(corpus_name)
-        if _corpus is None:
+        if _corpus is False:
             raise ValueError('Unknown Corpus `%s\'!' % corpus)
+        elif _corpus is None:
+            return None
 
         if _corpus['structure'] == 'text':
             frontend = frontendText(expe, load=load)
         elif _corpus['structure'] == 'network':
             frontend = frontendNetwork(expe, load=load)
 
+        frontend.sample(expe.get('N'), randomize=False)
+
         return frontend
 
     @classmethod
     def load(cls, expe):
-        fr = cls.get(expe, load=True)
-        fr.sample(expe.get('N'), randomize=False)
-        return fr
+        return cls.get(expe, load=True)
 
 
 # it is more a wrapper

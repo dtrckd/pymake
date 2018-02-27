@@ -65,9 +65,10 @@ class ModelBase(object):
         # @debug Frontend integratoin !
         # @if frontend.type == 'network', then
         self.frontend = frontend
-        self._is_symmetric = frontend.is_symmetric()
-        self.mask = self.frontend.data_ma.mask
-        #np.fill_diagonal(self.frontend.data_ma, np.ma.masked)
+        if frontend:
+            self._is_symmetric = frontend.is_symmetric()
+            self.mask = self.frontend.data_ma.mask
+            #np.fill_diagonal(self.frontend.data_ma, np.ma.masked)
         # @else ... (text, image, son<3)
 
         self._purge_objects = ['frontend', 'data_A', 'data_B']

@@ -65,6 +65,12 @@ class IBPGibbsSampling(IBP, GibbsSampler):
     @param sigma_w: standard derivation of the feature
     @param initialize_Z: seeded Z matrix """
     def _initialize(self, frontend, alpha=1.0, sigma_w=1, initial_Z=None, initial_W=None, KK=None):
+
+        self._mean_w = 0
+        assert(type(sigma_w) is float)
+        self._sigma_w = sigma_w
+        self._sigb = 1 # Carreful make overflow in exp of sigmoid !
+
         if frontend is None:
             return
 
@@ -73,11 +79,6 @@ class IBPGibbsSampling(IBP, GibbsSampler):
         self.symmetric = frontend.is_symmetric()
         self.nnz = len(frontend.data_ma.compressed())
         super(IBPGibbsSampling, self)._initialize(frontend, alpha, initial_Z, KK=KK)
-
-        self._mean_w = 0
-        assert(type(sigma_w) is float)
-        self._sigma_w = sigma_w
-        self._sigb = 1 # Carreful make overflow in exp of sigmoid !
 
         self._W_prior = np.zeros((1, self._K))
         if initial_W != None:
@@ -509,7 +510,7 @@ class IBPGibbsSampling(IBP, GibbsSampler):
         #likelihood[likelihood < 0.5 ] = 0
         #Y = likelihood
         Y = sp.stats.bernoulli.rvs(likelihood)
-        return Y
+        return Y, theta, phi
 
     def likelihood(self, theta=None, phi=None):
         if theta is None:

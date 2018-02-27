@@ -16,16 +16,10 @@ import numpy as np
 
 from pymake import ExpDesign, ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, Script, Spec, ExpVector
 from pymake.frontend.frontend_io import ext_status, is_empty_file
-from pymake.util.utils import colored, basestring, get_pymake_settings, hash_objects
+from pymake.util.utils import colored, basestring, get_pymake_settings, hash_objects, PmkTemplate
 
 # @debug name integration
 from pymake.core.format import ExpTensorV2
-
-from string import Template
-class PmkTemplate(Template):
-    delimiter = '$$'
-    #idpattern = r'[a-z][_a-z0-9]*'
-
 
 
 ''' Grammar Expe '''
@@ -125,7 +119,7 @@ class GramExp(object):
 
         Attribute
         ---------
-        exp_tensor :ExpTensor
+        _tensors :ExpTensor
             tensor of experiments
 
         Methods
@@ -240,42 +234,42 @@ class GramExp(object):
         self._user_spec = conf.get('_spec', {})
 
         # Make main data structure
-        self.exp_tensor = ExpTensorV2.from_conf(conf,
+        self._tensors = ExpTensorV2.from_conf(conf,
                                                 private_keywords=self._private_keywords,
                                                 expdesign=expdesign)
         self.exp_setup()
 
 
     def exp_setup(self):
-        ''' work in self.exp_tensor '''
+        ''' work in self._tensors '''
 
         # Global settings (unique argument)
-        self._conf = self.exp_tensor.get_conf()
+        self._conf = self._tensors.get_conf()
 
         # makes it contextual.
         self._preprocess_exp()
 
         # Make lod
         skip_check = self._conf['_do'] in ['diff']
-        self.lod = self.exp_tensor.make_lod(skip_check)
+        self.lod = self._tensors.make_lod(skip_check)
 
         indexs = self._conf['_run_indexs']
         if indexs:
-            self.exp_tensor.remake(indexs)
+            self._tensors.remake(indexs)
             self._update()
 
     def _update(self):
-        # Seems obsolete, _conf is not writtent in exp_tensor, right ?
-        self._conf = self.exp_tensor._conf
+        # Seems obsolete, _conf is not writtent in _tensors, right ?
+        self._conf = self._tensors._conf
         #
-        self.lod = self.exp_tensor._lod
+        self.lod = self._tensors._lod
 
 
     def _preprocess_exp(self):
-        #self._check_exp(self.exp_tensor)
-        self.exp_tensor.check_bind()
-        self.exp_tensor.check_model_typo()
-        self.exp_tensor.check_null()
+        #self._check_exp(self._tensors)
+        self._tensors.check_bind()
+        self._tensors.check_model_typo()
+        self._tensors.check_null()
 
 
     def io_format_check(self):
@@ -293,7 +287,7 @@ class GramExp(object):
                     keys_to_remove.append(_key)
         # |
         for key in keys_to_remove:
-            self.exp_tensor.remove_all(key)
+            self._tensors.remove_all(key)
 
 
     def check_format(self):
@@ -303,7 +297,7 @@ class GramExp(object):
             @debug: integration in ExpTensorV2 ?
         '''
 
-        for tensor in self.exp_tensor:
+        for tensor in self._tensors:
             hidden_key = []
             _format = tensor.get('_format', [''])
             if len(_format) > 1:
@@ -328,14 +322,15 @@ class GramExp(object):
                 exit(2)
 
         if self._conf.get('_ignore_format_unique') is True:
-            _format = '{_name}-{_id}'
-            self.exp_tensor.update_all(_format=_format)
+            _hash = int((hash_objects(tensor)), 16) % 10**8
+            _format = '{_name}-expe' + str(_hash) +'h'
+            self._tensors.update_all(_format=_format)
 
 
 
     @classmethod
     def _check_exp(cls, tensor):
-        ''' check format and rules of exp_tensor. '''
+        ''' check format and rules of _tensors. '''
         for exp in tensor:
             # check reserved keyword are absent from exp
             for m in cls._reserved_keywords:
@@ -350,17 +345,17 @@ class GramExp(object):
 
     def get_set(self, key, default=[]):
         ''' Return the set of values of expVector of that {key}. '''
-        return sorted(set(self.exp_tensor.get_all(key, default)))
+        return sorted(set(self._tensors.get_all(key, default)))
 
     def get_list(self, key, default=[]):
         ''' Return the list of values of expVector of that {key}. '''
-        return self.exp_tensor.get_all(key, default)
+        return self._tensors.get_all(key, default)
 
     def get_nounique_keys(self, *args):
         ''' return list of keys that are non unique in expe_tensor
             except if present in :args:.
         '''
-        nk = self.exp_tensor.get_nounique_keys()
+        nk = self._tensors.get_nounique_keys()
         for o in args:
             if o in nk:
                 nk.remove(o)
@@ -395,11 +390,10 @@ class GramExp(object):
 
 
     def __len__(self):
-        #return reduce(operator.mul, [len(v) for v in self.exp_tensor.values()], 1)
+        #return reduce(operator.mul, [len(v) for v in self._tensors.values()], 1)
         return len(self.lod)
 
-    @classmethod
-    def make_forest_path(cls, lod, _type, status='f', full_path=False):
+    def make_forest_path(self, lod, _type, status='f', full_path=False):
         """ Make a list of path from a spec/dict, the filename are
             oredered need to be align with the get_from_conf_file.
 
@@ -407,17 +401,17 @@ class GramExp(object):
         """
         targets = []
         for spec in lod:
-            filen = GramExp.make_output_path(spec, _type, status=status)
+            filen = self.make_output_path(spec, _type, status=status, _null=self._tensors._null)
             if filen:
-                s = filen.find(cls._data_path)
+                s = filen.find(self._data_path)
                 pt = 0
                 if not full_path and s >= 0:
-                    pt = s + len(cls._data_path)
+                    pt = s + len(self._data_path)
                 targets.append(filen[pt:])
         return targets
 
     @classmethod
-    def make_output_path(cls, expe, _type=None, status=None):
+    def make_output_path(cls, expe, _type=None, status=None, _null=None):
         """ Make a single output path from a expe/dict
             @status: f finished
             @type: pk, json or inference.
@@ -441,7 +435,10 @@ class GramExp(object):
             lgg.debug('No _format given, please set _format for output_path settings.')
             return None
 
-        t = expe['_format'].format(**cls.get_file_format(expe))
+        dict_format = cls.get_file_format(expe)
+        if _null:
+            dict_format.update(dict((k,None) for k in _null))
+        t = expe['_format'].format(**dict_format)
 
         filen = os.path.join(basedir, p, t)
 
@@ -769,13 +766,13 @@ class GramExp(object):
 
     def reorder_firstnonvalid(self, _type='pk'):
         for i, e in enumerate(self.lod):
-            if not self.make_output_path(e, _type=_type, status='f'):
+            if not self.make_output_path(e, _type=_type, status='f', _null=self._tensors._null):
                 self.lod[0], self.lod[i] = self.lod[i], self.lod[0]
                 break
         return
 
     def exptable(self):
-        return self.exp_tensor.table()
+        return self._tensors.table()
 
     def spectable(self):
         return Spec.table()
@@ -804,8 +801,8 @@ class GramExp(object):
 
     def simulate(self, halt=True, file=sys.stdout):
 
+        print('PYMAKE Exp: %d' % (len(self) ), file=file)
         print('-'*30, file=file)
-        print('PYMAKE Exp: %d expe' % (len(self) ), file=file)
         print(self.exptable(), file=file)
         if halt:
             exit()
@@ -917,7 +914,7 @@ class GramExp(object):
             np.random.seed(seed)
 
         # Init I/O settings
-        expe['_output_path'] = self.make_output_path(expe)
+        expe['_output_path'] = self.make_output_path(expe, _null=self._tensors._null)
         expe['_input_path'] = self.make_input_path(expe)
 
         self.save(np.random.get_state(), _seed_path, silent=True)
@@ -930,8 +927,8 @@ class GramExp(object):
 
         if 'script' in self._conf:
             script = self._conf.pop('script')
-            self.exp_tensor.remove_all('script')
-            self.exp_tensor.remove_all('_do')
+            self._tensors.remove_all('script')
+            self._tensors.remove_all('_do')
         else:
             lgg.error('==> Error : You need to specify a script. (--script)')
             exit(10)
@@ -964,7 +961,7 @@ class GramExp(object):
         #        raise ValueError('error: Unknown script: %s' % (script_name))
 
         if script_args:
-            self.exp_tensor.update_all(_do=script_args)
+            self._tensors.update_all(_do=script_args)
         #self.pymake(sandbox=Scripts[script_name])
         self.pymake(sandbox=_script)
 
@@ -1156,7 +1153,6 @@ class GramExp(object):
             print('fatal: %s file already exists.' % (self._cfg_name))
             exit(11)
 
-
         pwd = os.getenv('PWD')
         cwd = os.path.dirname(__file__)
         folders = ['spec', 'script', 'model']
@@ -1223,8 +1219,8 @@ class GramExp(object):
         import itertools
 
         diff_expe = dict()
-        for tensor in self.exp_tensor:
-            for k in self.exp_tensor.get_keys():
+        for tensor in self._tensors:
+            for k in self._tensors.get_keys():
 
                 if k not in diff_expe:
                     diff_expe[k] = tensor.get(k, ['--'])
@@ -1292,15 +1288,42 @@ class GramExp(object):
                 template = _f.read()
 
 
+        # Get Specs
         specs = ' '.join(list(cls._spec))
-        scripts = ' '.join(Script.get_all())
+
+        # Get Scripts
+        _scripts = Script.get_all(_type='hierarchical')
+        scripts = defaultdict(list)
+        all_scripts = set()
+        sur_scripts = set()
+        for _o in _scripts:
+            script = _o['scriptsurname']
+            action = _o['method']
+            scripts[script].append(action)
+            all_scripts.update([script, action])
+            sur_scripts.add(script)
+
+        # Create a Bash array of strings.
+        dict_scripts = []
+        for sur in sur_scripts:
+            dict_scripts.append('"'+ ' '.join(scripts[sur]) +'"')
+
+        # get Models
         models = None
+
+        # get Corpus
         corpus = None
 
+
+        all_scripts = ' '.join(all_scripts)
+        sur_scripts = ' '.join(sur_scripts)
+        dict_scripts = '(' + ' '.join(dict_scripts) + ')'
         hook = '''
                 elif [[ "$project" == "$$projectname" ]]; then
                     specs="$$specs"
-                    scripts="$$scripts"
+                    all_scripts="$$all_scripts"
+                    sur_scripts="$$sur_scripts"
+                    dict_scripts=$$dict_scripts
                '''
 
         _match = '[[ "$project" == "%s" ]]' % (pjt)
@@ -1328,7 +1351,10 @@ class GramExp(object):
         with open(completion_fn, 'w') as _f:
             template = PmkTemplate(template)
             template = template.substitute(projectname=pjt, version=cls._version,
-                                           specs=specs, scripts=scripts)
+                                           specs=specs,
+                                           all_scripts=all_scripts,
+                                           sur_scripts=sur_scripts,
+                                           dict_scripts=dict_scripts)
             _f.write(template)
 
         #os.execl("/bin/bash", "/bin/bash", "-c", "source ~/.bash_completion.d/pymake_completion")
@@ -1351,12 +1377,12 @@ class GramExp(object):
         for id_expe, _expe in enumerate(self.lod):
             expe = ExpSpace(**_expe)
 
-            pt = dict((key, value.index(expe[key])) for key, value in self.exp_tensor.get_gt().items()
+            pt = dict((key, value.index(expe[key])) for key, value in self._tensors.get_gt().items()
                       if (isinstance(expe.get(key), (basestring, int, float)) and key not in self._reserved_keywords))
             pt['expe'] = id_expe
 
             # Init Expe
-            expdesign = self.exp_tensor._ds[id_expe]
+            expdesign = self._tensors._ds[id_expe]
             self.expe_init(expe)
             try:
                 expbox = sandbox(pt, expe, expdesign, self)
