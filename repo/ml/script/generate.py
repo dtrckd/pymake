@@ -5,9 +5,6 @@ from numpy import ma
 from pymake import ExpTensor, GramExp, ExpeFormat, ExpSpace
 from pymake.frontend.manager import ModelManager, FrontendManager
 
-import logging
-lgg = logging.getLogger('root')
-
 USAGE = '''\
 ----------------
 Generate data  --or find the answers :
@@ -39,19 +36,26 @@ class GenNetwork(ExpeFormat):
     _default_expe = dict(
         block_plot = False,
         write  = False,
-        _do            = ['burstiness', 'global'],
-        _mode         = 'predictive',
+        _do            = ['burstiness', 'global'], # default
+        _mode         = 'generative',
         gen_size      = 1000,
-        epoch         = 30 , #20
-        limit_gen   = 5, # Local superposition !!!
-        limit_class   = 15, # 30
+        epoch         = 30 , # Gen,eration epoch
+        limit_gen   = 5, # Local superposition ! Ignored ?
+        limit_class   = 15, # Ignored ?
     )
 
-    def __init__(self, *args, **kwargs):
-        super(GenNetwork, self).__init__(*args, **kwargs)
+    def _preprocess(self):
         expe = self.expe
 
         frontend = FrontendManager.load(expe)
+        if frontend:
+            N = frontend.getN()
+            expe.symmetric = frontend.is_symmetric()
+        else:
+            N = expe.N
+            expe.symmetric = True
+
+
         if expe._mode == 'predictive':
             ### Generate data from a fitted model
             model = ModelManager.from_expe(expe)
@@ -59,18 +63,16 @@ class GenNetwork(ExpeFormat):
             try:
                 # this try due to mthod modification entry in init not in picke object..
                 expe.hyperparams = model.get_hyper()
-            except:
+            except Exception as e:
+                self.log.warning('loading hyperparam error: %s' % e)
                 if model is not None:
                     model._mean_w = 0
                     expe.hyperparams = 0
 
-            N = frontend.getN()
-            expe.title = None
         elif expe._mode == 'generative':
-            N = expe.gen_size
             ### Generate data from a un-fitted model
 
-            expe.alpha = [0.1, 0.1]
+            expe.alpha = 1
             expe.gmma = 1/2
             expe.delta = [0.5,0.5]
 
@@ -85,23 +87,26 @@ class GenNetwork(ExpeFormat):
             model = ModelManager.from_expe(expe, init=True)
             #model.update_hyper(hyper)
 
-            # Obsolete !
-            if 'ilfm' in expe.model:
-                title = 'N=%s, K=%s alpha=%s, lambda:%s'% ( N, expe.K, expe.alpha, expe.delta)
-            elif 'immsb' in expe.model:
-                title = 'N=%s, K=%s alpha=%s, gamma=%s, lambda:%s'% (N, expe.K, expe.alpha, expe.gmma, expe.delta)
-            elif 'mmsb' in expe.model:
-                title = 'N=%s, K=%s alpha=%s, lambda:%s'% ( N, expe.K, expe.alpha, expe.delta)
-            else:
-                raise NotImplementedError
+            ## Obsolete !
+            #if 'ilfm' in expe.model:
+            #    title = 'N=%s, K=%s alpha=%s, lambda:%s'% ( N, expe.K, expe.alpha, expe.delta)
+            #elif 'immsb' in expe.model:
+            #    title = 'N=%s, K=%s alpha=%s, gamma=%s, lambda:%s'% (N, expe.K, expe.alpha, expe.gmma, expe.delta)
+            #elif 'mmsb' in expe.model:
+            #    title = 'N=%s, K=%s alpha=%s, lambda:%s'% ( N, expe.K, expe.alpha, expe.delta)
+            #else:
+            #    raise NotImplementedError
 
-            expe.title = title
+            #expe.title = title
 
         else:
             raise NotImplementedError('What generation context ? predictive/generative..')
 
-        lgg.debug('Deprecated : get symmetric info from model.')
-        expe.symmetric = frontend.is_symmetric()
+        self.log.info('=== GenNetworks === ')
+        self.log.info('Mode: %s' % expe._mode)
+        self.log.info('===')
+        self.log.info('hyper: %s' % (str(expe.hyperparams)))
+
         self.frontend = frontend
         self.model = model
 
@@ -111,25 +116,26 @@ class GenNetwork(ExpeFormat):
         if expe._do[0] in ('burstiness','pvalue','homo', 'homo_mustach'):
             ### Generate data
             Y = []
+            Theta = []
+            Phi = []
             now = Now()
             for i in range(expe.epoch):
-                try:
-                    y = model.generate(mode=expe._mode, N=N, K=expe.K)
-                except:
-                    y,_,_ = model.generate(mode=expe._mode, N=N, K=expe.K)
+                y, theta, phi = model.generate(mode=expe._mode,
+                                               N=N, K=expe.K,
+                                               symmetric=expe.symmetric,
+                                              )
                 Y.append(y)
-            lgg.info('Data Generation : %s second' % nowDiff(now))
+                Theta.append(theta)
+                Phi.append(Phi)
+            self.log.info('Data Generation : %s second' % nowDiff(now))
 
-            #R = rescal(data, expe['K'])
+            #if expe.symmetric:
+            #    for y in Y:
+            #        frontend.symmetrize(y)
 
-            if expe.symmetric:
-                for y in Y:
-                    frontend.symmetrize(y)
             self._Y = Y
-
-        lgg.info('=== M_e Mode === ')
-        lgg.info('Mode: %s' % expe._mode)
-        lgg.info('hyper: %s' % (str(expe.hyperparams)))
+            self._Theta = Theta
+            self._Phi = Phi
 
 
     def init_fit_tables(self,_type, Y=[]):
@@ -194,7 +200,7 @@ class GenNetwork(ExpeFormat):
             # Global burstiness
             d, dc, yerr = random_degree(Y)
             fig = plt.figure()
-            title = self.specname(expe.corpus) + ' ' + self.specname(expe.model)
+            title = 'global | %s, %s' % (self.specname(expe.get('corpus')), self.specname(expe.model))
             plot_degree_2((d,dc,yerr), logscale=True, title=title)
 
             figs.append(plt.gcf())
@@ -203,6 +209,7 @@ class GenNetwork(ExpeFormat):
             # Local burstiness
             print ('Computing Local Preferential attachment')
             theta, phi = model.get_params()
+            print('theta shape: %s'%(str(theta.shape)))
             Y = Y[:expe.limit_gen]
             now = Now()
             if 'mmsb' in expe.model:
@@ -225,7 +232,7 @@ class GenNetwork(ExpeFormat):
                     Z[0] = np.triu(Z[0]) + np.triu(Z[0], 1).T
                     Z[1] = np.triu(Z[1]) + np.triu(Z[1], 1).T
                     ZZ.append( Z )
-                lgg.info('Z formation %s second', nowDiff(now))
+                self.log.info('Z formation %s second' % nowDiff(now))
 
             clustering = 'modularity'
             comm = model.communities_analysis(data=Y[0], clustering=clustering)
@@ -275,13 +282,13 @@ class GenNetwork(ExpeFormat):
 
                 d, dc, yerr = random_degree(YY)
                 if len(d) == 0: continue
-                title = self.specname(expe.corpus) + ' ' + self.specname(expe.model)
+                title = 'local | %s, %s' % (self.specname(expe.get('corpus')), self.specname(expe.model))
                 plot_degree_2((d,dc,yerr), logscale=True, colors=True, line=True,
                              title=title)
             figs.append(plt.gcf())
 
         ### Blockmodel Analysis
-        lgg.info('Skipping Features burstiness')
+        self.log.info('Skipping Features burstiness')
         #plt.figure()
         #if 'mmsb' in expe.model:
         #    # Feature burstiness
@@ -327,7 +334,7 @@ class GenNetwork(ExpeFormat):
 
         Table, Meas = self.init_fit_tables(_type, Y)
 
-        lgg.info('using `%s\' burstiness' % _type)
+        self.log.info('using `%s\' burstiness' % _type)
 
         if _type == 'global':
             ### Global degree
@@ -343,7 +350,8 @@ class GenNetwork(ExpeFormat):
         elif _type == 'local':
             ### Z assignement method
             Y = Y[:expe.limit_gen]
-            theta, _phi = model.get_params()
+            theta, phi = model.get_params()
+            print('theta shape: %s'%(str(theta.shape)))
             K = theta.shape[1]
             now = Now()
             if 'mmsb' in expe.model:
@@ -365,7 +373,7 @@ class GenNetwork(ExpeFormat):
                     Z[0] = np.triu(Z[0]) + np.triu(Z[0], 1).T
                     Z[1] = np.triu(Z[1]) + np.triu(Z[1], 1).T
                     ZZ.append( Z )
-                lgg.info('Z formation %s second', nowDiff(now))
+                self.log.info('Z formation %s second', nowDiff(now))
 
             clustering = 'modularity'
             comm = model.communities_analysis(data=Y[0], clustering=clustering)
@@ -383,7 +391,9 @@ class GenNetwork(ExpeFormat):
                 k_perm = itertools.product(range(theta.shape[1]) , repeat=2)
 
             for it_k, c in enumerate(k_perm):
-                if len(c) == 2:
+                if isinstance(c,(np.int64, np.float64)):
+                    k = l = c
+                elif len(c) == 2:
                     # Stochastic Equivalence (extra class bind
                     k, l = c
                     #continue
@@ -483,7 +493,7 @@ class GenNetwork(ExpeFormat):
         N = Y[0].shape[0]
         model = self.model
 
-        lgg.info('using `%s\' type' % _type)
+        self.log.info('using `%s\' type' % _type)
 
         if not hasattr(self.gramexp, 'tables'):
             corpuses = self.specname(self.gramexp.get_set('corpus'))
@@ -507,7 +517,7 @@ class GenNetwork(ExpeFormat):
             Meas = self.gramexp.Meas
 
         if _type == 'pearson':
-            lgg.info('using `%s\' similarity' % _sim)
+            self.log.info('using `%s\' similarity' % _sim)
             # No variance for link expecation !!!
             Y = [Y[0]]
 
@@ -660,7 +670,7 @@ class GenNetwork(ExpeFormat):
         if not hasattr(expe, 'testset_ratio'):
             setattr(expe, 'testset_ratio', 20)
 
-        frame = self.gramexp._figs[expe.corpus]
+        frame = self.gramexp._figs[expe.get('corpus')]
         ax = frame.fig.gca()
 
         if _type == 'testset':

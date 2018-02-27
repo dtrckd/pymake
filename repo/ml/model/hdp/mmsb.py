@@ -174,23 +174,25 @@ class ZSampler(object):
     def __init__(self, alpha_0, likelihood, K_init=1):
         self.K_init = K_init or 1
         self.alpha_0 = alpha_0
-        self.likelihood = likelihood
-        self.symmetric_pt = self.likelihood._symmetric +1 # the increment for Gibbs iteration
-        self._nmap = likelihood._nmap
-        self.nodes_list = likelihood.nodes_list
-        self.data_dims = self.likelihood.data_dims
-        self.J = len(self.data_dims)
-        self.z = self._init_topics_assignement()
-        self.doc_topic_counts = self.make_doc_topic_counts()
-        if not hasattr(self, 'K'):
-            # Nonparametric Case
-            self.purge_empty_topics()
-        self.likelihood.make_word_topic_counts(self.z, self.get_K())
-        self.likelihood.total_w_k = self.likelihood.word_topic_counts.sum(0)
 
-        # if a tracking of topics indexis pursuit,
-        # pay attention to the topic added among those purged...(A topic cannot be added and purged in the same sample iteration !)
-        self.last_purged_topics = []
+        self.likelihood = likelihood
+        if self.likelihood._symmetric is not None:
+            self.symmetric_pt = self.likelihood._symmetric +1 # the increment for Gibbs iteration
+            self.nodes_list = likelihood.nodes_list
+            self._nmap = likelihood._nmap
+            self.data_dims = self.likelihood.data_dims
+            self.J = len(self.data_dims)
+            self.z = self._init_topics_assignement()
+            self.doc_topic_counts = self.make_doc_topic_counts()
+            if not hasattr(self, 'K'):
+                # Nonparametric Case
+                self.purge_empty_topics()
+            self.likelihood.make_word_topic_counts(self.z, self.get_K())
+            self.likelihood.total_w_k = self.likelihood.word_topic_counts.sum(0)
+
+            # if a tracking of topics indexis pursuit,
+            # pay attention to the topic added among those purged...(A topic cannot be added and purged in the same sample iteration !)
+            self.last_purged_topics = []
 
 
     # @debug: symmetric matrix ?
@@ -541,7 +543,8 @@ class GibbsRun(GibbsSampler):
             self.update_hyper(hyperparams)
             alpha, gmma, delta = self.get_hyper()
             N = int(N)
-            if type(self.s) is NP_CGS:
+            _name = self.__module__.split('.')[-1]
+            if _name == 'immsb_cgs':
                 # @todo: compute the variance for random simulation
                 # Number of table in the CRF
                 if symmetric is True:
@@ -603,7 +606,7 @@ class GibbsRun(GibbsSampler):
         #        zj = categorical(theta[j])
         #        zi = categorical(theta[i])
         #        Y[j, i] = sp.stats.bernoulli.rvs(B[zj, zi])
-        return Y
+        return Y, theta, phi
 
 
     def get_clusters(self, K=None, skip=0):

@@ -18,20 +18,17 @@ class frontendText(DataBase):
     """ Frontend for text Corpus """
 
     def __init__(self, config=dict(), load=False):
-        if not expe.get('_data_type'):
-            expe['_data_type'] = 'text'
+        #if not expe.get('_data_type'):
+        #    expe['_data_type'] = 'text'
         super(frontendText, self).__init__(config, load)
 
-    def load_data(self, corpus_name=None, randomize=False):
+    def load_data(self, randomize=False):
         """ Load data according to different scheme:
             * Corpus from file dataset
             * Corpus from random generator
             """
-        if corpus_name is not None:
-            self.update_spec(**{'corpus_name': corpus_name})
-        else:
-            corpus_name = self.corpus_name
 
+        corpus_name = self.corpus_name
         self.get_corpus(corpus_name)
 
         # @DEBUG

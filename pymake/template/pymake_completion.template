@@ -5,7 +5,9 @@ shopt -s extglob
 #have pmk &&
 _pmk()
 {
-    local cur prev opts project specs scripts
+    # Automate variables init
+    local cur prev opts project 
+    local specs all_scripts sur_scripts dict_scripts
 
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
@@ -26,6 +28,7 @@ _pmk()
     fi
 
     local extspecs="+(""$(echo $specs|tr ' ' '|')"")"
+    local extsur_scripts="+(""$(echo $sur_scripts|tr ' ' '|')"")"
 
     # The used completion functions are defined in /etc/bash_completion.
     if [[ "$cur" == -* ]]; then
@@ -43,7 +46,20 @@ _pmk()
                 return 0
                 ;;
             -x)
-                COMPREPLY=( $(compgen -W "$scripts" -- $cur) )
+                COMPREPLY=( $(compgen -W "$all_scripts" -- $cur) )
+                return 0
+                ;;
+            $extsur_scripts)
+                local cpt=0
+                for w in $sur_scripts; do
+                    if [ "$prev" == "$w" ]; then
+                        break
+                    else
+                        let cpt=cpt+1
+                    fi
+                done
+
+                COMPREPLY=( $(compgen -W "${dict_scripts[$cpt]}" -- $cur) )
                 return 0
                 ;;
             *)

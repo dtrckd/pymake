@@ -56,10 +56,6 @@ class DataBase(object):
         ### Update settings Operations
         ########
         self.expe = expe
-        self.make_io_path()
-        # There is some dynamic settings
-        # Yes, use gramexp to setup path !!!
-        # K, others ?
 
         self._data_file_format = None
         data_format = self.expe.get('_data_format', 'b')
@@ -84,23 +80,6 @@ class DataBase(object):
 
     def update_data(self):
         raise NotImplemented
-
-    def make_io_path(self):
-        ''' Write Path (for models results) in global settings '''
-        self.output_path = GramExp.make_output_path(self.expe)
-        self.input_path = GramExp.make_input_path(self.expe)
-
-        # path can be updated by self.
-        self.expe['_output_path'] = self.output_path
-        self.expe['_input_path'] = self.input_path
-
-    def update_spec(self, **spec):
-        v = None
-        if len(spec) == 1:
-            k, v = list(spec.items())[0]
-            setattr(self, k, v)
-        self.expe.update(spec)
-        return v
 
     @staticmethod
     def corpus_walker(path):
@@ -169,7 +148,7 @@ class DataBase(object):
     # convert ndarray to list.
     def save_json(self, res):
         """ Save a dictionnary in json"""
-        fn = self.output_path + '.json'
+        fn = self.expe._output_path + '.json'
         new_res = copy.copy(res)
         for k, v  in new_res.items():
             # Go at two level deeper, no more !
@@ -183,12 +162,12 @@ class DataBase(object):
         self.log.info('Saving json : %s' % fn)
         return json.dump(new_res, open(fn,'w'))
     def get_json(self):
-        fn = self.output_path + '.json'
+        fn = self.expe._output_path + '.json'
         self.log.info('Loading json frData ; %s' % fn)
         d = json.load(open(fn,'r'))
         return d
     def update_json(self, d):
-        fn = self.output_path + '.json'
+        fn = self.expe._output_path + '.json'
         res = json.load(open(fn,'r'))
         res.update(d)
         self.log.info('Updating json frData: %s' % fn)

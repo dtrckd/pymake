@@ -22,8 +22,8 @@ class Netw(ExpDesign):
         ('generator12'    , 'Network2' ),
         ('generator10'    , 'Network3' ),
 
-        ('generator4'     , 'Network4' ),
-        #('generator4'     , 'Network2' ),
+        #('generator4'     , 'Network4' ),
+        ('generator4'     , 'Network2' ),
         #('pmk.ilfm_cgs'     , 'ILFM' ),
         #('pmk.immsb_cgs'     , 'IMMSB' ),
     ))
@@ -94,7 +94,26 @@ class Netw(ExpDesign):
         ('_bind'    , ['immsb_cgs.auto', 'ilfm_cgs.fix', 'ilfm_cgs.iterations.25', 'immsb_cgs.iterations.150']),
         ('iterations', [25, 150]),
         ('testset_ratio', [40, 60, 80]),
-        ('_format', '{model}_{corpus}_{K}_{hyper}_{homo}_{N}_{testset_ratio}')
+        ('_format', '{model}_{corpus}_{K}_{hyper}_{homo}_{N}_{testset_ratio}'),
+        ('_csv_typo', '_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'),
+
+    ))
+
+    PNAS3 = ExpTensor ((
+        ('corpus', pnas_short),
+        ('_refdir'        , 'pnas3') , # ign in gen
+        ('_data_type'    , 'networks'),
+        ('model'        , ['immsb_cgs', 'ilfm_cgs'])   ,
+        ('K'            , 10)        ,
+        ('N'            , 'all')     , # ign in gen
+        ('hyper'        , ['fix','auto'])    , # ign in gen
+        ('homo'         , 0)         , # ign in gen
+        ('_repeat'      , 0)       ,
+        ('_bind'    , ['immsb_cgs.auto', 'ilfm_cgs.fix', 'ilfm_cgs.iterations.25', 'immsb_cgs.iterations.150']),
+        ('iterations', [25, 150]),
+        ('testset_ratio', 20),
+        ('_format', '{model}_{iterations}_{corpus}_{K}_{hyper}_{homo}_{N}_{testset_ratio}'),
+        ('_csv_typo', '_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'),
 
     ))
 

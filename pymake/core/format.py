@@ -237,9 +237,13 @@ class Spec(BaseObject):
 class Script(BaseObject):
 
     @staticmethod
-    def get_all():
+    def get_all(_type='flat'):
         ix = IX(default_index='script')
-        _res = ix.query(field='method')
+
+        if _type == 'flat':
+            _res = ix.query(field='method')
+        elif _type == 'hierarchical':
+            _res = ix.query(field='scriptsurname', terms=True)
         return _res
 
     @staticmethod
@@ -313,7 +317,10 @@ class Corpus(ExpVector):
                  'lucene']}
     @classmethod
     def get(cls, corpus_name):
-        corpus = None
+        if not corpus_name:
+            return None
+
+        corpus = False
         for key, cps in cls._corpus_typo.items():
             if corpus_name.startswith(tuple(cps)):
                 corpus = {'name': corpus_name, 'structure':key}
@@ -368,6 +375,8 @@ class ExpTensor(OrderedDict, BaseObject):
     def __init__(self,  *args, **kwargs):
         OrderedDict.__init__(self, *args, **kwargs)
         BaseObject.__init__(self)
+
+        self._size = 0
 
     @classmethod
     def from_expe(cls, conf=None, expe=None, parser=None):
@@ -442,8 +451,12 @@ class ExpTensor(OrderedDict, BaseObject):
             else:
                 self[k] = [v]
 
-    def get_size(self):
-        return  np.prod([len(x) for x in self.values()])
+    def get_size(self, virtual=False):
+        if virtual:
+            return  np.prod([len(x) for x in self.values()])
+        else:
+            return self._size
+
 
     def push_dict(self, d):
         ''' push one dict inside a exptensor.
@@ -491,7 +504,7 @@ class ExpTensorV2(BaseObject):
         # --- Those are aligned ---
         self._tensors = [] # list of ExpTensor
         self._bind = []
-        self._null = []
+        self._null = defaultdict(list)
         self._hash = []
         self._ds_ = [] # ExpDesign class per tensor
         #
@@ -544,6 +557,9 @@ class ExpTensorV2(BaseObject):
     def __iter__(self):
         for tensor in self._tensors:
             yield tensor
+
+    def __len__(self):
+        return self.get_size()
 
     def remove_all(self, key):
         if key in self._conf:
@@ -674,12 +690,10 @@ class ExpTensorV2(BaseObject):
     def check_null(self):
         ''' Filter _null '''
         for tensor in self._tensors:
-            _null = []
             for k in list(tensor.keys()):
                 if '_null' in tensor.get(k, []):
-                    tensor.pop(k)
-                    _null.append(k)
-            self._null.append(_null)
+                    v = tensor.pop(k)
+                    self._null[k].append(v)
 
     def make_lod(self, skip_check=False):
         ''' Make a list of Expe from tensor, with filtering '''
@@ -687,6 +701,7 @@ class ExpTensorV2(BaseObject):
         self._lod = []
         for _id, tensor in enumerate(self._tensors):
             lods = self._make_lod(tensor, _id)
+            tensor._size = len(lods)
             self._lod.extend(lods)
             self._ds.extend([self._ds_[_id]]*len(lods))
 
@@ -752,6 +767,7 @@ class ExpTensorV2(BaseObject):
                         if a in values and _type(c) != d[b]:
                             idtoremove.append(expe_id)
 
+
         lod = [d for i,d in enumerate(lod) if i not in idtoremove]
         # Save true size of tensor (_bind remove)
         self._tensors[_id]._size = len(lod)
@@ -798,6 +814,7 @@ class ExpTensorV2(BaseObject):
                 self._tensors.append(new_tensor)
             else:
                 consume_expe += 1
+                new_tensor._size += 1
 
     def get_gt(self):
         ''' get Global Tensors.
@@ -818,7 +835,7 @@ class ExpTensorV2(BaseObject):
         for id, group in enumerate(self._tensors):
             src = self._ds[id].__name__
             spec = group.get('_name_expe', ['void'])[0]
-            h = '=== %s > %s ===' % (src, spec)
+            h = '=== %s > %s > %s expe ===' % (src, spec, group.get_size())
             tables.append(h)
             if self._bind:
                 extra = [('_bind', self._bind[id])]
@@ -1328,7 +1345,7 @@ class ExpeFormat(object):
 
         # update exp_tensor in gramexp
         if hasattr(cls, '_default_expe'):
-            gramexp.exp_tensor.set_default_all(cls._default_expe)
+            gramexp._tensors.set_default_all(cls._default_expe)
 
         # Put a valid expe a the end.
         gramexp.reorder_firstnonvalid()
@@ -1503,7 +1520,7 @@ class ExpeFormat(object):
         os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
         self.fname_i = self.output_path + '.inf'
         if not '_csv_typo' in self.expe:
-            self.log.warning('No csv_typo, for this model %s, no inference file...')
+            self.log.warning('No csv_typo, for this model %s, no inference file...'%(self.expe.get('model')))
         else:
             self._fitit_f = open(self.fname_i, 'wb')
             self._fitit_f.write(('#' + self.expe._csv_typo + '\n').encode('utf8'))
