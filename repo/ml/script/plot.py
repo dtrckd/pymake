@@ -24,7 +24,7 @@ class Plot(ExpeFormat):
         self.model = ModelManager.from_expe(self.expe)
 
     @ExpeFormat.raw_plot('corpus')
-    def __call__(self, attribute='_entropy'):
+    def __call__(self, frame,  attribute='_entropy'):
         ''' Plot figure group by :corpus:.
             Notes: likelihood/perplexity convergence report
         '''
@@ -41,8 +41,7 @@ class Plot(ExpeFormat):
         burnin = 5
         description = '/'.join((expe._refdir, os.path.basename(self.output_path)))
 
-        frame = self.gramexp._figs[expe.corpus]
-        ax = frame.fig.gca()
+        ax = frame.ax
 
         ax = frame.fig.gca()
         ax.plot(data, label=description, marker=frame.markers.next())
