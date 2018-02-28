@@ -5,6 +5,20 @@ from numpy import ma
 from pymake import ExpTensor, GramExp, ExpeFormat, ExpSpace
 from pymake.frontend.manager import ModelManager, FrontendManager
 
+
+
+import itertools
+from pymake.util.algo import gofit, Louvain, Annealing
+from pymake.util.math import reorder_mat, sorted_perm, categorical, clusters_hist
+from pymake.util.utils import Now, nowDiff, colored
+import matplotlib.pyplot as plt
+from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2, random_degree,  draw_graph_circular, draw_graph_spectral, draw_graph_spring, _markers
+from pymake.core.format import tabulate
+
+from sklearn.metrics import roc_curve, auc, precision_recall_curve
+
+
+
 USAGE = '''\
 ----------------
 Generate data  --or find the answers :
@@ -19,17 +33,6 @@ Generate data  --or find the answers :
     parallel ./generate.py -k {}  ::: $(echo 5 10 15 20)
     generate --alpha 1 --gmma 1 -n 1000 --seed
 '''
-
-import itertools
-from pymake.util.algo import gofit, Louvain, Annealing
-from pymake.util.math import reorder_mat, sorted_perm, categorical, clusters_hist
-from pymake.util.utils import Now, nowDiff, colored
-import matplotlib.pyplot as plt
-from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2, random_degree,  draw_graph_circular, draw_graph_spectral, draw_graph_spring, _markers
-from pymake.core.format import tabulate
-
-import scipy as sp
-from sklearn.metrics import roc_curve, auc, precision_recall_curve
 
 class GenNetwork(ExpeFormat):
 
@@ -49,10 +52,10 @@ class GenNetwork(ExpeFormat):
 
         frontend = FrontendManager.load(expe)
         if frontend:
-            N = frontend.getN()
+            self._N = frontend.getN()
             expe.symmetric = frontend.is_symmetric()
         else:
-            N = expe.N
+            self._N = expe.N
             expe.symmetric = True
 
 
@@ -113,29 +116,37 @@ class GenNetwork(ExpeFormat):
         if model is None:
             raise FileNotFoundError('No model for Expe at :  %s' % self.output_path)
 
+
         if expe._do[0] in ('burstiness','pvalue','homo', 'homo_mustach'):
-            ### Generate data
-            Y = []
-            Theta = []
-            Phi = []
-            now = Now()
-            for i in range(expe.epoch):
-                y, theta, phi = model.generate(mode=expe._mode,
-                                               N=N, K=expe.K,
-                                               symmetric=expe.symmetric,
-                                              )
-                Y.append(y)
-                Theta.append(theta)
-                Phi.append(Phi)
-            self.log.info('Data Generation : %s second' % nowDiff(now))
+            self._generate()
 
-            #if expe.symmetric:
-            #    for y in Y:
-            #        frontend.symmetrize(y)
 
-            self._Y = Y
-            self._Theta = Theta
-            self._Phi = Phi
+    def _generate(self):
+        ''' Generate data. '''
+        expe = self.expe
+        model = self.model
+
+        Y = []
+        Theta = []
+        Phi = []
+        now = Now()
+        for i in range(expe.epoch):
+            y, theta, phi = model.generate(mode=expe._mode,
+                                           N=self._N, K=expe.K,
+                                           symmetric=expe.symmetric,
+                                          )
+            Y.append(y)
+            Theta.append(theta)
+            Phi.append(phi)
+        self.log.info('Data Generation : %s second' % nowDiff(now))
+
+        #if expe.symmetric:
+        #    for y in Y:
+        #        frontend.symmetrize(y)
+
+        self._Y = Y
+        self._Theta = Theta
+        self._Phi = Phi
 
 
     def init_fit_tables(self,_type, Y=[]):
@@ -310,7 +321,11 @@ class GenNetwork(ExpeFormat):
         figs.append(plt.gcf())
 
         if expe.write:
-            self.write_frames(figs, base=expe.model)
+            if expe._mode == 'predictive':
+                base = '%s_%s' % (self.specname(expe.corpus), self.specname(expe.model))
+            else:
+                base = '%s_%s' % ('MG', self.specname(expe.model))
+            self.write_frames(figs, base=base)
             return
 
 
@@ -448,7 +463,10 @@ class GenNetwork(ExpeFormat):
                 print()
                 print(table)
                 if expe.write:
-                    base = '%s_%s' % (self.specname(_model), _type)
+                    if expe._mode == 'predictive':
+                        base = '%s_%s_%s' % (self.specname(expe.corpus), self.specname(_model), _type)
+                    else:
+                        base = '%s_%s_%s' % ('MG', self.specname(_model), _type)
                     self.write_frames(table, base=base, ext='md')
 
     @ExpeFormat.raw_plot
@@ -575,7 +593,7 @@ class GenNetwork(ExpeFormat):
                     self.write_frames(table, base=base, ext='md')
 
     @ExpeFormat.raw_plot('model')
-    def homo_mustach(self,):
+    def homo_mustach(self, frame):
         """ Hmophily mustach
         """
         if self.model is None: return
@@ -585,7 +603,6 @@ class GenNetwork(ExpeFormat):
         Y = self._Y
         N = Y[0].shape[0]
         model = self.model
-
 
         if not hasattr(self.gramexp, 'tables'):
             corpuses = self.specname(self.gramexp.get_set('corpus'))
@@ -659,7 +676,7 @@ class GenNetwork(ExpeFormat):
                 print(t2)
 
     @ExpeFormat.raw_plot('corpus', 'testset_ratio')
-    def roc(self, _type='testset', _ratio=100):
+    def roc(self, frame,  _type='testset', _ratio=100):
         ''' AUC/ROC test report '''
         from sklearn.metrics import roc_curve, auc, precision_recall_curve
         expe = self.expe
@@ -671,7 +688,7 @@ class GenNetwork(ExpeFormat):
             setattr(expe, 'testset_ratio', 20)
 
         frame = self.gramexp._figs[expe.get('corpus')]
-        ax = frame.fig.gca()
+        ax = frame.ax
 
         if _type == 'testset':
             y_true, probas = model.mask_probas(data)

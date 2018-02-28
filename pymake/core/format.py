@@ -1020,6 +1020,11 @@ class ExpeFormat(object):
             plt.show(block=expe.block_plot)
         return kernel
 
+    def get_current_frame(self):
+        frame = self.gramexp._figs[self.expe.corpus]
+        return frame
+
+
     @staticmethod
     def raw_plot(*groups, **_kwargs):
         ''' If no argument, simple plot.
@@ -1041,7 +1046,7 @@ class ExpeFormat(object):
                 expe = self.expe
                 discr_args = []
                 if len(args) > 1:
-                    discr_args = args[2].split('/')
+                    discr_args = args[1].split('/')
 
                 # Init Figs Sink
                 if not hasattr(self.gramexp, '_figs'):
@@ -1053,14 +1058,17 @@ class ExpeFormat(object):
                         figs[c].markers = _markers.copy()
 
                     self.gramexp._figs = figs
-                kernel = fun(*args, **kwargs)
+
+                frame = self.gramexp._figs[expe[group]]
+                frame.ax = frame.fig.gca()
+
+                kernel = fun(self, frame, *args[1:], **kwargs)
 
                 # Set title and filename
                 title = ' '.join('{{{0}}}'.format(w) for w in groups).format(**self.specname(expe))
-                expfig = self.gramexp._figs[expe[group]]
-                expfig.base = '%s_%s' % (fun.__name__, title.replace(' ', '_'))
-                expfig.args = discr_args
-                expfig.fig.gca().set_title(title)
+                frame.base = '%s_%s' % (fun.__name__, title.replace(' ', '_'))
+                frame.args = discr_args
+                frame.ax.set_title(title)
 
                 # Save on last call
                 if self._it == self.expe_size -1:
@@ -1122,7 +1130,7 @@ class ExpeFormat(object):
                     self.gramexp._figs = figs
 
                 frame = self.gramexp._figs[ggroup]
-                kernel = fun(self, frame, attribute)
+                kernel = fun(self, frame, attribute, **kwargs)
 
                 # Set title and filename
                 if self.expe.get(groups[0]):
