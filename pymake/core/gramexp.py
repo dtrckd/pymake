@@ -935,12 +935,17 @@ class GramExp(object):
 
         try:
             _script, script_args = Script.get(script[0], script[1:])
-        except ValueError as e:
+        except (ValueError, TypeError) as e:
             lgg.warning('Script not found, re-building Scripts indexes...')
             self.update_index('script')
             #self._spec = Spec.get_all()
             try:
-                _script, script_args = Script.get(script[0], script[1:])
+                res = Script.get(script[0], script[1:])
+                if not res:
+                    print('error: Unknown script: %s' % (script[0]))
+                    exit(404)
+                else:
+                    _script, script_args = res
             except:
                 raise
         except IndexError as e:

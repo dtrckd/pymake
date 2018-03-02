@@ -255,13 +255,14 @@ class Script(BaseObject):
             # get the first method that have this name
             topmethod = ix.getfirst(scriptname, field='method')
             if not topmethod:
-                try:
-                    raise ValueError('error: Unknown script: %s' % (scriptname))
-                except:
-                    # Exception from pyclbr
-                    # index commit race condition I guess.
-                    print('error: Unknown script: %s' % (scriptname))
-                    exit(42)
+                return None
+                #try:
+                #    raise ValueError('error: Unknown script: %s' % (scriptname))
+                #except:
+                #    # Exception from pyclbr
+                #    # index commit race condition I guess.
+                #    print('error: Unknown script: %s' % (scriptname))
+                #    exit(42)
 
             arguments = [scriptname] + arguments
             #script_name = topmethod['scriptsurname']
@@ -1060,7 +1061,7 @@ class ExpeFormat(object):
                     self.gramexp._figs = figs
 
                 frame = self.gramexp._figs[expe[group]]
-                frame.ax = frame.fig.gca()
+                frame.ax = lambda: frame.fig.gca()
 
                 kernel = fun(self, frame, *args[1:], **kwargs)
 
@@ -1068,7 +1069,10 @@ class ExpeFormat(object):
                 title = ' '.join('{{{0}}}'.format(w) for w in groups).format(**self.specname(expe))
                 frame.base = '%s_%s' % (fun.__name__, title.replace(' ', '_'))
                 frame.args = discr_args
-                frame.ax.set_title(title)
+                if 'title' in frame:
+                    plt.suptitle(frame.title)
+                else:
+                    frame.ax().set_title(title)
 
                 # Save on last call
                 if self._it == self.expe_size -1:
@@ -1130,6 +1134,8 @@ class ExpeFormat(object):
                     self.gramexp._figs = figs
 
                 frame = self.gramexp._figs[ggroup]
+                frame.ax = lambda: frame.fig.gca()
+
                 kernel = fun(self, frame, attribute, **kwargs)
 
                 # Set title and filename
@@ -1145,9 +1151,12 @@ class ExpeFormat(object):
 
                 frame.base = '%s_%s' % (fun.__name__, attribute)
                 frame.args = discr_args
-                frame.fig.gca().set_title(title)
-                frame.fig.gca().set_xlabel('iterations')
-                frame.fig.gca().set_ylabel(attribute)
+                frame.ax().set_xlabel('iterations')
+                frame.ax().set_ylabel(attribute)
+                if 'title' in frame:
+                    plt.suptitle(frame.title)
+                else:
+                    frame.ax().set_title(title)
 
                 # Save on last call
                 if self._it == self.expe_size -1:
@@ -1295,7 +1304,7 @@ class ExpeFormat(object):
                 s = '_'.join(['%s'] * len(args))
                 args = s % tuple(map(lambda x:expe.get(x, x), args))
             for i, f in enumerate(frames):
-                idi = i if len(frames) > 1 else None
+                idi = str(i) if len(frames) > 1 else None
                 fn = self._file_part([base, args, suffix, idi])
                 fn = self.full_fig_path(fn)
                 self._kernel_write(f, fn, ext=ext)
@@ -1321,7 +1330,8 @@ class ExpeFormat(object):
                 ext = ext or 'pdf'
                 fn = fn +'.'+ ext
                 print('Writing frame: %s' % fn)
-                frame.fig.savefig(fn)
+                #frame.fig.tight_layout() # works better in parameter
+                frame.fig.savefig(fn, bbox_inches='tight') # pad_inches=-1
             elif 'table' in frame:
                 ext = ext or 'md'
                 fn = fn +'.'+ ext
@@ -1343,7 +1353,7 @@ class ExpeFormat(object):
             ext = ext or 'pdf'
             fn = fn +'.'+ ext
             print('Writing frame: %s' % fn)
-            frame.savefig(fn)
+            frame.savefig(fn, bbox_inches='tight')
 
 
 
