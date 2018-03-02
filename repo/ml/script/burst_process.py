@@ -116,6 +116,23 @@ class BurstProcess(ExpeFormat):
         self._Theta = Theta
         self._Phi = Phi
 
+    def _local_likelihood(self, theta, phi, k1, k2=None):
+
+        if not k2:
+            k2 = k1
+
+        model = self.expe.model
+
+        if 'mmsb' in model:
+            ll = np.outer(theta[:,k1], theta[:,k2]) * phi[k1, k2]
+        elif 'ilfm' in model:
+            ll = theta.dot(phi).dot(theta.T)
+            ll = 1 / (1 + np.exp(-1 * ll))
+            ll = sp.stats.bernoulli.rvs(ll) * np.outer(theta[:,k1], theta[:,k2])
+        else:
+            raise ValueError('Model unknow for local likelihood computation')
+        return ll
+
     @ExpeFormat.raw_plot('corpus')
     def burst_process_me(self, frame):
 
@@ -129,34 +146,29 @@ class BurstProcess(ExpeFormat):
         Theta = self._Theta
         Phi = self._Phi
 
-        ax = frame.ax
-
-
         for i in range(expe.epoch):
 
             theta = Theta[i]
             phi = Phi[i]
-
             N = theta.shape[0]
             process = np.zeros((N, N))
 
             likelihood = self.model.likelihood(theta, phi)
             adj = sp.stats.bernoulli.rvs(likelihood)
-
             process = np.cumsum(adj, 1)
 
-            legend = expe.model
-            title = expe.corpus
 
-            step = 3
-            ax.errorbar(np.arange(N)[0::step],
-                        process.mean(0)[0::step],
-                        yerr=process.std(0)[0::step],
-                        fmt='o', label=legend,
-                        elinewidth=1, capsize=0, alpha=0.3,
-                       )
+        ax = frame.ax()
+        legend = expe.model
+        step = 3
+        ax.errorbar(np.arange(N)[0::step],
+                    process.mean(0)[0::step],
+                    yerr=process.std(0)[0::step],
+                    fmt='o', label=legend,
+                    elinewidth=1, capsize=0, alpha=0.3,
+                   )
 
-        ax.legend(loc=1,prop={'size':10})
+        ax.legend(loc=2,prop={'size':10})
         ax.set_xlabel('Epoch')
         ax.set_ylabel('Cumulative Sum')
 
@@ -171,7 +183,113 @@ class BurstProcess(ExpeFormat):
         Theta = self._Theta
         Phi = self._Phi
 
-        ax = frame.ax
+        processes = []
+
+        for i in range(expe.epoch):
+
+            theta = Theta[i]
+            phi = Phi[i]
+            N = theta.shape[0]
+
+            process = np.zeros((N, N))
+            likelihood = self.model.likelihood(theta, phi)
+            adj = sp.stats.bernoulli.rvs(likelihood)
+
+            process = np.cumsum(adj, 1)
+            processes.append(process)
+
+        # Mean-Variance of the count process expectation
+        mean_process = np.vstack((p.mean(0) for p in processes))
+        # Std-Variance of the count process expectation
+        var_process = np.vstack((p.var(0) for p in processes))
+
+        legend = expe.model
+        step = 3
+
+        ax1 = frame.fig.add_subplot(1,2,1)
+        ax2 = frame.fig.add_subplot(1,2,2)
+
+        ax1.errorbar(np.arange(N)[0::step],
+                    mean_process.mean(0)[0::step],
+                    yerr=mean_process.std(0)[0::step],
+                    fmt='o', label=legend,
+                    elinewidth=1, capsize=0, alpha=0.3,)
+
+        ax2.errorbar(np.arange(N)[0::step],
+                    var_process.mean(0)[0::step],
+                    yerr=var_process.std(0)[0::step],
+                    fmt='o', label=legend,
+                    elinewidth=1, capsize=0, alpha=0.3,)
+
+        ax1.legend(loc=2,prop={'size':10})
+        ax1.set_xlabel('Epoch')
+        ax1.set_ylabel('Expectation')
+        ax2.set_ylabel('variance')
+        frame.title = 'degree Cumutative Sum'
+
+        default_size = frame.fig.get_size_inches()
+        frame.fig.set_size_inches((default_size[0]*2, default_size[1]))
+
+
+    @ExpeFormat.raw_plot('corpus')
+    def burst_process_local_me(self, frame):
+
+        expe = self.expe
+
+        # Force ONE epoch # bernoulli variance...
+        expe.epoch = 1
+        self._generate()
+
+        Y = self._Y
+        Theta = self._Theta
+        Phi = self._Phi
+
+        for i in range(expe.epoch):
+
+            theta = Theta[i]
+            phi = Phi[i]
+
+            N = theta.shape[0]
+            K = theta.shape[1]
+            process = np.zeros((K, N, N))
+
+            for _k in range(K):
+                process[_k] = self._local_likelihood(theta, phi, _k)
+
+            process = np.cumsum(process, 2)
+
+        ax = frame.ax()
+        step = 3
+
+        for _k in range(K):
+            _process = process[_k]
+            legend = expe.model + ' K=%d'%(_k)
+            ax.errorbar(np.arange(N)[0::step],
+                        _process.mean(0)[0::step],
+                        yerr=_process.std(0)[0::step],
+                        fmt='o', label=legend,
+                        elinewidth=1, capsize=0, alpha=0.3,
+                       )
+
+        ax.legend(loc=2,prop={'size':10})
+        ax.set_xlabel('Epoch')
+        ax.set_ylabel('Cumulative Sum')
+
+
+    @ExpeFormat.raw_plot('model')
+    def burst_process_local_mg(self, frame):
+
+        expe = self.expe
+
+        self._generate()
+
+        Y = self._Y
+        Theta = self._Theta
+        Phi = self._Phi
+
+        Ks = [o.shape[1] for o in Theta]
+        k_min = min(Ks)
+        k_max= max(Ks)
 
         processes = []
 
@@ -181,36 +299,56 @@ class BurstProcess(ExpeFormat):
             phi = Phi[i]
 
             N = theta.shape[0]
-            process = np.zeros((N, N))
+            K = theta.shape[1]
+            #if K > k_min:
+            #    print('warning: not all block converted.')
+            #    continue
+            process = np.zeros((K, N, N))
 
-            likelihood = self.model.likelihood(theta, phi)
-            adj = sp.stats.bernoulli.rvs(likelihood)
+            for _k in range(K):
+                process[_k] = self._local_likelihood(theta, phi, _k)
 
-            process = np.cumsum(adj, 1)
+            if K < k_max:
+                # Ks are ordered !
+                _pad = k_max - K
+                process = np.pad(process, [(0,_pad),(0,0),(0,0)], mode='constant', constant_values=0)
 
+            process = np.cumsum(process, 2)
             processes.append(process)
 
-
         # Mean-Variance of the count process expectation
-        mean_process = np.vstack((p.mean(0) for p in processes))
-
+        mean_process = np.stack((p.mean(1) for p in processes))
         # Std-Variance of the count process expectation
-        var_process = np.vstack((p.std(0) for p in processes))
+        var_process = np.stack((p.var(1) for p in processes))
 
-        legend = expe.model
-        title = expe.corpus
-
+        ax1 = frame.fig.add_subplot(1,2,1)
+        ax2 = frame.fig.add_subplot(1,2,2)
         step = 3
-        _process = mean_process
-        ax.errorbar(np.arange(N)[0::step],
-                    _process.mean(0)[0::step],
-                    yerr=_process.std(0)[0::step],
-                    fmt='o', label=legend,
-                    elinewidth=1, capsize=0, alpha=0.3,
-                   )
 
-        ax.legend(loc=1,prop={'size':10})
-        ax.set_xlabel('Epoch')
-        ax.set_ylabel('Cumulative Sum')
+        for _k in range(K):
+            _process = mean_process[:,_k]
+            legend = expe.model + ' K=%d'%(_k)
+            ax1.errorbar(np.arange(N)[0::step],
+                        _process.mean(0)[0::step],
+                        yerr=_process.std(0)[0::step],
+                        fmt='o', label=legend,
+                        elinewidth=1, capsize=0, alpha=0.3,)
+
+            _process = var_process[:,_k]
+            legend = expe.model + ' K=%d'%(_k)
+            ax2.errorbar(np.arange(N)[0::step],
+                        _process.mean(0)[0::step],
+                        yerr=_process.std(0)[0::step],
+                        fmt='o',# label=legend,
+                        elinewidth=1, capsize=0, alpha=0.3,)
+
+        ax1.legend(loc=2,prop={'size':10})
+        ax1.set_xlabel('Epoch')
+        ax1.set_ylabel('Expectation')
+        ax2.set_ylabel('Variance')
+        frame.title = 'Degree Cumulative Sum'
+
+        default_size = frame.fig.get_size_inches()
+        frame.fig.set_size_inches((default_size[0]*2, default_size[1]))
 
 
