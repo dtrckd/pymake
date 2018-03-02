@@ -75,7 +75,7 @@ class IBP(object):
 
     """
     initialize latent feature appearance matrix Z according to IBP(alpha) """
-    def initialize_Z(self, N=None, alpha=None):
+    def initialize_Z(self, N=None, alpha=None, left_ordered=True):
         if N is None:
             N = self._N
         if alpha is None:
@@ -96,6 +96,9 @@ class IBP(object):
                 # append the matrix horizontally and then vertically to the Z matrix
                 Z = np.hstack((Z, np.zeros((Z.shape[0], K_new))))
                 Z = np.vstack((Z, sample_dish))
+
+        if left_ordered:
+            Z = self.leftordered(Z)
 
         assert(Z.shape[0] == N)
         return Z
@@ -220,6 +223,7 @@ class IBP(object):
         if Z is None:
             Z = self._Z
         l = list(Z.T)
+        # tuple sorting: sort by first element, then second,etc
         l.sort(key=tuple)
         return np.array(l)[::-1].T
 

@@ -64,7 +64,8 @@ class IBPGibbsSampling(IBP, GibbsSampler):
     @param alpha: IBP hyper parameter
     @param sigma_w: standard derivation of the feature
     @param initialize_Z: seeded Z matrix """
-    def _initialize(self, frontend, alpha=1.0, sigma_w=1, initial_Z=None, initial_W=None, KK=None):
+    def _initialize(self, frontend, alpha=1.0, sigma_w=1,
+                    initial_Z=None, initial_W=None, KK=None):
 
         self._mean_w = 0
         assert(type(sigma_w) is float)
@@ -423,6 +424,7 @@ class IBPGibbsSampling(IBP, GibbsSampler):
 
         self.log_likelihood = np.sum(self.bilinear_matrix)
         if np.abs(self.log_likelihood) == np.inf:
+            print("dohn debug me here")
             if self._sigb >= 2:
                 self._sigb -= 1
             else:

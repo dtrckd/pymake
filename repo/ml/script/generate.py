@@ -42,8 +42,7 @@ class GenNetwork(ExpeFormat):
         _do            = ['burstiness', 'global'], # default
         _mode         = 'generative',
         gen_size      = 1000,
-        epoch         = 30 , # Gen,eration epoch
-        limit_gen   = 5, # Local superposition ! Ignored ?
+        epoch         = 10 , # Gen,eration epoch
         limit_class   = 15, # Ignored ?
     )
 
@@ -149,7 +148,7 @@ class GenNetwork(ExpeFormat):
         self._Phi = Phi
 
 
-    def init_fit_tables(self,_type, Y=[]):
+    def init_fit_tables(self, _type, Y=[]):
         expe = self.expe
         if not hasattr(self.gramexp, 'tables'):
             corpuses = self.specname(self.gramexp.get_set('corpus'))
@@ -219,15 +218,18 @@ class GenNetwork(ExpeFormat):
         if _type in  ('local', 'all'):
             # Local burstiness
             print ('Computing Local Preferential attachment')
-            theta, phi = model.get_params()
-            print('theta shape: %s'%(str(theta.shape)))
-            Y = Y[:expe.limit_gen]
+            a, b = model.get_params()
+            N,K = a.shape
+            print('theta shape: %s'%(str((N,K))))
             now = Now()
             if 'mmsb' in expe.model:
                 ### Z assignement method #
                 ZZ = []
-                for _ in Y:
+                for _i, _ in enumerate(Y):
                 #for _ in Y: # Do not reflect real local degree !
+
+                    theta = self._Theta[_i]
+                    phi = self._Phi[_i]
                     Z = np.empty((2,N,N))
                     order = np.arange(N**2).reshape((N,N))
                     if expe.symmetric:
@@ -249,16 +251,16 @@ class GenNetwork(ExpeFormat):
             comm = model.communities_analysis(data=Y[0], clustering=clustering)
             print('clustering method: %s, active clusters ratio: %f' % (
                 clustering,
-                len(comm['block_hist']>0)/float(theta.shape[1])))
+                len(comm['block_hist']>0)/K))
 
             local_degree_c = {}
             ### Iterate over all classes couple
             if expe.symmetric:
                 #k_perm = np.unique( map(list, map(set, itertools.product(np.unique(clusters) , repeat=2))))
-                k_perm =  np.unique(list(map(list, map(list, map(set, itertools.product(range(theta.shape[1]) , repeat=2))))))
+                k_perm =  np.unique(list(map(list, map(list, map(set, itertools.product(range(K) , repeat=2))))))
             else:
                 #k_perm = itertools.product(np.unique(clusters) , repeat=2)
-                k_perm = itertools.product(range(theta.shape[1]) , repeat=2)
+                k_perm = itertools.product(range(K) , repeat=2)
 
             fig = plt.figure()
             for i, c in enumerate(k_perm):
@@ -288,7 +290,11 @@ class GenNetwork(ExpeFormat):
                         #yerr= None
                         YY.append(y_c)
                 elif 'ilfm' in  expe.model: # or Corpus !
-                    for y in Y:
+                    for _i , y in enumerate(Y):
+                        theta = self._Theta[_i]
+                        if theta.shape[1] <= max(k,l):
+                            print('warning: not all block converted.')
+                            continue
                         YY.append((y * np.outer(theta[:,k], theta[:,l] )).astype(int))
 
                 d, dc, yerr = random_degree(YY)
@@ -298,27 +304,27 @@ class GenNetwork(ExpeFormat):
                              title=title)
             figs.append(plt.gcf())
 
-        ### Blockmodel Analysis
-        self.log.info('Skipping Features burstiness')
-        #plt.figure()
-        #if 'mmsb' in expe.model:
-        #    # Feature burstiness
-        #    hist, label = clusters_hist(comm['clusters'])
-        #    bins = len(hist)
-        #    plt.bar(range(bins), hist)
-        #    plt.xticks(np.arange(bins)+0.5, label)
-        #    plt.xlabel('Class labels')
-        #    plt.title('Blocks Size (max assignement)')
-        #elif 'ilfm' in expe.model:
-        #    # Feature burstiness
-        #    hist, label = sorted_perm(comm['block_hist'], reverse=True)
-        #    bins = len(hist)
-        #    plt.bar(range(bins), hist)
-        #    plt.xticks(np.arange(bins)+0.5, label)
-        #    plt.xlabel('Class labels')
-        #    plt.title('Blocks Size (max assignement)')
+        # Blockmodel Analysis
+        #if _type in  ('feature', 'all'):
+        #    plt.figure()
+        #    if 'mmsb' in expe.model:
+        #        # Feature burstiness
+        #        hist, label = clusters_hist(comm['clusters'])
+        #        bins = len(hist)
+        #        plt.bar(range(bins), hist)
+        #        plt.xticks(np.arange(bins)+0.5, label)
+        #        plt.xlabel('Class labels')
+        #        plt.title('Blocks Size (max assignement)')
+        #    elif 'ilfm' in expe.model:
+        #        # Feature burstiness
+        #        hist, label = sorted_perm(comm['block_hist'], reverse=True)
+        #        bins = len(hist)
+        #        plt.bar(range(bins), hist)
+        #        plt.xticks(np.arange(bins)+0.5, label)
+        #        plt.xlabel('Class labels')
+        #        plt.title('Blocks Size (max assignement)')
 
-        figs.append(plt.gcf())
+        #    figs.append(plt.gcf())
 
         if expe.write:
             if expe._mode == 'predictive':
@@ -351,7 +357,7 @@ class GenNetwork(ExpeFormat):
 
         self.log.info('using `%s\' burstiness' % _type)
 
-        if _type == 'global':
+        if _type  == 'global':
             ### Global degree
             for it_dat, data in enumerate(Y):
                 d, dc = degree_hist(adj_to_degree(data), filter_zeros=True)
@@ -362,17 +368,18 @@ class GenNetwork(ExpeFormat):
                 for i, v in enumerate(Meas):
                     Table[self.corpus_pos, i, it_dat] = gof[v]
 
-        elif _type == 'local':
+        elif _type  == 'local':
             ### Z assignement method
-            Y = Y[:expe.limit_gen]
-            theta, phi = model.get_params()
-            print('theta shape: %s'%(str(theta.shape)))
-            K = theta.shape[1]
+            a, b = model.get_params()
+            N,K = a.shape
+            print('theta shape: %s'%(str((N,K))))
             now = Now()
             if 'mmsb' in expe.model:
                 ZZ = []
-                for _ in Y:
+                for _i, _ in enumerate(Y):
                 #for _ in Y: # Do not reflect real local degree !
+                    theta = self._Theta[_i]
+                    phi = self._Phi[_i]
                     Z = np.empty((2,N,N))
                     order = np.arange(N**2).reshape((N,N))
                     if expe.symmetric:
@@ -394,16 +401,16 @@ class GenNetwork(ExpeFormat):
             comm = model.communities_analysis(data=Y[0], clustering=clustering)
             print('clustering method: %s, active clusters ratio: %f' % (
                 clustering,
-                len(comm['block_hist']>0)/float(theta.shape[1])))
+                len(comm['block_hist']>0)/K))
 
             local_degree_c = {}
             ### Iterate over all classes couple
             if expe.symmetric:
                 #k_perm = np.unique( map(list, map(set, itertools.product(np.unique(clusters) , repeat=2))))
-                k_perm =  np.unique(list(map(list, map(list, map(set, itertools.product(range(theta.shape[1]) , repeat=2))))))
+                k_perm =  np.unique(list(map(list, map(list, map(set, itertools.product(range(K) , repeat=2))))))
             else:
                 #k_perm = itertools.product(np.unique(clusters) , repeat=2)
-                k_perm = itertools.product(range(theta.shape[1]) , repeat=2)
+                k_perm = itertools.product(range(K) , repeat=2)
 
             for it_k, c in enumerate(k_perm):
                 if isinstance(c,(np.int64, np.float64)):
@@ -433,7 +440,8 @@ class GenNetwork(ExpeFormat):
                         #yerr= None
                         YY.append(y_c)
                 elif 'ilfm' in expe.model:
-                    for y in Y:
+                    for _i , y in enumerate(Y):
+                        theta = self._Theta[_i]
                         YY.append((y * np.outer(theta[:,k], theta[:,l])).astype(int))
 
                 d, dc, yerr = random_degree(YY)
@@ -444,7 +452,8 @@ class GenNetwork(ExpeFormat):
 
                 for i, v in enumerate(Meas):
                     Table[self.corpus_pos, i, it_k] = gof[v]
-        elif _type == "feature":
+
+        elif _type == 'feature':
             raise NotImplementedError
 
         if self._it == self.expe_size -1:
