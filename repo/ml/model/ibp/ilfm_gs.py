@@ -56,7 +56,7 @@ class IBPGibbsSampling(IBP, GibbsSampler):
         self.burnin = expe.get('burnin',  5) # (inverse burnin, last sample to keep
         self.thinning = expe.get('thinning',  1)
         self._csv_typo = '_iteration time_it _entropy _entropy_t _K _alpha _sigma_w Z_sum ratio_MH_F ratio_MH_W'
-        self.fmt = '%d %.4f %.8f %.8f %d %.8f %.8f %d %.4f %.4f'
+        #self._fmt = '%d %.4f %.8f %.8f %d %.8f %.8f %d %.4f %.4f'
         IBP.__init__(self, alpha_hyper_parameter, metropolis_hastings_k_new)
         GibbsSampler.__init__(self, expe, frontend)
     """
