@@ -521,9 +521,8 @@ class GibbsRun(GibbsSampler):
     __abstractmethods__ = 'model'
     def __init__(self, expe, frontend):
         self.comm = dict() # Empty dict to store communities and blockmodel structure
-        #self._csv_typo = 'it it_time likelihood likelihood_t K alpha gamma alpha_mean delta_mean alpha_var delta_var'
-        self.fmt = '%d %.4f %.8f %.8f %d %.8f %.8f %.4f %.4f %.4f %.4f'
-        #self.fmt = '%s %s %s %s %s %s %s %s %s %s %s'
+        self._csv_typo = 'it it_time likelihood likelihood_t K alpha gamma alpha_mean delta_mean alpha_var delta_var'
+        #self._fmt = '%d %.4f %.8f %.8f %d %.8f %.8f %.4f %.4f %.4f %.4f'
         GibbsSampler.__init__(self, expe, frontend)
 
     def limit_k(self, N, directed=True):

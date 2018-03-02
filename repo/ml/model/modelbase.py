@@ -38,7 +38,7 @@ class ModelBase(object):
     default_settings = {
         'write' : False,
         '_csv_typo' : None,
-        '_fmt' : None,
+        '_fmt' : None, # unused...
         'iterations' : 3,
         'snapshot_freq': 42,
         'burnin' :  5, # (inverse burnin, last sample to keep
@@ -80,10 +80,10 @@ class ModelBase(object):
 
 
     def _init(self, key, expe, default):
-        if hasattr(self, key):
-            value = getattr(self, key)
-        elif key in expe:
+        if key in expe:
             value = expe[key]
+        elif hasattr(self, key):
+            value = getattr(self, key)
         else:
             value = default
 

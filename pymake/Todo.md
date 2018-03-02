@@ -8,6 +8,7 @@
 * [system interface]save and update the repo seen by pmk in .pymak.cfg in file
 * [system interface]makes ablee to list them, and to selecto one by default => it wil enable to execute pmk from anywhere for that script. (end to swtich/cd to them)
 
+* use expe._fmt if givent to format extract_csv_sample from model _fmt.
 Integre _pymake_settings and better structure (and visibility) for gramexp core.
 
 Debug

@@ -1390,7 +1390,7 @@ class ExpeFormat(object):
         raise NotImplementedError
 
 
-    def _format_line_out(self, model):
+    def _extract_csv_sample(self, model):
         ''' extract data in model from variable name declared in {self.scv_typo}.
             The iterable build constitute the csv-like line, for **one iteration**, to be written in the outputfile.
 
@@ -1403,6 +1403,8 @@ class ExpeFormat(object):
 
                 @debug: raise a sprcialerror from this class,
                     instead of duplicate the exception print in _fotmat_line_out.
+
+                @todo use _fmt if given.
         '''
         line = []
         for o in self.expe._csv_typo.split():
@@ -1442,30 +1444,23 @@ class ExpeFormat(object):
         #os._exit(2)
         return 'None'
 
-
-    def write_some(self, _f,  samples, buff=20):
-        ''' Write data with buffer manager
-            * lines are formatted as {self.csv_typo}
-            * output file is {self._f}
-        '''
-        #fmt = self.fmt
-
-        if samples is None:
-            buff=1
+    def init_fitfile(self):
+        ''' Create the file to save the iterations state of a model.'''
+        self._samples = []
+        os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
+        self.fname_i = self.output_path + '.inf'
+        if not '_csv_typo' in self.expe:
+            self.log.warning('No csv_typo, for this model %s, no inference file...'%(self.expe.get('model')))
         else:
-            self._samples.append(samples)
+            self._fitit_f = open(self.fname_i, 'wb')
+            self._fitit_f.write(('#' + self.expe._csv_typo + '\n').encode('utf8'))
 
-        if len(self._samples) >= buff:
-            #samples = np.array(self._samples)
-            samples = self._samples
-            #np.savetxt(f, samples, fmt=str(fmt))
-            for line in samples:
-                # @debug manage float .4f !
-                line = ' '.join(line)+'\n'
-                _f.write(line.encode('utf8'))
 
-            _f.flush()
-            self._samples = []
+    def clear_fitfile(self):
+        ''' Write remaining data and close the file. '''
+        if self._samples:
+            self._write_some(self._fitit_f, None)
+            self._fitit_f.close()
 
 
     def load_some(self, filename=None, iter_max=None, comments=('#','%')):
@@ -1499,7 +1494,12 @@ class ExpeFormat(object):
                 pos = true_pos + offset
                 if pos >= len(data_line):
                     break
-                o = col_typo[true_pos]
+                try:
+                    o = col_typo[true_pos]
+                except:
+                    print(col_typo)
+                    print(data_line)
+                    print(true_pos)
                 if data_line[0] in comments:
                     break
                 elif o.startswith('{'): # is a list
@@ -1532,33 +1532,41 @@ class ExpeFormat(object):
 
         return data
 
-    def init_fitfile(self):
-        ''' Create the file to save the iterations state of a model.'''
-        self._samples = []
-        os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
-        self.fname_i = self.output_path + '.inf'
-        if not '_csv_typo' in self.expe:
-            self.log.warning('No csv_typo, for this model %s, no inference file...'%(self.expe.get('model')))
+
+    def _write_some(self, _f, samples, buff=20):
+        ''' Write data with buffer manager
+            * lines are formatted as {self.csv_typo}
+            * output file is {self._f}
+        '''
+        #fmt = self.fmt
+
+        if samples is None:
+            buff=1
         else:
-            self._fitit_f = open(self.fname_i, 'wb')
-            self._fitit_f.write(('#' + self.expe._csv_typo + '\n').encode('utf8'))
+            self._samples.append(samples)
+
+        if len(self._samples) >= buff:
+            #samples = np.array(self._samples)
+            samples = self._samples
+            #np.savetxt(f, samples, fmt=str(fmt))
+            for line in samples:
+                # @debug manage float .4f !
+                line = ' '.join(line)+'\n'
+                _f.write(line.encode('utf8'))
+
+            _f.flush()
+            self._samples = []
 
 
-    def clear_fitfile(self):
-        ''' Write remaining data and close the file. '''
-        if self._samples:
-            self.write_some(self._fitit_f, None)
-            self._fitit_f.close()
-
-
-    def write_current_state(self, model):
+    def _write_current_state(self, model):
         ''' push the current state of a model in the output file. '''
-        self.write_some(self._fitit_f, self._format_line_out(model))
+        samples = self._extract_csv_sample(model)
+        self._write_some(self._fitit_f, samples)
 
 
     def write_it_step(self, model):
         if self.expe.get('write'):
-            self.write_current_state(model)
+            self._write_current_state(model)
 
     def configure_model(self, model):
         # Inject the writing some method
