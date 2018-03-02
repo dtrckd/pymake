@@ -36,11 +36,13 @@ Explain the model workflow...
 
 ## Features [](#1)
 * Specification of design of experimentation with a simple grammar,
-* Indexation of specifications, models, scripts and corpus, powered by [Whoosh](https://whoosh.readthedocs.io/en/latest/),
+* Indexation of specs, models, scripts and corpus, powered by [Whoosh](https://whoosh.readthedocs.io/en/latest/),
 * Command-line toolkit for quick design and experiment testing,
+* Command-line auto-completion for specs and scripts,
 * Simple grid search specification and navigation,
 * Support experiments rules filtering,
 * Support disks I/O management for training/input data and outputs results,
+* Support plotting and table printing facilities powered by [matplotlib](https://matplotlib.org) and [pandas](https://pandas.pydata.org/)
 * Support experiments parallelization powered by [gnu-parallel](https://www.gnu.org/software/parallel/),
 * Browse, design and test several models and corpus found in the literature.
 
