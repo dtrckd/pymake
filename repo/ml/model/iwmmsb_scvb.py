@@ -120,7 +120,6 @@ class iwmmsb_scvb(SVB):
 
         self.gstep_theta = chi / ((tau + self._timestep_a)**kappa)
 
-
     def _update_gstep_phi(self):
         chi = self._chi_b
         tau = self._tau_b
@@ -132,7 +131,6 @@ class iwmmsb_scvb(SVB):
     def _reduce_latent(self):
         theta = self.N_theta_right + self.N_theta_left + np.tile(self.hyper_theta, (self.N_theta_left.shape[0],1))
         self._theta = (theta.T / theta.sum(axis=1)).T
-
 
         k = self.N_Y + self.hyper_phi[0]
         p = (self.N_phi + self.hyper_phi[1] + 1)**-1
