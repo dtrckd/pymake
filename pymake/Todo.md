@@ -4,12 +4,12 @@
 # @v0.4 ?
 * ipython builder helper
 * web server interface and visualization  (flask...)
-* spec swagger integratin ? https://swagger.io
-* [system interface]save and update the repo seen by pmk in .pymak.cfg in file
-* [system interface]makes ablee to list them, and to selecto one by default => it wil enable to execute pmk from anywhere for that script. (end to swtich/cd to them)
+* spec swagger integration ? https://swagger.io
+* [cli]["packet" manager]save and update the repo/ seen by pmk.
+* [cli]makes able to list them (the repo), and to select one by default => it will enable to execute pmk from any path, and to move/cd inside an existing repo/.
 
-* use expe._fmt if givent to format extract_csv_sample from model _fmt.
-Integre _pymake_settings and better structure (and visibility) for gramexp core.
+* use expe._fmt if given to format extract_csv_sample from model _fmt.
+* integration of _pymake_settings (in util/) and better structure (and visibility) for gramexp core.
 
 Debug
 ----------
@@ -20,27 +20,6 @@ CLI
 ---
 * pmk push [spec] [opts] # push expe in spec !!! (Update MAN)
 * pmk fetch text/hugh (corpus etc !)
-
-Bash auto-Completion
----------------
-* complete opts and args (in spec) (and -x and -m and -c) depending on where iam on the pymak.cfg to get the autompletion file that generate pymake update yeah !
-echo /etc/bash_completion.d/pymake
-    _pymake() 
-    {
-        local cur prev opts
-        COMPREPLY=()
-        cur="${COMP_WORDS[COMP_CWORD]}"
-        prev="${COMP_WORDS[COMP_CWORD-1]}"
-        opts="--help --verbose --version"
-
-        if [[ ${cur} == -* ]] ; then
-            COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
-            return 0
-        fi
-    }
-    complete -F _pymake pymake
-    complete -F _pymake pmk
-
 
 
 Core
