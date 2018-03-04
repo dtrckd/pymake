@@ -2,12 +2,13 @@ import os
 import numpy as np
 import scipy as sp
 from numpy import ma
+from collections import defaultdict
+import itertools
+import networkx as nx
+
 from pymake import ExpTensor, GramExp, ExpeFormat, ExpSpace
 from pymake.frontend.manager import ModelManager, FrontendManager
 
-
-
-import itertools
 from pymake.util.algo import gofit, Louvain, Annealing
 from pymake.util.math import reorder_mat, sorted_perm, categorical, clusters_hist
 from pymake.util.utils import Now, nowDiff, colored
@@ -231,7 +232,7 @@ class BurstProcess(ExpeFormat):
         frame.fig.set_size_inches((default_size[0]*2, default_size[1]))
 
 
-    @ExpeFormat.raw_plot('corpus')
+    @ExpeFormat.raw_plot('model')
     def burst_process_local_me(self, frame):
 
         expe = self.expe
@@ -260,6 +261,7 @@ class BurstProcess(ExpeFormat):
 
         ax = frame.ax()
         step = 3
+
 
         for _k in range(K):
             _process = process[_k]
@@ -342,6 +344,8 @@ class BurstProcess(ExpeFormat):
                         fmt='o',# label=legend,
                         elinewidth=1, capsize=0, alpha=0.3,)
 
+        #ax1.set_xscale('log'); ax1.set_yscale('log')
+        #ax2.set_xscale('log'); ax2.set_yscale('log')
         ax1.legend(loc=2,prop={'size':10})
         ax1.set_xlabel('Epoch')
         ax1.set_ylabel('Expectation')
@@ -350,5 +354,86 @@ class BurstProcess(ExpeFormat):
 
         default_size = frame.fig.get_size_inches()
         frame.fig.set_size_inches((default_size[0]*2, default_size[1]))
+
+
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+    @ExpeFormat.raw_plot('corpus')
+    def prop_process_me(self, frame, p=250):
+        p = int(p)
+        expe = self.expe
+
+        # Force ONE epoch # bernoulli variance...
+        expe.epoch = 1
+        self._generate()
+
+        Y = self._Y
+        Theta = self._Theta
+        Phi = self._Phi
+
+        theta = Theta[0]
+        phi = Phi[0]
+
+        N = theta.shape[0]
+        process = np.zeros((N, N))
+
+        likelihood = self.model.likelihood(theta, phi)
+        adj = sp.stats.bernoulli.rvs(likelihood)
+
+        n_to_zeros = N-p
+        _idx = np.random.choice(np.arange(N**2), n_to_zeros, replace=False)
+        idx = np.unravel_index(_idx, (N,N))
+
+        adj_n = adj.copy()
+        adj_n[idx] = 0
+
+        g_n = nx.from_numpy_array(adj_n)
+        degree_n = dict(g_n.degree())
+        d_n, dc_n = degree_hist(degree_n, filter_zeros=False)
+
+        g = nx.from_numpy_array(adj)
+        degree = dict(g.degree())
+        d, dc = degree_hist(degree, filter_zeros=False)
+
+
+        x = d_n
+        y = []
+        burstiness = defaultdict(lambda:0)
+        normalize_deg = defaultdict(lambda:0)
+        # Compute p(d(N)>n+1 | p(p)=n)
+        for node, deg_n in degree_n.items():
+            if deg_n == 0:
+                continue
+
+            deg_N = degree[node]
+            if deg_N > deg_n:
+                burstiness[deg_n] += 1
+
+            normalize_deg[deg_n] +=1
+
+        # Normalize
+        for deg, total in normalize_deg.items():
+            burstiness[deg] = burstiness[deg] / total
+
+        for deg in x:
+            y.append(burstiness[deg])
+
+        ax = frame.ax()
+        ax.plot(x, y, label=expe.model)
+
+        ax.legend(loc=1,prop={'size':10})
+        ax.set_xlabel('n')
+        ax.set_ylabel('Cumulative Sum')
+        frame.title = expe.corpus + ' p=%s' % p
 
 
