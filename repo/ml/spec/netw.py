@@ -46,9 +46,12 @@ class Netw(ExpDesign):
     pnas_short = Corpus([ 'blogs', 'manufacturing', 'generator7','generator4'])
     pnas_rest = (corpus_real_net + CORPUS_SYN_ICDM) - pnas_short
 
+    #data_net_all
+    #net_all
+
     # Text Corpus
     # intruder ?
-    corpus_text_all = Corpus(['kos', 'nips12', 'nips', 'reuter50', '20ngroups']) # lucene
+    data_text_all = Corpus(['kos', 'nips12', 'nips', 'reuter50', '20ngroups']) # lucene
 
     # Tensor Exp
     EXPE_ICDM = ExpTensor((

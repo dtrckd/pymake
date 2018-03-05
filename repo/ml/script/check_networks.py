@@ -33,6 +33,7 @@ class CheckNetwork(ExpeFormat):
         block_plot = False,
         write = False,
         _do           = ['zipf', 'source'],
+
     )
 
     def init_fit_tables(self, _type, Y=[]):
@@ -310,7 +311,7 @@ class CheckNetwork(ExpeFormat):
             print(colored('\nPvalue Table:', 'green'))
             print (self.tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
 
-    #@ExpeFormat.table
+    #@deprecated ?
     def stats(self):
         ''' Show data stats '''
         expe = self.expe
@@ -342,6 +343,39 @@ class CheckNetwork(ExpeFormat):
             tablefmt = 'simple' # 'latex'
             print(colored('\nStats Table :', 'green'))
             print (self.tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
+
+    def _future_stats(self):
+        ''' Show data stats '''
+        expe = self.expe
+
+        corpuses = self.specname(self.gramexp.get_list('corpus'))
+        if not corpuses:
+            corpuses = ['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad', 'generator7', 'generator12', 'generator10', 'generator4']
+
+        Meas = ['nodes', 'edges', 'density']
+        Meas += ['is_symmetric', 'modularity', 'clustering_coefficient', 'net_type', 'feat_len']
+        Table = np.zeros((len(corpuses), len(Meas))) * np.nan
+        Table = np.column_stack((corpuses, Table))
+
+        for _corpus_cpt, corpus_name in enumerate(corpuses):
+
+            expe.update(corpus=corpus_name)
+            # @Heeere: big problme of data management:
+            #         if data_type is set heren input_path os wrong !?
+            #         how to corretcly manage this, think about it.
+            #         pmk looks in pmk-temp here.
+            expe.update(_data_type='networks')
+            frontend = FrontendManager.load(expe)
+
+            for i, v in enumerate(Meas):
+                if frontend.data is None:
+                    Table[self.corpus_pos, 1:] = 'none'
+                    break
+                Table[self.corpus_pos, i+1] = getattr(frontend, v)()
+
+        tablefmt = 'simple' # 'latex'
+        print(colored('\nStats Table :', 'green'))
+        print (self.tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
 
 
 

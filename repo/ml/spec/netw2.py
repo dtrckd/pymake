@@ -7,8 +7,6 @@ class Netw2(ExpDesign):
     data_net_all = Corpus(['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad', 'generator7', 'generator12', 'generator10', 'generator4'])
     net_all = data_net_all + Corpus(['clique6', 'BA'])
 
-    data_text_all = Corpus(['kos', 'nips12', 'nips', 'reuter50', '20ngroups']) # lucene
-
 
     # compare perplexity and rox curve from those baseline.
     compare_scvb = ExpTensor (
