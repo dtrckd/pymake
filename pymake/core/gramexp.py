@@ -1372,6 +1372,10 @@ class GramExp(object):
             print(*self.functable(sandbox) , sep='\n')
             exit()
 
+        # Default spec, expVector ?
+        #if hasattr(sandbox, '_expe_default'):
+        #    print(sandbox._expe_default)
+
         sandbox._preprocess_(self)
         self.io_format_check()
 
@@ -1389,6 +1393,7 @@ class GramExp(object):
             # Init Expe
             expdesign = self._tensors._ds[id_expe]
             self.expe_init(expe)
+
             try:
                 expbox = sandbox(pt, expe, expdesign, self)
             except FileNotFoundError as e:

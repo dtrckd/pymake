@@ -118,6 +118,7 @@ class BurstProcess(ExpeFormat):
         self._Phi = Phi
 
     def _local_likelihood(self, theta, phi, k1, k2=None):
+        ''' Expected local adjacency matrix more that likelihood. '''
 
         if not k2:
             k2 = k1
@@ -362,12 +363,6 @@ class BurstProcess(ExpeFormat):
 #
 #
 #
-#
-#
-#
-#
-#
-#
     @ExpeFormat.raw_plot('corpus')
     def prop_process_me(self, frame, p=250):
         p = int(p)
@@ -385,7 +380,6 @@ class BurstProcess(ExpeFormat):
         phi = Phi[0]
 
         N = theta.shape[0]
-        process = np.zeros((N, N))
 
         likelihood = self.model.likelihood(theta, phi)
         adj = sp.stats.bernoulli.rvs(likelihood)
@@ -432,6 +426,100 @@ class BurstProcess(ExpeFormat):
         ax.plot(x, y, label=expe.model)
 
         ax.legend(loc=1,prop={'size':10})
+        ax.set_xlabel('n')
+        ax.set_ylabel('Cumulative Sum')
+        frame.title = expe.corpus + ' p=%s' % p
+
+
+    @ExpeFormat.raw_plot('corpus')
+    def prop_process_local_me(self, frame, p=250):
+        p = int(p)
+        expe = self.expe
+
+        # Force ONE epoch # bernoulli variance...
+        expe.epoch = 1
+        self._generate()
+
+        Y = self._Y
+        Theta = self._Theta
+        Phi = self._Phi
+
+        theta = Theta[0]
+        phi = Phi[0]
+
+        N = theta.shape[0]
+        K = theta.shape[1]
+
+        for _k1 in range(K):
+            #for _k2 in range(K):
+
+                n_to_zeros = N-p
+
+                adj = self._local_likelihood(theta, phi, _k1)
+                #if adj.dtype == np.dtype(float):
+                #    adj = sp.stats.bernoulli.rvs(adj)
+
+                #    _id1 = np.arange(N**2).reshape((N,N))[adj==1]
+                #    _id0 = np.arange(N**2).reshape((N,N))[adj==0]
+                #    nn1 = len(_id1) // 3
+                #    nn0 = n_to_zeros - nn1
+                #    if nn1 > 0:
+                #        _idx1 = np.random.choice(_id1, nn1, replace=False)
+                #        _idx0 = np.random.choice(_id0, nn0, replace=False)
+                #        _idx = np.hstack((_idx0, _idx1))
+                #    else:
+                #        _idx = _id0
+
+                #    idx = np.unravel_index(_idx, (N,N))
+                _idx = np.random.choice(np.arange(N**2), n_to_zeros, replace=False)
+                idx = np.unravel_index(_idx, (N,N))
+
+
+                adj_n = adj.copy()
+                adj_n[idx] = 0
+
+                if 'ilfm' in expe.model:
+                    g_n = nx.from_numpy_array(adj_n)
+                    degree_n = dict(g_n.degree())
+                else:
+                    degree_n = dict((i,int(round(d))) for i,d in enumerate(adj_n.sum(1)))
+                d_n, dc_n = degree_hist(degree_n, filter_zeros=False)
+
+                if 'ilfm' in expe.model:
+                    g = nx.from_numpy_array(adj)
+                    degree = dict(g.degree())
+                else:
+                    degree = dict((i,int(round(d))) for i,d in enumerate(adj.sum(1)))
+                d, dc = degree_hist(degree, filter_zeros=False)
+
+                x = d_n
+                y = []
+                burstiness = defaultdict(lambda:0)
+                normalize_deg = defaultdict(lambda:0)
+                # Compute p(d(N)>n+1 | p(p)=n)
+                for node, deg_n in degree_n.items():
+                    if deg_n == 0:
+                        continue
+
+                    deg_N = degree[node]
+                    if deg_N > deg_n:
+                        burstiness[deg_n] += 1
+
+                    normalize_deg[deg_n] +=1
+
+                # Normalize
+                for deg, total in normalize_deg.items():
+                    burstiness[deg] = burstiness[deg] / total
+
+                for deg in x:
+                    y.append(burstiness[deg])
+
+                ax = frame.ax()
+
+                label = '%s K=%d' % (expe.model, _k1)
+                ax.plot(x, y, label=label)
+
+        ax.legend(loc=1,prop={'size':8})
         ax.set_xlabel('n')
         ax.set_ylabel('Cumulative Sum')
         frame.title = expe.corpus + ' p=%s' % p
