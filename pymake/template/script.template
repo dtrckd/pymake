@@ -7,14 +7,4 @@ Template Script :
 """
 
 class $${projectname}_script(ExpeFormat):
-
-    def _preprocess(self):
-        expe = self.expe
-        output_path = self.gramexp.make_output_path(expe)
-        return
-
-    def _postprocess(self):
-        pass
-
-    def __call__(self):
-        pass
+    pass

@@ -52,20 +52,19 @@ class FrontendManager(object):
         return cls.get(expe, load=True)
 
 
-# it is more a wrapper
 class ModelManager(object):
     """ Utility Class for Managing I/O and debugging Models
+
+        Notes
+        -----
+        This class is more a wrapper or a **Meta-Model**.
     """
 
     log = logging.getLogger('root')
 
-    def __init__(self, expe=None, frontend=None, data_t=None):
+    def __init__(self, expe=None):
         self.expe = expe
-
         self.hyperparams = expe.get('hyperparams', dict())
-
-        # Initialize model
-        #self.model = self._get_model(frontend, data_t)
 
     def _format_dataset(self, data, data_t):
         if data is None:
@@ -105,7 +104,6 @@ class ModelManager(object):
             return all(score)
         else:
             raise NotImplementedError
-
 
     def _get_model(self, frontend=None, data_t=None):
         ''' Get model with lookup in the following order :
@@ -231,9 +229,16 @@ class ModelManager(object):
         return model
 
 
-    @classmethod
-    def from_file(cls, fn):
-        return cls._load_model(fn)
+    @staticmethod
+    def update_expe(expe, model):
+        ''' Configure some pymake settings if present in model. '''
+
+        pmk_settings = ['_csv_typo', '_fmt']
+
+        for _set in pmk_settings:
+            if getattr(model, _set, None) and not expe.get(_set):
+                expe[_set] = getattr(model, _set)
+
 
     @classmethod
     def from_expe(cls, expe, init=False):
@@ -242,25 +247,20 @@ class ModelManager(object):
             model = mm._get_model()
         else:
             fn = GramExp.make_output_path(expe, 'pk')
-            model = cls.from_file(fn)
+            model = cls._load_model(fn)
+
+        cls.update_expe(expe, model)
+
         return model
 
-    @classmethod
-    def from_name(cls, expe):
-        ''' Don't initialize the model (external facilities) '''
-        modelname = expe.model
-        _model =  Model.get(modelname)
-        if _model is None:
-            cls.log.error('model unknown: %s' % modelname)
-            exit(3)
-        return _model
 
     @classmethod
     def from_expe_frontend(cls, expe, frontend):
         # urgh,
         # structure and workflow for streaming ? temporal ?
-        meta_model = cls(expe=expe, frontend=frontend)
+        meta_model = cls(expe=expe)
         cls.model = meta_model._get_model(frontend)
+        cls.update_expe(expe, cls.model)
         return cls.model
 
 
