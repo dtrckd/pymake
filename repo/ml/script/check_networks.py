@@ -33,6 +33,7 @@ class CheckNetwork(ExpeFormat):
         block_plot = False,
         write = False,
         _do           = ['zipf', 'source'],
+        _data_type = 'networks'
 
     )
 

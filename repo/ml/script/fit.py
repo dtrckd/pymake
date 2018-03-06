@@ -13,25 +13,8 @@ Fit the data :
 
 class Fit(ExpeFormat):
 
-    def init_run(self):
-        # setup seed ?
-        # setup branch ?
-        # setup description ?
-        if self.expe.get('write'):
-            self.init_fitfile()
-
-    def _preprocess(self):
-        pass
-
-    def _postprocess(self):
-        if self.expe.get('write'):
-            if hasattr(self, 'model'):
-                self.clear_fitfile()
-                self.model.save()
-
 
     def __call__(self):
-        self.init_run()
         expe = self.expe
         t0 = time.time()
 
@@ -44,7 +27,6 @@ class Fit(ExpeFormat):
         hyperparams = {'alpha': alpha, 'delta': delta, 'gmma': gmma}
         expe['hyperparams'] = hyperparams
         #############################################################
-
 
         self.model = ModelManager.from_expe_frontend(expe, frontend)
         self.configure_model(self.model)

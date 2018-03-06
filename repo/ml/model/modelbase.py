@@ -73,10 +73,8 @@ class ModelBase(object):
 
         self._purge_objects = ['frontend', 'data_A', 'data_B']
 
-
         if expe and hasattr(self, '_init_params'):
             self._init_params()
-
 
 
     def _init(self, key, expe, default):
@@ -345,7 +343,8 @@ class GibbsSampler(ModelBase):
         else:
             self._entropy_t = np.nan
 
-        self._roc = self.compute_roc()
+        if '_roc' in self.expe._csv_typo.split():
+            self._roc = self.compute_roc()
 
         self._alpha = np.nan
         self._gmma= np.nan
@@ -714,7 +713,8 @@ class SVB(ModelBase):
         # "true elbo"
         self._elbo = self.compute_elbo()
 
-        self._roc = self.compute_roc()
+        if '_roc' in self.expe._csv_typo.split():
+            self._roc = self.compute_roc()
 
     def maximization(self):
         raise NotImplementedError

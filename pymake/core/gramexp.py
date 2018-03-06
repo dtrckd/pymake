@@ -1405,7 +1405,7 @@ class GramExp(object):
                 exit(2)
 
             # Expe Preprocess
-            expbox._preprocess()
+            expbox._expe_preprocess()
 
             # Setup handler
             if '_do' in expe and len(expe._do) > 0:
@@ -1440,10 +1440,10 @@ class GramExp(object):
                 continue
 
             # Expe Postprocess
-            expbox._postprocess()
+            expbox._expe_postprocess()
 
         if n_errors > 0:
-            lgg.warning("There was %d errors,  logged in `%s'" % (n_errors, self._pmk_error_file))
+            lgg.warning("There was %d errors, logged in `%s'" % (n_errors, self._pmk_error_file))
             with open(self._pmk_error_file, 'a') as _f:
                 _f.write(100*'='+'\n')
 

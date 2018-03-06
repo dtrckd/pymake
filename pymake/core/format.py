@@ -1359,7 +1359,12 @@ class ExpeFormat(object):
 
     @classmethod
     def _preprocess_(cls, gramexp):
-        ''' This method has **write** access to Gramexp '''
+        ''' This method has **write** access to Gramexp
+
+            Notes
+            -----
+            Called once before running expe.
+        '''
 
         # update exp_tensor in gramexp
         if hasattr(cls, '_default_expe'):
@@ -1375,15 +1380,42 @@ class ExpeFormat(object):
 
     @classmethod
     def _postprocess_(cls, gramexp):
+        '''
+            Notes
+            -----
+            Called once after all expe are finished.
+        '''
         cls.display(gramexp._conf)
         return
 
+    def _expe_preprocess(self):
+        ''' system preprocess '''
+        # setup seed ?
+        # setup branch ?
+        # setup description ?
+
+        if hasattr(self, '_preprocess'):
+            self._preprocess()
+
+    def _expe_postprocess(self):
+        ''' system postprocess '''
+
+        if self.expe.get('write'):
+            self.clear_fitfile()
+            if hasattr(self, 'model') and hasattr(self.model, 'save'):
+                self.model.save()
+
+        if hasattr(self, '_postprocess'):
+            self._postprocess()
+
     def _preprocess(self):
-        # heere, do a wrapper ?
+        ''' user defined preprocess '''
+        # heere, do a decorator ?
         pass
 
     def _postprocess(self):
-        # heere, do a wrapper ?
+        ''' user defined postprocess '''
+        # heere, do a decorator ?
         pass
 
     def __call__(self):
@@ -1458,8 +1490,10 @@ class ExpeFormat(object):
 
     def clear_fitfile(self):
         ''' Write remaining data and close the file. '''
-        if self._samples:
+        if hasattr(self, '_samples') and self._samples:
             self._write_some(self._fitit_f, None)
+
+        if hasattr(self, '_fitit_f'):
             self._fitit_f.close()
 
 
@@ -1567,18 +1601,23 @@ class ExpeFormat(object):
     def write_it_step(self, model):
         if self.expe.get('write'):
             self._write_current_state(model)
-
     def configure_model(self, model):
+        ''' Configure Model:
+            * [warning] it removes existing [expe_path].inf file
+        '''
+
         # Inject the writing some method
         setattr(model, 'write_it_step', self.write_it_step)
 
-        # meta model ? ugly hach
+        # First model is a meta-model
         if hasattr(model, 'model') and hasattr(model.model, 'fit'):
             setattr(model.model, 'write_it_step', self.write_it_step)
 
-        # Configure csv_typo if present in model.
-        if getattr(model, '_csv_typo', False):
-            self.expe._csv_typo = model._csv_typo
+        if self.expe.get('write'):
+            self.init_fitfile()
+
+        # Could configure frontend/data path or more also here ?
+        return
 
 
 
