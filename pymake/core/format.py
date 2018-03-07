@@ -587,6 +587,8 @@ class ExpTensorV2(BaseObject):
 
     def set_default_all(self, defconf):
         ''' set default value in exp '''
+
+        # Update current spec with _default_expe
         for k, v in defconf.items():
 
             for tensor in self._tensors:
@@ -1366,9 +1368,9 @@ class ExpeFormat(object):
             Called once before running expe.
         '''
 
-        # update exp_tensor in gramexp
-        if hasattr(cls, '_default_expe'):
-            gramexp._tensors.set_default_all(cls._default_expe)
+        # Update defautl settings of  gramexp
+        # given _default_expe
+        gramexp.update_default_expe(cls)
 
         # Put a valid expe a the end.
         gramexp.reorder_firstnonvalid()

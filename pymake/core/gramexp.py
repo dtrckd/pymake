@@ -195,7 +195,7 @@ class GramExp(object):
                          ]
     _private_keywords = _reserved_keywords + _special_keywords
 
-    _exp_default = {
+    _default_expe = {
         #'host'      : 'localhost',
         'verbose'   : logging.INFO,
         'write'     : False,
@@ -227,24 +227,26 @@ class GramExp(object):
             # merge parser an parsargs ?
             self.argparser = parser
 
-        [conf.update({k:v}) for k,v in self._exp_default.items() if k not in conf]
-        #conf = deepcopy(conf) # who want this ?
+        [conf.update({k:v}) for k,v in self._default_expe.items() if k not in conf]
 
-        # Set expTensor init.
-        self._user_spec = conf.get('_spec', {})
+        self._base_conf = conf
+        #self._do = conf.get('_do')
+
+        self.exp_setup(conf, expdesign)
+
+
+    def exp_setup(self, conf, expdesign=None):
+        ''' work in self._tensors '''
 
         # Make main data structure
-        self._tensors = ExpTensorV2.from_conf(conf,
-                                                private_keywords=self._private_keywords,
-                                                expdesign=expdesign)
-        self.exp_setup()
-
-
-    def exp_setup(self):
-        ''' work in self._tensors '''
+        self._tensors = ExpTensorV2.from_conf(conf, private_keywords=self._private_keywords,
+                                              expdesign=expdesign)
 
         # Global settings (unique argument)
         self._conf = self._tensors.get_conf()
+
+        # Set expTensor init.
+        self._user_spec = conf.get('_spec', {})
 
         # makes it contextual.
         self._preprocess_exp()
@@ -263,6 +265,41 @@ class GramExp(object):
         self._conf = self._tensors._conf
         #
         self.lod = self._tensors._lod
+
+    def update_default_expe(self, expformat):
+
+        if not hasattr(expformat, '_default_expe'):
+            return
+        else:
+            default_expe = expformat._default_expe
+
+        # Use default _spec if no spec given
+        _names = self.get_list('_name_expe')
+        if len(_names) == 1 and '_default_expe' in _names and '_spec' in default_expe:
+            names = default_expe['_spec']
+            names = [names] if isinstance(names, str) else names
+            group = []
+
+            # Sensitive
+            conf = self._base_conf
+            #conf['_do'] = [self._do]
+
+            for name in names:
+                if isinstance(name, str):
+                    d, expdesign = Spec.load(name, self._spec[name])
+                    group.append((name, d, expdesign))
+                else:
+                    raise NotImplementedError('use a defined spec in _default_expe')
+
+            conf['_spec'] = group
+
+            if 'script' in conf:
+                script = conf.pop('script')
+                conf['_do'] = script
+
+            self.exp_setup(conf)
+
+        self._tensors.set_default_all(default_expe)
 
 
     def _preprocess_exp(self):

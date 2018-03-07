@@ -7,7 +7,7 @@ _pmk()
 {
     # Automate variables init
     local cur prev opts project 
-    local specs all_scripts sur_scripts dict_scripts
+    local specs lists all_scripts sur_scripts dict_scripts
 
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
@@ -19,6 +19,7 @@ _pmk()
     fi
 
     opts="-l -x -v --cores --net --repeat --redfdir --pmk --type --fast"
+    lists="spec script model"
 
     project="$(basename $PWD)"
 
@@ -47,6 +48,10 @@ _pmk()
                 ;;
             -x)
                 COMPREPLY=( $(compgen -W "$all_scripts" -- $cur) )
+                return 0
+                ;;
+            -l)
+                COMPREPLY=( $(compgen -W "$lists" -- $cur) )
                 return 0
                 ;;
             $extsur_scripts)
