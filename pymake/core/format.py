@@ -955,7 +955,9 @@ class ExpeFormat(object):
             self.log_silent()
         else:
             self.log.info('-'*10)
-            self.log_expe()
+            self.log.info(''.join([colored('Expe %d/%d', 'red'), ' : ', self.log_expe()]) % (
+                self._it+1, self.expe_size,
+            ))
             self.log.info('-'*10)
 
     def get_data_path(self):
@@ -965,12 +967,10 @@ class ExpeFormat(object):
 
     def log_expe(self):
         expe = self.expe
-        self.log.info(''.join([colored('Expe %d/%d', 'red'),
-                          ' : %s -- %s -- N=%s -- K=%s']) % (
-                              self._it+1, self.expe_size,
-                              self.specname(expe.get('corpus')),
-                              self.specname(expe.get('model')),
-                              expe.get('N'), expe.get('K'),))
+        msg = '%s -- %s -- N=%s -- K=%s' % (self.specname(expe.get('corpus')),
+                                            self.specname(expe.get('model')),
+                                            expe.get('N'), expe.get('K'))
+        return msg
 
     def log_silent(self):
         if self.is_first_expe():
