@@ -124,14 +124,14 @@ def clusters_hist(clusters, labels=None, remove_empty=True):
     if labels is None:
         labels = range(len(block_hist))
 
-    hist, label = sorted_perm(block_hist, labels, reverse=True)
+    hist, labels = sorted_perm(block_hist, labels, reverse=True)
 
     if remove_empty is True:
         null_classes = (hist == 0).sum()
         if null_classes > 0:
-            hist = hist[:-null_classes]; label = label[:-null_classes]
+            hist = hist[:-null_classes]; labels = labels[:-null_classes]
 
-    return hist, label
+    return hist, labels
 
 def adj_to_degree(y):
     # @debug: dont' call nxG or do a native integration !
