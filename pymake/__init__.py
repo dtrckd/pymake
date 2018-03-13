@@ -10,7 +10,8 @@ else:
     plt.rc('font', size=__plot_font_size)  # controls default text sizes
 
 
-from pymake.core.format import Spec, Corpus, Model, Script, ExpSpace, ExpVector, ExpTensor, ExpeFormat, ExpDesign, ExpGroup
+from pymake.core.types import Spec, Corpus, Model, Script, ExpSpace, ExpVector, ExpTensor, ExpDesign, ExpGroup
+from pymake.core.format import ExpeFormat
 
 # Without whoosh fashion...
 #from pymake.frontend.frontend_io import SpecLoader

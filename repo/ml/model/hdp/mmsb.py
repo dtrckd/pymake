@@ -11,7 +11,9 @@ import scipy as sp
 from scipy.special import digamma
 from numpy.random import dirichlet, gamma, poisson, binomial, beta
 
-from ml.model.modelbase import GibbsSampler, MSampler, BetaSampler
+from ml.model.modelbase import GibbsSampler
+from .hdp import MSampler, BetaSampler
+
 from pymake.util.math import lognormalize, categorical, sorted_perm, adj_to_degree, gem
 
 # Implementation Mixed Membership Sochastic Blockmodel Stochastic

@@ -1,5 +1,6 @@
 # 0.4 (ongoing)
 
+* Integration of ModelSkl for skleanr model like integration.
 * allow {\_spec} to set default spec to use in \_default_expe.
 
 * (autocompletion) todo ~/.bash_completion.d/ (autmatically use it ?)

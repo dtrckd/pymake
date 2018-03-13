@@ -1,4 +1,6 @@
-import sys, os, re, importlib, pkgutil, pyclbr, inspect, ast
+import sys, os, re
+import pkgutil, pyclbr, inspect, ast
+from importlib import import_module
 from collections import OrderedDict
 from itertools import groupby
 import json
@@ -358,7 +360,7 @@ class PackageWalker(object):
 
         packages = OrderedDict()
         try:
-            module = importlib.import_module(module_name)
+            module = import_module(module_name)
         except ImportError as e:
             lgg.warning('package unavailable (%s) : %s' % (e, module_name))
             return packages
@@ -370,13 +372,13 @@ class PackageWalker(object):
                 packages.update(self._get_packages(submodule_name, next_depth))
                 continue
             try:
-                submodule = importlib.import_module(submodule_name)
+                submodule = import_module(submodule_name)
             except ImportError as e:
                 lgg.debug('submodule unavailable (%s) : %s'%(e, submodule_name))
                 self._unavailable_modules.append(submodule_name)
                 if 'algo' in str(e):
                     lgg.warning('Please report this error: pymake.frontend_io algo condition ?')
-                    submodule = importlib.import_module(submodule_name)
+                    submodule = import_module(submodule_name)
                 continue
             except Exception as e:
                 lgg.critical('Module Error: %s' % e)
@@ -601,7 +603,7 @@ class SpecLoader(PackageWalker):
     #def _default_spec():
     #    #module_name = get_pymake_settings('_spec')
     #    module_name = 'pymake.spec.netw'
-    #    spec = importlib.import_module(module_name)
+    #    spec = import_module(module_name)
     #    for m in dir(spec):
     #        o = getattr(spec,m)
     #        if issubclass(o, ExpDesign) and not o is ExpDesign:
@@ -636,7 +638,7 @@ class SpecLoader(PackageWalker):
                 name = _module.__name__
                 module = s._cls_browse[name]
 
-                expd = getattr(importlib.import_module(module.module), name)()
+                expd = getattr(import_module(module.module), name)()
 
                 content = {}
                 content['script_name'] = surname

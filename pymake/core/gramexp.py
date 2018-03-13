@@ -14,12 +14,13 @@ from functools import reduce, wraps
 from copy import deepcopy
 import numpy as np
 
-from pymake import ExpDesign, ExpTensor, ExpSpace, ExpeFormat, Model, Corpus, Script, Spec, ExpVector
+from pymake.core.types import ExpDesign, ExpTensor, ExpSpace, Model, Corpus, Script, Spec, ExpVector
+from pymake.core.types import ExpTensorV2 # @debug name integration
+from pymake.core.format import ExpeFormat
+
 from pymake.frontend.frontend_io import ext_status, is_empty_file
 from pymake.util.utils import colored, basestring, get_pymake_settings, hash_objects, PmkTemplate
 
-# @debug name integration
-from pymake.core.format import ExpTensorV2
 
 
 ''' Grammar Expe '''

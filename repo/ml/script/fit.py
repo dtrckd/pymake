@@ -2,7 +2,6 @@ import time
 import numpy as np
 from numpy import ma
 from pymake import GramExp, ExpeFormat
-from pymake.frontend.manager import ModelManager, FrontendManager
 
 
 USAGE = """\
@@ -18,7 +17,7 @@ class Fit(ExpeFormat):
         expe = self.expe
         t0 = time.time()
 
-        frontend = FrontendManager.load(expe)
+        frontend = self.load_frontend()
 
         ### @Debug: Obsolete / Inside model
         alpha = expe.get('alpha', .1)
@@ -28,8 +27,7 @@ class Fit(ExpeFormat):
         expe['hyperparams'] = hyperparams
         #############################################################
 
-        self.model = ModelManager.from_expe_frontend(expe, frontend)
-        self.configure_model(self.model)
+        self.model = self.load_model(frontend)
 
         for i in range(1):
             self.model.fit()

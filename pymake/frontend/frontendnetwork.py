@@ -38,10 +38,23 @@ class frontendNetwork(DataBase, DatasetDriver):
     RANDOM_CORPUS = ('clique', 'alternate', 'BA')
     _selfloop = False
 
-    def __init__(self, expe=dict(), load=False):
+    def __init__(self, expe=None):
+        super(frontendNetwork, self).__init__(expe)
+
         #if not expe.get('_data_type'):
         #    expe['_data_type'] = 'networks'
-        super(frontendNetwork, self).__init__(expe, load)
+        self._data_type = 'network'
+
+        data_format = expe.get('_data_format', 'b')
+        if data_format == 'w':
+            self._net_type = 'weighted'
+            self._dtype = int
+        elif data_format == 'b':
+            self._net_type = 'binary'
+            self._dtype = bool
+        else:
+            raise NotImplemented('Network format unknwown: %s' % data_format)
+
 
     @classmethod
     def from_array(cls, array):

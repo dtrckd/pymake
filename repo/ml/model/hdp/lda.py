@@ -11,7 +11,8 @@ from scipy.special import digamma
 from numpy.random import dirichlet, gamma, poisson, binomial, beta
 
 from pymake.frontend.frontend import DataBase
-from ml.model.modelbase import GibbsSampler, MSampler, BetaSampler
+from ml.model.modelbase import GibbsSampler
+from .hdp import MSampler, BetaSampler
 
 from pymake.util.math import lognormalize, categorical
 

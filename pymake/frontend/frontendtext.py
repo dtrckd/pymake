@@ -17,10 +17,12 @@ from pymake.util.vocabulary import Vocabulary
 class frontendText(DataBase):
     """ Frontend for text Corpus """
 
-    def __init__(self, config=dict(), load=False):
+    def __init__(self, expe=None):
+        super(frontendText, self).__init__(expe)
+
         #if not expe.get('_data_type'):
         #    expe['_data_type'] = 'text'
-        super(frontendText, self).__init__(config, load)
+        self._data_type = 'text'
 
     def load_data(self, randomize=False):
         """ Load data according to different scheme:
@@ -41,8 +43,7 @@ class frontendText(DataBase):
 
     def cross_set(self, ratio):
         D = self.data.shape[0]
-        d = D * ratio
-        d_t = D - d
+        d = int(D * ratio)
         data = self.data[:d]
         data_t = self.data[d:]
         return data, data_t
