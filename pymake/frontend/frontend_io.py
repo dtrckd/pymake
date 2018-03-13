@@ -405,6 +405,7 @@ class PackageWalker(object):
         for cls_name, cls  in _packages.items():
             obj = getattr(submodule, cls_name)
             if not hasattr(obj, self.attr_filter) or is_abstract(obj):
+            #if not any([hasattr(obj, attr) for attr in self.attr_filter]) or is_abstract(obj):
                 continue
             if self.shrink_module_name:
                 prefix = prefix.split('.')[0]
@@ -443,8 +444,10 @@ class PackageWalker(object):
 
 class ModelsLoader(PackageWalker):
     ''' Load models in a modules :
-        * Need a `fit' method to be identified as model,
         * lookup for models inside a module by fuzzing the name of the module.
+        * Need either a :
+            * `fit' method to be identified as model,
+            * a `module' attribute name => that should have a fit method.
     '''
     def submodule_hook(self, *args,  **kwargs):
         return super(ModelsLoader, self).submodule_hook_by_attr(*args,  **kwargs)
@@ -529,6 +532,9 @@ class CorpusLoader(PackageWalker):
     #    return atoms
 
 class ScriptsLoader(PackageWalker):
+
+    module = ExpeFormat
+
     def submodule_hook(self, *args,  **kwargs):
         return super(ScriptsLoader, self).submodule_hook_by_class(*args, **kwargs)
 
@@ -536,7 +542,7 @@ class ScriptsLoader(PackageWalker):
     def get_packages(cls, **kwargs):
         module_name = get_pymake_settings('_script')
         if not 'class_filter' in kwargs:
-            kwargs['class_filter'] = ExpeFormat
+            kwargs['class_filter'] = cls.module
 
         if isinstance(module_name, list):
             packs = {}
@@ -553,7 +559,7 @@ class ScriptsLoader(PackageWalker):
         modules = [modules] if type(modules) is str else modules
         for module in modules:
 
-            s = cls(module, class_filter=ExpeFormat)
+            s = cls(module, class_filter=cls.module)
 
             ## get decorator for each class
             #class2met2dec = {}
@@ -573,6 +579,8 @@ class ScriptsLoader(PackageWalker):
                         methods.append(name.lower())
                     elif m.startswith('_'):
                         methods.remove(m)
+                    elif m in dir(cls.module):
+                        methods.remove(m)
 
                 content = {}
                 content['scriptname'] = name
@@ -591,6 +599,9 @@ class SpecLoader(PackageWalker):
     ''' Load specification of design experimentation :
         * Lookup for ExpDesign subclass in the target module.
     '''
+
+    module = ExpDesign
+
     def submodule_hook(self, *args, **kwargs):
         return super(SpecLoader, self).submodule_hook_by_class(*args, **kwargs)
 
@@ -606,14 +617,14 @@ class SpecLoader(PackageWalker):
     #    spec = import_module(module_name)
     #    for m in dir(spec):
     #        o = getattr(spec,m)
-    #        if issubclass(o, ExpDesign) and not o is ExpDesign:
+    #        if issubclass(o, cls.module) and not o is cls.module:
     #            return o()
 
     @classmethod
     def get_packages(cls, **kwargs):
         module_name = get_pymake_settings('_spec')
         if not 'class_filter' in kwargs:
-            kwargs['class_filter'] = ExpDesign
+            kwargs['class_filter'] = cls.module
 
         if isinstance(module_name, list):
             packs = {}
@@ -632,7 +643,7 @@ class SpecLoader(PackageWalker):
         modules = [modules] if type(modules) is str else modules
         for module in modules:
 
-            s = cls(module, class_filter=ExpDesign)
+            s = cls(module, class_filter=cls.module)
 
             for surname, _module in s.packages.items():
                 name = _module.__name__
