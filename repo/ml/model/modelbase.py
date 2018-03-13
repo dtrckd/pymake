@@ -1,23 +1,19 @@
-# -*- coding: utf-8 -*-
-
+import abc
+import inspect
+from importlib import import_module
 import sys
 import re
 from datetime import datetime
 import pickle
 from copy import deepcopy
+import logging
 
 import numpy as np
 import scipy as sp
-import scipy.stats #sp.stats fails if not
-from scipy.special import gammaln
-from numpy.random import dirichlet, gamma, poisson, binomial, beta
 
-from pymake.util.math import lognormalize, categorical
 
 #import sppy
 
-import logging
-lgg = logging.getLogger('root')
 
 # Todo: rethink sampler and Likelihood class definition.
 
@@ -28,13 +24,15 @@ def mmm(fun):
     # * simlaritie ?
     return fun
 
-class ModelBase(object):
+class ModelBase(abc.ABC):
     """"  Root Class for all the Models.
 
     * Suited for unserpervised model
     * Virtual methods for the desired propertie of models
     """
+
     __abstractmethods__ = 'model'
+
     default_settings = {
         'write' : False,
         '_csv_typo' : None,
@@ -44,8 +42,10 @@ class ModelBase(object):
         'burnin' :  5, # (inverse burnin, last sample to keep
         'thinning' : 1,
     }
+
     log = logging.getLogger('root')
-    def __init__(self, frontend, expe):
+
+    def __init__(self, expe=None, frontend=None):
         """ Model Initialization strategy:
             1. self lookup from child initalization
             2. kwargs lookup
@@ -53,6 +53,7 @@ class ModelBase(object):
         """
 
         self.expe = expe
+        self.frontend = frontend
 
         # change to semantic -> update value (t+1)
         self.samples = [] # actual sample
@@ -63,13 +64,12 @@ class ModelBase(object):
             self._init(k, expe, v)
 
         # @debug Frontend integratoin !
-        # @if frontend.type == 'network', then
-        self.frontend = frontend
-        if frontend:
-            self._is_symmetric = frontend.is_symmetric()
+        # dev a Frontend.get_properties
+        if hasattr(self.frontend, 'is_symmetric'):
+            self._is_symmetric = self.frontend.is_symmetric()
+        if hasattr(self.frontend, 'data_ma'):
             self.mask = self.frontend.data_ma.mask
-            #np.fill_diagonal(self.frontend.data_ma, np.ma.masked)
-        # @else ... (text, image, son<3)
+        #np.fill_diagonal(self.frontend.data_ma, np.ma.masked)
 
         self._purge_objects = ['frontend', 'data_A', 'data_B']
 
@@ -134,13 +134,6 @@ class ModelBase(object):
                     setattr(self, m, None)
 
 
-    #  Relate with transform in sklearn ?
-    def get_params(self):
-        if hasattr(self, '_theta') and hasattr(self, '_phi'):
-            return np.asarray(self._theta), np.asarray(self._phi)
-        else:
-            return self._reduce_latent()
-
     @mmm #frontend
     def likelihood(self, theta=None, phi=None):
         if theta is None:
@@ -166,7 +159,7 @@ class ModelBase(object):
         elif sim in  ('model', 'natural'):
             sim = features.dot(phi).dot(features.T)
         else:
-            lgg.error('Similaririty metric unknow: %s' % sim)
+            self.log.error('Similaririty metric unknow: %s' % sim)
             sim = None
 
         if hasattr(self, 'normalization_fun'):
@@ -180,11 +173,11 @@ class ModelBase(object):
 
 
     def update_hyper(self):
-        lgg.warning('no method to update hyperparams')
+        self.log.warning('no method to update hyperparams')
         return
 
     def get_hyper(self):
-        lgg.error('no method to get hyperparams')
+        self.log.error('no method to get hyperparams')
         return
 
     def save(self, silent=False):
@@ -208,7 +201,7 @@ class ModelBase(object):
                 pass
 
         if not silent:
-            lgg.info('Snapshotting Model : %s' % fn)
+            self.log.info('Snapshotting Model : %s' % fn)
         else:
             sys.stdout.write('+')
 
@@ -250,10 +243,9 @@ class ModelBase(object):
         return roc
 
 
-
-
+    @mmm
     def predictMask(self, data, mask=True):
-        lgg.info('Reducing latent variables...')
+        self.log.info('Reducing latent variables...')
 
         if mask is True:
             masked = self.get_mask()
@@ -281,7 +273,7 @@ class ModelBase(object):
 
         ### Finding Communities
         if hasattr(self, 'communities_analysis'):
-            lgg.info('Finding Communities...')
+            self.log.info('Finding Communities...')
             communities = self.communities_analysis(data)
             K = self.K
         else:
@@ -297,12 +289,23 @@ class ModelBase(object):
               }
         return res
 
-    def fit(self):
+    def get_params(self):
+        if hasattr(self, '_theta') and hasattr(self, '_phi'):
+            return np.asarray(self._theta), np.asarray(self._phi)
+        else:
+            return self._reduce_latent()
+
+    #@abc.abstractmethod
+    def fit(self, *args, **kwargs):
         raise NotImplementedError
 
-    # or Infer, Search ??
-    def predict(self):
+    def transform(self, *args, **kwargs):
         raise NotImplementedError
+
+    def predict(self, *args, **kwargs):
+        raise NotImplementedError
+
+    # Search ?
 
     def compute_measures(self):
         raise NotImplementedError
@@ -318,8 +321,59 @@ class ModelBase(object):
                 setattr(self, obj, None)
 
 
+class ModelSkl(ModelBase):
+
+    def __init__(self, expe, frontend):
+        super(ModelSkl, self).__init__(expe, frontend)
+
+        # Load Sklearn Model
+        _module = self.module.split('.')
+        _module, model_name = '.'.join(_module[:-1]), _module[-1]
+        module = import_module(_module)
+        self._model = getattr(module, model_name)
+
+        # Set Skleanr parameters
+        model_params = list(inspect.signature(self._model).parameters)
+        spec = dict()
+        spec_map = getattr(self, 'spec_map', {})
+        for k in model_params:
+            if k in self.expe:
+                _k = spec_map.get(k, k)
+                spec[_k] = self.expe[_k]
+
+        # Init Sklearn model
+        self.model = self._model(**spec)
+
+
+    def __getattr__(self, attr):
+        ''' Propagate sklearn attribute.
+
+            Notes
+            ----
+            __getatrr__ is call only if the attr doesn't exist...
+        '''
+
+        if not 'model' in self.__dict__:
+            raise AttributeError
+
+        attr = attr.partition('__hack_me_')[-1]
+        return getattr(self.model, attr)
+
+    def fit(self, *args, **kwargs):
+        fun =  self.__hack_me_fit
+        return fun(*args, **kwargs)
+
+    def transform(self, *args, **kwargs):
+        fun =  self.__hack_me_transform
+        return fun(*args, **kwargs)
+
+    def predict(self, *args, **kwargs):
+        fun =  self.__hack_me_predict
+        return fun(*args, **kwargs)
+
+
 class GibbsSampler(ModelBase):
-    ''' Implmented method, except fit (other?) concerns MMM type models :
+    ''' Implemented method, except fit (other?) concerns MMM type models :
         * LDA like
         * MMSB like
 
@@ -328,7 +382,7 @@ class GibbsSampler(ModelBase):
     '''
     __abstractmethods__ = 'model'
     def __init__(self, expe, frontend):
-        super(GibbsSampler, self).__init__(frontend, expe)
+        super(GibbsSampler, self).__init__(expe, frontend)
 
     @mmm
     def compute_measures(self):
@@ -375,7 +429,7 @@ class GibbsSampler(ModelBase):
 
             self.compute_measures()
             print('.', end='')
-            lgg.info('iteration %d, %s, Entropy: %f \t\t K=%d  alpha: %f gamma: %f' % (_it, '/'.join((self.expe.model, self.expe.corpus)),
+            self.log.info('iteration %d, %s, Entropy: %f \t\t K=%d  alpha: %f gamma: %f' % (_it, '/'.join((self.expe.model, self.expe.corpus)),
                                                                                     self._entropy, self._K,self._alpha, self._gmma))
             if self.write:
                 self.write_it_step(self)
@@ -419,7 +473,7 @@ class GibbsSampler(ModelBase):
         ks = [ mat.shape[1] for mat in theta]
         bn = np.bincount(ks)
         k_win = np.argmax(bn)
-        lgg.debug('K selected: %d' % k_win)
+        self.log.debug('K selected: %d' % k_win)
 
         ind_rm = []
         [ind_rm.append(i) for i, v in enumerate(theta) if v.shape[1] != k_win]
@@ -427,7 +481,7 @@ class GibbsSampler(ModelBase):
             theta.pop(i)
             phi.pop(i)
 
-        lgg.debug('Samples Selected: %d over %s' % (len(theta), len(theta)+len(ind_rm) ))
+        self.log.debug('Samples Selected: %d over %s' % (len(theta), len(theta)+len(ind_rm) ))
 
         self._theta = np.mean(theta, 0)
         self._phi = np.mean(phi, 0)
@@ -435,119 +489,6 @@ class GibbsSampler(ModelBase):
         return self._theta, self._phi
 
 
-# lambda fail to find import if _stirling if not
-# visible in the global scope.
-import sympy
-from sympy.functions.combinatorial.numbers import stirling
-try:
-    from pymake.util.compute_stirling import load_stirling
-    _stirling_mat = load_stirling()
-    STIRLING_LOADED = True
-except Exception as e:
-    print('Stirling matrix cant be loaded:')
-    print('error: ', e)
-    STIRLING_LOADED = False
-
-class MSampler(object):
-
-    if STIRLING_LOADED:
-        stirling_mat = lambda  _, x, y : _stirling_mat[x, y]
-    else:
-        lgg.error('stirling.npy file not found, using sympy instead (MMSB_CGS model will be 100 time slower !)')
-        stirling_mat = lambda  _,x,y : np.asarray([float(sympy.log(stirling(x, i, kind=1)).evalf()) for i in y])
-
-    def __init__(self, zsampler):
-
-
-        self.zsampler = zsampler
-        self.get_log_alpha_beta = zsampler.get_log_alpha_beta
-        self.count_k_by_j = zsampler.doc_topic_counts
-
-        # We don't know the preconfiguration of tables !
-        self.m = np.ones(self.count_k_by_j.shape, dtype=int)
-        self.m_dotk = self.m.sum(axis=0)
-
-    def sample(self):
-        self._update_m()
-
-        indices = np.ndenumerate(self.count_k_by_j)
-
-        lgg.debug('Sample m...')
-        for ind in indices:
-            j, k = ind[0]
-            count = ind[1]
-
-            if count > 0:
-                # Sample number of tables in j serving dishe k
-                params = self.prob_jk(j, k)
-                sample = categorical(params) + 1
-            else:
-                sample = 0
-
-            self.m[j, k] = sample
-
-        self.m_dotk = self.m.sum(0)
-        self.purge_empty_tables()
-
-        return self.m
-
-    def _update_m(self):
-        # Remove tables associated with purged topics
-        for k in sorted(self.zsampler.last_purged_topics, reverse=True):
-            self.m = np.delete(self.m, k, axis=1)
-
-        # Passed by reference, but why not...
-        self.count_k_by_j = self.zsampler.doc_topic_counts
-        K = self.count_k_by_j.shape[1]
-        # Add empty table for new fancy topics
-        new_k = K - self.m.shape[1]
-        if new_k > 0:
-            lgg.debug( 'msampler: %d new topics' % (new_k))
-            J = self.m.shape[0]
-            self.m = np.hstack((self.m, np.zeros((J, new_k), dtype=int)))
-
-    # Removes empty table.
-    def purge_empty_tables(self):
-        # cant be.
-        pass
-
-    def prob_jk(self, j, k):
-        # -1 because table of current sample topic jk, is not conditioned on
-        njdotk = self.count_k_by_j[j, k]
-        if njdotk == 1:
-            return np.ones(1)
-
-        possible_ms = np.arange(1, njdotk) # +1-1
-        log_alpha_beta_k = self.get_log_alpha_beta(k)
-        alpha_beta_k = np.exp(log_alpha_beta_k)
-
-        normalizer = gammaln(alpha_beta_k) - gammaln(alpha_beta_k + njdotk)
-        log_stir = self.stirling_mat(njdotk, possible_ms)
-
-        params = normalizer + log_stir + possible_ms*log_alpha_beta_k
-
-        return lognormalize(params)
-
-class BetaSampler(object):
-
-    def __init__(self, gmma, msampler):
-        self.gmma = gmma
-        self.msampler = msampler
-
-        # Initialize restaurant with just one table.
-        self.beta = dirichlet([1, gmma])
-
-    def sample(self):
-        lgg.debug( 'Sample Beta...')
-        self._update_dirichlet_params()
-        self.beta = dirichlet(self.dirichlet_params)
-
-        return self.beta
-
-    def _update_dirichlet_params(self):
-        m_dotk_augmented = np.append(self.msampler.m_dotk, self.gmma)
-        lgg.debug( 'Beta Dirichlet Prior: %s, alpha0: %.4f ' % (m_dotk_augmented, self.msampler.zsampler.alpha_0))
-        self.dirichlet_params = m_dotk_augmented
 
 class SVB(ModelBase):
 
@@ -556,7 +497,7 @@ class SVB(ModelBase):
     __abstractmethods__ = 'model'
 
     def __init__(self, expe, frontend):
-        super(SVB, self).__init__(frontend, expe)
+        super(SVB, self).__init__(expe, frontend)
 
         self.entropy_diff = 0
 
@@ -630,8 +571,8 @@ class SVB(ModelBase):
         ''' chunk is the number of row to threat in a minibach '''
 
         data_ma = self.frontend.data_ma
-        _abc = self.data_iter(data_ma, randomize=True)
-        chunk_groups = np.array_split(_abc, self.chunk_len)
+        groups = self.data_iter(data_ma, randomize=True)
+        chunk_groups = np.array_split(groups, self.chunk_len)
         self._update_chunk_nnz(chunk_groups)
 
         #self.fdebug()
@@ -649,7 +590,7 @@ class SVB(ModelBase):
 
             self.compute_measures()
             print('.', end='')
-            lgg.info('Minibatch %d/%d, %s, Entropy: %f,  diff: %f' % (_id_mnb+1, self.chunk_len, '/'.join((self.expe.model, self.expe.corpus)),
+            self.log.info('Minibatch %d/%d, %s, Entropy: %f,  diff: %f' % (_id_mnb+1, self.chunk_len, '/'.join((self.expe.model, self.expe.corpus)),
                                                                         self._entropy, self.entropy_diff))
             if self.expe.get('write'):
                 self.write_it_step(self)
@@ -683,7 +624,7 @@ class SVB(ModelBase):
 
             if self._iteration != self.iterations-1 and self.expe.get('verbose', 20) < 20:
                 self.compute_measures()
-                lgg.debug('it %d,  ELBO: %f, elbo diff: %f \t K=%d' % (_it, self._entropy, self.entropy_diff, self._K))
+                self.log.debug('it %d,  ELBO: %f, elbo diff: %f \t K=%d' % (_it, self._entropy, self.entropy_diff, self._K))
                 if self.expe.get('write'):
                     self.write_it_step(self)
 

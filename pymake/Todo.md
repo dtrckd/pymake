@@ -36,6 +36,7 @@ Frontend
 Model
 -----
 * Model structure ?
+* Zsampler in hdp.hdp ?
 
 ### MODEL Specification:
 * -> catch type error in manager.get_model._model.__init,:

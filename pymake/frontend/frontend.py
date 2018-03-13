@@ -29,7 +29,7 @@ class DataBase(object):
 
     log = logging.getLogger('root')
 
-    def __init__(self, expe, load=False):
+    def __init__(self, expe):
 
         # Load a .pk file for data(default: True if present)
         # + it faset
@@ -52,24 +52,9 @@ class DataBase(object):
 
         self.true_classes = None
 
-        ########
-        ### Update settings Operations
-        ########
         self.expe = expe
 
         self._data_file_format = None
-        data_format = self.expe.get('_data_format', 'b')
-        if data_format == 'w':
-            self._net_type = 'weighted'
-            self._dtype = int
-        elif data_format == 'b':
-            self._net_type = 'binary'
-            self._dtype = bool
-        else:
-            raise NotImplemented('Network format unknwown: %s' % data_format)
-
-        if load is True:
-            self.load_data(randomize=False)
 
         # Copy Contructor in Python ?
         #if data is not None:

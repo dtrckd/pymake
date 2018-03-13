@@ -4,7 +4,7 @@ from codecs import open
 from os import path
 
 #__version__ = subprocess.check_output(["git", "describe"]).strip()
-__version__ = '0.39.4'
+__version__ = '0.39.5'
 
 try:
     from Cython.Build import cythonize
@@ -15,11 +15,17 @@ else:
     CYTHON = 'bdist_wheel' not in sys.argv
 
 
+# Requirements
 _here = path.abspath(path.dirname(__file__))
 with open(path.join(_here, 'requirements.txt'), encoding='utf-8') as f:
     all_reqs = f.read().split('\n')
 install_requires = [x.strip() for x in all_reqs if not (x.strip().startswith(('#', '//')) or x.strip().endswith('?'))]
 install_requires = list(filter(None, install_requires))
+
+# Packages
+packages = setuptools.find_packages()
+packages += ['repo/ml'] +  ['repo/ml/'+p for p in setuptools.find_packages('repo/ml/')]
+
 
 setuptools.setup(
     name='pmk',
@@ -29,12 +35,13 @@ setuptools.setup(
     description='An experiment control system for reproducible research.',
     url='https://github.com/dtrckd/pymake',
     license='GPL',
-    packages=setuptools.find_packages(),
     install_requires=install_requires,
     entry_points = {
         'console_scripts': ['pmk=pymake.zymake:main'],
     },
-    package_data = {'pymake' : ['pymake.cfg', 'template/*.template']},
+    packages=packages,
+    package_dir={'ml' : 'repo/ml'},
+    package_data = {'pymake' : ['pymake.cfg', 'template/*.template'], },
     include_package_data=True,
     keywords=['pymake', 'learning', 'model'],
     classifiers=[

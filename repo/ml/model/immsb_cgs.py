@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 
-from ml.model.hdp.mmsb import GibbsRun, Likelihood, ZSampler, MSampler, BetaSampler, NP_CGS
+from ml.model.hdp.mmsb import GibbsRun, Likelihood, ZSampler, NP_CGS
+from ml.model.hdp.hdp import MSampler, BetaSampler
 
 from ml.model.hdp.mmsb import CGS, ZSamplerParametric
 

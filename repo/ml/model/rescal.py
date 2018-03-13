@@ -13,14 +13,6 @@ from .modelbase import ModelBase
 
 class Rescal(ModelBase):
 
-    def __init__(self, expe, frontend):
-        super().__init__(frontend, expe)
-
-        self.expe = expe
-
-        self.frontend = frontend
-        self.mask = self.frontend.data_ma.mask
-
     def fit(self):
         data = self.frontend.data_ma
         K = self.expe.K

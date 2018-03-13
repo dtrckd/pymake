@@ -38,11 +38,13 @@ class FrontendManager(object):
         elif _corpus is None:
             return None
 
-        if _corpus['structure'] == 'text':
-            frontend = frontendText(expe, load=load)
-        elif _corpus['structure'] == 'network':
-            frontend = frontendNetwork(expe, load=load)
+        if _corpus['data_type'] == 'text':
+            frontend = frontendText(expe)
+        elif _corpus['data_type'] == 'network':
+            frontend = frontendNetwork(expe)
 
+        if load is True:
+            frontend.load_data(randomize=False)
         frontend.sample(expe.get('N'), randomize=False)
 
         return frontend
@@ -75,10 +77,9 @@ class ModelManager(object):
         if 'text' in str(type(data)).lower():
             #if issubclass(type(data), DataBase):
             self.log.warning('check WHY and WHEN overflow in stirling matrix !?')
-            print('debug why error and i get walue superior to 6000 in the striling matrix ????')
+            self.log.warning('debug why error and i get walue superior to 6000 in the striling matrix ????')
             if testset_ratio is None:
                 data = data.data
-                data_t = None
             else:
                 data, data_t = data.cross_set(ratio=testset_ratio)
         elif 'network' in str(type(data)).lower():
@@ -89,8 +90,11 @@ class ModelManager(object):
             else:
                 data = data.set_masked(testset_ratio)
         else:
-            raise NotImplementedError('Data not understood')
-
+            ''' Same as text ...'''
+            if testset_ratio is not None:
+                D = data.shape[0]
+                d = int(D * testset_ratio)
+                data, data_t = data[:d], data[d:]
 
         return data, data_t
 
@@ -114,22 +118,16 @@ class ModelManager(object):
 
         # Not all model takes data (Automata ?)
         data, data_t = self._format_dataset(frontend, data_t)
-        # @debug not used !
-        #
-        #if data is None:
-        #    frontend = frontendNetwork(self.expe)
-        #    frontend.data = np.array([[0],[0]])
-        #    frontend.data_ma = ma.array([[0],[0]])
 
         _model = Model.get(self.expe.model)
         if not _model:
             self.log.error('Model Unknown : %s' % (self.expe.model))
             raise NotImplementedError()
 
-        ### Learn to match signature ?!?
         if self.is_model(_model, 'pymake'):
             model = _model(self.expe, frontend)
         else:
+            # Would it be better to use {ModelPmk} by default ?
             model = _model(**self.expe)
 
         return model
