@@ -1,4 +1,3 @@
-import abc
 import inspect
 from importlib import import_module
 import sys
@@ -24,7 +23,7 @@ def mmm(fun):
     # * simlaritie ?
     return fun
 
-class ModelBase(abc.ABC):
+class ModelBase():
     """"  Root Class for all the Models.
 
     * Suited for unserpervised model
@@ -295,7 +294,6 @@ class ModelBase(abc.ABC):
         else:
             return self._reduce_latent()
 
-    #@abc.abstractmethod
     def fit(self, *args, **kwargs):
         raise NotImplementedError
 
@@ -327,6 +325,9 @@ class ModelSkl(ModelBase):
         super(ModelSkl, self).__init__(expe, frontend)
 
         # Load Sklearn Model
+        if not hasattr(self, 'module'):
+            self.log.error('ModelSkl base class need a {module} name attribute. Exiting.')
+            exit(42)
         _module = self.module.split('.')
         _module, model_name = '.'.join(_module[:-1]), _module[-1]
         module = import_module(_module)
