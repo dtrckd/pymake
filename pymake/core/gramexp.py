@@ -449,7 +449,7 @@ class GramExp(object):
         return targets
 
     @classmethod
-    def make_output_path(cls, expe, _type=None, status=None, _null=None):
+    def make_output_path(cls, expe, _type=None, status=None, _null=None, _nonunique=None):
         """ Make a single output path from a expe/dict
             @status: f finished
             @type: pk, json or inference.
@@ -471,12 +471,23 @@ class GramExp(object):
         if not expe['_format']:
             # or give a hash if write is False ?
             lgg.debug('No _format given, please set _format for output_path settings.')
-            return None
+            nonunique = ['_name_expe', '_do']
+            if _nonunique:
+                nonunique.extend(_nonunique)
 
-        dict_format = cls.get_file_format(expe)
-        if _null:
-            dict_format.update(dict((k,None) for k in _null))
-        t = expe['_format'].format(**dict_format)
+            argnunique = []
+            for i in set(nonunique):
+                v = expe.get(i, 'oops')
+                if isinstance(v, list):
+                    v = v[0]
+                argnunique.append(v)
+
+            t = '-'.join(argnunique)
+        else:
+            dict_format = cls.get_file_format(expe)
+            if _null:
+                dict_format.update(dict((k,None) for k in _null))
+            t = expe['_format'].format(**dict_format)
 
         filen = os.path.join(basedir, p, t)
 
@@ -804,7 +815,7 @@ class GramExp(object):
 
     def reorder_firstnonvalid(self, _type='pk'):
         for i, e in enumerate(self.lod):
-            if not self.make_output_path(e, _type=_type, status='f', _null=self._tensors._null):
+            if not self.make_output_path(e, _type=_type, status='f', _null=self._tensors._null, _nonunique=self.get_nounique_keys()):
                 self.lod[0], self.lod[i] = self.lod[i], self.lod[0]
                 break
         return
@@ -952,7 +963,7 @@ class GramExp(object):
             np.random.seed(seed)
 
         # Init I/O settings
-        expe['_output_path'] = self.make_output_path(expe, _null=self._tensors._null)
+        expe['_output_path'] = self.make_output_path(expe, _null=self._tensors._null, _nonunique=self.get_nounique_keys())
         expe['_input_path'] = self.make_input_path(expe)
 
         self.save(np.random.get_state(), _seed_path, silent=True)
