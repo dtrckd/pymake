@@ -81,6 +81,7 @@ class ExpeFormat(object):
         # Global
         self.expe_size = len(gramexp)
         self.gramexp = gramexp
+        self.D = self.gramexp.D # Global conteneur
         # Local
         self.pt = pt
         self.expe = expe
@@ -518,6 +519,9 @@ class ExpeFormat(object):
         if not gramexp._conf.get('simulate'):
             cls.log.info(gramexp.exptable())
 
+        # Global conteneur shared with all expe
+        gramexp.D = ExpSpace()
+
         return
 
     @classmethod
@@ -748,6 +752,8 @@ class ExpeFormat(object):
         ''' Configure Model:
             * [warning] it removes existing [expe_path].inf file
         '''
+
+        self.model = model
 
         # Inject the writing some method
         if hasattr(model, 'model') and hasattr(model.model, 'fit'):
