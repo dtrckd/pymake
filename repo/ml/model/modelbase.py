@@ -328,29 +328,44 @@ class ModelSkl(ModelBase):
         if not hasattr(self, 'module'):
             self.log.error('ModelSkl base class need a {module} name attribute. Exiting.')
             exit(42)
-        _module = self.module.split('.')
-        _module, model_name = '.'.join(_module[:-1]), _module[-1]
-        module = import_module(_module)
-        self._model = getattr(module, model_name)
 
-        # Set Skleanr parameters
-        model_params = list(inspect.signature(self._model).parameters)
-        spec = dict()
-        spec_map = getattr(self, 'spec_map', {})
-        for k in model_params:
-            if k in self.expe:
-                _k = spec_map.get(k, k)
-                spec[_k] = self.expe[_k]
+        self._module, self._model = self._mm_from_str(self.module)
+        spec = self._spec_from_expe(self._model)
 
         # Init Sklearn model
         self.model = self._model(**spec)
 
 
+    @staticmethod
+    def _mm_from_str(module):
+        _module = module.split('.')
+        _module, model_name = '.'.join(_module[:-1]), _module[-1]
+        module = import_module(_module)
+        _model = getattr(module, model_name)
+        return module, _model
+
+    def _spec_from_expe(self, _model):
+        ''' Set Sklearn parameters. '''
+
+        model_params = list(inspect.signature(_model).parameters)
+        spec = dict()
+        spec_map = getattr(self, 'spec_map', {})
+        default_spec = getattr(self, '_default_spec', {})
+        for k in model_params:
+            if k in self.expe:
+                _k = spec_map.get(k, k)
+                spec[_k] = self.expe[_k]
+            elif k in default_spec:
+                _k = spec_map.get(k, k)
+                spec[_k] = default_spec[_k]
+
+        return spec
+
     def __getattr__(self, attr):
         ''' Propagate sklearn attribute.
 
             Notes
-            ----
+            -----
             __getatrr__ is call only if the attr doesn't exist...
         '''
 
@@ -366,11 +381,24 @@ class ModelSkl(ModelBase):
 
     def transform(self, *args, **kwargs):
         fun =  self.__hack_me_transform
-        return fun(*args, **kwargs)
+        data = fun(*args, **kwargs)
 
+        if 'post_transform' in self.__dict__:
+            for module in self.post_transform:
+                _m, _model = self._mm_from_str(module)
+                spec = self._spec_from_expe(_model)
+                model = _model(**spec)
+                data = model.fit_transform(data)
+
+        return data
+
+    # @Obsolete ?
     def predict(self, *args, **kwargs):
         fun =  self.__hack_me_predict
         return fun(*args, **kwargs)
+
+    # get_params()
+    # set_params()
 
 
 class GibbsSampler(ModelBase):

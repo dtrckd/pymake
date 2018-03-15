@@ -8,6 +8,7 @@ from functools import wraps
 from itertools import product
 import logging
 
+from pymake import ExpSpace
 from pymake.util.utils import colored, basestring, make_path, get_pymake_settings
 
 from tabulate import tabulate
