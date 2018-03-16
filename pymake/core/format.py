@@ -768,10 +768,15 @@ class ExpeFormat(object):
         # Could configure frontend/data path or more also here ?
         return
 
-    def load_model(self, frontend):
+    def load_model(self, frontend, init=True):
         from pymake.frontend.manager import ModelManager
-        model = ModelManager.from_expe_frontend(self.expe, frontend)
-        self.configure_model(model)
+
+        if init is True:
+            model = ModelManager.from_expe_frontend(self.expe, frontend)
+            self.configure_model(model)
+        else:
+            model = ModelManager.from_expe(self.expe)
+
         return model
 
     def load_frontend(self):

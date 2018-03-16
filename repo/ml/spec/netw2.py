@@ -70,8 +70,6 @@ class Netw2(ExpDesign):
                        )
 
 
-
-
     #
     #
     #
