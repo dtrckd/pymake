@@ -13,6 +13,7 @@ class Data(ExpeFormat):
 
     # @need an expe
     def missing(self, _type='pk'):
+        ''' Show missing expe. '''
         if self.is_first_expe():
             self.gramexp.n_exp_total = self.expe_size
             self.gramexp.n_exp_missing = 0
@@ -32,6 +33,7 @@ class Data(ExpeFormat):
 
     # @need an expe
     def completed(self, _type='pk'):
+        ''' Show completed expe. '''
         if self.is_first_expe():
             self.gramexp.n_exp_total = self.expe_size
             self.gramexp.n_exp_completed = 0

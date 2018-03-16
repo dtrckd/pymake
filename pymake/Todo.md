@@ -7,6 +7,7 @@
 * spec swagger integration ? https://swagger.io
 * [cli]["packet" manager]save and update the repo/ seen by pmk.
 * [cli]makes able to list them (the repo), and to select one by default => it will enable to execute pmk from any path, and to move/cd inside an existing repo/.
+* [cli] make `-l script [script_name]` to list mehtod, doctring, and arguement !
 
 * use expe._fmt if given to format extract_csv_sample from model _fmt.
 * integration of _pymake_settings (in util/) and better structure (and visibility) for gramexp core.
@@ -20,6 +21,7 @@ CLI
 ---
 * pmk push [spec] [opts] # push expe in spec !!! (Update MAN)
 * pmk fetch text/hugh (corpus etc !)
+* see: https://github.com/Kaggle/kaggle-api
 
 
 Core
