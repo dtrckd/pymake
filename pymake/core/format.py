@@ -160,7 +160,7 @@ class ExpeFormat(object):
         self = args[0]
         expe = self.expe
         kernel = fun(*args, **kwargs)
-        if hasattr(expe, 'block_plot') and getattr(self, 'noplot', False) is not True:
+        if 'block_plot' in expe and getattr(self, 'noplot', False) is not True:
             plt.show(block=expe.block_plot)
         return kernel
 
@@ -768,7 +768,7 @@ class ExpeFormat(object):
         # Could configure frontend/data path or more also here ?
         return
 
-    def load_model(self, frontend, init=True):
+    def load_model(self, frontend=None, init=True):
         from pymake.frontend.manager import ModelManager
 
         if init is True:

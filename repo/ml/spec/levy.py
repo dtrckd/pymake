@@ -34,6 +34,7 @@ class Levy(ExpDesign):
         homo = 0,
         mask = 'unbalanced',
 
+        _data_format = 'w',
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
         _format='{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}_{chi_a}-{tau_a}-{kappa_a}_{chi_b}-{tau_b}-{kappa_b}',

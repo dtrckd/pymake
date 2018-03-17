@@ -1,10 +1,23 @@
 from pymake import ExpeFormat
 
+
 USAGE = """\
 ----------------
 Template Script :
 ----------------
 """
 
+
 class $${projectname}_script(ExpeFormat):
-    pass
+    
+    def _preprocess(self):
+        ''' this method will be executed before each run.
+            Can be use to set some variable share by all script/actions.
+        ''''
+        pass
+
+    def log_expe(self):
+        ''' This method should return a string, to tune the message headers 
+            print by pymake in top of each run.
+        '''
+        pass
