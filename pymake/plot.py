@@ -3,6 +3,7 @@ import re, os, json
 import numpy as np
 import networkx as nx
 from networkx.drawing.nx_agraph import write_dot
+
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import colors as Colors
@@ -377,7 +378,7 @@ def adjblocks(Y, clusters=None, title=''):
     plt.title(title)
     #plt.savefig(filename, fig=fig, facecolor='white', edgecolor='black')
 
-def adjshow(Y, title='', fig=True, ax=None):
+def adjshow(Y, title='', fig=True, ax=None, colorbar=False):
     if fig is True and ax is None:
         plt.figure()
     if ax is None:
@@ -387,8 +388,17 @@ def adjshow(Y, title='', fig=True, ax=None):
     ax.axis('off')
     #cmap = 'Greys'
     cmap = plt.cm.hot
-    ax.imshow(Y, cmap=cmap, interpolation='None')
+    if Y.shape[0] != Y.shape[1]:
+        aspect = 'auto'
+    else:
+        aspect = None
+
+    img = ax.imshow(Y, cmap=cmap,
+                    aspect=aspect,
+                    interpolation='None')
     ax.set_title(title)
+    if colorbar:
+        plt.colorbar(img, ax=ax)
 
 def adjshow_4(Y,title=[], pixelspervalue=20):
     minvalue = np.amin(Y)

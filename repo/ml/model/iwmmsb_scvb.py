@@ -1,5 +1,6 @@
 import numpy as np
 import scipy as sp
+import scipy.stats
 from numpy import ma
 
 from pymake.util.math import lognormalize, categorical, sorted_perm, adj_to_degree, gem
@@ -135,12 +136,20 @@ class iwmmsb_scvb(SVB):
         k = self.N_Y + self.hyper_phi[0]
         p = (self.N_phi + self.hyper_phi[1] + 1)**-1
         self._phi = lambda x:sp.stats.nbinom.pmf(x, k, 1-p)
-        #self._phi = kernel
-        #self._phi = np.vectorize(kernel)
+        #mean = k*p / (1-p)
+        #var = k*p / (1-p)**2
 
         self._K = self.N_phi.shape[1]
 
         return self._theta, self._phi
+
+    def get_nb_ss(self):
+        k = self.N_Y + self.hyper_phi[0]
+        p = (self.N_phi + self.hyper_phi[1] + 1)**-1
+        mean = k*p / (1-p)
+        var = k*p / (1-p)**2
+        return mean, var
+
 
     def _reduce_one(self, i, j):
         xij = self._xij
@@ -293,6 +302,8 @@ class iwmmsb_scvb(SVB):
         try: theta, phi = self.get_params()
         except: return self.generate(N, K, hyperparams, 'generative', symmetric)
         K = theta.shape[1]
+
+        raise NotImplementedError
 
         pij = self.likelihood(theta, phi)
         pij = np.clip(pij, 0, 1)

@@ -480,7 +480,6 @@ class GenNetwork(ExpeFormat):
 
     @ExpeFormat.raw_plot
     def draw(self):
-        expe = self.expe
         #if expe._mode == 'predictive':
         #    model = self.frontend
         #    y = model.data
@@ -499,11 +498,43 @@ class GenNetwork(ExpeFormat):
         #draw_graph_spectral(y, clusters)
         #draw_graph_circular(y, clusters)
 
-        description = '/'.join((expe._refdir, os.path.basename(self.output_path)))
+        description = '/'.join((self.expe._refdir, os.path.basename(self.output_path)))
         adjshow(y, title=description)
         #adjblocks(y, clusters=comm['clusters'], title='Blockmodels of Adjacency matrix')
         #adjshow(reorder_mat(y, comm['clusters']), 'test reordering')
         #draw_blocks(comm)
+
+
+    def wsim(self):
+
+        model = self.model
+        #y = model.generate(**expe)
+        theta, phi = model.get_params()
+        # NB mean/var
+        mean, var = model.get_nb_ss()
+
+        phi=mean
+
+        print(theta.shape, theta.min(), theta.max())
+        print(phi.shape, phi.min(), phi.max())
+
+        description = '/'.join((self.expe._refdir, os.path.basename(self.output_path)))
+        adjshow(theta, title='theta', colorbar=True)
+        adjshow(phi, title='Phi Mean', colorbar=True)
+
+
+        data = self.frontend.data
+        sim = np.random.poisson(theta.dot(phi).dot(theta.T))
+        print('data shape', data.shape)
+        print('sim shape', sim.shape)
+
+        # l2 norm
+        l2 = ((data - sim)**2).sum()**(0.5)
+        print('l2', l2)
+
+
+
+
 
     def homo(self, _type='pearson', _sim='latent'):
         """ Hmophily test -- table output
