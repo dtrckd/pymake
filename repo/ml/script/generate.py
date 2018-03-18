@@ -727,8 +727,7 @@ class GenNetwork(ExpeFormat):
         if not hasattr(expe, 'testset_ratio'):
             setattr(expe, 'testset_ratio', 20)
 
-        frame = self.gramexp._figs[expe.get('corpus')]
-        ax = frame.ax
+        ax = frame.ax()
 
         if _type == 'testset':
             y_true, probas = model.mask_probas(data)

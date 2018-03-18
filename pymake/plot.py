@@ -14,7 +14,7 @@ from pymake.util.math import adj_to_degree, clusters_hist, degree_hist, draw_squ
 
 from pymake.util.ascii_code import X11_colors, plt_colors
 u_colors = Cycle(list(zip(*plt_colors))[1])
-_markers = Cycle([ '+', '*','x', 'o', '.', '1', 'p', '<', '>', 's' ])
+_markers = Cycle(['*', '+','x', 'o', '.', '1', 'p', '<', '>', 's'])
 _colors = Cycle(['r', 'g','b','y','c','m','k'])
 _linestyle = Cycle(['solid' , 'dashed', 'dashdot', 'dotted'])
 

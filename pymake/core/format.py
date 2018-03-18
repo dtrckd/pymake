@@ -9,7 +9,7 @@ from itertools import product
 import logging
 
 from pymake import ExpSpace
-from pymake.util.utils import colored, basestring, make_path, get_pymake_settings
+from pymake.util.utils import colored, basestring, make_path, get_pymake_settings, hash_objects
 
 from tabulate import tabulate
 
@@ -86,6 +86,12 @@ class ExpeFormat(object):
         self.pt = pt
         self.expe = expe
 
+        # Plot utils
+        from pymake.plot import _linestyle, _markers, _colors
+        self.linestyles = _linestyle.copy()
+        self.markers = _markers.copy()
+        self.colors = _colors.copy()
+
         # to exploit / Vizu
         self._it = pt['expe']
         self.corpus_pos = pt.get('corpus')
@@ -143,6 +149,13 @@ class ExpeFormat(object):
         else:
             return False
 
+    def expe_description(self):
+        return os.path.basename(self.output_path)
+
+    def expe_hash(self):
+        return hash_objects(self.expe)
+
+
     @classmethod
     def tabulate(cls, *args, **kwargs):
         return tabulate(*args, **kwargs)
@@ -156,6 +169,7 @@ class ExpeFormat(object):
     @staticmethod
     @decorator
     def plot_simple(fun, *args, **kwargs):
+        # @obsolete ? (no block in save, this is it?
         import matplotlib.pyplot as plt
         self = args[0]
         expe = self.expe
@@ -171,8 +185,8 @@ class ExpeFormat(object):
 
     @staticmethod
     def raw_plot(*groups, **_kwargs):
-        ''' If no argument, simple plot.
-            If arguments :
+        ''' If no argument, simple plot => @obsolete?
+            If arguments (in decorator) :
                 * [0] : group figure by this
                 * [1] : key for id (title and filename)
         '''
