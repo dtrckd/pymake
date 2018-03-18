@@ -152,10 +152,6 @@ class ExpeFormat(object):
     def expe_description(self):
         return os.path.basename(self.output_path)
 
-    def expe_hash(self):
-        return hash_objects(self.expe)
-
-
     @classmethod
     def tabulate(cls, *args, **kwargs):
         return tabulate(*args, **kwargs)

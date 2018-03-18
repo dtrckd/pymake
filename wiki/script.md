@@ -28,7 +28,6 @@ ploting helpers:
 * self.\_preprocess: a method that will be exectuted before each script. useful to load some variable shared by each actions.
 * self.log_expe: should return a string to custom the headers message prompt by pymake for each expe/run.
 * self.expe_description: return a short string description of the current expe (from output_path)
-* self.expe_hash: return a unique identifier of the current set of settings/spec (a hash over self.expe).
 * self.get_data_path: the data path directory related to the current [data_type], where data can be load or stored 
 * self.load_model(data, [init=False]): Return a model initialized for the current experience. If init is True, the model is load from pickle file.
 
