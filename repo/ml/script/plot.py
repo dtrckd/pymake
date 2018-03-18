@@ -41,9 +41,7 @@ class Plot(ExpeFormat):
         burnin = 5
         description = '/'.join((expe._refdir, os.path.basename(self.output_path)))
 
-        ax = frame.ax
-
-        ax = frame.fig.gca()
+        ax = frame.ax()
         ax.plot(data, label=description, marker=frame.markers.next())
         ax.legend(loc='upper right',prop={'size':5})
 
@@ -88,9 +86,7 @@ class Plot(ExpeFormat):
         burnin = 5
         description = '/'.join((expe._refdir, os.path.basename(self.output_path)))
 
-        ax = frame.fig.gca()
-
-        ax = frame.fig.gca()
+        ax = frame.ax()
         ax.plot(data, label=description, marker=frame.markers.next())
         ax.legend(loc='upper right',prop={'size':5})
 

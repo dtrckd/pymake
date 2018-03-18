@@ -530,8 +530,11 @@ class GramExp(object):
         id_str = 'expe' + str(expe['_id_expe'])
         id_name = expe['_name_expe']
 
+        # those can be used as alias in _format
         fmt_expe['_id'] = id_str
         fmt_expe['_name'] = id_name
+        fmt_expe['_hash'] = hash_objects(expe)
+
         for k, v in fmt_expe.items():
             if isinstance(v, (list, dict)):
                 #fmt_expe[k] = id_str # don't do that, no robust get back expe.
