@@ -191,7 +191,8 @@ class GramExp(object):
     # Reserved by GramExp for expe identification
     _reserved_keywords = ['_spec', # for nested specification.
                           '_id_expe', # unique (locally) expe identifier.
-                          '_name_expe', # exp name identifier.
+                          '_name_expe', # exp name identifier, set before _default_expe
+                          '_expe_hash', # Unique spec identifier.
                           '_pmk', # force to set some settings out of grammarg.
                          ]
     _private_keywords = _reserved_keywords + _special_keywords
@@ -529,11 +530,12 @@ class GramExp(object):
 
         id_str = 'expe' + str(expe['_id_expe'])
         id_name = expe['_name_expe']
+        id_hash = expe['_expe_hash']
 
-        # those can be used as alias in _format
+        # Special aliase for _format
         fmt_expe['_id'] = id_str
         fmt_expe['_name'] = id_name
-        fmt_expe['_hash'] = hash_objects(expe)
+        fmt_expe['_hash'] = id_hash
 
         for k, v in fmt_expe.items():
             if isinstance(v, (list, dict)):

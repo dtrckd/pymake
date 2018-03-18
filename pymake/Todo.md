@@ -13,6 +13,9 @@
 * use expe._fmt if given to format extract_csv_sample from model _fmt.
 * integration of _pymake_settings (in util/) and better structure (and visibility) for gramexp core.
 
+.(important)
+remove/rethink \_data_type, all dataset in the same level !
+
 Debug
 ----------
 * there is a random effect when doing checknetworks zipf. Class re-ordering is stochastik f. why ?!

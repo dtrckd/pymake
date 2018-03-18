@@ -518,6 +518,7 @@ class ExpTensorV2(BaseObject):
             if not expdesign:
                 expdesign = ExpDesign
             conf['_name_expe'] = '_default_expe'
+            conf['_expe_hash'] = hash_objects(dict((k,v) for k,v in conf.items() if k not in private_keywords))
             gt._tensors.append(ExpTensor.from_expe(conf))
             gt._ds_.append(expdesign)
             return gt
@@ -540,6 +541,7 @@ class ExpTensorV2(BaseObject):
                 consume_expe += 1
             else:
                 o['_name_expe'] = name
+                o['_expe_hash'] = hash_objects(dict((k,v) for k,v in o.items() if k not in private_keywords))
                 exp.append(o)
                 gt._ds_.append(_type)
                 consume_expe += 1
