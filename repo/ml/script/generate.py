@@ -38,7 +38,7 @@ class GenNetwork(ExpeFormat):
 
     _default_expe = dict(
         block_plot = False,
-        write  = False,
+        _write  = False,
         _do            = ['burstiness', 'global'], # default
         _mode         = 'generative',
         gen_size      = 1000,
@@ -326,7 +326,7 @@ class GenNetwork(ExpeFormat):
 
         #    figs.append(plt.gcf())
 
-        if expe.write:
+        if expe._write:
             if expe._mode == 'predictive':
                 base = '%s_%s' % (self.specname(expe.corpus), self.specname(expe.model))
             else:
@@ -471,7 +471,7 @@ class GenNetwork(ExpeFormat):
                 table = tabulate(table, headers=['__'+_model.upper()+'__']+Meas, tablefmt=tablefmt, floatfmt='.3f')
                 print()
                 print(table)
-                if expe.write:
+                if expe._write:
                     if expe._mode == 'predictive':
                         base = '%s_%s_%s' % (self.specname(expe.corpus), self.specname(_model), _type)
                     else:
@@ -628,7 +628,7 @@ class GenNetwork(ExpeFormat):
                 table = tabulate(table, headers=['__'+_model.upper()+'__']+Meas, tablefmt=tablefmt, floatfmt='.3f')
                 print()
                 print(table)
-                if expe.write:
+                if expe._write:
                     base = '%s_homo_%s' % (self.specname(_model), _type)
                     self.write_frames(table, base=base, ext='md')
 
@@ -877,7 +877,7 @@ class GenNetwork(ExpeFormat):
             table = tabulate(table, headers=headers, tablefmt=tablefmt, floatfmt='.3f')
             print()
             print(table)
-            if expe.write:
+            if expe._write:
                 base = '%s_%s_%s' % ( _type, _type2, _ratio)
                 figs = {'roc_evolution': ExpSpace({'fig':fig, 'table':table, 'base':base})}
                 self.write_frames(figs)

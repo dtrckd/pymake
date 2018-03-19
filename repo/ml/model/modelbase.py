@@ -33,7 +33,7 @@ class ModelBase():
     __abstractmethods__ = 'model'
 
     default_settings = {
-        'write' : False,
+        '_write' : False,
         '_csv_typo' : None,
         '_fmt' : None, # unused...
         'iterations' : 3,
@@ -205,6 +205,9 @@ class ModelBase():
             if hasattr(model, 'model'):
                 # ModelSkl
                 delattr(model.model, 'write_it_step')
+            elif hasattr(self, 'write_it_step'):
+                delattr(model.model, 'write_it_step')
+
 
         if not silent:
             self.log.info('Snapshotting Model : %s' % fn)
@@ -224,8 +227,7 @@ class ModelBase():
             try:
                 setattr(result, k, deepcopy(v, memo))
             except Exception as e:
-                self.log.debug('can\'t copy %s : %s' % (k, v))
-                self.log.debug('error: %s' % e)
+                self.log.debug('can\'t copy %s : %s. Passing on: %s' % (k, v, e))
                 continue
         return result
 
@@ -483,7 +485,7 @@ class GibbsSampler(ModelBase):
             print('.', end='')
             self.log.info('iteration %d, %s, Entropy: %f \t\t K=%d  alpha: %f gamma: %f' % (_it, '/'.join((self.expe.model, self.expe.corpus)),
                                                                                     self._entropy, self._K,self._alpha, self._gmma))
-            if self.write:
+            if self.expe.get('_write'):
                 self.write_it_step(self)
                 if _it > 0 and _it % self.snapshot_freq == 0:
                     self.save(silent=True)
@@ -644,7 +646,7 @@ class SVB(ModelBase):
             print('.', end='')
             self.log.info('Minibatch %d/%d, %s, Entropy: %f,  diff: %f' % (_id_mnb+1, self.chunk_len, '/'.join((self.expe.model, self.expe.corpus)),
                                                                         self._entropy, self.entropy_diff))
-            if self.expe.get('write'):
+            if self.expe.get('_write'):
                 self.write_it_step(self)
                 if _id_mnb > 0 and _id_mnb % self.snapshot_freq == 0:
                     self.save(silent=True)
@@ -674,10 +676,10 @@ class SVB(ModelBase):
                 self.expectation(iter, burnin=burnin)
 
 
-            if self._iteration != self.iterations-1 and self.expe.get('verbose', 20) < 20:
+            if self._iteration != self.iterations-1 and self.expe.get('_verbose', 20) < 20:
                 self.compute_measures()
                 self.log.debug('it %d,  ELBO: %f, elbo diff: %f \t K=%d' % (_it, self._entropy, self.entropy_diff, self._K))
-                if self.expe.get('write'):
+                if self.expe.get('_write'):
                     self.write_it_step(self)
 
 

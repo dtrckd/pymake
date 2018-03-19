@@ -63,7 +63,7 @@ def lda_gensim(corpus=None, id2word=None, K=10, alpha='auto', save=False, bdir='
 ##################
 if __name__ == '__main__':
     conf = defaultdict(lambda: False, dict(
-        verbose     = 0,
+        _verbose     = 0,
         host        = 'localhost',
         index       = 'search',
         corpus      = '20ngroups', # nips12, wiki, lucene
@@ -188,7 +188,7 @@ if __name__ == '__main__':
         lda.sstats = None
         lda.save(lda.fname)
 
-    if conf.get('verbose'):
+    if conf.get('_verbose'):
         #print lda.top_topics(corpus)
         for d in corpus:
             print lda.get_document_topics(d, minimum_probability=0.01)

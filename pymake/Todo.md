@@ -1,6 +1,5 @@
 # WIP
 
-
 # @v0.4 ?
 * ipython builder helper
 * web server interface and visualization  (flask...)
@@ -11,7 +10,6 @@
 * [cli] pmk -l => show spec script and model.
 
 * use expe._fmt if given to format extract_csv_sample from model _fmt.
-* integration of _pymake_settings (in util/) and better structure (and visibility) for gramexp core.
 
 .(important)
 remove/rethink \_data_type, all dataset in the same level !
@@ -31,6 +29,10 @@ CLI
 Core
 ----
 * print warning on duplicate class name duplicate for Scipt, Model, Spec or Copus, but especially for Script and Spec class définition wich is more probable to happen
+* Re-structure Gramexp with pymake (pymake should be design with pymake !:
+        * model => gram.py
+        * script => update/hist/run etc (advantage the pmk command will be available for autocompletion !
+* integration of _pymake_settings (in util/) and better structure (and visibility) for gramexp core.
 
 
 Frontend
@@ -50,7 +52,6 @@ Model
         2. find a way to pass the argument  from signature **kwargs to command-line. (index the signature)
 *  \_initialize  random init !!!! do cleaner init of class for empty model....
 * ModelManager constructor from_model (object) (it calls \_load_model)
-* print help/signature from command_line (model/corpus)
 * ILFM create sampler and proper inhheritance form GibbsSampler.
 
 Corpus/Dataset

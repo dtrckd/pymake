@@ -199,8 +199,8 @@ class GramExp(object):
 
     _default_expe = {
         #'host'      : 'localhost',
-        'verbose'   : logging.INFO,
-        'write'     : False,
+        '_verbose'   : logging.INFO,
+        '_write'     : False,
         #'_load_data' : True, # if .pk corpus is here, load it.
         #'_save_data' : False, # save corpus as .pk.
     }
@@ -217,7 +217,7 @@ class GramExp(object):
 
     def __init__(self, conf, usage=None, parser=None, parseargs=True, expdesign=None):
         # @logger One logger by Expe ! # in preinit
-        setup_logger(level=conf.get('verbose'))
+        setup_logger(level=conf.get('_verbose'))
 
         if conf is None:
             conf = {}

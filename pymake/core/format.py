@@ -241,7 +241,7 @@ class ExpeFormat(object):
 
                 # Save on last call
                 if self._it == self.expe_size -1:
-                    if expe.write:
+                    if expe._write:
                         self.write_frames(self.gramexp._figs)
 
                 return kernel
@@ -325,7 +325,7 @@ class ExpeFormat(object):
 
                 # Save on last call
                 if self._it == self.expe_size -1:
-                    if self.expe.write:
+                    if self.expe._write:
                         self.write_frames(self.gramexp._figs)
 
                 return kernel
@@ -408,7 +408,7 @@ class ExpeFormat(object):
                             print(Table)
 
 
-                    if self.expe.write:
+                    if self.expe._write:
                         tablefmt_ext = dict(simple='md', latex='tex')
                         self.write_frames(self.gramexp._tables, ext=tablefmt_ext[tablefmt])
 
@@ -569,7 +569,7 @@ class ExpeFormat(object):
     def _expe_postprocess(self):
         ''' system postprocess '''
 
-        if self.expe.get('write'):
+        if self.expe.get('_write'):
             self.clear_fitfile()
             if hasattr(self, 'model') and hasattr(self.model, 'save'):
                 self.model.save()
@@ -768,7 +768,7 @@ class ExpeFormat(object):
 
 
     def write_it_step(self, model):
-        if self.expe.get('write'):
+        if self.expe.get('_write'):
             self._write_current_state(model)
 
     def configure_model(self, model):
@@ -785,7 +785,7 @@ class ExpeFormat(object):
         else:
             setattr(model, 'write_it_step', self.write_it_step)
 
-        if self.expe.get('write'):
+        if self.expe.get('_write'):
             self.init_fitfile()
 
         # Could configure frontend/data path or more also here ?
