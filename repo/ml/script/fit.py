@@ -12,11 +12,11 @@ Fit the data :
 
 class Fit(ExpeFormat):
 
-
     def __call__(self):
         expe = self.expe
         t0 = time.time()
 
+        # Load data
         frontend = self.load_frontend()
 
         ### @Debug: Obsolete / Inside model
@@ -27,12 +27,12 @@ class Fit(ExpeFormat):
         expe['hyperparams'] = hyperparams
         #############################################################
 
-        self.model = self.load_model(frontend)
+        # Load Model
+        model = self.load_model(frontend)
 
-        for i in range(1):
-            self.model.fit()
+        # Fit
+        model.fit()
 
-        #model.predict(frontend=frontend)
         self.log.info('Expe %d finished in %.1f' % (self.pt['expe']+1, time.time()-t0))
 
 
@@ -55,4 +55,4 @@ class Fit(ExpeFormat):
 
 
 if __name__ == '__main__':
-    GramExp.generate().pymake(Fit)
+    GramExp.zymake().pymake(Fit)

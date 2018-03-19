@@ -97,6 +97,7 @@ class ExpeFormat(object):
         self.corpus_pos = pt.get('corpus')
         self.model_pos = pt.get('model')
         self.output_path = self.expe['_output_path']
+        self.input_path = self.expe['_input_path']
 
         if expe.get('_expe_silent'):
             self.log_silent()
@@ -136,7 +137,6 @@ class ExpeFormat(object):
             print()
             print()
 
-
     def is_first_expe(self):
         if 0 == self.pt['expe']:
             return True
@@ -148,6 +148,18 @@ class ExpeFormat(object):
             return True
         else:
             return False
+
+    def spec_from_expe(self, spec_map=None):
+        ''' Return a sub dict from expe, from spec_map. '''
+        if spec_map is None:
+            spec_map = {}
+
+        spec = {}
+        for k, v in spec_map.items():
+            if v in self.expe:
+                spec[k] = self.expe[v]
+
+        return spec
 
     def expe_description(self):
         return os.path.basename(self.output_path)
@@ -529,7 +541,8 @@ class ExpeFormat(object):
         if not gramexp._conf.get('simulate'):
             cls.log.info(gramexp.exptable())
 
-        # Global conteneur shared with all expe
+        # Global container shared by all expe
+        # running in the sandbox.
         gramexp.D = ExpSpace()
 
         return

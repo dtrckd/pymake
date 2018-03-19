@@ -506,7 +506,7 @@ class GramExp(object):
         """ Make a single input path from a expe/dict """
         expe = defaultdict(lambda: None, expe)
         filen = None
-        base = expe.get('_data_type', 'pmk-temp')
+        base = expe.get('_data_type', 'pmk-dump')
 
         # Corpus is an historical exception and has its own subfolder.
         c = expe.get('corpus')
