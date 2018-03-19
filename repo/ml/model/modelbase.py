@@ -181,10 +181,8 @@ class ModelBase():
 
     def save(self, silent=False):
         fn = self.expe['_output_path'] + '.pk'
-        model = deepcopy(self)
-        model.purge()
         to_remove = []
-        for k, v in model.__dict__.items():
+        for k, v in self.__dict__.items():
             if hasattr(v, 'func_name') and v.func_name == '<lambda>':
                 to_remove.append(k)
             if str(v).find('<lambda>') >= 0:
@@ -193,17 +191,28 @@ class ModelBase():
             #elif type(k) is defaultdict:
             #    setattr(self.model, k, dict(v))
 
-        for k in to_remove:
-            try:
-                delattr(model, k)
-            except:
-                pass
+        if to_remove or self._has_purge():
+            model = deepcopy(self)
+            model.purge()
+
+            for k in to_remove:
+                try:
+                    delattr(model, k)
+                except Exception as e:
+                    self.log.debug('Cant delete object during model purging: %s' % e)
+        else:
+            model = self
+            if hasattr(model, 'model'):
+                # ModelSkl
+                delattr(model.model, 'write_it_step')
 
         if not silent:
             self.log.info('Snapshotting Model : %s' % fn)
         else:
             sys.stdout.write('+')
 
+        #import joblib
+        #joblib.dump(model, fn)
         with open(fn, 'wb') as _f:
             return pickle.dump(model, _f, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -214,8 +223,9 @@ class ModelBase():
         for k, v in self.__dict__.items():
             try:
                 setattr(result, k, deepcopy(v, memo))
-            except:
-                #print('can\'t copy %s : %s' % (k, v))
+            except Exception as e:
+                self.log.debug('can\'t copy %s : %s' % (k, v))
+                self.log.debug('error: %s' % e)
                 continue
         return result
 
@@ -313,6 +323,9 @@ class ModelBase():
     def get_clusters(self):
         raise NotImplementedError
 
+    def _has_purge(self):
+        return any([getattr(self, o, None) for o in self._purge_objects])
+
     def purge(self):
         for obj in self._purge_objects:
             if hasattr(self, obj):
@@ -320,6 +333,13 @@ class ModelBase():
 
 
 class ModelSkl(ModelBase):
+
+    '''
+    Notes
+    -----
+    Model class need to be serialisable. Module object are not serialisable.
+    Avoid keeping it in the self object.
+    '''
 
     def __init__(self, expe, frontend):
         super(ModelSkl, self).__init__(expe, frontend)
@@ -329,11 +349,11 @@ class ModelSkl(ModelBase):
             self.log.error('ModelSkl base class need a {module} name attribute. Exiting.')
             exit(42)
 
-        self._module, self._model = self._mm_from_str(self.module)
-        spec = self._spec_from_expe(self._model)
+        _module, _model = self._mm_from_str(self.module)
+        spec = self._spec_from_expe(_model)
 
         # Init Sklearn model
-        self.model = self._model(**spec)
+        self.model = _model(**spec)
 
 
     @staticmethod
@@ -361,27 +381,29 @@ class ModelSkl(ModelBase):
 
         return spec
 
-    def __getattr__(self, attr):
-        ''' Propagate sklearn attribute.
+    #def __getattr__(self, attr):
+    #    ''' Propagate sklearn attribute.
 
-            Notes
-            -----
-            __getatrr__ is call only if the attr doesn't exist...
-        '''
+    #        Notes
+    #        -----
+    #        __getatrr__ is call only if the attr doesn't exist...
+    #    '''
 
-        if not 'model' in self.__dict__:
-            raise AttributeError
+    #    if not 'model' in self.__dict__:
+    #        raise AttributeError
 
-        attr = attr.partition('__hack_me_')[-1]
-        return getattr(self.model, attr)
+    #    attr = attr.partition('__hack_me_')[-1]
+    #    return getattr(self.model, attr)
 
     def fit(self, *args, **kwargs):
-        fun =  self.__hack_me_fit
-        return fun(*args, **kwargs)
+        #fun =  self.__hack_me_fit
+        #return fun(*args, **kwargs)
+        return self.model.fit(*args, **kwargs)
 
     def transform(self, *args, **kwargs):
-        fun =  self.__hack_me_transform
-        data = fun(*args, **kwargs)
+        #fun =  self.__hack_me_transform
+        #data = fun(*args, **kwargs)
+        data = self.model.transform(*args, **kwargs)
 
         if 'post_transform' in self.__dict__:
             for module in self.post_transform:
@@ -394,8 +416,9 @@ class ModelSkl(ModelBase):
 
     # @Obsolete ?
     def predict(self, *args, **kwargs):
-        fun =  self.__hack_me_predict
-        return fun(*args, **kwargs)
+        #fun =  self.__hack_me_predict
+        #return fun(*args, **kwargs)
+        return self.model.predict(*args, **kwargs)
 
     # get_params()
     # set_params()

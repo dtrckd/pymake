@@ -105,7 +105,7 @@ class ExpSpace(dict):
         try:
             return self[key]
         except KeyError:
-            lgg.warning('an ExpSpace request exceptions occured for key :%s ' % (key))
+            lgg.debug('an ExpSpace request exceptions occured for key: %s ' % (key))
             raise AttributeError(key)
 
     # Scratch method because __hasattr__ catch an error in getattr.
