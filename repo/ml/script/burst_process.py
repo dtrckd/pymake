@@ -23,7 +23,7 @@ class BurstProcess(ExpeFormat):
 
     _default_expe = dict(
         block_plot = False,
-        write  = False,
+        _write  = False,
         _do            = ['burstiness', 'global'], # default
         _mode         = 'generative',
         gen_size      = 1000,

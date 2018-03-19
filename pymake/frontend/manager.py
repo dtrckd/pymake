@@ -124,11 +124,12 @@ class ModelManager(object):
             self.log.error('Model Unknown : %s' % (self.expe.model))
             raise NotImplementedError()
 
+        # @Improve: * initialize all model with expe
+        #           * fit with frontend, transform with frontend (as sklearn do)
         if self.is_model(_model, 'pymake'):
             model = _model(self.expe, frontend)
         else:
-            # Would it be better to use {ModelPmk} by default ?
-            model = _model(**self.expe)
+            model = _model(self.expe, frontend)
 
         return model
 
