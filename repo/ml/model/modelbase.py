@@ -203,10 +203,12 @@ class ModelBase():
         else:
             model = self
             if hasattr(model, 'model'):
-                # ModelSkl
-                delattr(model.model, 'write_it_step')
+                if hasattr(model.model, 'write_it_step'):
+                    delattr(model.model, 'write_it_step')
+                else:
+                    delattr(model, 'write_it_step')
             elif hasattr(self, 'write_it_step'):
-                delattr(model.model, 'write_it_step')
+                delattr(model, 'write_it_step')
 
 
         if not silent:
@@ -343,7 +345,7 @@ class ModelSkl(ModelBase):
     Avoid keeping it in the self object.
     '''
 
-    def __init__(self, expe, frontend):
+    def __init__(self, expe, frontend=None):
         super(ModelSkl, self).__init__(expe, frontend)
 
         # Load Sklearn Model
@@ -383,29 +385,27 @@ class ModelSkl(ModelBase):
 
         return spec
 
-    #def __getattr__(self, attr):
-    #    ''' Propagate sklearn attribute.
+    def __getattr__(self, attr):
+        ''' Propagate sklearn attribute.
 
-    #        Notes
-    #        -----
-    #        __getatrr__ is call only if the attr doesn't exist...
-    #    '''
+            Notes
+            -----
+            __getatrr__ is call only if the attr doesn't exist...
+        '''
 
-    #    if not 'model' in self.__dict__:
-    #        raise AttributeError
+        if not 'model' in self.__dict__:
+            raise AttributeError
 
-    #    attr = attr.partition('__hack_me_')[-1]
-    #    return getattr(self.model, attr)
+        attr = attr.partition('__hack_me_')[-1]
+        return getattr(self.model, attr)
 
     def fit(self, *args, **kwargs):
-        #fun =  self.__hack_me_fit
-        #return fun(*args, **kwargs)
-        return self.model.fit(*args, **kwargs)
+        fun =  self.__hack_me_fit
+        return fun(*args, **kwargs)
 
     def transform(self, *args, **kwargs):
-        #fun =  self.__hack_me_transform
-        #data = fun(*args, **kwargs)
-        data = self.model.transform(*args, **kwargs)
+        fun =  self.__hack_me_transform
+        data = fun(*args, **kwargs)
 
         if 'post_transform' in self.__dict__:
             for module in self.post_transform:
@@ -416,11 +416,14 @@ class ModelSkl(ModelBase):
 
         return data
 
+    def fit_transform(self, *args, **kwargs):
+        fun =  self.__hack_me_fit_transform
+        return fun(*args, **kwargs)
+
     # @Obsolete ?
     def predict(self, *args, **kwargs):
-        #fun =  self.__hack_me_predict
-        #return fun(*args, **kwargs)
-        return self.model.predict(*args, **kwargs)
+        fun =  self.__hack_me_predict
+        return fun(*args, **kwargs)
 
     # get_params()
     # set_params()
