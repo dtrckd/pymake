@@ -185,7 +185,7 @@ class ModelManager(object):
             data_prop = frontend.get_data_prop()
             res.update(data_prop)
 
-        if self.expe.write:
+        if self.expe._write:
             frontend.save_json(res)
         else:
             self.log.debug(res)

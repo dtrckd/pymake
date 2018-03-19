@@ -31,7 +31,7 @@ class CheckNetwork(ExpeFormat):
 
     _default_expe = dict(
         block_plot = False,
-        write = False,
+        _write = False,
         _do           = ['zipf', 'source'],
         _data_type = 'networks'
 
@@ -119,7 +119,7 @@ class CheckNetwork(ExpeFormat):
         ### Plot Degree
         plot_degree_poly(data_r, ax=ax2)
 
-        if expe.write:
+        if expe._write:
             self.write_frames([fig], suffix='dd')
 
     @ExpeFormat.raw_plot
@@ -261,7 +261,7 @@ class CheckNetwork(ExpeFormat):
         plt.title('Blocks Size (max assignement)')
         figs.append(plt.gcf())
 
-        if expe.write:
+        if expe._write:
             self.write_frames(figs)
 
         if self._it == self.expe_size -1:
@@ -279,7 +279,7 @@ class CheckNetwork(ExpeFormat):
                 table = self.tabulate(table, headers=['__'+_model.upper()+'__']+Meas, tablefmt=tablefmt, floatfmt='.3f')
                 print()
                 print(table)
-                #if expe.write:
+                #if expe._write:
                 #    base = '%s' % (clusters_org)
                 #    self.write_frames(table, base=base)
 

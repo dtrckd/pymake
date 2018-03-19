@@ -110,10 +110,10 @@ _Gram = [
         help='Host database'),
 
     '-v', dict(
-        nargs='?', action=VerboseAction, dest='verbose',
+        nargs='?', action=VerboseAction, dest='_verbose',
         help='Verbosity level (-v | -vv | -v 2)'),
     '-nv', '--silent', dict(
-        nargs=0, action=VerboseAction, dest='verbose',
+        nargs=0, action=VerboseAction, dest='_verbose',
         help='Silent option'),
 
     '-s', '--simulate',  dict(
@@ -121,7 +121,7 @@ _Gram = [
         help='Offline simulation'),
 
     '-w', '--write', dict(
-        action='store_true',
+        action='store_true', dest='_write',
         help='Write Fitted Model On disk.'),
 
     '--seed', dict(

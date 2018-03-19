@@ -321,7 +321,7 @@ class frontendText(DataBase):
    #         lda.sstats = None
    #         lda.save(lda.fname)
 
-   #     if config.get('verbose'):
+   #     if config.get('_verbose'):
    #         #print lda.top_topics(corpus)
    #         for d in corpus:
    #             print lda.get_document_topics(d, minimum_probability=0.01)

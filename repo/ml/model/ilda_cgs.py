@@ -33,7 +33,7 @@ class ilda_cgs(GibbsRun):
                                        jointsampler,
                                        iterations=expe.iterations,
                                        output_path=expe._output_path,
-                                       write=expe.write,
+                                       write=expe._write,
                                        data_t=data_t)
         self.update_hyper(expe.hyperparams)
 
