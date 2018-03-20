@@ -376,12 +376,12 @@ class ModelSkl(ModelBase):
         spec_map = getattr(self, 'spec_map', {})
         default_spec = getattr(self, '_default_spec', {})
         for k in model_params:
-            if k in self.expe:
+            if k in list(self.expe)+list(spec_map):
                 _k = spec_map.get(k, k)
-                spec[_k] = self.expe[_k]
+                if _k in self.expe:
+                    spec[k] = self.expe[_k]
             elif k in default_spec:
-                _k = spec_map.get(k, k)
-                spec[_k] = default_spec[_k]
+                spec[k] = default_spec[k]
 
         return spec
 
@@ -407,7 +407,7 @@ class ModelSkl(ModelBase):
         fun =  self.__hack_me_transform
         data = fun(*args, **kwargs)
 
-        if 'post_transform' in self.__dict__:
+        if hasattr(self, 'post_transform'):
             for module in self.post_transform:
                 _m, _model = self._mm_from_str(module)
                 spec = self._spec_from_expe(_model)
