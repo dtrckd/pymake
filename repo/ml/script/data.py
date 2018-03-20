@@ -3,9 +3,18 @@ from pymake import ExpeFormat
 
 from collections import OrderedDict
 
-
 import matplotlib.pyplot as plt
 from pymake.util.utils import colored
+
+
+
+USAGE = """\
+----------------
+Manage the data : This script is part of the repo/ml of pymake.
+----------------
+"""
+
+
 
 class Data(ExpeFormat):
 

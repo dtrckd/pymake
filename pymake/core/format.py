@@ -161,6 +161,9 @@ class ExpeFormat(object):
 
         return spec
 
+    def get_expset(self, param):
+        return self.gramexp.get_set(param)
+
     def expe_description(self):
         return os.path.basename(self.output_path)
 
@@ -572,7 +575,12 @@ class ExpeFormat(object):
         if self.expe.get('_write'):
             self.clear_fitfile()
             if hasattr(self, 'model') and hasattr(self.model, 'save'):
-                self.model.save()
+                if hasattr(self.model, 'write_it_step'):
+                    self.model.save()
+                elif hasattr(self.model, 'model'):
+                    if hasattr(self.model.model, 'write_it_step'):
+                        self.model.save()
+
 
         if hasattr(self, '_postprocess'):
             self._postprocess()
