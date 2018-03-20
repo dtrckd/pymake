@@ -4,7 +4,7 @@ from datetime import datetime
 import logging
 import operator
 import fnmatch
-import pickle
+import pickle, json
 import subprocess
 import shlex
 import inspect, traceback, importlib
@@ -69,6 +69,18 @@ class MyLogFormatter(logging.Formatter):
         self._style._fmt = format_orig
 
         return result
+
+# @Todo to frontend_io
+class MyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        else:
+            return super(MyEncoder, self).default(obj)
 
 
 def setup_logger(level=logging.INFO, name='root'):
@@ -900,22 +912,35 @@ class GramExp(object):
         return lines
 
     @staticmethod
-    def load(fn, silent=False):
-        # Pickle class
-        fn = fn + '.pk'
+    def load(fn, ext='pk', silent=False):
+        fn = fn + '.' + ext
         if not silent:
             lgg.info('Loading frData : %s' % fn)
-        with open(fn, 'rb') as _f:
-            return pickle.load(_f)
+
+        if ext == 'pk':
+            with open(fn, 'rb') as _f:
+                return pickle.load(_f)
+        elif ext == 'json':
+            with open(fn) as _f:
+                return json.load(_f)
+        else:
+            raise ValueError('File format unknown: %s' % ext)
 
     @staticmethod
-    def save(data, fn, silent=False):
-        # Pickle class
-        fn = fn + '.pk'
+    def save(data, fn, ext='pk', silent=False):
+        fn = fn + '.' + ext
         if not silent:
             lgg.info('Saving frData : %s' % fn)
-        with open(fn, 'wb') as _f:
-            return pickle.dump(data, _f, protocol=pickle.HIGHEST_PROTOCOL)
+
+        if ext == 'pk':
+            with open(fn, 'wb') as _f:
+                return pickle.dump(data, _f, protocol=pickle.HIGHEST_PROTOCOL)
+        elif ext == 'json':
+            with open(fn, 'w') as _f:
+                return json.dump(data, _f, cls=MyEncoder)
+        else:
+            raise ValueError('File format unknown: %s' % ext)
+
 
     @staticmethod
     def model_walker(bdir, fmt='list'):
