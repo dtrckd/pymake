@@ -4,11 +4,14 @@ from numpy import ma
 from pymake import GramExp, ExpeFormat
 
 
+
 USAGE = """\
 ----------------
-Fit the data :
+Fit the data : This script is part of the repo/ml of pymake.
 ----------------
 """
+
+
 
 class Fit(ExpeFormat):
 
