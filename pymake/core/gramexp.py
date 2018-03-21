@@ -182,9 +182,8 @@ class GramExp(object):
         fit.py -m immsb -c alternate -n 100 -i 10'''
 
     # has special semantics on **output_path**.
-    _special_keywords = [ '_refdir', '_data_type',
+    _special_keywords = [ '_refdir', '_repeat',
                          '_format', '_csv_typo',
-                         '_repeat',
                         ] # output_path => pmk-basedire/{base_type}/{refdir}/{repeat}/${format}:${csv_typo}
 
     # Reserved by GramExp for expe identification
@@ -455,8 +454,8 @@ class GramExp(object):
             @type: pk, json or inference.
         """
         expe = defaultdict(lambda: None, expe)
-        base = expe.get('_data_type', 'pmk-dump')
-        hook = expe.get('_refdir', '_default')
+        base = '.pymake'
+        hook = expe.get('_refdir', 'default')
 
         basedir = os.path.join(cls._data_path, base, 'results')
 
@@ -504,7 +503,7 @@ class GramExp(object):
         """ Make a single input path from a expe/dict """
         expe = defaultdict(lambda: None, expe)
         filen = None
-        base = expe.get('_data_type', 'pmk-dump')
+        base = '.pymake'
 
         # Corpus is an historical exception and has its own subfolder.
         c = expe.get('corpus')

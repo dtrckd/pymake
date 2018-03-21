@@ -30,10 +30,9 @@ class DataBase(object):
     log = logging.getLogger('root')
 
     def __init__(self, expe):
+        self.expe = expe
 
-        # Load a .pk file for data(default: True if present)
-        # + it faset
-        # - some data features are not stored in .pk
+        # Load a .pk file of **preprocessed** data(default: True if present)
         self._load_data = expe.get('_load_data', True)
 
         # Save a .pk file of data
@@ -43,22 +42,13 @@ class DataBase(object):
         self.model_name = expe.get('model')
 
         # Specific / @issue Object ?
-        # How to handld not-defined variable ?
-        # What categorie for object ??
+        # How to handle undefined variable ?
+        # What category for object ??
         self.homo = int(expe.get('homo', 0))
-        self.hyper_optimiztn = expe.get('hyper')
         self.clusters = None
         self.features = None
-
         self.true_classes = None
-
-        self.expe = expe
-
         self._data_file_format = None
-
-        # Copy Contructor in Python ?
-        #if data is not None:
-        #    self.update_data(data)
 
         # @Obsolete
         self.data_t = None
@@ -78,7 +68,7 @@ class DataBase(object):
     def get_data_prop(self):
         prop = defaultdict()
         prop.update( {'corpus': self.corpus_name,
-                'instances' : self.data.shape[1] })
+                      'instances' : self.data.shape[1] })
         return prop
 
     # Template for corpus information: Instance, Nnz, features etx
@@ -99,10 +89,10 @@ class DataBase(object):
         #
     @staticmethod
     def symmetrize(self, data=None):
+        ''' inp-place symmetrization. '''
         if data is None:
             return None
         data = np.triu(data) + np.triu(data, 1).T
-        return
 
     def shuffle_features(self):
         raise NotImplemented
@@ -131,34 +121,5 @@ class DataBase(object):
     def save(*args, **kwargs):
         from pymake.io import save
         return save(*args, **kwargs)
-
-    # convert ndarray to list.
-    def save_json(self, res):
-        """ Save a dictionnary in json"""
-        fn = self.expe._output_path + '.json'
-        new_res = copy.copy(res)
-        for k, v  in new_res.items():
-            # Go at two level deeper, no more !
-            if type(v) is dict:
-                for kk, vv  in v.items():
-                    if hasattr(vv, 'tolist'):
-                        new_res[k][kk] = vv.tolist()
-            if hasattr(v, 'tolist'):
-                new_res[k] = v.tolist()
-
-        self.log.info('Saving json : %s' % fn)
-        return json.dump(new_res, open(fn,'w'))
-    def get_json(self):
-        fn = self.expe._output_path + '.json'
-        self.log.info('Loading json frData ; %s' % fn)
-        d = json.load(open(fn,'r'))
-        return d
-    def update_json(self, d):
-        fn = self.expe._output_path + '.json'
-        res = json.load(open(fn,'r'))
-        res.update(d)
-        self.log.info('Updating json frData: %s' % fn)
-        json.dump(res, open(fn,'w'))
-        return fn
 
 

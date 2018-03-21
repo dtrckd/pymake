@@ -19,9 +19,6 @@ class frontendText(DataBase):
 
     def __init__(self, expe=None):
         super(frontendText, self).__init__(expe)
-
-        #if not expe.get('_data_type'):
-        #    expe['_data_type'] = 'text'
         self._data_type = 'text'
 
     def load_data(self, randomize=False):

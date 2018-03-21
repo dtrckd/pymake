@@ -62,10 +62,12 @@ Perspectives:
 #### From source
 
 ###### Linux dependencies
-`apt-get install python3-setuptools python3-pip python3-tk libopenblas-dev gfortran parallel`
+
+    apt-get install python3-setuptools python3-pip python3-tk libopenblas-dev gfortran parallel
 
 ###### MacOs dependencies
-`brew install parallel`
+
+    brew install parallel
 
 ###### Install
 
@@ -82,6 +84,19 @@ The repo contains two main directories:
 * repo/ -- Poc projects that are structured with pymake,
     * repo/docsearch: A search-engine in local file (pdf).
     * repo/ml: Machine learning models and experiments.
+
+## Glossary and Types
+
+* *run* or *expe*: It is the term that design one single experiment. it is related to an atomic, sequential code execution.
+* *ExpSpace*: A dict-like object used to stored the settings for one *expe*.
+* *ExpTensor*: A dict-like object to represent a set of *expe* with common parameters. Each entry that are instance of `list` or `set` are used to build a Cartesian product of those entries. It is used to defined grid search over parameters.
+* *ExpGroup*: A list-like object to defined set of heterogeneous expe.
+* *spec*: A spec is a design of experience, and is formally defines as a subset of Expspaces, ExpTensors and ExpGroups.
+* *ExpeFormat*: A base class used to create scripts. It acts like a sandbox for the runs. The class that inherit ExpeFormat should be located in `script/`
+* *ExpDesign*: A base  class used to create design of experience. The experience of type ExpSpace, ExpTensor and ExpGroup should be defined within class that inherit ExpDesign and located in `spec/`
+* *model*: A class that have a method named `fit` and located in `model/`
+* *pymake.cfg*: the pymake configuration file, where, for example, the name of the location (model/, spec, model/) can be changed among other settings.
+<!-- grammarg, -->
 
 ## Examples [](#3)
 
@@ -128,10 +143,33 @@ Then you can list some information about pymake objects:
 * What experiments are there: `pmk -l spec`
 * What models are there: `pmk -l model`
 * What scripts are there: `pmk -l script`
-* Show signatures of methods in scripts ('ir' script): `pmk -l --script ir`
-
+* Show signatures of methods in scripts ('ir' script)\: `pmk -l --script ir`
 
 ## FAQ [](#4)
+
+
+###### How to share memory between all expe/run as design of experience
+
+If the run/expe are launched sequentially (without `--cores` option), one can use a global container defined in the ExpeFormat sandbox classes in the variable `self.D`. Typically one would init variables at the first experience, process it, and at the final run, do some processing with that variable, as illustrated in the following example:
+
+```python
+class MyScripts(ExpeFormat):
+
+    def my_action(self):
+        if self.is_first_expe():
+            self.D.my_shared_var = 0
+
+        my_shared_var = self.D.my_shared_var
+        my_shared_var += 1
+
+        if self.is_last_expe():
+            print('Expe total: %d' % self.D.my_shared_var)
+```
+
+
+If the runs are parallelized (with `--cores` options), there is no current implemented way to do it although it is likely to be develloped in the future.
+
+
 
 ###### How to activate Spec/Script auto-completion
 
