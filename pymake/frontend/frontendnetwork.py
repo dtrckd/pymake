@@ -371,7 +371,7 @@ class frontendNetwork(DataBase, DatasetDriver):
 
         if self._load_data and os.path.isfile(fn+'.pk'):
             try:
-                data = self._load(fn)
+                data = self.load(fn)
             except Exception as e:
                 self.log.error('Error : %s on %s' % (e, fn+'.pk'))
                 data = None
@@ -404,7 +404,7 @@ class frontendNetwork(DataBase, DatasetDriver):
             self.Symmetrize(data)
 
         if self._save_data:
-            self._save(data, fn[:-len('.'+ext)])
+            self.save(data, fn[:-len('.'+ext)])
 
         return data
 

@@ -123,12 +123,14 @@ class DataBase(object):
         return bow
 
     @staticmethod
-    def _save(data, fn, silent=False):
-        GramExp.save(data, fn, silent)
+    def load(*args, **kwargs):
+        from pymake.io import load
+        return load(*args, **kwargs)
 
     @staticmethod
-    def _load(fn):
-        return GramExp.load(fn)
+    def save(*args, **kwargs):
+        from pymake.io import save
+        return save(*args, **kwargs)
 
     # convert ndarray to list.
     def save_json(self, res):

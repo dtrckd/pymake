@@ -48,7 +48,7 @@ def main():
     elif zyvar['_do'] == 'cmd':
         lines = zymake.make_commandline()
     elif zyvar['_do'] == 'path':
-        lines = zymake.make_path(ftype=zyvar.get('_ftype'), status=zyvar.get('_status'))
+        lines = zymake.make_path(ext=zyvar.get('_ext'), status=zyvar.get('_status'))
     elif zyvar['_do'] == 'hist':
         lines = zymake.show_history()
     elif zyvar['_do'] == 'diff':

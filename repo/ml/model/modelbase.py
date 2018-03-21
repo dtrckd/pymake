@@ -56,7 +56,7 @@ class ModelBase():
 
         # change to semantic -> update value (t+1)
         self.samples = [] # actual sample
-        self._samples    = [] # slice to save to avoid writing disk a each iteratoin. (ref format.write_it_step.)
+        self._samples    = [] # slice to save to avoid writing disk a each iteratoin. (ref format.write_current_state.)
         self.time_it = 0
 
         for k, v in self.default_settings.items():
@@ -202,13 +202,8 @@ class ModelBase():
                     self.log.debug('Cant delete object during model purging: %s' % e)
         else:
             model = self
-            if hasattr(model, 'model'):
-                if hasattr(model.model, 'write_it_step'):
-                    delattr(model.model, 'write_it_step')
-                else:
-                    delattr(model, 'write_it_step')
-            elif hasattr(self, 'write_it_step'):
-                delattr(model, 'write_it_step')
+            if hasattr(self, 'write_current_state'):
+                delattr(self, 'write_current_state')
 
 
         if not silent:
@@ -334,6 +329,7 @@ class ModelBase():
         for obj in self._purge_objects:
             if hasattr(self, obj):
                 setattr(self, obj, None)
+
 
 
 class ModelSkl(ModelBase):
@@ -489,7 +485,7 @@ class GibbsSampler(ModelBase):
             self.log.info('iteration %d, %s, Entropy: %f \t\t K=%d  alpha: %f gamma: %f' % (_it, '/'.join((self.expe.model, self.expe.corpus)),
                                                                                     self._entropy, self._K,self._alpha, self._gmma))
             if self.expe.get('_write'):
-                self.write_it_step(self)
+                self.write_current_state(self)
                 if _it > 0 and _it % self.snapshot_freq == 0:
                     self.save(silent=True)
                     sys.stdout.flush()
@@ -650,7 +646,7 @@ class SVB(ModelBase):
             self.log.info('Minibatch %d/%d, %s, Entropy: %f,  diff: %f' % (_id_mnb+1, self.chunk_len, '/'.join((self.expe.model, self.expe.corpus)),
                                                                         self._entropy, self.entropy_diff))
             if self.expe.get('_write'):
-                self.write_it_step(self)
+                self.write_current_state(self)
                 if _id_mnb > 0 and _id_mnb % self.snapshot_freq == 0:
                     self.save(silent=True)
                     sys.stdout.flush()
@@ -683,7 +679,7 @@ class SVB(ModelBase):
                 self.compute_measures()
                 self.log.debug('it %d,  ELBO: %f, elbo diff: %f \t K=%d' % (_it, self._entropy, self.entropy_diff, self._K))
                 if self.expe.get('_write'):
-                    self.write_it_step(self)
+                    self.write_current_state(self)
 
 
         # Update global parameters after each "minibatech of links"

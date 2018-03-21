@@ -136,7 +136,7 @@ class IBPGibbsSampling(IBP, GibbsSampler):
             self.compute_measures()
             lgg.info("iteration: %i,  Entropy : %f \t\t K=%i,  Entropy Z: %f, alpha: %f sigma_w: %f Z.sum(): %i" % (_it, self._entropy, self._K, self._entropy_Z, self._alpha, self._sigma_w, self.Z_sum))
             if self._write:
-                self.write_it_step(self)
+                self.write_current_state(self)
                 if _it > 0 and _it % self.snapshot_freq == 0:
                     self.save(silent=True)
 

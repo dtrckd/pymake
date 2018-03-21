@@ -132,7 +132,7 @@ class IndexManager(object):
 
     def update_spec_index(self):
         ''' Update the schema of the Spec index '''
-        from pymake.frontend.frontend_io import SpecLoader
+        from pymake.io import SpecLoader
         model = 'spec'
         self.log.info('Building %s index...' % model)
         Specs = SpecLoader.get_atoms()
@@ -151,7 +151,7 @@ class IndexManager(object):
 
     def update_script_index(self):
         ''' Update the schema of the Scripts index '''
-        from pymake.frontend.frontend_io import ScriptsLoader
+        from pymake.io import ScriptsLoader
         model = 'script'
         self.log.info('Building %s index...' % model)
         Scripts = ScriptsLoader.get_atoms()
@@ -172,7 +172,7 @@ class IndexManager(object):
 
     def update_model_index(self):
         ''' Update the schema of the Models index '''
-        from pymake.frontend.frontend_io import ModelsLoader
+        from pymake.io import ModelsLoader
         model = 'model'
         self.log.info('Building %s index...' % model)
         models = ModelsLoader.get_atoms()

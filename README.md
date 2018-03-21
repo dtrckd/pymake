@@ -53,7 +53,7 @@ Perspectives:
 * Better documentation (or just a documentation, needs feedback!).
 
 
-## Install [](#2)
+## Installation [](#2)
 
 #### Short
 
@@ -61,14 +61,20 @@ Perspectives:
 
 #### From source
 
-System dependencies: `apt-get install python3-setuptools python3-pip python3-tk`
+###### Linux dependencies
+`apt-get install python3-setuptools python3-pip python3-tk libopenblas-dev gfortran parallel`
 
-Numpy/scipy dependencies: `apt-get install libopenblas-dev gfortran`
+###### MacOs dependencies
+`brew install parallel`
+
+###### Install
 
 ```bash
 git clone https://github.com/dtrckd/pymake
 cd pymake && make
 ```
+
+#### Project Structure
 
 The repo contains two main directories:
 

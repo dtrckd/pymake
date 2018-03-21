@@ -1,6 +1,5 @@
 import sys, os
 import inspect
-import pickle, json # presence of this module here + in .frontend not zen
 
 # Model Manager Utilities
 import numpy as np
@@ -133,63 +132,6 @@ class ModelManager(object):
 
         return model
 
-    def fit(self, frontend=None):
-        ''' if frontend is not None, create a new model instance.
-            This is a batch mode. Future will be a online update
-
-            Parameters
-            ----------
-            frontend : dataBase
-        '''
-
-        if not hasattr(self, 'model'):
-            self.model = self._get_model(frontend)
-
-        if hasattr(self.model, 'fit'):
-            fun = getattr(self.model, 'fit')
-            fnargs = GramExp.sign_nargs(fun)
-            if fnargs <= 0:
-                # pymake
-                fun()
-            elif fnargs == 1:
-                # sklearn type
-                fun(frontend.data)
-            else:
-                raise NotImplementedError('Pipeline to model got unknown sinature')
-
-
-        return
-
-    # @obsolete / pmk compute
-    # frontend ? no, data stat should be elsewhere.
-    # Accept new data for prediction (now is just test data)
-    def predict(self, frontend=None):
-        if not hasattr(self.model, 'predict'):
-            print('No predict method for self._name_ ?')
-            return
-
-        # @data_t manage mask vs held out
-        # model don't necessarly own data...
-        #if self.data_t == None and not hasattr(self.data, 'mask') :
-        #    print('No testing data for prediction ?')
-        #    return
-
-        ### Prediction Measures
-        data = frontend.data
-
-        # if modelNetwork ...
-        res = self.model.predictMask(data)
-        #elif modelText
-
-        ### Data Measure
-        if frontend is not None:
-            data_prop = frontend.get_data_prop()
-            res.update(data_prop)
-
-        if self.expe._write:
-            frontend.save_json(res)
-        else:
-            self.log.debug(res)
 
     def initialization_test(self):
         ''' Measure perplexity on different initialization '''
@@ -212,10 +154,12 @@ class ModelManager(object):
             for f in GramExp.model_walker(os.path.dirname(fn), fmt='list'):
                 cls.log.debug(f)
             return None
+
+        import pickle
         cls.log.info('Loading Model: %s' % fn)
         with open(fn, 'rb') as _f:
             try:
-                model =  pickle.load(_f)
+                model = pickle.load(_f)
             except:
                 # python 2to3 bug
                 _f.seek(0)
@@ -225,6 +169,7 @@ class ModelManager(object):
                     cls.log.critical("Unknonw error while opening  while `_load_model' at file: %s" % (fn))
                     cls.log.error(e)
                     return
+
         return model
 
 
