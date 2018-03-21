@@ -575,12 +575,8 @@ class ExpeFormat(object):
         if self.expe.get('_write'):
             self.clear_fitfile()
             if hasattr(self, 'model') and hasattr(self.model, 'save'):
-                if hasattr(self.model, 'write_it_step'):
+                if hasattr(self.model, 'write_current_state'):
                     self.model.save()
-                elif hasattr(self.model, 'model'):
-                    if hasattr(self.model.model, 'write_it_step'):
-                        self.model.save()
-
 
         if hasattr(self, '_postprocess'):
             self._postprocess()
@@ -769,15 +765,11 @@ class ExpeFormat(object):
             self._samples = []
 
 
-    def _write_current_state(self, model):
+    def write_current_state(self, model):
         ''' push the current state of a model in the output file. '''
         samples = self._extract_csv_sample(model)
         self._write_some(self._fitit_f, samples)
 
-
-    def write_it_step(self, model):
-        if self.expe.get('_write'):
-            self._write_current_state(model)
 
     def configure_model(self, model):
         ''' Configure Model:
@@ -786,12 +778,8 @@ class ExpeFormat(object):
 
         self.model = model
 
-        # Inject the writing some method
-        if hasattr(model, 'model') and hasattr(model.model, 'fit'):
-            # First model is a meta-model
-            setattr(model.model, 'write_it_step', self.write_it_step)
-        else:
-            setattr(model, 'write_it_step', self.write_it_step)
+        # Inject the inline-writing method
+        setattr(model, 'write_current_state', self.write_current_state)
 
         if self.expe.get('_write'):
             self.init_fitfile()

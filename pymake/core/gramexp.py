@@ -4,7 +4,6 @@ from datetime import datetime
 import logging
 import operator
 import fnmatch
-import pickle, json
 import subprocess
 import shlex
 import inspect, traceback, importlib
@@ -18,7 +17,7 @@ from pymake.core.types import ExpDesign, ExpTensor, ExpSpace, Model, Corpus, Scr
 from pymake.core.types import ExpTensorV2 # @debug name integration
 from pymake.core.format import ExpeFormat
 
-from pymake.frontend.frontend_io import ext_status, is_empty_file
+from pymake.io import is_empty_file
 from pymake.util.utils import colored, basestring, get_pymake_settings, hash_objects, PmkTemplate
 
 
@@ -69,18 +68,6 @@ class MyLogFormatter(logging.Formatter):
         self._style._fmt = format_orig
 
         return result
-
-# @Todo to frontend_io
-class MyEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        elif isinstance(obj, np.floating):
-            return float(obj)
-        elif isinstance(obj, np.ndarray):
-            return obj.tolist()
-        else:
-            return super(MyEncoder, self).default(obj)
 
 
 def setup_logger(level=logging.INFO, name='root'):
@@ -155,7 +142,7 @@ class GramExp(object):
             * @Todo list of Expe
         3. ExpTensor : Represente a tensor of experiments.
            Each entry of the dict contains an iterable over specifications
-           for this entry. (see frontend.frontend_io)
+           for this entry. (see frontend.io)
            * @Todo pass rule to filter experiments...
 
         ### Expe Filtering
@@ -444,7 +431,7 @@ class GramExp(object):
         #return reduce(operator.mul, [len(v) for v in self._tensors.values()], 1)
         return len(self.lod)
 
-    def make_forest_path(self, lod, _type, status='f', full_path=False):
+    def make_forest_path(self, lod, ext, status='f', full_path=False):
         """ Make a list of path from a spec/dict, the filename are
             oredered need to be align with the get_from_conf_file.
 
@@ -452,7 +439,7 @@ class GramExp(object):
         """
         targets = []
         for spec in lod:
-            filen = self.make_output_path(spec, _type, status=status, _null=self._tensors._null)
+            filen = self.make_output_path(spec, ext, status=status, _null=self._tensors._null)
             if filen:
                 s = filen.find(self._data_path)
                 pt = 0
@@ -462,7 +449,7 @@ class GramExp(object):
         return targets
 
     @classmethod
-    def make_output_path(cls, expe, _type=None, status=None, _null=None, _nonunique=None):
+    def make_output_path(cls, expe, ext=None, status=None, _null=None, _nonunique=None):
         """ Make a single output path from a expe/dict
             @status: f finished
             @type: pk, json or inference.
@@ -504,9 +491,8 @@ class GramExp(object):
 
         filen = os.path.join(basedir, p, t)
 
-        ext = ext_status(filen, _type)
         if ext:
-            filen = ext
+            filen = filen +'.'+ ext
 
         if status is 'f' and is_empty_file(filen):
             return  None
@@ -514,7 +500,7 @@ class GramExp(object):
             return filen
 
     @classmethod
-    def make_input_path(cls, expe, _type=None, status=None):
+    def make_input_path(cls, expe, status=None):
         """ Make a single input path from a expe/dict """
         expe = defaultdict(lambda: None, expe)
         filen = None
@@ -670,7 +656,7 @@ class GramExp(object):
         ontology = dict(
             _do    = ['cmd', 'show', 'path', 'run', 'update', 'init', 'runpara', 'hist', 'diff'],
             _spec   = list(cls._spec),
-            _ftype = ['json', 'pk', 'inf']
+            _ext = ['json', 'pk', 'inf']
         )
         ont_values = sum([w for k, w in ontology.items() if k != '_spec'] , [])
 
@@ -789,8 +775,8 @@ class GramExp(object):
         commands = [' '.join(c) for c in commands]
         return commands
 
-    def make_path(self, ftype=None, status=None, fullpath=None):
-        return self.make_forest_path(self.lod, ftype, status, fullpath)
+    def make_path(self, ext=None, status=None, fullpath=None):
+        return self.make_forest_path(self.lod, ext, status, fullpath)
 
 
     def make_commands(self):
@@ -830,9 +816,9 @@ class GramExp(object):
             commands.append(command)
         return commands
 
-    def reorder_firstnonvalid(self, _type='pk'):
+    def reorder_firstnonvalid(self, ext='pk'):
         for i, e in enumerate(self.lod):
-            if not self.make_output_path(e, _type=_type, status='f', _null=self._tensors._null, _nonunique=self.get_nounique_keys()):
+            if not self.make_output_path(e, ext, status='f', _null=self._tensors._null, _nonunique=self.get_nounique_keys()):
                 self.lod[0], self.lod[i] = self.lod[i], self.lod[0]
                 break
         return
@@ -912,34 +898,14 @@ class GramExp(object):
         return lines
 
     @staticmethod
-    def load(fn, ext='pk', silent=False):
-        fn = fn + '.' + ext
-        if not silent:
-            lgg.info('Loading frData : %s' % fn)
-
-        if ext == 'pk':
-            with open(fn, 'rb') as _f:
-                return pickle.load(_f)
-        elif ext == 'json':
-            with open(fn) as _f:
-                return json.load(_f)
-        else:
-            raise ValueError('File format unknown: %s' % ext)
+    def load(*args, **kwargs):
+        from pymake.io import load
+        return load(*args, **kwargs)
 
     @staticmethod
-    def save(data, fn, ext='pk', silent=False):
-        fn = fn + '.' + ext
-        if not silent:
-            lgg.info('Saving frData : %s' % fn)
-
-        if ext == 'pk':
-            with open(fn, 'wb') as _f:
-                return pickle.dump(data, _f, protocol=pickle.HIGHEST_PROTOCOL)
-        elif ext == 'json':
-            with open(fn, 'w') as _f:
-                return json.dump(data, _f, cls=MyEncoder)
-        else:
-            raise ValueError('File format unknown: %s' % ext)
+    def save(*args, **kwargs):
+        from pymake.io import save
+        return save(*args, **kwargs)
 
 
     @staticmethod

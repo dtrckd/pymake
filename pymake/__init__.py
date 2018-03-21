@@ -14,7 +14,7 @@ from pymake.core.types import Spec, Corpus, Model, Script, ExpSpace, ExpVector, 
 from pymake.core.format import ExpeFormat
 
 # Without whoosh fashion...
-#from pymake.frontend.frontend_io import SpecLoader
+#from pymake.frontend.io import SpecLoader
 #__spec = SpecLoader.get_atoms()
 
 from pymake.core.gramexp import GramExp
