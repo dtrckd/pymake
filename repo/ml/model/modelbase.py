@@ -10,6 +10,8 @@ import logging
 import numpy as np
 import scipy as sp
 
+import pymake.io as io
+
 
 #import sppy
 
@@ -180,7 +182,6 @@ class ModelBase():
         return
 
     def save(self, silent=False):
-        fn = self.expe['_output_path'] + '.pk'
         to_remove = []
         for k, v in self.__dict__.items():
             if hasattr(v, 'func_name') and v.func_name == '<lambda>':
@@ -206,15 +207,14 @@ class ModelBase():
                 delattr(self, 'write_current_state')
 
 
+        fn = self.expe['_output_path']
         if not silent:
             self.log.info('Snapshotting Model : %s' % fn)
         else:
             sys.stdout.write('+')
 
-        #import joblib
-        #joblib.dump(model, fn)
-        with open(fn, 'wb') as _f:
-            return pickle.dump(model, _f, protocol=pickle.HIGHEST_PROTOCOL)
+        io.save(model, fn, silent=True)
+
 
     def __deepcopy__(self, memo):
         cls = self.__class__
@@ -554,11 +554,8 @@ class SVB(ModelBase):
 
         self.entropy_diff = 0
 
-
-
     def _init_params(self):
         raise NotImplementedError
-
 
     def _update_chunk_nnz(self, groups):
         _nnz = []

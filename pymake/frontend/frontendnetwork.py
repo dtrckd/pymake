@@ -41,8 +41,6 @@ class frontendNetwork(DataBase, DatasetDriver):
     def __init__(self, expe=None):
         super(frontendNetwork, self).__init__(expe)
 
-        #if not expe.get('_data_type'):
-        #    expe['_data_type'] = 'networks'
         self._data_type = 'network'
 
         data_format = expe.get('_data_format', 'b')
@@ -375,6 +373,7 @@ class frontendNetwork(DataBase, DatasetDriver):
             except Exception as e:
                 self.log.error('Error : %s on %s' % (e, fn+'.pk'))
                 data = None
+
         if data is None:
             ext = format
             fn = os.path.join(bdir, corpus_name +'.'+ ext)

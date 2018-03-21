@@ -108,11 +108,6 @@ class ExpeFormat(object):
             ))
             self.log.info('-'*10)
 
-    def get_data_path(self):
-        path = get_pymake_settings('project_data')
-        path = os.path.join(path, self.expe.get('_data_type', ''))
-        return path
-
     def log_expe(self):
         expe = self.expe
         msg = '%s -- %s -- N=%s -- K=%s' % (self.specname(expe.get('corpus')),
@@ -160,6 +155,13 @@ class ExpeFormat(object):
                 spec[k] = self.expe[v]
 
         return spec
+
+
+    def get_data_path(self):
+        path = get_pymake_settings('project_data')
+        path = os.path.join(path, '')
+        return path
+
 
     def get_expset(self, param):
         return self.gramexp.get_set(param)
@@ -574,6 +576,7 @@ class ExpeFormat(object):
 
         if self.expe.get('_write'):
             self.clear_fitfile()
+            # @improve: In ModelManager ?
             if hasattr(self, 'model') and hasattr(self.model, 'save'):
                 if hasattr(self.model, 'write_current_state'):
                     self.model.save()

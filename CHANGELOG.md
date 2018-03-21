@@ -1,5 +1,6 @@
-# 0.4 (ongoing)
+# 0.4 
 
+* data path are simplified and trainind and results are now in {data}/.pymake/ .
 * Integration of ModelSkl for skleanr model like integration.
 * allow {\_spec} to set default spec to use in \_default_expe.
 

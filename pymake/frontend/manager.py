@@ -10,6 +10,7 @@ from .frontend import DataBase
 from .frontendtext import frontendText
 from .frontendnetwork import frontendNetwork
 from pymake import Model, Corpus, GramExp
+import pymake.io as io
 
 import logging
 
@@ -65,7 +66,6 @@ class ModelManager(object):
 
     def __init__(self, expe=None):
         self.expe = expe
-        self.hyperparams = expe.get('hyperparams', dict())
 
     def _format_dataset(self, data, data_t):
         if data is None:
@@ -97,7 +97,7 @@ class ModelManager(object):
 
         return data, data_t
 
-    def is_model(self, m,  _type):
+    def is_model(self, m, _type):
         if _type == 'pymake':
              # __init__ method should be of type (expe, frontend, ...)
             pmk = inspect.signature(m).parameters.keys()
@@ -106,7 +106,7 @@ class ModelManager(object):
                 score.append(wd in pmk)
             return all(score)
         else:
-            raise NotImplementedError
+            raise ValueError('Model type unkonwn: %s' % _type)
 
     def _get_model(self, frontend=None, data_t=None):
         ''' Get model with lookup in the following order :
@@ -133,18 +133,6 @@ class ModelManager(object):
         return model
 
 
-    def initialization_test(self):
-        ''' Measure perplexity on different initialization '''
-        niter = 2
-        pp = []
-        likelihood = self.model.s.zsampler.likelihood
-        for i in range(niter):
-            self.model.s.zsampler.estimate_latent_variables()
-            pp.append( self.model.s.zsampler.perplexity() )
-            self.model = self.loadgibbs(expe.model, likelihood)
-
-        np.savetxt('t.out', np.log(pp))
-
     @classmethod
     def _load_model(cls, fn):
 
@@ -155,20 +143,8 @@ class ModelManager(object):
                 cls.log.debug(f)
             return None
 
-        import pickle
         cls.log.info('Loading Model: %s' % fn)
-        with open(fn, 'rb') as _f:
-            try:
-                model = pickle.load(_f)
-            except:
-                # python 2to3 bug
-                _f.seek(0)
-                try:
-                    model =  pickle.load(_f, encoding='latin1')
-                except OSError as e:
-                    cls.log.critical("Unknonw error while opening  while `_load_model' at file: %s" % (fn))
-                    cls.log.error(e)
-                    return
+        model = io.load(fn, silent=True)
 
         return model
 

@@ -1,18 +1,14 @@
 # WIP
 
-# @v0.4 ?
+# @v0.5 ?
 * ipython builder helper
 * web server interface and visualization  (flask...)
 * spec swagger integration ? https://swagger.io
 * [cli]["packet" manager]save and update the repo/ seen by pmk.
-* [cli]makes able to list them (the repo), and to select one by default => it will enable to execute pmk from any path, and to move/cd inside an existing repo/.
+* [cli] makes able to list them (the repo), and to select one by default => it will enable to execute pmk from any path, and to move/cd inside an existing repo/.
 * [cli] make `-l script [script_name]` to list mehtod, doctring, and arguement !
 * [cli] pmk -l => show spec script and model.
 
-* use expe._fmt if given to format extract_csv_sample from model _fmt.
-
-.(important)
-remove/rethink \_data_type, all dataset in the same level !
 
 Debug
 ----------
@@ -45,8 +41,8 @@ Model
 -----
 * Model structure ?
 * Zsampler in hdp.hdp ?
+* use expe._fmt if given to format extract_csv_sample from model fmt.
 
-### MODEL Specification:
 * -> catch type error in manager.get_model._model.__init,:
         1. first find the number of required argument andt cut the expe surplus
         2. find a way to pass the argument  from signature **kwargs to command-line. (index the signature)

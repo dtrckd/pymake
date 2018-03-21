@@ -178,9 +178,6 @@ _Gram = [
         nargs='*', dest='_refdir', action=exp_append,
         help='Name to append in data/<data-typer>/<refdir>/ for the output path.'),
 
-    '--data-type', dict(
-        dest='_data_type', help='Name to prepend in data/<data-type>/<refdir>/ for the output path.'),
-
     '--format', dict(
         dest='_format', help='File format for saving results and models.'),
 

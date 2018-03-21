@@ -4,6 +4,7 @@ import pkgutil, pyclbr, inspect, ast
 from importlib import import_module
 from collections import OrderedDict
 from itertools import groupby
+import zlib
 import numpy as np
 
 from pymake.util.utils import get_pymake_settings
@@ -33,41 +34,87 @@ class PyEncoder(json.JSONEncoder):
 
 
 def load(fn, ext='pk', silent=False):
-    fn = fn + '.' + ext
+    splt = fn.split('.')
+    if splt[-1] not in ['pk', 'json']:
+        fn += '.' + ext
+
+    # Seek for compressed data
+    if os.path.exists(fn+'.gz'):
+        compressed = True
+        fn += '.gz'
+    else:
+        compressed = False
+        lgg.debug('Data is not compressed: %s' % fn)
+
     if not silent:
         lgg.info('Loading data : %s' % fn)
 
     if ext == 'pk':
-        with open(fn, 'rb') as _f:
-            return pickle.load(_f)
+        if compressed:
+            return pickle.loads(zlib.decompress(open(fn, 'rb')))
+        else:
+            with open(fn, 'rb') as _f:
+                return pickle.load(_f)
+
+        #except:
+        #    # python 2to3 bug
+        #    _f.seek(0)
+        #    try:
+        #        model =  pickle.load(_f, encoding='latin1')
+        #    except OSError as e:
+        #        cls.log.critical("Unknonw error while opening  while `_load_model' at file: %s" % (fn))
+        #        cls.log.error(e)
+        #            return
+
     elif ext == 'json':
-        with open(fn) as _f:
-            return json.load(_f)
+        if compressed:
+            return json.loads(zlib.decompress(open(fn, 'rb')))
+        else:
+            with open(fn) as _f:
+                return json.load(_f)
     else:
         raise ValueError('File format unknown: %s' % ext)
 
-def save(data, fn, ext='pk', silent=False):
-    fn = fn + '.' + ext
+def save(data, fn, ext='pk', silent=False, compress=None,
+         compressed_pk=True, compressed_json=False):
+
+    if compress is not None:
+        compressed_pk = compressed_json = compressed
+
+    splt = fn.split('.')
+    if splt[-1] not in ['pk', 'json']:
+        fn += '.' + ext
+
     if not silent:
         lgg.info('Saving data : %s' % fn)
 
     if ext == 'pk':
-        with open(fn, 'wb') as _f:
-            return pickle.dump(data, _f, protocol=pickle.HIGHEST_PROTOCOL)
+        if compressed_pk:
+            fn += '.gz'
+            obj = zlib.compress(pickle.dumps(data))
+            with open(fn, 'wb') as _f:
+                return _f.write(obj)
+        else:
+            with open(fn, 'wb') as _f:
+                return pickle.dump(data, _f, protocol=pickle.HIGHEST_PROTOCOL)
+
     elif ext == 'json':
-        with open(fn, 'w') as _f:
-            return json.dump(data, _f, cls=PyEncoder)
+        # @Todo: Option to update if file exists:
+        #res = json.load(open(fn,'r'))
+        #res.update(data)
+        #self.log.info('Updating json data: %s' % fn)
+        if compressed_json:
+            fn += '.gz'
+            obj = zlib.compress(json.dumps(data))
+            with open(fn, 'wb') as _f:
+                return _f.write(obj)
+        else:
+            with open(fn, 'wb') as _f:
+                return json.dump(data, _f, cls=PyEncoder)
     else:
         raise ValueError('File format unknown: %s' % ext)
 
 
-
-def get_json(fn):
-    try:
-        d = json.load(open(fn,'r'))
-        return d
-    except Exception as e:
-        return None
 
 
 def is_abstract(cls):
@@ -491,7 +538,6 @@ class SpecLoader(PackageWalker):
 # Default and New values
 # @filename to rebuild file
 _MASTERKEYS = OrderedDict((
-    ('_data_type'   , None),
     ('corpus'      , None),
     ('repeat'      , None),
     ('model'       , None),
@@ -644,7 +690,7 @@ def forest_tensor(target_files, map_parameters):
             pt[rez_map.index(k)] = idx
 
         f = os.path.join(get_pymake_settings('project_data'), _f)
-        d = get_json(f)
+        d = load(f)
         if not d:
             not_finished.append( '%s not finish...\n' % _f)
             continue
