@@ -136,10 +136,15 @@ class ModelManager(object):
     @classmethod
     def _load_model(cls, fn):
 
-        if not os.path.isfile(fn) or os.stat(fn).st_size == 0:
-            cls.log.error('No file for this model : %s' %fn)
+        _fn = io.resolve_filename(fn)
+        if not os.path.isfile(_fn):
+            # io integration?
+            _fn += '.gz'
+
+        if not os.path.isfile(_fn) or os.stat(_fn).st_size == 0:
+            cls.log.error('No file for this model : %s' %_fn)
             cls.log.debug('The following are available :')
-            for f in GramExp.model_walker(os.path.dirname(fn), fmt='list'):
+            for f in GramExp.model_walker(os.path.dirname(_fn), fmt='list'):
                 cls.log.debug(f)
             return None
 
@@ -166,7 +171,7 @@ class ModelManager(object):
             mm = cls(expe)
             model = mm._get_model()
         else:
-            fn = GramExp.make_output_path(expe, 'pk')
+            fn = GramExp.make_output_path(expe)
             model = cls._load_model(fn)
 
         cls.update_expe(expe, model)

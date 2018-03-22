@@ -1,4 +1,5 @@
-from pymake import ExpSpace, ExpTensor, ExpDesign
+from pymake import ExpDesign, ExpSpace, ExpTensor, ExpGroup
+
 
 
 class $${projectname}_demo_spec(ExpDesign):

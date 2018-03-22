@@ -20,7 +20,6 @@ from tabulate import tabulate
 # Ugly, integrate.
 def _table_(tables, headers=[], max_line=10, max_row=30, name=''):
 
-
     # tables is dict
     if isinstance(headers, str):
         # Sort the dict

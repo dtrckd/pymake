@@ -27,7 +27,7 @@ contrib_script =
 
 ### Project Settings Grammar.
 # Use to specify custom command line options whith pymake.
-gramarg = 
+gramarg = $${default_gramarg}
 
 ### Remote Options and configurations
 # Used when `--net' options is used.

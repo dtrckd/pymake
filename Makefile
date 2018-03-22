@@ -39,6 +39,12 @@ uninstall:
 build:
 	python3 setup.py build
 
+test:
+	pushd pymake
+	DISPLAY= python3 unittest.py
+	popd
+
+
 clean: clean_cython
 	find -name "__pycache__" | xargs rm -rf
 	find -name "*.pyc" | xargs rm -f

@@ -1,27 +1,37 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import subprocess
-import matplotlib; matplotlib.use('Agg')
+import os
 
-_py = 'python'
-_py = 'python3'
+os.chdir('../repo/ml')
 
-tests = (
-    'zymake',
-    'zymake show',
-    'zymake -l',
-    'zymake -l model',
-    'fit expe_default -x fit -m immsb_cgs',
-)
+tests = [
+    'pmk',
+    'pmk update',
+    'pmk show',
+    'pmk -l',
+    'pmk -ll',
+    'pmk -l spec',
+    'pmk -l model',
+    'pmk -l script',
+    'pmk -l model',
+    'pmk default_expe',
+    'pmk path default_expe',
+    'pmk default_expe -x fit -w',
+    'pmk default_expe -x plot',
+    'pmk default_expe -x plot fig corpus:_entropy',
+    'pmk hist',
+]
 
-for t in tests:
+n_errors = 0
 
-    cmdsplit = t.split()
-    cmd = _py + ' ' + cmdsplit[0] + '.py ' + ' '.join(cmdsplit[1:])
+for test in tests:
+
+    cmd = test
 
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
     print('Testing :: %s' % cmd)
     out, err = p.communicate()
-    result = out.split('\n')
+    result = str(out).split('\n')
 
     ### Output
     if False:
@@ -30,11 +40,8 @@ for t in tests:
                 print(lin)
 
     if p.returncode != 0:
-       print("bitcoin failed %d %s %s" % (p.returncode, out, err))
+        n_errors += 1
+        print("test failed: %d,  %s" % (p.returncode, err))
 
-    ### Error
-#    print '### exec: %s' % (t)
-#    if err:
-#        print err
-#    else:
-#        print '...ok'
+print('Test Sucess: %d / %d' % (len(tests)-n_errors, len(tests)))
+

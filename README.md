@@ -37,11 +37,14 @@ Explain the model workflow...
 ## Features [](#1)
 * Specification of design of experimentation with a simple grammar,
 * Indexation of specs, models, scripts and corpus, powered by [Whoosh](https://whoosh.readthedocs.io/en/latest/),
-* Command-line toolkit for quick design and experiment testing,
+* Customisable Command-line for quick design and experiment testing, powered by [argparse](https://docs.python.org/3/library/argparse.html#module-argparse)
 * Command-line auto-completion for specs and scripts,
 * Simple grid search specification and navigation,
-* Support experiments rules filtering,
-* Support disks I/O management for training/input data and outputs results,
+* Support experiments rules filtering (experimental)
+* Support disks I/O management for training/input data and outputs results.
+    * Automatic filesystem I/O for data persitence.
+    * Automatic compression.
+    * Pickle and Json format are currently supported.
 * Support plotting and table printing facilities powered by [matplotlib](https://matplotlib.org) and [pandas](https://pandas.pydata.org/)
 * Support experiments parallelization powered by [gnu-parallel](https://www.gnu.org/software/parallel/),
 * Browse, design and test several models and corpus found in the literature.
@@ -81,6 +84,7 @@ cd pymake && make
 The repo contains two main directories:
 
 * pymake/ -- Code source of pymake,
+* wiki/ -- Extra documentation
 * repo/ -- Poc projects that are structured with pymake,
     * repo/docsearch: A search-engine in local file (pdf).
     * repo/ml: Machine learning models and experiments.
@@ -88,14 +92,17 @@ The repo contains two main directories:
 ## Glossary and Types
 
 * *run* or *expe*: It is the term that design one single experiment. it is related to an atomic, sequential code execution.
+* *model*: A class that have a method named `fit` and located in `model/`
+* *spec*: A spec is a design of experience, and is formally defines as a subset of Expspaces, ExpTensors and ExpGroups.
+* *script*: A script is a file containing list of actions,  (see *ExpeForma*).
+* *actions*: An action is basically one method in a script that can be triggered by users. The term script is often used instead of *action* by misuse language.
 * *ExpSpace*: A dict-like object used to stored the settings for one *expe*.
 * *ExpTensor*: A dict-like object to represent a set of *expe* with common parameters. Each entry that are instance of `list` or `set` are used to build a Cartesian product of those entries. It is used to defined grid search over parameters.
 * *ExpGroup*: A list-like object to defined set of heterogeneous expe.
-* *spec*: A spec is a design of experience, and is formally defines as a subset of Expspaces, ExpTensors and ExpGroups.
 * *ExpeFormat*: A base class used to create scripts. It acts like a sandbox for the runs. The class that inherit ExpeFormat should be located in `script/`
 * *ExpDesign*: A base  class used to create design of experience. The experience of type ExpSpace, ExpTensor and ExpGroup should be defined within class that inherit ExpDesign and located in `spec/`
-* *model*: A class that have a method named `fit` and located in `model/`
 * *pymake.cfg*: the pymake configuration file, where, for example, the name of the location (model/, spec, model/) can be changed among other settings.
+* *gramarg*: It refers to a file, by default in gramarg.py, where you can tune the command line options of pmk by adding your onw. The command line option grammar is powered by the python module argparse.
 <!-- grammarg, -->
 
 ## Examples [](#3)
@@ -169,6 +176,22 @@ class MyScripts(ExpeFormat):
 
 If the runs are parallelized (with `--cores` options), there is no current implemented way to do it although it is likely to be develloped in the future.
 
+###### How to tune the command-line options
+
+The pymake.cfg have a settgins, by default `gramarg = project_name.grammarg`, which point to the python file gramarg.py. Inside this file you can add command-line options, fully compatible with the `argparse` python module. By default the file contains an empty list. If you want, let's say to set a parameter in your expe with the command line like this `pmk --my_key my_value` you can add a element in the list as follows:
+
+```python
+_gram = [
+    #'--my_key',dict(type=str, help='simple option from command-line'),
+]
+```
+
+
+
+###### How to change a setings in expes from command-line whithout specifying it in the grammarg file
+
+Pymake provide a mamgic command line argument to specify any field in an expe. Let's say you want to give the value `my_value` in the field `my_key` in your expe, then you can do `pmk [...] --pmk my_value=my_key`. You can chain as many key=value pairs like this.
+
 
 
 ###### How to activate Spec/Script auto-completion
@@ -204,7 +227,7 @@ If you want to enable the auto-completion open a new terminal or just run `sourc
 
 ##### Workflow / Directory Structure
 
-In a pymake project there is 4 main components, associated to 4 directories:
+In a pymake project there is 4 main components, associated to 4 directories (you can change those names in the pymake.cfg):
 
 * `data/`: Where are storer input/output of any experiments,
     + contains datasets (and saved results) <!--  selection with the `-c` options and see frontendManager -->,
@@ -222,7 +245,7 @@ Along with those directory there is two system files:
 
 ##### Pymake Commands
 
-Create your own project:
+Initialize a new project in the current directory:
 
     pymake init
 
@@ -234,7 +257,7 @@ If new models or scripts are added in the project, you'll need to update the pym
 List/Search information:
 
 ```bash
-pmk -l spec   # (or just `pymake -l`) show available designs of experimentation
+pmk -l spec   # show available designs of experimentation
 pmk -l model  # show available models
 pmk -l script # show available scripts
 pmk show expe_name # or just pymake expe_name
@@ -306,13 +329,13 @@ exp3 = ExpGroup([exp1, exp2])
 
 You can then run `pmk -l` to see our design of experiments.
 
-##### Designing Model
+##### Designing a Model
 
 Basically, A model is a class inside `model/` that have a method `fit`.
 
 (Doc in progress for more fancy use cases of design.)
 
-##### Designing Script
+##### Designing a Script
 
 A script is a piece of code that you execute which is parameterized by a **specification**. More specifically, Scripts are methods of class that inherits a `ExpeFormat` and that lives inside the `script/` folder.
 
@@ -388,7 +411,7 @@ If 'expe_name' is empty and `-x` is given, pymake assumes `run` command. If 'exp
 Remark: -l and -s (--simulate) options don't execute, they just show things up.
 
 ### Expedesign_id
-Pick among all (design of) experiments in {spec}. To list them `pmk -l spec` (or just `pmk -l`)
+Pick among all (design of) experiments in {spec}. To list them `pmk -l spec`.
 
 ### pmk_options
 Here are all the special options that own pymake, such as --refdir, --format, --script, -w, -l, -h etc. Additionally, all the options for the current project should be added in the `grammarg.py` file.
