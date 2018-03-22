@@ -92,15 +92,15 @@ The repo contains two main directories:
 ## Glossary and Types
 
 * *run* or *expe*: It is the term that design one single experiment. it is related to an atomic, sequential code execution.
-* *model*: A class that have a method named `fit` and located in `model/`
-* *spec*: A spec is a design of experience, and is formally defines as a subset of Expspaces, ExpTensors and ExpGroups.
-* *script*: A script is a file containing list of actions,  (see *ExpeForma*).
+* *model*: A class that have a method named `fit` and located in `model/`.
+* *spec*: A spec is a design of experience. it is defines by a subset of Expspaces, ExpTensors and ExpGroups.
+* *script*: A script is a file containing a list of actions,  (see *ExpeFormat*).
 * *actions*: An action is basically one method in a script that can be triggered by users. The term script is often used instead of *action* by misuse language.
-* *ExpSpace*: A dict-like object used to stored the settings for one *expe*.
-* *ExpTensor*: A dict-like object to represent a set of *expe* with common parameters. Each entry that are instance of `list` or `set` are used to build a Cartesian product of those entries. It is used to defined grid search over parameters.
-* *ExpGroup*: A list-like object to defined set of heterogeneous expe.
-* *ExpeFormat*: A base class used to create scripts. It acts like a sandbox for the runs. The class that inherit ExpeFormat should be located in `script/`
-* *ExpDesign*: A base  class used to create design of experience. The experience of type ExpSpace, ExpTensor and ExpGroup should be defined within class that inherit ExpDesign and located in `spec/`
+* *ExpSpace*: A dict-like object used to stored the settings of one *expe*.
+* *ExpTensor*: A dict-like object to represent a set of *expe* with common parameters. Each entries that are instance of `list` or `set` are used to build the Cartesian product of those entries. It is used to defined grid search over parameters.
+* *ExpGroup*: A list-like object to defined a set of heterogeneous expes.
+* *ExpeFormat*: A base class used to create scripts. It acts like a sandbox for the runs. The classes that inherit ExpeFormat should be located in `script/`.
+* *ExpDesign*: A base  class used to create design of experience. The experience of type ExpSpace, ExpTensor and ExpGroup should be defined within class that inherit ExpDesign and located in `spec/`.
 * *pymake.cfg*: the pymake configuration file, where, for example, the name of the location (model/, spec, model/) can be changed among other settings.
 * *gramarg*: It refers to a file, by default in gramarg.py, where you can tune the command line options of pmk by adding your onw. The command line option grammar is powered by the python module argparse.
 <!-- grammarg, -->
