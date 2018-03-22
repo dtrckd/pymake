@@ -14,10 +14,9 @@ from pymake.util.utils import colored, basestring, make_path, get_pymake_setting
 from tabulate import tabulate
 
 
+
 ''' Sanbox Base class for expe execution.
 '''
-
-
 
 
 
@@ -156,12 +155,10 @@ class ExpeFormat(object):
 
         return spec
 
-
     def get_data_path(self):
         path = get_pymake_settings('project_data')
         path = os.path.join(path, '')
         return path
-
 
     def get_expset(self, param):
         return self.gramexp.get_set(param)

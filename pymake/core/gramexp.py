@@ -23,7 +23,8 @@ from pymake.util.utils import colored, basestring, get_pymake_settings, hash_obj
 
 
 ''' Grammar Expe '''
-lgg = logging.getLogger('root')
+
+
 
 # Custom formatter
 # From : https://stackoverflow.com/questions/14844970/modifying-logging-message-format-based-on-message-logging-level-in-python3
@@ -36,7 +37,8 @@ class MyLogFormatter(logging.Formatter):
     #info_fmt = '%(levelno)d: %(msg)s'
     default_fmt = '%(msg)s'
 
-    # CUstom Level
+    # Custom Log
+    log = logging.getLogger('root')
     VDEBUG_LEVEL_NUM = 9
     logging.addLevelName(VDEBUG_LEVEL_NUM, "VDEBUG")
     logging.VDEBUG = 9
@@ -350,7 +352,7 @@ class GramExp(object):
                     hidden_key.append(setting)
 
             if _format and hidden_key and self._conf.get('_ignore_format_unique') is not True and not '_id' in format_settings:
-                lgg.error('The following settings are not set in _format:')
+                self.log.error('The following settings are not set in _format:')
                 print(' '+ '  '.join(hidden_key))
                 print('Possible conflicts in experience results outputs.')
                 print('Please correct {_format} key to fit the experience settings.')
@@ -469,7 +471,7 @@ class GramExp(object):
 
         if not expe['_format']:
             # or give a hash if write is False ?
-            lgg.debug('No _format given, please set _format for output_path settings.')
+            cls.log.debug('No _format given, please set _format for output_path settings.')
             nonunique = ['_name_expe', '_do']
             if _nonunique:
                 nonunique.extend(_nonunique)
@@ -509,7 +511,7 @@ class GramExp(object):
         c = expe.get('corpus')
         if not c:
             c = ''
-            lgg.debug('No Corpus is given.')
+            cls.log.debug('No Corpus is given.')
         if c.lower().startswith(('clique', 'graph', 'generator')):
             c = c.replace('generator', 'Graph')
             c = c.replace('graph', 'Graph')
@@ -581,9 +583,9 @@ class GramExp(object):
                 if r[0][0] in ('-v', '-s', '-w', '--seed'):
                     # @debug, level here is not set yet, so his not active by default.
                     # parsing difficulet becaus context sensitive (option (-v) impact how the options are interpreted)
-                    lgg.debug(str(e)+err_mesg)
+                    cls.log.debug(str(e)+err_mesg)
                 else:
-                    lgg.error(str(e)+err_mesg)
+                    cls.log.error(str(e)+err_mesg)
                 #exit(3)
 
 
@@ -693,7 +695,7 @@ class GramExp(object):
                     if v in words:
                         if ont == '_spec':
                             if v in ont_values:
-                                lgg.critical('=> Warning: conflict between name of ExpDesign and Pymake commands')
+                                cls.log.critical('=> Warning: conflict between name of ExpDesign and Pymake commands')
                             do.remove(v)
                             d, expdesign = Spec.load(v, cls._spec[v])
                             expgroup.append((v,d, expdesign))
@@ -710,12 +712,12 @@ class GramExp(object):
                 exit(10)
 
             if  firsttime == True:
-                lgg.warning('Spec not found, re-building Spec indexes...')
+                cls.log.warning('Spec not found, re-building Spec indexes...')
                 cls.update_index('spec')
                 cls._spec = Spec.get_all()
                 return cls.zymake(firsttime=False)
             else:
-                lgg.error('==> Error : unknown argument: %s\n\nAvailable Exp : %s' % (do, list(cls._spec)))
+                cls.log.error('==> Error : unknown argument: %s\n\nAvailable Exp : %s' % (do, list(cls._spec)))
                 exit(10)
 
 
@@ -957,7 +959,7 @@ class GramExp(object):
             try:
                 np.random.set_state(self.load(_seed_path))
             except FileNotFoundError as e:
-                lgg.error("Cannot initialize seed, %s file does not exist." % _seed_path)
+                self.log.error("Cannot initialize seed, %s file does not exist." % _seed_path)
                 self.save(np.random.get_state(), _seed_path, silent=True)
                 raise FileNotFoundError('%s file just created, try again !')
 
@@ -983,13 +985,13 @@ class GramExp(object):
             self._tensors.remove_all('script')
             self._tensors.remove_all('_do')
         else:
-            lgg.error('==> Error : You need to specify a script. (--script)')
+            self.log.error('==> Error : You need to specify a script. (--script)')
             exit(10)
 
         try:
             _script, script_args = Script.get(script[0], script[1:])
         except (ValueError, TypeError) as e:
-            lgg.warning('Script not found, re-building Scripts indexes...')
+            self.log.warning('Script not found, re-building Scripts indexes...')
             self.update_index('script')
             #self._spec = Spec.get_all()
             try:
@@ -1002,7 +1004,7 @@ class GramExp(object):
             except:
                 raise
         except IndexError as e:
-                lgg.error('Script arguments error : %s -- %s' % (e, script))
+                self.log.error('Script arguments error : %s -- %s' % (e, script))
                 exit(2)
 
         # Raw search
@@ -1273,7 +1275,7 @@ class GramExp(object):
         bdir = self._data_path
         fn = os.path.join(bdir, '.pymake', '.pymake_hist')
         if not os.path.isfile(fn):
-            lgg.error('hist file does not exist.')
+            self.log.error('hist file does not exist.')
             return
 
         _tail = tail(fn, n_lines)
@@ -1458,7 +1460,7 @@ class GramExp(object):
             try:
                 expbox = sandbox(pt, expe, expdesign, self)
             except FileNotFoundError as e:
-                lgg.error('ignoring %s'%e)
+                self.log.error('ignoring %s'%e)
                 continue
             except Exception as e:
                 print(('Error during '+colored('%s', 'red')+' Initialization.') % (str(sandbox)))
@@ -1488,7 +1490,7 @@ class GramExp(object):
                 break
             except Exception as e:
                 n_errors += 1
-                lgg.critical(('Error during '+colored('%s', 'red')+' Expe no %d.') % (do, id_expe))
+                self.log.critical(('Error during '+colored('%s', 'red')+' Expe no %d.') % (do, id_expe))
                 traceback.print_exc()
                 with open(self._pmk_error_file, 'a') as _f:
                     lines = []
@@ -1504,7 +1506,7 @@ class GramExp(object):
             expbox._expe_postprocess()
 
         if n_errors > 0:
-            lgg.warning("There was %d errors, logged in `%s'" % (n_errors, self._pmk_error_file))
+            self.log.warning("There was %d errors, logged in `%s'" % (n_errors, self._pmk_error_file))
             with open(self._pmk_error_file, 'a') as _f:
                 _f.write(100*'='+'\n')
 
