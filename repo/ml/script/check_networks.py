@@ -27,9 +27,10 @@ import matplotlib.pyplot as plt
 from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2
 from pymake.util.utils import colored
 
-class CheckNetwork(ExpeFormat):
+class Net(ExpeFormat):
 
     _default_expe = dict(
+        _spec = 'data_net_all',
         block_plot = False,
         _write = False,
         _do           = ['zipf', 'source'],
@@ -380,6 +381,3 @@ class CheckNetwork(ExpeFormat):
 
 
 
-if __name__ == '__main__':
-
-    GramExp.generate(usage=USAGE).pymake(CheckNetwork)

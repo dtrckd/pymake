@@ -7,6 +7,7 @@ except Exception as e:
     print('Error while importing pandas: %s' % e)
 
 class DatasetDriver(object):
+
     ''' Parse dataset file using pandas'''
 
     _comment = '%'
@@ -161,8 +162,8 @@ class DatasetDriver(object):
 
 
 class RawDatasetDriver(object):
-    ''' Parse dataset file using python loop (deprecated) '''
 
+    ''' Parse dataset file using python loop (deprecated) '''
 
     def parse_tnet(self, fn, sep=' '):
         ''' Grammar retro-ingennired from fb/emaileu.txt '''
