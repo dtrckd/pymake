@@ -831,11 +831,20 @@ class GramExp(object):
     def scripttable(self):
         return Script.table()
 
-    def topotable(self):
-        return Spec.table_topos(self._spec)
-
     def modeltable(self, _type='short'):
         return Model.table(_type)
+
+    def spectable_topo(self):
+        return Spec.table_topos(self._spec)
+
+    def alltable_topo(self):
+        from pymake.core.types import _table_
+        specs = self._spec
+        scripts = Script.get_all()
+        models = Model.get_all()
+        table = [models, specs, scripts]
+        headers = ['Models', 'Specs', 'Actions']
+        return _table_(table, headers)
 
     def help_short(self):
         shelp = self.argparser.format_usage() + self.argparser.epilog
@@ -1204,27 +1213,35 @@ class GramExp(object):
 
         pwd = os.getenv('PWD')
         cwd = os.path.dirname(__file__)
-        folders = ['spec', 'script', 'model']
+        folders = ['_current', 'spec', 'script', 'model']
         #open(join(pwd, '__init__.py'), 'a').close()
         spec = {'projectname':os.path.basename(pwd)}
         print('Creating project: {projectname}'.format(**spec))
 
         settings = {}
         for d in folders:
-            os.makedirs(d, exist_ok=True)
-            with open(join(cwd,'..', 'template', '%s.template'%(d))) as _f:
-                template = PmkTemplate(_f.read())
-
-            open(join(pwd, d,  '__init__.py'), 'a').close()
-            with open(join(pwd, d,  'template_%s.py'%(d)), 'a') as _f:
-                _f.write(template.substitute(spec))
-
             if d in ['model', 'spec', 'script']:
+                os.makedirs(d, exist_ok=True)
+                with open(join(cwd,'..', 'template', '%s.template'%(d))) as _f:
+                    template = PmkTemplate(_f.read())
+                open(join(pwd, d,  '__init__.py'), 'a').close()
+                with open(join(pwd, d,  'template_%s.py'%(d)), 'a') as _f:
+                    _f.write(template.substitute(spec))
                 settings.update({'default_%s'%(d):'.'.join((spec['projectname'], d))})
-            else: # share model
-                settings.update({'contrib_%s'%(d):'.'.join((spec['projectname'], d))})
+            elif d == '_current':
+                # Gramarg
+                with open(join(cwd,'..', 'template', 'gramarg.template')) as _f:
+                    template = PmkTemplate(_f.read())
+                with open(join(pwd, 'gramarg.py'), 'a') as _f:
+                    _f.write(template.substitute(spec))
+                settings.update({'default_gramarg':'.'.join((spec['projectname'], 'gramarg'))})
+            else:
+                raise ValueError('Doh, Directory unknwow: %s' % d)
 
+
+        # Set and write pymake.cfg
         reset_pymake_settings(settings)
+
         return self.update_index()
 
     def pushcmd2hist(self):
@@ -1491,6 +1508,10 @@ class GramExp(object):
             with open(self._pmk_error_file, 'a') as _f:
                 _f.write(100*'='+'\n')
 
-        return sandbox._postprocess_(self)
+        sandbox._postprocess_(self)
+        self.pushcmd2hist()
+
+        exit_status = 0 if n_errors == 0 else 1
+        return exit(exit_status)
 
 

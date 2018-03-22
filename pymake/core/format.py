@@ -309,7 +309,7 @@ class ExpeFormat(object):
                 kernel = fun(self, frame, attribute, **kwargs)
 
                 # Set title and filename
-                if self.expe.get(groups[0]):
+                if groups and self.expe.get(groups[0]):
                     #title = ' '.join('{{{0}}}'.format(w) for w in groups).format(**self.specname(self.expe))
                     ctitle = tuple(filter(None,map(lambda x:self.specname(self.expe.get(x, x)), groups)))
                     s = '_'.join(['%s'] * len(ctitle))

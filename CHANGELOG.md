@@ -1,3 +1,9 @@
+# (towards) 0.5
+
+* add a test target to the makefile.
+* return a exit status positive if an expe failed.
+* fix i/o auto compression filesystem.
+
 # 0.4 
 
 * data path are simplified and trainind and results are now in {data}/.pymake/ .

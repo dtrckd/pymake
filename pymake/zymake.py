@@ -33,7 +33,6 @@ def main():
         zymake.simulate()
     elif zyvar['_do'] ==  'run':
         lines = zymake.execute()
-        zymake.pushcmd2hist()
     elif zyvar['_do'] == 'runpara':
         is_distrib = zyvar.get('_net')
         if is_distrib:
@@ -64,12 +63,14 @@ def main():
             print (zymake.spectable())
         elif 'model' == zyvar.get('do_list'):
             print (zymake.modeltable())
-        elif 'model_topos' == zyvar.get('do_list'):
-            print (zymake.modeltable(_type='topos'))
         elif 'script' == zyvar.get('do_list'):
             print(zymake.scripttable())
+        elif 'model_topos' == zyvar.get('do_list'):
+            print (zymake.modeltable(_type='topos'))
+        elif 'spec_topo' ==  zyvar.get('do_list'):
+            print (zymake.spectable_topo())
         elif 'topo' ==  zyvar.get('do_list'):
-            print (zymake.topotable())
+            print (zymake.alltable_topo())
         else:
             print(zymake.help_short())
             if zyvar.get('do_list'):

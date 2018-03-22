@@ -32,11 +32,14 @@ class PyEncoder(json.JSONEncoder):
             return super(PyEncoder, self).default(obj)
 
 
-
-def load(fn, ext='pk', silent=False):
+def resolve_filename(fn, ext='pk'):
     splt = fn.split('.')
     if splt[-1] not in ['pk', 'json']:
         fn += '.' + ext
+    return fn
+
+def load(fn, ext='pk', silent=False):
+    fn = resolve_filename(fn)
 
     # Seek for compressed data
     if os.path.exists(fn+'.gz'):
@@ -51,7 +54,8 @@ def load(fn, ext='pk', silent=False):
 
     if ext == 'pk':
         if compressed:
-            return pickle.loads(zlib.decompress(open(fn, 'rb')))
+            with open(fn, 'rb') as _f:
+                return pickle.loads(zlib.decompress(_f.read()))
         else:
             with open(fn, 'rb') as _f:
                 return pickle.load(_f)
@@ -68,7 +72,8 @@ def load(fn, ext='pk', silent=False):
 
     elif ext == 'json':
         if compressed:
-            return json.loads(zlib.decompress(open(fn, 'rb')))
+            with open(fn, 'rb') as _f:
+                return json.loads(zlib.decompress(_f.read()))
         else:
             with open(fn) as _f:
                 return json.load(_f)
@@ -81,9 +86,7 @@ def save(data, fn, ext='pk', silent=False, compress=None,
     if compress is not None:
         compressed_pk = compressed_json = compressed
 
-    splt = fn.split('.')
-    if splt[-1] not in ['pk', 'json']:
-        fn += '.' + ext
+    fn = resolve_filename(fn)
 
     if not silent:
         lgg.info('Saving data : %s' % fn)

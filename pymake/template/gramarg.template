@@ -1,0 +1,22 @@
+from functools import partial
+from pymake.core.gram import exp_append
+
+
+
+_gram = [
+
+    # A simple command-line option:
+    #
+    #'--key1',dict(help='simple option from command-line'),
+
+    # A multiple expes command-line option:
+    #
+    #'--key2',dict(
+    #   dest='my_value1', action=exp_append),
+
+    # A multiple expes command-line option with a given type (float here):
+    #
+    #'--key3',dict(
+    #   dest='my_value3', action=partial(exp_append, _t=float),
+
+    ]

@@ -1,5 +1,5 @@
-import  os
-if os.environ.get('DISPLAY') is None:
+import os
+if not os.environ.get('DISPLAY'):
     # Plot in nil/void
     import matplotlib; matplotlib.use('Agg')
     print("==> Warning : Unable to load DISPLAY, try : `export DISPLAY=:0.0'")
