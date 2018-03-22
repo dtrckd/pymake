@@ -155,7 +155,7 @@ Then you can list some information about pymake objects:
 ## FAQ [](#4)
 
 
-###### How to share memory between all expe/run as design of experience
+###### How to share memory between all expe/run in a sandbox (ExpeFormat)
 
 If the run/expe are launched sequentially (without `--cores` option), one can use a global container defined in the ExpeFormat sandbox classes in the variable `self.D`. Typically one would init variables at the first experience, process it, and at the final run, do some processing with that variable, as illustrated in the following example:
 
@@ -176,6 +176,7 @@ class MyScripts(ExpeFormat):
 
 If the runs are parallelized (with `--cores` options), there is no current implemented way to do it although it is likely to be develloped in the future.
 
+
 ###### How to tune the command-line options
 
 The pymake.cfg have a settgins, by default `gramarg = project_name.grammarg`, which point to the python file gramarg.py. Inside this file you can add command-line options, fully compatible with the `argparse` python module. By default the file contains an empty list. If you want, let's say to set a parameter in your expe with the command line like this `pmk --my_key my_value` you can add a element in the list as follows:
@@ -188,7 +189,7 @@ _gram = [
 
 
 
-###### How to change a setings in expes from command-line whithout specifying it in the grammarg file
+###### How to change a setings in a spec from command-line whithout specifying it in the grammarg file
 
 Pymake provide a mamgic command line argument to specify any field in an expe. Let's say you want to give the value `my_value` in the field `my_key` in your expe, then you can do `pmk [...] --pmk my_value=my_key`. You can chain as many key=value pairs like this.
 
@@ -208,7 +209,7 @@ if [ -d $HOME/.bash_completion.d ]; then
 fi
 ```
 
-If you want to enable the auto-completion open a new terminal or just run `source ~/.bashrc`.
+If you want to enable the auto-completion, open a new terminal or just run `source ~/.bashrc`.
 
 
 ## Documentation [](#5)
