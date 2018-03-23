@@ -11,9 +11,13 @@ except:
     pass
 
 from .frontend import DataBase
-from pymake.util.utils import parse_file_conf
-from pymake.util.math import *
 from .drivers import DatasetDriver
+
+from .frontendnetwork_gt import frontendNetwork_gt
+
+from pymake.util.math import *
+
+
 
 def getClique(N=100, K=4):
     from scipy.linalg import block_diag
@@ -378,7 +382,7 @@ class frontendNetwork(DataBase, DatasetDriver):
             ext = format
             fn = os.path.join(bdir, corpus_name +'.'+ ext)
             if os.path.isfile(fn) and os.stat(fn).st_size == 0:
-                self.log.warning('Duh, Corpus file is empty at: %s' % fn)
+                self.log.warning('Doh, Corpus file is empty at: %s' % fn)
                 self.data = None
                 return
 

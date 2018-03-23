@@ -38,7 +38,6 @@ class MyLogFormatter(logging.Formatter):
     default_fmt = '%(msg)s'
 
     # Custom Log
-    log = logging.getLogger('root')
     VDEBUG_LEVEL_NUM = 9
     logging.addLevelName(VDEBUG_LEVEL_NUM, "VDEBUG")
     logging.VDEBUG = 9
@@ -174,6 +173,8 @@ class GramExp(object):
         * bdir/refdir/rep/model_name_parameters.inf  <--> ModelBase
 
     '''
+
+    log = logging.getLogger('root')
 
     _version = pkg_resources.get_distribution('pmk').version
 
