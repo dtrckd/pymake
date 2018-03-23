@@ -288,43 +288,54 @@ class Corpus(ExpVector):
     #             }
 
     # IX integration needed..
-    _corpus_typo = {
-        'network': [
-            'clique', 'generator', 'graph', 'alternate', 'BA', # random
-            'facebook',
-            'fb_uc',
-            'manufacturing',
-            'propro',
-            'blogs',
-            'euroroad',
-            'emaileu'
-        ],
-        'text': ['reuter50',
-                 'nips12',
-                 'nips',
-                 'enron',
-                 'kos',
-                 'nytimes',
-                 'pubmed',
-                 '20ngroups',
-                 'odp',
-                 'wikipedia',
-                 'lucene']}
+
+    _corpus_data = [
+        dict(name='clique'        , data_type='network', data_source='random', directed=False),
+        dict(name='generator'     , data_type='network', data_source='random', directed=False),
+        dict(name='graph'         , data_type='network', data_source='random'),
+        dict(name='alternate'     , data_type='network', data_source='random', directed=False),
+        dict(name='BA'            , data_type='network', data_source='random'),
+        dict(name='manufacturing' , data_type='network', data_source='web', directed=True, nodes=167, edges=5784, density=0.209, weighted=True),
+        dict(name='fb_uc'         , data_type='network', data_source='web', directed=True, nodes=1899, edges=22195, density=0.006, weighted=True),
+        dict(name='blogs'         , data_type='network', data_source='web', directed=True, nodes=1490, edges=19025, density=0.009, weighted=False),
+        dict(name='emaileu'       , data_type='network', data_source='web', directed=True, nodes=1005, edges=25571, density=0.025, weighted=False),
+        dict(name='propro'        , data_type='network', data_source='web', directed=False, nodes=2113, edges=1432, density=0.001, weighted=False),
+        dict(name='euroroad'      , data_type='network', data_source='web', directed=True, nodes=1177, edges=1432, density=0.001, weighted=False),
+
+        dict(name='facebook'     ,  data_type='network', data_source='web', directed=True, nodes=None, edges=None, density=None, wheigted=None),
+
+        dict(name='reuter50'  , data_type='text', data_source='web'),
+        dict(name='nips12'    , data_type='text', data_source='web'),
+        dict(name='nips'      , data_type='text', data_source='web'),
+        dict(name='enron'     , data_type='text', data_source='web'),
+        dict(name='kos'       , data_type='text', data_source='web'),
+        dict(name='nytimes'   , data_type='text', data_source='web'),
+        dict(name='pubmed'    , data_type='text', data_source='web'),
+        dict(name='20ngroups' , data_type='text', data_source='web'),
+        dict(name='odp'       , data_type='text', data_source='web'),
+        dict(name='wikipedia' , data_type='text', data_source='web'),
+        dict(name='lucene', data_type='text', data_source='lucene'), # needs field spec
+        dict(name='mongo', data_type='text', data_source='mongo'), # needs field spec
+    ]
+
     @classmethod
     def get(cls, corpus_name):
         if not corpus_name:
             return None
 
         corpus = False
-        for key, cps in cls._corpus_typo.items():
-            if corpus_name.startswith(tuple(cps)):
-                corpus = {'name': corpus_name, 'data_type':key}
+
+        # index/mongo...
+        for data in cls._corpus_data:
+            if corpus_name.startswith(tuple(data['name'])):
+                corpus = data
                 break
+
         return corpus
 
     @classmethod
     def get_all(cls):
-        return cls._corpus_typo
+        return cls._corpus_data
 
 class Model(ExpVector):
 

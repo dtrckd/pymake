@@ -8,7 +8,7 @@ from numpy import ma
 # Frontend Manager Utilities
 from .frontend import DataBase
 from .frontendtext import frontendText
-from .frontendnetwork import frontendNetwork
+from .frontendnetwork import frontendNetwork, frontendNetwork_gt
 from pymake import Model, Corpus, GramExp
 import pymake.io as io
 
@@ -32,8 +32,18 @@ class FrontendManager(object):
 
         corpus_name = expe.get('corpus') or expe.get('random')
 
-        _corpus = Corpus.get(corpus_name)
-        if _corpus is False:
+        if '.' in corpus_name:
+            c_name, c_ext = [('.'.join(o[:-1]), o[-1]) for o in corpus_name.split('.')]
+        else:
+            c_name = corpus_name
+            c_ext = None
+
+        _corpus = Corpus.get(c_name)
+        if c_ext in ['gt']:
+            # graph-tool object
+            # @Todo: Corpus intragation!
+            _corpus.update({'data_format':c_ext, 'name':c_name})
+        elif _corpus is False:
             raise ValueError('Unknown Corpus `%s\'!' % corpus)
         elif _corpus is None:
             return None
@@ -41,10 +51,14 @@ class FrontendManager(object):
         if _corpus['data_type'] == 'text':
             frontend = frontendText(expe)
         elif _corpus['data_type'] == 'network':
-            frontend = frontendNetwork(expe)
+            if _corpus.get('data_format') == 'gt':
+                frontend = frontendNetwork_gt(expe)
+            else:
+                frontend = frontendNetwork(expe)
 
         if load is True:
             frontend.load_data(randomize=False)
+
         frontend.sample(expe.get('N'), randomize=False)
 
         return frontend

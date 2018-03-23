@@ -85,8 +85,9 @@ class DataBase(object):
         #    self.data = sp.sparse.csr_matrix(data)
         #else:
         #    np.random.shuffle(self.data)
-        #
-        #
+
+
+    # frontendNetwork_nx
     @staticmethod
     def symmetrize(self, data=None):
         ''' inp-place symmetrization. '''
