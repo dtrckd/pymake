@@ -1,5 +1,6 @@
 import os
 import json, copy
+import logging
 from itertools import chain
 from string import Template
 from collections import defaultdict
@@ -8,7 +9,6 @@ import numpy as np
 
 from pymake import GramExp
 
-import logging
 
 class DataBase(object):
     """ Root Class for Frontend Manipulation over Corpuses and Models.
@@ -32,38 +32,54 @@ class DataBase(object):
     def __init__(self, expe):
         self.expe = expe
 
-        # Load a .pk file of **preprocessed** data(default: True if present)
-        self._load_data = expe.get('_load_data', True)
-
-        # Save a .pk file of data
-        self._save_data = expe.get('_save_data', False)
+        self._force_load_data = expe.get('_force_load_data', True)
+        self._force_save_data = expe.get('_force_save_data', True)
 
         self.corpus_name = expe.get('corpus')
-        self.model_name = expe.get('model')
 
-        # Specific / @issue Object ?
-        # How to handle undefined variable ?
-        # What category for object ??
-        self.homo = int(expe.get('homo', 0))
-        self.clusters = None
-        self.features = None
-        self.true_classes = None
-        self._data_file_format = None
 
-        # @Obsolete
-        self.data_t = None
+    @classmethod
+    def from_expe(cls):
+        raise NotImplementedError
 
-    def update_data(self):
-        raise NotImplemented
+    @classmethod
+    def _get_data(cls):
+        ''' Raw data parsing/extraction. '''
+        raise NotImplementedError
 
-    @staticmethod
-    def corpus_walker(path):
-        raise NotImplementedError()
+    @classmethod
+    def _resolve_filename(cls, expe):
+        input_path = expe._input_path
 
-    def load_data(self):
-        raise NotImplementedError()
-    def _get_corpus(self):
-        raise NotImplementedError()
+        if not os.path.exists(input_path):
+            self.log.error("Corpus `%s' Not found." % (input_path))
+            print('please run "fetch_networks"')
+            self.data = None
+            return
+
+        if expe.corpus.endswith('.pk'):
+            basename = expe.corpus
+        else:
+            basename = expe.corpus + '.pk'
+
+        fn = os.path.join(input_path, basename)
+        return fn
+
+    @classmethod
+    def _load_data(cls, *args, **kwargs):
+        ''' Load preprocessed data. '''
+        from pymake.io import load
+        return load(*args, **kwargs)
+
+    @classmethod
+    def _save_data(cls, *args, **kwargs):
+        ''' Save preprocessed data. '''
+        from pymake.io import save
+        return save(*args, **kwargs)
+
+    #
+    # Experimental Api
+    #
 
     def get_data_prop(self):
         prop = defaultdict()
@@ -113,14 +129,5 @@ class DataBase(object):
         #map(np.random.shuffle, bow)
         return bow
 
-    @staticmethod
-    def load(*args, **kwargs):
-        from pymake.io import load
-        return load(*args, **kwargs)
-
-    @staticmethod
-    def save(*args, **kwargs):
-        from pymake.io import save
-        return save(*args, **kwargs)
 
 

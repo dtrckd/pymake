@@ -34,12 +34,13 @@ class PyEncoder(json.JSONEncoder):
 
 def resolve_filename(fn, ext='pk'):
     splt = fn.split('.')
-    if splt[-1] not in ['pk', 'json']:
+    if splt[-1] not in ['pk', 'json', 'gt']:
         fn += '.' + ext
     return fn
 
-def load(fn, ext='pk', silent=False):
-    fn = resolve_filename(fn)
+def load(fn, ext='pk', silent=False, driver=None):
+    fn = resolve_filename(fn, ext)
+    ext = fn.split('.')[-1]
 
     # Seek for compressed data
     if os.path.exists(fn+'.gz'):
@@ -52,14 +53,15 @@ def load(fn, ext='pk', silent=False):
     if not silent:
         lgg.info('Loading data : %s' % fn)
 
-    if ext == 'pk':
+    if driver:
+        return driver(fn)
+    elif ext == 'pk':
         if compressed:
             with open(fn, 'rb') as _f:
                 return pickle.loads(zlib.decompress(_f.read()))
         else:
             with open(fn, 'rb') as _f:
                 return pickle.load(_f)
-
         #except:
         #    # python 2to3 bug
         #    _f.seek(0)
@@ -69,7 +71,6 @@ def load(fn, ext='pk', silent=False):
         #        cls.log.critical("Unknonw error while opening  while `_load_model' at file: %s" % (fn))
         #        cls.log.error(e)
         #            return
-
     elif ext == 'json':
         if compressed:
             with open(fn, 'rb') as _f:
@@ -80,18 +81,25 @@ def load(fn, ext='pk', silent=False):
     else:
         raise ValueError('File format unknown: %s' % ext)
 
-def save(data, fn, ext='pk', silent=False, compress=None,
+
+def save(fn, data, ext='pk', silent=False, compress=None, driver=None,
          compressed_pk=True, compressed_json=False):
 
     if compress is not None:
         compressed_pk = compressed_json = compressed
 
-    fn = resolve_filename(fn)
+    fn = resolve_filename(fn, ext)
+    ext = fn.split('.')[-1]
 
     if not silent:
         lgg.info('Saving data : %s' % fn)
 
-    if ext == 'pk':
+    if driver:
+        if data is None:
+            return driver(fn)
+        else:
+            return driver(fn, data)
+    elif ext == 'pk':
         if compressed_pk:
             fn += '.gz'
             obj = zlib.compress(pickle.dumps(data))

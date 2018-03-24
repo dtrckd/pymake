@@ -168,7 +168,7 @@ __default_config = defaultdict(lambda: '', dict(project_data = os.path.expanduse
                                                 default_model = 'pymake.model',
                                                 default_corpus = '?')
                               )
-def reset_pymake_settings(settings, default_config=__default_config, cfg_name='pymake.cfg'):
+def reset_pymake_settings(settings, default_config=__default_config, cfg_name='pmk.cfg'):
     _settings = default_config.copy()
     _settings.update(settings)
     #ctnt = '\n'.join(('{0} = {1}'.format(k,v) for k,v in _settings.items()))
@@ -181,7 +181,7 @@ def reset_pymake_settings(settings, default_config=__default_config, cfg_name='p
     with open(cfg_file, 'wb') as _f:
         return _f.write(ctnt.encode('utf8'))
 
-def get_pymake_settings(key=None, default_config=__default_config, cfg_name='pymake.cfg'):
+def get_pymake_settings(key=None, default_config=__default_config, cfg_name='pmk.cfg'):
     #dir =  os.path.dirname(os.path.realpath(__file__))
     #dir = os.getcwd()
     dir = os.getenv('PWD')

@@ -1,5 +1,4 @@
 from pymake import ExpeFormat
-from pymake.manager import ModelManager
 from pymake.util.utils import colored
 import textwrap
 from ..model.search_engine import extract_pdf, glob_path
@@ -77,16 +76,14 @@ class IR(ExpeFormat):
 
     def search(self, *query):
         expe = self.expe
-        _model = ModelManager.from_name(expe)
-        model = _model(expe)
+        model = self.load_model(expe)
 
         res = model.search(self.sem(query), limit=expe.number_results)
         self.format_results(res)
 
     def open(self, query, hit=1):
         expe = self.expe
-        _model = ModelManager.from_name(expe)
-        model = _model(expe)
+        model = self.load_model(expe)
 
         query = [query]
 
@@ -101,8 +98,7 @@ class IR(ExpeFormat):
 
     def authors(self, *query):
         expe = self.expe
-        _model = ModelManager.from_name(expe)
-        model = _model(expe)
+        model = self.load_model(expe)
 
         res = model.search(self.sem(query), field='authors', limit=expe.number_results)
         self.format_results(res)
@@ -110,8 +106,7 @@ class IR(ExpeFormat):
 
     def stats(self):
         expe = self.expe
-        _model = ModelManager.from_name(expe)
-        model = _model(expe)
+        model = self.load_model(expe)
 
         self.format_stats(model)
 

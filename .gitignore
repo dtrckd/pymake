@@ -17,7 +17,7 @@ build/
 
 # Volatile project file
 .pymake-errors
-.pymake/
+.pmk/
 
 repo/ml/ID
 

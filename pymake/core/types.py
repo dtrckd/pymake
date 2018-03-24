@@ -104,6 +104,10 @@ class ExpSpace(dict):
         try:
             return self[key]
         except KeyError:
+            # Default pmk settings
+            if key == '_write':
+                return False
+
             lgg.debug('an ExpSpace request exceptions occured for key: %s ' % (key))
             raise AttributeError(key)
 
@@ -291,7 +295,7 @@ class Corpus(ExpVector):
 
     _corpus_data = [
         dict(name='clique'        , data_type='network', data_source='random', directed=False),
-        dict(name='generator'     , data_type='network', data_source='random', directed=False),
+        dict(name='generator'     , data_type='network', data_source='random', directed=False, nodes=1000),
         dict(name='graph'         , data_type='network', data_source='random'),
         dict(name='alternate'     , data_type='network', data_source='random', directed=False),
         dict(name='BA'            , data_type='network', data_source='random'),
@@ -327,8 +331,8 @@ class Corpus(ExpVector):
 
         # index/mongo...
         for data in cls._corpus_data:
-            if corpus_name.startswith(tuple(data['name'])):
-                corpus = data
+            if corpus_name.startswith(data['name']):
+                corpus = data.copy()
                 break
 
         return corpus

@@ -1,4 +1,4 @@
-from pymake import ExpeFormat, ModelManager
+from pymake import ExpeFormat
 from pymake.util.utils import colored
 from ..model.search_engine import extract_pdf
 
@@ -24,8 +24,7 @@ class Speed(ExpeFormat):
 
     def _search(self, *query):
         expe = self.expe
-        _model = ModelManager.from_name(expe)
-        model = _model(expe)
+        model = self.load_model(expe)
 
         query = ' '.join(query)
         res = model.search(query, limit=expe.number_results)

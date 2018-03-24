@@ -213,7 +213,7 @@ class ModelBase():
         else:
             sys.stdout.write('+')
 
-        io.save(model, fn, silent=True)
+        io.save(fn, model, silent=True)
 
 
     def __deepcopy__(self, memo):

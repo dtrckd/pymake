@@ -21,7 +21,7 @@ Plot utility :
 class Plot(ExpeFormat):
 
     def _preprocess(self):
-        self.model = ModelManager.from_expe(self.expe)
+        self.model = ModelManager.from_expe(self.expe, load=True)
 
     @ExpeFormat.raw_plot('corpus')
     def __call__(self, frame,  attribute='_entropy'):

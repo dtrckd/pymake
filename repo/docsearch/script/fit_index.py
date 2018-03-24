@@ -1,5 +1,4 @@
 from pymake import ExpeFormat
-from pymake.manager import ModelManager
 from pymake.util.utils import ask_sure_exit
 
 
@@ -30,8 +29,7 @@ class fit(ExpeFormat):
 
     def __call__(self):
         expe = self.expe
-        _model = ModelManager.from_name(expe)
-        model = _model(expe)
+        model = self.load_model(expe)
 
         if expe.reset is True:
             ask_sure_exit('reset option will destroy all the indexes, sure [y/n]?')

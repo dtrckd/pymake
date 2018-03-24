@@ -46,7 +46,7 @@ class BurstProcess(ExpeFormat):
 
         if expe._mode == 'predictive':
             ### Generate data from a fitted model
-            model = ModelManager.from_expe(expe)
+            model = ModelManager.from_expe(expe, load=True)
 
             try:
                 # this try due to mthod modification entry in init not in picke object..
@@ -72,7 +72,7 @@ class BurstProcess(ExpeFormat):
                 hyper = (expe.alpha, expe.gmma, expe.delta)
             expe.hyperparams = dict(zip(keys_hyper, hyper))
             expe.hyper = 'fix' # dummy
-            model = ModelManager.from_expe(expe, init=True)
+            model = ModelManager.from_expe(expe, load=False)
 
         else:
             raise NotImplementedError('What generation context ? predictive/generative..')
