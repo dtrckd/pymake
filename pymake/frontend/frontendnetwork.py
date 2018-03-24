@@ -49,13 +49,23 @@ class frontendNetwork(DataBase, DatasetDriver):
 
         data_format = expe.get('_data_format', 'b')
         if data_format == 'w':
-            self._net_type = 'weighted'
+            self._net_type = data_format
             self._dtype = int
         elif data_format == 'b':
-            self._net_type = 'binary'
+            self._net_type = data_format
             self._dtype = bool
         else:
             raise NotImplemented('Network format unknwown: %s' % data_format)
+
+        # @Obsolete
+        # How to handle undefined variable ?
+        # What category for object ??
+        self.homo = int(expe.get('homo', 0))
+        self.clusters = None
+        self.features = None
+        self.true_classes = None
+
+        self.data_t = None
 
 
     @classmethod
@@ -105,7 +115,7 @@ class frontendNetwork(DataBase, DatasetDriver):
         if self.corpus_name.startswith(self.RANDOM_CORPUS):
             data = self.random_corpus(corpus_name)
         else:
-            data = self._get_corpus(corpus_name)
+            data = self.fs_corpus(corpus_name)
 
         if data is None:
             self.log.warning('Unable to load corpus: %s' % (corpus_name))
@@ -122,7 +132,7 @@ class frontendNetwork(DataBase, DatasetDriver):
             self.shuffle_node()
         return self.data
 
-    def _get_corpus(self, corpus_name):
+    def fs_corpus(self, corpus_name):
         """ @debug Be smarter, has some database strategy.
             Redirect to correct path depending on the corpus_name
         """
@@ -363,51 +373,51 @@ class frontendNetwork(DataBase, DatasetDriver):
         data = None
         bdir = self.expe._input_path
 
-        if not os.path.exists(bdir):
-            self.log.error("Corpus `%s' Not found." % (bdir))
-            print('please run "fetch_networks"')
-            self.data = None
-            return
+        fn = self._resolve_filename(self.expe)
 
-        fn = os.path.join(bdir, corpus_name)
-
-        if self._load_data and os.path.isfile(fn+'.pk'):
+        # pmk file format...
+        if self._force_load_data and os.path.isfile(fn+'.gz'):
             try:
-                data = self.load(fn)
+                data = self._load_data(fn)
             except Exception as e:
-                self.log.error('Error : %s on %s' % (e, fn+'.pk'))
+                self.log.error('Error : %s on %s' % (e, fn))
                 data = None
 
         if data is None:
             ext = format
-            fn = os.path.join(bdir, corpus_name +'.'+ ext)
+            _fn = os.path.join(bdir, corpus_name +'.'+ ext)
             if os.path.isfile(fn) and os.stat(fn).st_size == 0:
                 self.log.warning('Doh, Corpus file is empty at: %s' % fn)
                 self.data = None
                 return
 
             if ext == 'graph': # Dancer
-                fn = os.path.join(bdir, 't0.graph')
-                data = self.parse_dancer(fn)
+                _fn = os.path.join(bdir, 't0.graph')
+                _data = self.parse_dancer(_fn)
             elif ext == 'edges': # NotImplemented
-                fn = os.path.join(bdir, '0.edges')
-                data = self.parse_edges(fn)
+                _fn = os.path.join(bdir, '0.edges')
+                _data = self.parse_edges(_fn)
                 raise NotImplementedError
             elif ext in ('txt'):
-                data = self.parse_tnet(fn)
+                _data = self.parse_tnet(_fn)
             elif ext == 'csv':
-                data = self.parse_csv(fn)
+                _data = self.parse_csv(_fn)
             elif ext == 'dat':
-                data = self.parse_dat(fn)
+                _data = self.parse_dat(_fn)
             else:
                 raise ValueError('extension of network data unknown')
+
+            data = _data['data']
+            self.features = _data.get('features')
+            self.clusters = _data.get('clusters')
+
+            if self._force_save_data:
+                self._save_data(fn, data)
 
         if np.tril(data, k=-1).sum() == 0:
             # Symmetrize if lower triu is empty.
             self.Symmetrize(data)
 
-        if self._save_data:
-            self.save(data, fn[:-len('.'+ext)])
 
         return data
 
@@ -504,11 +514,11 @@ class frontendNetwork(DataBase, DatasetDriver):
     # Get Statistics
     #
 
-    def nodes(self):
+    def num_nodes(self):
         g = self.getG()
         return g.number_of_nodes()
 
-    def edges(self):
+    def num_edges(self):
         g = self.getG()
         return g.number_of_edges()
 

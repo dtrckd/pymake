@@ -9,7 +9,7 @@ from numpy import ma
 from .frontend import DataBase
 from .frontendtext import frontendText
 from .frontendnetwork import frontendNetwork, frontendNetwork_gt
-from pymake import Model, Corpus, GramExp
+from pymake import Model, Corpus,  GramExp
 import pymake.io as io
 
 import logging
@@ -26,23 +26,25 @@ class FrontendManager(object):
 
     log = logging.getLogger('root')
 
-    @staticmethod
-    def get(expe, load=False):
-        """ Return: The frontend suited for the given expe"""
+
+    @classmethod
+    def load(cls, expe, load=True):
+        """ Return the frontend suited for the given expe"""
 
         corpus_name = expe.get('corpus') or expe.get('random')
 
         if '.' in corpus_name:
-            c_name, c_ext = [('.'.join(o[:-1]), o[-1]) for o in corpus_name.split('.')]
+            c_split = corpus_name.split('.')
+            c_name, c_ext = '.'.join(c_split[:-1]), c_split[-1]
         else:
             c_name = corpus_name
             c_ext = None
 
         _corpus = Corpus.get(c_name)
-        if c_ext in ['gt']:
+        if c_ext in GramExp._frontend_ext:
             # graph-tool object
             # @Todo: Corpus intragation!
-            _corpus.update({'data_format':c_ext, 'name':c_name})
+            _corpus.update(data_format=c_ext)
         elif _corpus is False:
             raise ValueError('Unknown Corpus `%s\'!' % corpus)
         elif _corpus is None:
@@ -52,20 +54,15 @@ class FrontendManager(object):
             frontend = frontendText(expe)
         elif _corpus['data_type'] == 'network':
             if _corpus.get('data_format') == 'gt':
-                frontend = frontendNetwork_gt(expe)
+                frontend = frontendNetwork_gt.from_expe(expe, load=load, corpus=_corpus)
             else:
+                # Obsolete loading design. @Todo
                 frontend = frontendNetwork(expe)
-
-        if load is True:
-            frontend.load_data(randomize=False)
-
-        frontend.sample(expe.get('N'), randomize=False)
+                if load is True:
+                    frontend.load_data(randomize=False)
+                frontend.sample(expe.get('N'), randomize=False)
 
         return frontend
-
-    @classmethod
-    def load(cls, expe):
-        return cls.get(expe, load=True)
 
 
 class ModelManager(object):
@@ -142,7 +139,7 @@ class ModelManager(object):
         if self.is_model(_model, 'pymake'):
             model = _model(self.expe, frontend)
         else:
-            model = _model(self.expe, frontend)
+            model = _model(self.expe)
 
         return model
 
@@ -160,7 +157,7 @@ class ModelManager(object):
             cls.log.debug('The following are available :')
             for f in GramExp.model_walker(os.path.dirname(_fn), fmt='list'):
                 cls.log.debug(f)
-            return None
+            return
 
         cls.log.info('Loading Model: %s' % fn)
         model = io.load(fn, silent=True)
@@ -180,26 +177,18 @@ class ModelManager(object):
 
 
     @classmethod
-    def from_expe(cls, expe, init=False):
-        if init is True:
+    def from_expe(cls, expe, frontend=None, load=False):
+    # frontend params is deprecated and will be removed soon...
+
+        if load is False:
             mm = cls(expe)
-            model = mm._get_model()
+            model = mm._get_model(frontend)
         else:
-            fn = GramExp.make_output_path(expe)
+            fn = expe._output_path
             model = cls._load_model(fn)
 
         cls.update_expe(expe, model)
 
         return model
-
-
-    @classmethod
-    def from_expe_frontend(cls, expe, frontend):
-        # urgh,
-        # structure and workflow for streaming ? temporal ?
-        meta_model = cls(expe=expe)
-        cls.model = meta_model._get_model(frontend)
-        cls.update_expe(expe, cls.model)
-        return cls.model
 
 

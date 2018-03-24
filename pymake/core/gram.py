@@ -109,44 +109,62 @@ _Gram = [
     '--host', dict(
         help='Host database'),
 
-    '-v', dict(
-        nargs='?', action=VerboseAction, dest='_verbose',
-        help='Verbosity level (-v | -vv | -v 2)'),
-    '-nv', '--silent', dict(
-        nargs=0, action=VerboseAction, dest='_verbose',
-        help='Silent option'),
+    '-v', dict(dest='_verbose',
+               nargs='?', action=VerboseAction,
+               help='Verbosity level (-v | -vv | -v 2)'),
 
-    '-s', '--simulate',  dict(
+    '-nv', '--silent', dict(dest='_verbose',
+                            nargs=0, action=VerboseAction,
+                            help='Silent option'),
+
+    '-s', '--simulate', dict(
         action='store_true',
         help='Offline simulation'),
 
-    '-w', '--write', dict(
-        action='store_true', dest='_write',
-        help='Write Fitted Model On disk.'),
+    '-w', '--write', dict(dest='_write',
+                          action='store_true',
+                          help='Write Fitted Model On disk.'),
 
     '--seed', dict(
         nargs='?', const=True, type=int,
         help='set seed value. If no seed specified but flag given, it will save/load the current state.'),
 
-    '--cores', dict(
-        type=int, dest='_cores',
-        help='number of cores to run with runpara command.'),
+    '--cores', dict(dest='_cores',
+                    type=int,
+                    help='number of cores to run with runpara command.'),
 
-    '-l', '--list', dict(
-        nargs='?', dest='do_list', const='topo', action=unaggregate_append,
-        help='Request to print informations.'),
-    '-ll', dict(
-        nargs='?', dest='do_list', const='spec_topo', action=unaggregate_append,
-        help='Request to print global informations.'),
+    '-l', '--list', dict(dest='do_list',
+                         nargs='?', const='topo', action=unaggregate_append,
+                         help='Request to print informations.'),
+    '-ll', dict(dest='do_list',
+                nargs='?', const='spec_topo', action=unaggregate_append,
+                help='Request to print global informations.'),
 
     '--net', dict(
         nargs='?', dest='_net', const=True,
         help='[with runpara, send run to remote via loginfile. Max number of remote can be specified.'),
 
+
+
+    '-nsd', '--no-save-data', dict(dest='_force_save_data',
+                                   action='store_false',
+                                   help='Do no save the data frontend after parsing.'),
+
+    '-nld', '--reload-data', dict(dest='_force_load_data',
+                                  action='store_false',
+                                  help='Reload data from raw parsing.'),
+
+    '-nbp', '--no-block-plot', dict(dest='_no_block_plot',
+                                    action='store_true',
+                                    help='Make the pyplot figure non blocking.'),
+
+
+
+
     # @Debug allocate unique filname for expe base on a hash of its spec.
-    '--ifu', '--ignore-format-unique', dict(
-        action='store_true', dest='_ignore_format_unique',
-        help='dont check that if there is some outputpath overlaping due to lacking parameters in  _format.'),
+    '--ifu', '--ignore-format-unique', dict(dest='_ignore_format_unique',
+                                        action='store_true',
+                                            help='dont check that if there is some outputpath overlaping due to lacking parameters in  _format.'),
 
 
     #  Context-sensitive
@@ -166,27 +184,27 @@ _Gram = [
         nargs='*', dest='_pmk', action=unaggregate_append,
         help='force a an expe settings ex: --pmk myvar=2'),
 
-    '--bind', dict(
-        type=str, dest='_bind', action='append',
+    '--bind', dict(dest='_bind',
+        type=str, action='append',
         help='Rules to filter the Exp Request.'),
 
-    '--repeat', dict(
-        nargs='*', dest='_repeat', action=exp_append, #type=check_positive_integer,
+    '--repeat', dict(dest='_repeat',
+        nargs='*', action=exp_append, #type=check_positive_integer,
         help='Index of tn nth repetitions/randomization of an design of experiments. Impact the outpout path as data/<bdir>/<refdir>/<repeat>/...'),
 
-    '--refdir', dict(
-        nargs='*', dest='_refdir', action=exp_append,
+    '--refdir', dict(dest='_refdir',
+        nargs='*', action=exp_append,
         help='Name to append in data/<data-typer>/<refdir>/ for the output path.'),
 
-    '--format', dict(
-        dest='_format', help='File format for saving results and models.'),
+    '--format', dict(dest='_format',
+         help='File format for saving results and models.'),
 
-    '--type', '--data-format', dict(
-        dest='_data_format', help='The type/format of data to use [b|w].'),
+    '--type', '--data-format', dict(dest='_data_format',
+         help='The type/format of data to use [b|w].'),
 
-    '--fast', '--deactivate-measures', dict(
-        dest='deactivate_measures', action='store_true',
-        help='Do not compute measures (log-likelihood/entropy etc) during fitting to speed up the process.'),
+    '--fast', '--deactivate-measures', dict(dest='deactivate_measures',
+         action='store_true',
+         help='Do not compute measures (log-likelihood/entropy etc) during fitting to speed up the process.'),
 
 
     ]

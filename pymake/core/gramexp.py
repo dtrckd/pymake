@@ -1,3 +1,4 @@
+import random
 import sys, os, re, uuid
 import argparse
 from datetime import datetime
@@ -184,6 +185,11 @@ class GramExp(object):
         >> Network fitting :
         fit.py -m immsb -c alternate -n 100 -i 10'''
 
+    _frontend_ext = ['gt', # graph-tool
+                     'pk', # pickle
+                    ]
+    #_model_ext = @Todo: dense(numpy/pk.gz) or sparse => gt...?
+
     # has special semantics on **output_path**.
     _special_keywords = [ '_refdir', '_repeat',
                          '_format', '_csv_typo',
@@ -199,15 +205,16 @@ class GramExp(object):
     _private_keywords = _reserved_keywords + _special_keywords
 
     _default_expe = {
-        #'host'      : 'localhost',
         '_verbose'   : logging.INFO,
         '_write'     : False,
-        #'_load_data' : True, # if .pk corpus is here, load it.
-        #'_save_data' : False, # save corpus as .pk.
+        '_force_load_data' : True, # if True, it will force the raw data parsing.
+        '_force_save_data' : True, # if False, dont save corpus as pk/gt ont the filesystem.
+        '_no_block_plot' : False,
     }
 
 
-    _cfg_name = 'pymake.cfg'
+    _base_name = '.pmk'
+    _cfg_name = 'pmk.cfg'
     _pmk_error_file = '.pymake-errors'
     _data_path = get_pymake_settings('project_data')
 
@@ -218,7 +225,7 @@ class GramExp(object):
 
     def __init__(self, conf, usage=None, parser=None, parseargs=True, expdesign=None):
         # @logger One logger by Expe ! # in preinit
-        setup_logger(level=conf.get('_verbose'))
+        setup_logger(level=conf.get('_verbose', logging.INFO))
 
         if conf is None:
             conf = {}
@@ -230,7 +237,8 @@ class GramExp(object):
             # merge parser an parsargs ?
             self.argparser = parser
 
-        [conf.update({k:v}) for k,v in self._default_expe.items() if k not in conf]
+        # It pollute the spec output...
+        #[conf.update({k:v}) for k,v in self._default_expe.items() if k not in conf]
 
         self._base_conf = conf
         #self._do = conf.get('_do')
@@ -258,7 +266,7 @@ class GramExp(object):
         skip_check = self._conf['_do'] in ['diff']
         self.lod = self._tensors.make_lod(skip_check)
 
-        indexs = self._conf['_run_indexs']
+        indexs = self._conf.get('_run_indexs')
         if indexs:
             self._tensors.remake(indexs)
             self._update()
@@ -457,7 +465,7 @@ class GramExp(object):
             @type: pk, json or inference.
         """
         expe = defaultdict(lambda: None, expe)
-        base = '.pymake'
+        base = cls._base_name
         hook = expe.get('_refdir', 'default')
 
         basedir = os.path.join(cls._data_path, base, 'results')
@@ -506,7 +514,7 @@ class GramExp(object):
         """ Make a single input path from a expe/dict """
         expe = defaultdict(lambda: None, expe)
         filen = None
-        base = '.pymake'
+        base = cls._base_name
 
         # Corpus is an historical exception and has its own subfolder.
         c = expe.get('corpus')
@@ -517,6 +525,8 @@ class GramExp(object):
             c = c.replace('generator', 'Graph')
             c = c.replace('graph', 'Graph')
             c = 'generator/' + c
+        if c.endswith(tuple('.'+ext for ext in cls._frontend_ext)):
+            c = c[:-(1+len(c.split('.')[-1]))]
 
         input_dir = os.path.join(cls._data_path, base, 'training', c)
 
@@ -592,7 +602,7 @@ class GramExp(object):
 
     @classmethod
     def parseargsexpe(cls, usage=None, args=None, parser=None):
-        description = 'Specify an experimentation.'
+        description = 'Launch and Specify Simulations.'
         if not usage:
             usage = GramExp._examples
 
@@ -611,6 +621,12 @@ class GramExp(object):
 
         # Assume None value are non-filled options
         settings = dict((key,value) for key, value in vars(s).items() if value is not None)
+
+        # Purge default/unchanged settings
+        for k in list(settings):
+            v = settings[k]
+            if cls._default_expe.get(k) == v:
+                settings.pop(k)
 
         pmk_opts = cls.pmk_extra_opts(settings)
         settings.update(pmk_opts)
@@ -723,7 +739,8 @@ class GramExp(object):
 
 
         # Setup the exp inputs
-        request['_run_indexs'] = run_indexs
+        if run_indexs:
+            request['_run_indexs'] = run_indexs
 
         if len(expgroup) >= 1:
             request['_spec'] = expgroup
@@ -948,34 +965,51 @@ class GramExp(object):
         return clss.split('.')[-1].replace("'>", '')
 
 
-    def expe_init(self, expe, _seed_path='/tmp/pymake.seed'):
+    def expe_init(self, expe, _seed_path='/tmp/pmk.seed'):
+        ''' Intialize an expe:
+            * Set seed
+            * set in/out filesystem path
+        '''
+
         _seed = expe.get('seed')
 
         if _seed is None:
-            seed = np.random.randint(0, 2**32)
+            seed0 = random.randint(0, 2**128)
+            seed1 = np.random.randint(0, 2**32, 10)
+            seed = [seed0, seed1]
         elif type(_seed) is int:
-            seed = _seed
+            seed = [_seed, _seed]
         elif _seed is True:
+            # Load state
             seed = None
             try:
-                np.random.set_state(self.load(_seed_path))
+                self._seed = self.load(_seed_path)
+                random.seed(self._seed[0])
+                np.random.seed(self._seed[1])
+                #np.random.set_state(seed_state)
             except FileNotFoundError as e:
                 self.log.error("Cannot initialize seed, %s file does not exist." % _seed_path)
-                self.save(np.random.get_state(), _seed_path, silent=True)
+                sid = [np.random.randint(0, 2**64), np.random.randint(0, 2**32)]
+                self.save(sid, _seed_path, silent=True)
+                #self.save(np.random.get_state(), _seed_path, silent=True)
                 raise FileNotFoundError('%s file just created, try again !')
 
         if seed:
-            # if no seed is given, it impossible ti get a seed from numpy
+            # if no seed is given, it's impossible to get a seed from numpy
             # https://stackoverflow.com/questions/32172054/how-can-i-retrieve-the-current-seed-of-numpys-random-number-generator
-            np.random.seed(seed)
+            random.seed(seed[0])
+            np.random.seed(seed[1])
+
+            # Save state
+            self.save(_seed_path, seed, silent=True)
+            #self.save(_seed_path, [seed, np.random.get_state()], silent=True)
+            self._seed = seed
 
         # Init I/O settings
         expe['_output_path'] = self.make_output_path(expe, _null=self._tensors._null, _nonunique=self.get_nounique_keys())
         expe['_input_path'] = self.make_input_path(expe)
 
-        self.save(np.random.get_state(), _seed_path, silent=True)
-        self._seed = seed
-        return seed
+        return self._seed
 
 
     def execute(self):
@@ -1037,7 +1071,7 @@ class GramExp(object):
         basecmd = [Target] + basecmd[1:]
 
         # Create commands indexs
-        indexs = self._conf['_run_indexs']
+        indexs = self._conf.get('_run_indexs')
         if not indexs:
             indexs = range(len(self))
         else:
@@ -1091,7 +1125,7 @@ class GramExp(object):
         cmdlines = None
 
         # Create commands indexs
-        indexs = self._conf['_run_indexs']
+        indexs = self._conf.get('_run_indexs')
         if not indexs:
             indexs = range(len(self))
         else:
@@ -1205,7 +1239,6 @@ class GramExp(object):
         pwd = os.getenv('PWD')
         return os.path.isfile(os.path.join(pwd, cls._cfg_name))
 
-
     def init_folders(self):
         from pymake.util.utils import reset_pymake_settings
         join = os.path.join
@@ -1249,8 +1282,8 @@ class GramExp(object):
 
     def pushcmd2hist(self):
         from pymake.util.utils import tail
-        bdir = os.path.join(self._data_path, '.pymake')
-        fn = os.path.join(bdir, '.pymake_hist')
+        bdir = os.path.join(self._data_path, self._base_name)
+        fn = os.path.join(bdir, '.pymake-hist')
         if not os.path.isfile(fn):
             open(fn, 'a').close()
             return
@@ -1274,7 +1307,7 @@ class GramExp(object):
             n_lines = int(n)
 
         bdir = self._data_path
-        fn = os.path.join(bdir, '.pymake', '.pymake_hist')
+        fn = os.path.join(bdir, self._base_name, '.pymake-hist')
         if not os.path.isfile(fn):
             self.log.error('hist file does not exist.')
             return

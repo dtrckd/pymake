@@ -173,7 +173,7 @@ class ExpeFormat(object):
     @classmethod
     def display(cls, conf):
         import matplotlib.pyplot as plt
-        block = not conf.get('save_plot', False)
+        block = not conf.get('_no_block_plot', False)
         plt.show(block=block)
 
     @staticmethod
@@ -184,8 +184,8 @@ class ExpeFormat(object):
         self = args[0]
         expe = self.expe
         kernel = fun(*args, **kwargs)
-        if 'block_plot' in expe and getattr(self, 'noplot', False) is not True:
-            plt.show(block=expe.block_plot)
+        if '_no_block_plot' in expe and getattr(self, 'noplot', False) is not True:
+            plt.show(block=expe._no_block_plot)
         return kernel
 
     def get_current_frame(self):
@@ -787,20 +787,26 @@ class ExpeFormat(object):
         # Could configure frontend/data path or more also here ?
         return
 
-    def load_model(self, frontend=None, init=True):
+    # frontend params is deprecated and will be removed soon...
+    def load_model(self, frontend=None, load=False):
+        ''' :load: boolean. Load from **preprocess** file is true else
+                            it is a raw loading.
+        '''
         from pymake.frontend.manager import ModelManager
 
-        if init is True:
-            self.model = ModelManager.from_expe_frontend(self.expe, frontend)
+        self.model = ModelManager.from_expe(self.expe, frontend=frontend, load=load)
+        if load is False:
             self.configure_model(self.model)
-        else:
-            self.model = ModelManager.from_expe(self.expe)
 
         return self.model
 
-    def load_frontend(self):
+    def load_frontend(self, load=True):
+        ''' :load: boolean. Load from **fitted** file is true else
+                            it is raw initialization.
+        '''
         from pymake.frontend.manager import FrontendManager
-        frontend = FrontendManager.load(self.expe)
+
+        frontend = FrontendManager.load(self.expe, load=load)
         return frontend
 
 

@@ -31,8 +31,6 @@ class Net(ExpeFormat):
 
     _default_expe = dict(
         _spec = 'data_net_all',
-        block_plot = False,
-        _write = False,
         _do           = ['zipf', 'source'],
         _data_type = 'networks'
 
@@ -86,7 +84,7 @@ class Net(ExpeFormat):
         if clusters_org == 'source':
             clusters = frontend.get_clusters()
         elif clusters_org == 'model':
-            model = ModelManager.from_expe(expe)
+            model = ModelManager.from_expe(expe, load=True)
             #clusters = model.get_clusters(K, skip=1)
             #clusters = model.get_communities(K)
             clusters = Louvain.get_clusters(frontend.to_directed(), resolution=10)
@@ -186,7 +184,7 @@ class Net(ExpeFormat):
         if clusters_org == 'source':
             clusters = frontend.get_clusters()
         elif clusters_org == 'model':
-            model = ModelManager.from_expe(expe)
+            model = ModelManager.from_expe(expe, load=True)
             #clusters = model.get_clusters(K, skip=1)
             #clusters = model.get_communities(K)
             clusters = Louvain.get_clusters(frontend.to_directed(), resolution=10)
@@ -327,7 +325,7 @@ class Net(ExpeFormat):
             # Warning order sensitive @deprecated Table.
             #corpuses = self.specname(self.gramexp.get_set('corpus'))
             corpuses = self.specname(self.gramexp.get_list('corpus'))
-            Meas = ['nodes', 'edges', 'density']
+            Meas = ['num_nodes', 'num_edges', 'density']
             Meas += ['is_symmetric', 'modularity', 'clustering_coefficient', 'net_type', 'feat_len']
             Table = np.zeros((len(corpuses), len(Meas))) * np.nan
             Table = np.column_stack((corpuses, Table))
@@ -337,14 +335,16 @@ class Net(ExpeFormat):
         #print (frontend.get_data_prop())
         for i, v in enumerate(Meas):
             if frontend.data is None:
-                Table[self.corpus_pos, 1:] = 'none'
+                Table[self.corpus_pos, 1:] = np.nan
                 break
-            Table[self.corpus_pos, i+1] = getattr(frontend, v)()
+            value = getattr(frontend, v)()
+            value = value if value is not None else np.nan
+            Table[self.corpus_pos, i+1] = value
 
         if self._it == self.expe_size -1:
             tablefmt = 'simple' # 'latex'
             print(colored('\nStats Table :', 'green'))
-            print (self.tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
+            print(self.tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
 
     def _future_stats(self):
         ''' Show data stats '''
@@ -354,7 +354,7 @@ class Net(ExpeFormat):
         if not corpuses:
             corpuses = ['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad', 'generator7', 'generator12', 'generator10', 'generator4']
 
-        Meas = ['nodes', 'edges', 'density']
+        Meas = ['num_nodes', 'num_edges', 'density']
         Meas += ['is_symmetric', 'modularity', 'clustering_coefficient', 'net_type', 'feat_len']
         Table = np.zeros((len(corpuses), len(Meas))) * np.nan
         Table = np.column_stack((corpuses, Table))

@@ -1,21 +1,26 @@
 from numpy import ma
 import numpy as np
+import logging
 
 try:
     import pandas as pd
 except Exception as e:
     print('Error while importing pandas: %s' % e)
 
+
+
 class DatasetDriver(object):
 
     ''' Parse dataset file using pandas'''
 
     _comment = '%'
+    log = logging.getLogger('root')
 
     # No pandas here....
-    def parse_tnet(self, fn, sep=' '):
-        ''' Grammar retro-ingennired from fb/emaileu.txt '''
-        self.log.debug('opening file: %s' % fn)
+    @classmethod
+    def parse_tnet(cls, fn, sep=' '):
+        ''' Grammar retro-ingennired from fb/emaileu.txt. tnet format is official ? '''
+        cls.log.debug('opening file: %s' % fn)
         with open(fn) as f:
             content = f.read()
         lines = list(filter(None, content.split('\n')))
@@ -23,15 +28,15 @@ class DatasetDriver(object):
         edges = {}
         if len(line1_length) == 2:
             # format 'i j' if edges.
-            self._data_file_format = 'txt'
+            data_file_format = 'txt'
             for line in lines:
-                dyad = line.strip().split(sep)[:]
+                dyad = line.strip().split(sep)
                 dyad = '.'.join(dyad)
                 edges[dyad] = edges.get(dyad, 0) + 1
-            #edges = [l.strip().split(sep)[:] for l in lines]
+            #edges = [l.strip().split(sep) for l in lines]
         elif len(line1_length) == 5:
             # format '"date" i j weight'.
-            self._data_file_format = 'tnet'
+            data_file_format = 'tnet'
             for line in lines:
                 _line = line.strip().split(sep)
                 dyad = _line[-3:-1]
@@ -47,12 +52,14 @@ class DatasetDriver(object):
 
         g = np.zeros((N,N))
         g[tuple(edges[:, :2].T)] = edges[:, 2]
-        return g
+        data = dict(data=g)
+        return data
 
     # No pandas here....
-    def parse_csv(self, fn, sep=';'):
+    @classmethod
+    def parse_csv(cls, fn, sep=';'):
         ''' Grammar retro-ingennired from manufacturing.csv '''
-        self.log.debug('opening file: %s' % fn)
+        cls.log.debug('opening file: %s' % fn)
         with open(fn, 'r') as f:
             content = f.read()
         lines = list(filter(None, content.split('\n')))[1:]
@@ -70,17 +77,19 @@ class DatasetDriver(object):
 
         g = np.zeros((N,N))
         g[tuple(edges[:, :2].T)] = edges[:, 2]
-        return g
+        data = dict(data=g)
+        return data
 
 
-    def parse_dancer(self, fn, sep=';'):
+    @classmethod
+    def parse_dancer(cls, fn, sep=';'):
         """ Parse Network data depending on type/extension """
-        self.log.debug('opening file: %s' % fn)
+        cls.log.debug('opening file: %s' % fn)
 
-        data = pd.read_csv(fn, sep=sep, names=['n', 'feat', 'cluster' ], comment=self._comment)
+        data = pd.read_csv(fn, sep=sep, names=['n', 'feat', 'cluster' ], comment=cls._comment)
         parameters = data.dropna()
-        self.clusters = parameters['cluster'].values.astype(int)
-        self.features = np.array([list(map(float, f.split('|'))) for f in parameters['feat'].values])
+        clusters = parameters['cluster'].values.astype(int)
+        features = np.array([list(map(float, f.split('|'))) for f in parameters['feat'].values])
 
         data = data.ix[data['cluster'].isna()]
         data['cluster'] = 1 # <= the weight
@@ -95,19 +104,20 @@ class DatasetDriver(object):
         ix = list(zip(*e_ix))
         y[ix] = data[:,2][e_l]
 
-        return y
+        data = dict(data=y, clusters=clusters, features=features)
+        return data
 
-    def parse_dat(self, fn, sep="\s+"):
+    @classmethod
+    def parse_dat(cls, fn, sep="\s+"):
         """ Parse Network data depending on type/extension """
-        self.log.debug('opening file: %s' % fn)
+        cls.log.debug('opening file: %s' % fn)
 
         def _row_len(fn):
             ''' Seek for the length of the csv row, then break quicly '''
-            f = open(fn, 'rb')
             inside = {'vertices':False, 'edges':False }
             data  = []
-            for _line in f:
-                line = _line.strip().decode('utf8') #python 2..
+            for _line in open(fn):
+                line = _line.strip()
                 if line.startswith(('ROW LABELS:', '*vertices')) or inside['vertices']:
                     if not inside['vertices']:
                         inside['vertices'] = True
@@ -129,7 +139,6 @@ class DatasetDriver(object):
                         # Parsing assignation
                         data.append( line.split() )
                         break
-            f.close()
             return len(data[0])
 
         # Sender, Reiceiver, Edges
@@ -141,7 +150,7 @@ class DatasetDriver(object):
         else:
             raise ValueError('I/O error for dataset file: %s' % fn)
 
-        data = pd.read_csv(fn, sep=sep, names=cols, comment=self._comment)
+        data = pd.read_csv(fn, sep=sep, names=cols, comment=cls._comment)
         if len(cols) == 2:
             data['weight'] = np.ones(data.shape[0])
             cols = ['s', 'r', 'weight']
@@ -157,7 +166,150 @@ class DatasetDriver(object):
         e_ix = data[:, 0:2][e_l]
         ix = list(zip(*e_ix))
         y[ix] = data[:,2][e_l]
-        return y
+        data = dict(data=y)
+        return data
+
+
+
+class OnlineDatasetDriver(object):
+
+    ''' Parse dataset file using pandas'''
+
+    _comment = '%'
+    log = logging.getLogger('root')
+
+    @classmethod
+    def parse_tnet(cls, fn, sep=' '):
+        ''' Grammar retro-ingennired from fb/emaileu.txt. tnet format is official ? '''
+
+        cls.log.debug('opening file: %s' % fn)
+
+        for line in open(fn):
+            line = line.strip()
+            if not line:
+                continue
+
+            line1_length = line.split(sep)
+
+            if len(line1_length) == 2:
+                # format 'i j' if edges.
+                data_file_format = 'txt'
+                v1, v2 = line.strip().split(sep)
+                w = 1
+                yield int(v1), int(v2), w, None
+            elif len(line1_length) == 5:
+                # format '"date" i j weight'.
+                data_file_format = 'tnet'
+                _line = line.strip().split(sep)
+                v1, v2 = _line[-3:-1]
+                w = int(_line[-1])
+                if w == 0:
+                    continue
+                else:
+                    yield int(v1), int(v2), w, None
+
+
+    @classmethod
+    def parse_csv(cls, fn, sep=';'):
+        ''' Grammar retro-ingennired from manufacturing.csv '''
+
+        cls.log.debug('opening file: %s' % fn)
+
+        cpt = 0
+        for line in open(fn):
+            if cpt == 0:
+                # Ignore first status line
+                cpt += 1
+                continue
+            v1, v2 = line.strip().split(sep)[0:2]
+            w = 1
+            yield int(v1), int(v2), w, None
+
+
+    @classmethod
+    def parse_dancer(cls, fn, sep=';'):
+
+        cls.log.debug('opening file: %s' % fn)
+
+        inside = {'vertices':False, 'edges':False }
+        for line in open(fn):
+            line = line.strip()
+            if line.startswith('# Vertices') or inside['vertices']:
+                if not inside['vertices']:
+                    inside['vertices'] = True
+                    continue
+                if line.startswith('#') or not line.strip() :
+                    inside['vertices'] = False # break
+                else:
+                    # Parsing assignation
+                    elements = line.strip().split(sep)
+                    index = int(elements[0])
+                    clust = int(elements[-1])
+                    feats = list(map(float, elements[-2].split('|')))
+                    obj = {'label': clust, 'features': feats, 'index':index}
+                    yield obj
+            elif line.startswith('# Edges') or inside['edges']:
+                if not inside['edges']:
+                    inside['edges'] = True
+                    continue
+                if line.startswith('#') or not line.strip() :
+                    inside['edges'] = False # break
+                else:
+                    # Parsing assignation
+                    v1, v2 = line.split(sep)
+                    w = 1
+                    yield int(v1), int(v2), w, None
+
+
+    @classmethod
+    def parse_dat(cls, fn, sep=" "):
+        """ Parse Network data depending on type/extension """
+
+        cls.log.debug('opening file: %s' % fn)
+
+        inside = {'vertices':False, 'edges':False }
+        for line in open(fn):
+            line = line.strip()
+            if line.startswith(('ROW LABELS:', '*vertices')) or inside['vertices']:
+                if not inside['vertices']:
+                    inside['vertices'] = True
+                    continue
+                if line.startswith('#') or not line.strip():
+                    inside['vertices'] = False # break
+                elif line.startswith(('DATA','*edges' )):
+                    inside['vertices'] = False # break
+                    inside['edges'] = True
+                else:
+                    continue
+            elif line.startswith(('DATA','*edges' )) or inside['edges']:
+                if not inside['edges']:
+                    inside['edges'] = True # break
+                    continue
+                if line.startswith('#') or not line.strip() or len(line.split()) < 2 :
+                    inside['edges'] = False
+                else:
+                    # Parsing assignation
+                    splitline = line.split(sep)
+                    row_size = len(splitline)
+                    if row_size == 2:
+                        # like .txt
+                        v1, v2 = splitline
+                        w = 1
+                        yield int(v1), int(v2), w, None
+                    elif row_size == 3:
+                        v1, v2 = splitline[0:2]
+                        w = int(splitline[2])
+                        if w == 0:
+                            continue
+                        else:
+                            yield int(v1), int(v2), w, None
+                    else:
+                        raise NotImplementedError
+
+
+
+
+
 
 
 
@@ -165,9 +317,13 @@ class RawDatasetDriver(object):
 
     ''' Parse dataset file using python loop (deprecated) '''
 
-    def parse_tnet(self, fn, sep=' '):
+    _comment = '%'
+    log = logging.getLogger('root')
+
+    @classmethod
+    def parse_tnet(cls, fn, sep=' '):
         ''' Grammar retro-ingennired from fb/emaileu.txt '''
-        self.log.debug('opening file: %s' % fn)
+        cls.log.debug('opening file: %s' % fn)
         with open(fn) as f:
             content = f.read()
         lines = list(filter(None, content.split('\n')))
@@ -175,15 +331,15 @@ class RawDatasetDriver(object):
         edges = {}
         if len(line1_length) == 2:
             # format 'i j' if edges.
-            self._data_file_format = 'txt'
+            data_file_format = 'txt'
             for line in lines:
-                dyad = line.strip().split(sep)[:]
+                dyad = line.strip().split(sep)
                 dyad = '.'.join(dyad)
                 edges[dyad] = edges.get(dyad, 0) + 1
-            #edges = [l.strip().split(sep)[:] for l in lines]
+            #edges = [l.strip().split(sep) for l in lines]
         elif len(line1_length) == 5:
             # format '"date" i j weight'.
-            self._data_file_format = 'tnet'
+            data_file_format = 'tnet'
             for line in lines:
                 _line = line.strip().split(sep)
                 dyad = _line[-3:-1]
@@ -198,12 +354,14 @@ class RawDatasetDriver(object):
 
         g = np.zeros((N,N))
         g[tuple(edges[:, :2].T)] = edges[:, 2]
-        return g
+        data = dict(data=g)
+        return data
 
-    def parse_csv(self, fn, sep=';'):
+    @classmethod
+    def parse_csv(cls, fn, sep=';'):
         ''' Grammar retro-ingennired from manufacturing.csv '''
-        self.log.debug('opening file: %s' % fn)
-        with open(fn, 'r') as f:
+        cls.log.debug('opening file: %s' % fn)
+        with open(fn) as f:
             content = f.read()
         lines = list(filter(None, content.split('\n')))[1:]
         edges = {}
@@ -219,17 +377,18 @@ class RawDatasetDriver(object):
 
         g = np.zeros((N,N))
         g[tuple(edges[:, :2].T)] = edges[:, 2]
-        return g
+        data = dict(data=g)
+        return data
 
-    def parse_dancer(self, fn, sep=';'):
+    @classmethod
+    def parse_dancer(cls, fn, sep=';'):
         """ Parse Network data depending on type/extension """
-        self.log.debug('opening file: %s' % fn)
-        f = open(fn, 'r')
+        cls.log.debug('opening file: %s' % fn)
         data = []
         inside = {'vertices':False, 'edges':False }
         clusters = []
         features = []
-        for line in f:
+        for line in open(fn):
             if line.startswith('# Vertices') or inside['vertices']:
                 if not inside['vertices']:
                     inside['vertices'] = True
@@ -254,7 +413,6 @@ class RawDatasetDriver(object):
                 else:
                     # Parsing assignation
                     data.append( line.strip() )
-        f.close()
 
         edges = np.array([tuple(row.split(sep)) for row in data]).astype(int)
         g = np.zeros((N,N))
@@ -268,22 +426,22 @@ class RawDatasetDriver(object):
         except IOError:
             parameters = {}
         finally:
-            self.parameters_ = parameters
+            # @Obsolete !
+            parameters_ = parameters
 
-        self.clusters = clusters
-        self.features = np.array(features)
-        return g
+        clusters = clusters
+        features = np.array(features)
+        data = dict(data=g, clusters=clusters, features=features)
+        return data
 
-    def parse_dat(self, fn, sep=' '):
+    @classmethod
+    def parse_dat(cls, fn, sep=' '):
         """ Parse Network data depending on type/extension """
-        self.log.debug('opening file: %s' % fn)
-        f = open(fn, 'rb')
+        cls.log.debug('opening file: %s' % fn)
         data = []
         inside = {'vertices':False, 'edges':False }
-        clusters = []
-        features = []
-        for _line in f:
-            line = _line.strip().decode('utf8') #python 2..
+        for _line in open(fn):
+            line = _line.strip()
             if line.startswith(('ROW LABELS:', '*vertices')) or inside['vertices']:
                 if not inside['vertices']:
                     inside['vertices'] = True
@@ -305,7 +463,6 @@ class RawDatasetDriver(object):
                 else:
                     # Parsing assignation
                     data.append( line.strip() )
-        f.close()
 
         row_size = len(data[0].split(sep))
         edges = np.array([tuple(row.split(sep)) for row in data]).astype(int)-1
@@ -313,14 +470,13 @@ class RawDatasetDriver(object):
         if row_size == 2:
             # like .txt
             for line in data:
-                dyad = line.strip().split(sep)[:]
+                dyad = line.strip().split(sep)
                 dyad = '.'.join(dyad)
                 edges[dyad] = edges.get(dyad, 0) + 1
         elif row_size == 3:
             for line in data:
                 _line = line.strip().split(sep)
                 dyad = _line[0:2]
-                dyad = line.strip().split(sep)[:]
                 dyad = '.'.join(dyad)
                 w = int(_line[-1]) # can be zeros
                 edges[dyad] = edges.get(dyad, 0) + int(w)
@@ -331,5 +487,6 @@ class RawDatasetDriver(object):
         N = edges.max() +1
         g = np.zeros((N,N))
         g[tuple(edges[:, :2].T)] = edges[:, 2]
-        return g
+        data = dict(data=g)
+        return data
 

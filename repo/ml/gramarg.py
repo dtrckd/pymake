@@ -85,17 +85,6 @@ _gram = [
 
 
     # System
-    '--no-load-data', dict(
-        dest='_load_data', action='store_false',
-        help='Try to load pickled frontend data'),
-
-    '--save-data', dict(
-        dest='_save_data', action='store_true',
-        help='Picked the frontend data.'),
-
-    '-np', '--save_plot', dict(
-        action='store_true', help="don't block figure"),
-
      '--snapshot',dict(
         dest='snapshot_freq', type=int),
 

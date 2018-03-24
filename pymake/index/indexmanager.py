@@ -21,7 +21,7 @@ class TerminalFormatter(ws.highlight.Formatter):
 
 class IndexManager(object):
 
-    _DATA_PATH = os.path.join(get_pymake_settings('project_data'), '.pymake')
+    _DATA_PATH = os.path.join(get_pymake_settings('project_data'), '.pmk')
 
     _SCHEMA   = {'model' : ws.fields.Schema(name      = ws.fields.ID(stored = True),
                                             surname   = ws.fields.ID(stored = True),
