@@ -33,7 +33,6 @@ class Net(ExpeFormat):
         _spec = 'data_net_all',
         _do           = ['zipf', 'source'],
         _data_type = 'networks'
-
     )
 
     def init_fit_tables(self, _type, Y=[]):
@@ -325,12 +324,15 @@ class Net(ExpeFormat):
             # Warning order sensitive @deprecated Table.
             #corpuses = self.specname(self.gramexp.get_set('corpus'))
             corpuses = self.specname(self.gramexp.get_list('corpus'))
-            Meas = ['num_nodes', 'num_edges', 'density']
-            Meas += ['is_symmetric', 'modularity', 'clustering_coefficient', 'net_type', 'feat_len']
+            Meas = ['num_nodes', 'num_edges', 'density',
+                    'is_symmetric', 'modularity', 'diameter', 'clustering_coefficient', 'net_type', 'feat_len']
+            Meas_ = ['num_nodes', 'num_edges', 'density',
+                     'is_symmetric', 'modularity', 'diameter', 'cluster-coef', 'net-type', 'feat-len']
             Table = np.zeros((len(corpuses), len(Meas))) * np.nan
             Table = np.column_stack((corpuses, Table))
             self.gramexp.Table = Table
             self.gramexp.Meas = Meas
+            self.gramexp.Meas_ = Meas_
 
         #print (frontend.get_data_prop())
         for i, v in enumerate(Meas):
@@ -344,7 +346,8 @@ class Net(ExpeFormat):
         if self._it == self.expe_size -1:
             tablefmt = 'simple' # 'latex'
             print(colored('\nStats Table :', 'green'))
-            print(self.tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
+            Meas_ = self.gramexp.Meas_
+            print(self.tabulate(Table, headers=Meas_, tablefmt=tablefmt, floatfmt='.3f'))
 
     def _future_stats(self):
         ''' Show data stats '''
@@ -355,7 +358,7 @@ class Net(ExpeFormat):
             corpuses = ['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad', 'generator7', 'generator12', 'generator10', 'generator4']
 
         Meas = ['num_nodes', 'num_edges', 'density']
-        Meas += ['is_symmetric', 'modularity', 'clustering_coefficient', 'net_type', 'feat_len']
+        Meas += ['is_symmetric', 'modularity', 'diameter', 'cluster-coef', 'net_type', 'feat_len']
         Table = np.zeros((len(corpuses), len(Meas))) * np.nan
         Table = np.column_stack((corpuses, Table))
 

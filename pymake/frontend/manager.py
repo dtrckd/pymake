@@ -28,10 +28,12 @@ class FrontendManager(object):
 
 
     @classmethod
-    def load(cls, expe, load=True):
+    def load(cls, expe):
         """ Return the frontend suited for the given expe"""
 
-        corpus_name = expe.get('corpus') or expe.get('random')
+        corpus_name = expe.get('corpus') or expe.get('random') or expe.get('concept')
+        if expe.get('ext'):
+            corpus_name += '.' + expe.ext.strip('.')
 
         if '.' in corpus_name:
             c_split = corpus_name.split('.')
@@ -54,14 +56,13 @@ class FrontendManager(object):
             frontend = frontendText(expe)
         elif _corpus['data_type'] == 'network':
             if _corpus.get('data_format') == 'gt':
-                frontend = frontendNetwork_gt.from_expe(expe, load=load, corpus=_corpus)
+                frontend = frontendNetwork_gt.from_expe(expe, corpus=_corpus)
             else:
                 # Obsolete loading design. @Todo
                 frontend = frontendNetwork(expe)
-                if load is True:
-                    frontend.load_data(randomize=False)
-                frontend.sample(expe.get('N'), randomize=False)
+                frontend.load_data(randomize=False)
 
+        frontend.configure()
         return frontend
 
 
@@ -78,36 +79,6 @@ class ModelManager(object):
     def __init__(self, expe=None):
         self.expe = expe
 
-    def _format_dataset(self, data, data_t):
-        if data is None:
-            return None, None
-
-        testset_ratio = self.expe.get('testset_ratio')
-
-        if 'text' in str(type(data)).lower():
-            #if issubclass(type(data), DataBase):
-            self.log.warning('check WHY and WHEN overflow in stirling matrix !?')
-            self.log.warning('debug why error and i get walue superior to 6000 in the striling matrix ????')
-            if testset_ratio is None:
-                data = data.data
-            else:
-                data, data_t = data.cross_set(ratio=testset_ratio)
-        elif 'network' in str(type(data)).lower():
-            data_t = None
-            if testset_ratio is None:
-                self.log.warning("testset-ratio option options unknow, data won't be masked array")
-                data = data.data
-            else:
-                data = data.set_masked(testset_ratio)
-        else:
-            ''' Same as text ...'''
-            if testset_ratio is not None:
-                D = data.shape[0]
-                d = int(D * testset_ratio)
-                data, data_t = data[:d], data[d:]
-
-        return data, data_t
-
     def is_model(self, m, _type):
         if _type == 'pymake':
              # __init__ method should be of type (expe, frontend, ...)
@@ -119,15 +90,12 @@ class ModelManager(object):
         else:
             raise ValueError('Model type unkonwn: %s' % _type)
 
-    def _get_model(self, frontend=None, data_t=None):
+    def _get_model(self, frontend=None):
         ''' Get model with lookup in the following order :
             * pymake.model
             * mla
             * scikit-learn
         '''
-
-        # Not all model takes data (Automata ?)
-        data, data_t = self._format_dataset(frontend, data_t)
 
         _model = Model.get(self.expe.model)
         if not _model:

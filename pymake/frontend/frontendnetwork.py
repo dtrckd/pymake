@@ -1,5 +1,6 @@
 import sys, os
 import itertools
+from collections import defaultdict
 from string import Template
 
 from numpy import ma
@@ -161,11 +162,33 @@ class frontendNetwork(DataBase, DatasetDriver):
 
         return data
 
+
+    def shuffle_instances(self):
+        index = np.arange(np.shape(self.data)[0])
+        np.random.shuffle(index)
+        self.data =  self.data[index, :]
+        #if hasattr(self.data, 'A'):
+        #    data = self.data.A
+        #    np.random.shuffle(data)
+        #    self.data = sp.sparse.csr_matrix(data)
+        #else:
+        #    np.random.shuffle(self.data)
+
     def shuffle_node(self):
         """ Shuffle rows and columns of data """
         N, M = self.data.shape
         nodes_list = [np.random.permutation(N), np.random.permutation(M)]
         self.reorder_node(nodes_list)
+
+    @staticmethod
+    def symmetrize(self, data=None):
+        ''' inp-place symmetrization. '''
+        if data is None:
+            return None
+        data = np.triu(data) + np.triu(data, 1).T
+
+    def shuffle_features(self):
+        raise NotImplemented
 
     def reorder_node(self, nodes_l):
         """ Subsample the data with reordoring of rows and columns """
@@ -180,12 +203,8 @@ class frontendNetwork(DataBase, DatasetDriver):
         if hasattr(self, 'clusters') and self.clusters is not None:
             self.clusters = self.clusters[nodes_l[0]]
 
-    def sample(self, N=None, symmetric=False, randomize=False):
+    def sample(self, N, symmetric=False, randomize=False):
         """ Write self ! """
-        if self.data is None:
-            return
-
-        N = N or self.getN()
 
         if N == 'all':
             N = self.data.shape[0]
@@ -219,11 +238,12 @@ class frontendNetwork(DataBase, DatasetDriver):
         if hasattr(self, 'clusters') and self.clusters is not None:
             self.clusters = self.clusters[:N]
 
-    def set_masked(self, percent_hole, diag_off=1):
+    def make_testset(self, percent_hole, diag_off=1):
+        ''' Make the test set with masked array. '''
 
         percent_hole = float(percent_hole)
         if percent_hole >= 1:
-            percent_hole = percent_hole / 100.0
+            percent_hole = percent_hole / 100
         elif 0 <= percent_hole < 1:
             pass
         else:
@@ -239,7 +259,7 @@ class frontendNetwork(DataBase, DatasetDriver):
         else:
             raise ValueError('mask type unknow :%s' % mask_type)
 
-        return self.data_ma
+        return
 
 
     def get_masked(self, percent_hole, diag_off=1):
@@ -665,8 +685,14 @@ class frontendNetwork(DataBase, DatasetDriver):
         else:
             return max(clusters)+1
 
+    # Template for corpus information: Instance, Nnz, features etx
+    def template(self, dct, templ):
+        return Template(templ).substitute(dct)
+
     def get_data_prop(self):
-        prop =  super(frontendNetwork, self).get_data_prop()
+        prop = defaultdict()
+        prop.update( {'corpus': self.corpus_name,
+                      'instances' : self.data.shape[1] })
 
         if self.is_symmetric():
             nnz = np.triu(self.data).sum()

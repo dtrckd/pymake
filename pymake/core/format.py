@@ -800,13 +800,13 @@ class ExpeFormat(object):
 
         return self.model
 
-    def load_frontend(self, load=True):
-        ''' :load: boolean. Load from **fitted** file is true else
-                            it is raw initialization.
+    def load_frontend(self):
+        ''' See -nld and -sld option for control over load/save status
+            of frontend data.
         '''
         from pymake.frontend.manager import FrontendManager
 
-        frontend = FrontendManager.load(self.expe, load=load)
+        frontend = FrontendManager.load(self.expe)
         return frontend
 
 
