@@ -18,11 +18,7 @@ class Corpus(ExpeFormat):
 
 
     def build_net(self):
-
-        frontend = FrontendManager.load(self.expe)
-        prop = frontend.get_data_prop()
-        msg = frontend.template(prop)
-        print (msg)
+        pass
 
     def build_text(self):
         pass

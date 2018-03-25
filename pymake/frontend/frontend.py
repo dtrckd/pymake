@@ -1,9 +1,5 @@
 import os
-import json, copy
 import logging
-from itertools import chain
-from string import Template
-from collections import defaultdict
 
 import numpy as np
 
@@ -37,13 +33,16 @@ class DataBase(object):
 
         self.corpus_name = expe.get('corpus')
 
+    #
+    # I/O Methods
+    #
 
     @classmethod
     def from_expe(cls):
         raise NotImplementedError
 
     @classmethod
-    def _get_data(cls):
+    def _extract_data(cls):
         ''' Raw data parsing/extraction. '''
         raise NotImplementedError
 
@@ -77,57 +76,29 @@ class DataBase(object):
         from pymake.io import save
         return save(*args, **kwargs)
 
-    #
-    # Experimental Api
-    #
+    def configure(self):
+        ''' Configure the frontend Data.
+        Try the following steps:
+            1. Sample the corpus (expe.N),
+            2. Build a testset/validation set (expe.testset_ratio & mask),
+            3. build a sampling strategy (expe.sampling)
+         '''
+        if self.data is None:
+            return
 
-    def get_data_prop(self):
-        prop = defaultdict()
-        prop.update( {'corpus': self.corpus_name,
-                      'instances' : self.data.shape[1] })
-        return prop
+        N = self.expe.get('N')
+        if N is not None and N != 'all':
+            self.sample(N)
 
-    # Template for corpus information: Instance, Nnz, features etx
-    def template(self, dct, templ):
-        return Template(templ).substitute(dct)
+        testset_ratio = self.expe.get('testset_ratio')
+        if testset_ratio is not None:
+            self.make_testset(testset_ratio)
 
-    def shuffle_instances(self):
-        index = np.arange(np.shape(self.data)[0])
-        np.random.shuffle(index)
-        self.data =  self.data[index, :]
-        #if hasattr(self.data, 'A'):
-        #    data = self.data.A
-        #    np.random.shuffle(data)
-        #    self.data = sp.sparse.csr_matrix(data)
-        #else:
-        #    np.random.shuffle(self.data)
+        sampling_strategy = self.expe.get('sampling')
+        if sampling_strategy is not None:
+            self.make_sampling(sampling_strategy)
 
 
-    # frontendNetwork_nx
-    @staticmethod
-    def symmetrize(self, data=None):
-        ''' inp-place symmetrization. '''
-        if data is None:
-            return None
-        data = np.triu(data) + np.triu(data, 1).T
-
-    def shuffle_features(self):
-        raise NotImplemented
-
-    # Return a vector with document generated from a count matrix.
-    # Assume sparse matrix
-    @staticmethod
-    def sparse2stream(data):
-        #new_data = []
-        #for d in data:
-        #    new_data.append(d[d.nonzero()].A1)
-        bow = []
-        for doc in data:
-            # Also, see collections.Counter.elements() ...
-            bow.append( np.array(list(chain(* [ doc[0,i]*[i] for i in doc.nonzero()[1] ]))))
-        bow = np.array(bow)
-        #map(np.random.shuffle, bow)
-        return bow
-
+        return
 
 

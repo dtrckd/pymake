@@ -1,17 +1,10 @@
-
 import sys, os
+from collections import defaultdict
 from string import Template
 
 from .frontend import DataBase
-from pymake.util.utils import make_path
 from pymake.util.vocabulary import Vocabulary
 
-
-#try:
-#    #sys.path.insert(1, os.path.join(os.path.dirname(__file__),'../../../gensim'))
-#    import gensim
-#except:
-#    pass
 
 
 class frontendText(DataBase):
@@ -38,7 +31,9 @@ class frontendText(DataBase):
             self.shuffle_docs()
         return self.data
 
-    def cross_set(self, ratio):
+    def make_testset(self, ratio):
+        self.log.warning('check WHY and WHEN overflow in stirling matrix !?')
+        self.log.warning('debug why error and i get walue superior to 6000 in the striling matrix ????')
         D = self.data.shape[0]
         d = int(D * ratio)
         data = self.data[:d]
@@ -207,7 +202,9 @@ class frontendText(DataBase):
         return True
 
     def get_data_prop(self):
-        prop =  super(frontendText, self).get_data_prop()
+        prop = defaultdict()
+        prop.update( {'corpus': self.corpus_name,
+                      'instances' : self.data.shape[1] })
         nnz = self.data.sum()
         _nnz = self.data.sum(axis=1)
         dct = {'features': self.data.shape[1],
@@ -231,7 +228,7 @@ class frontendText(DataBase):
         train: $train_size
         test: $test_size
         \n'''
-        return super(frontendText, self).template(dct, text_templ)
+        return Template(templ).substitute(dct)
 
     def print_vocab(self, data, id2word):
         if id2word:
@@ -239,6 +236,22 @@ class frontendText(DataBase):
 
     def shuffle_docs(self):
         self.shuffle_instances()
+
+    # Return a vector with document generated from a count matrix.
+    # Assume sparse matrix
+    @staticmethod
+    def sparse2stream(data):
+        #new_data = []
+        #for d in data:
+        #    new_data.append(d[d.nonzero()].A1)
+        bow = []
+        for doc in data:
+            # Also, see collections.Counter.elements() ...
+            bow.append( np.array(list(chain(* [ doc[0,i]*[i] for i in doc.nonzero()[1] ]))))
+        bow = np.array(bow)
+        #map(np.random.shuffle, bow)
+        return bow
+
 
     # Debug
     def run_lda(self):
