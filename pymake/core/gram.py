@@ -111,7 +111,7 @@ _Gram = [
 
     '-v', dict(dest='_verbose',
                nargs='?', action=VerboseAction,
-               help='Verbosity level (-v | -vv | -v 2)'),
+               help='Verbosity level (-v | -vv | -v 2)'),
 
     '-nv', '--silent', dict(dest='_verbose',
                             nargs=0, action=VerboseAction,

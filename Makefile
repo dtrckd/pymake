@@ -2,7 +2,7 @@
 SHELL = /bin/bash
 
 PACKAGE := pmk
-# Assumes Python3
+# Assumes Python3
 pip3_version := $(shell pip3 --version 2>/dev/null)
 
 default: install_short

@@ -11,7 +11,7 @@ import whoosh as ws
 
 def glob_path(path):
     if path.startswith('/home/'):
-        # allow index sharing between machine
+        # allow index sharing between machine
         pp = path.split('/')
         pp[2] = os.getenv('USER')
         path = '/'.join(pp)
@@ -20,7 +20,7 @@ def glob_path(path):
 def extract_pdf(pdf_file, page_limit=None):
     pdf_file = glob_path(pdf_file)
     try:
-        import textract_ # longer than pdftotext
+        import textract_ # longer than pdftotext
         text = textract.process(pdf_file).decode('utf8')
     except ImportError:
         try:
@@ -67,12 +67,12 @@ class tfidf(IndexManager):
                                                shortpath = ws.fields.ID(stored = True, unique=True),
                                                fullpath = ws.fields.ID(stored = True, unique=True),
                                                title  = ws.fields.KEYWORD(stored = True),
-                                               authors = ws.fields.KEYWORD(stored = True), # names of the authors '||' separated
-                                               references = ws.fields.KEYWORD(stored = True), # names of the references '||' separated
-                                               date  = ws.fields.KEYWORD(stored = True), # date of publication (@todo: find it by cross reference !)
+                                               authors = ws.fields.KEYWORD(stored = True), # names of the authors '||' separated
+                                               references = ws.fields.KEYWORD(stored = True), # names of the references '||' separated
+                                               date  = ws.fields.KEYWORD(stored = True), # date of publication (@todo: find it by cross reference !)
                                                content = ws.fields.TEXT),
-                 #source  = '', # name of the journal/conf ertc
-                 #type = '', # journal/conf etc
+                 #source  = '', # name of the journal/conf ertc
+                 #type = '', # journal/conf etc
                 }
 
     def __init__(self, expe):
@@ -143,7 +143,7 @@ class tfidf(IndexManager):
         os.chdir(pwd)
         return xml_strings
 
-    # Two assumptions :
+    # Two assumptions :
     #    * string is a pdf,
     #    * is a structured is as as scientific paper (journal ?).
     def extract_structured_kw(self, hit):
@@ -165,8 +165,8 @@ class tfidf(IndexManager):
 
         #titles = soup.findAll(re.compile(".*title.*"))
 
-        # Main title
-        # max probable title from cermine
+        # Main title
+        # max probable title from cermine
         front = soup.front
         front_titles = front.findAll(re.compile(".*title.*"))
         #print(front_titles)
@@ -179,10 +179,10 @@ class tfidf(IndexManager):
         authors = ' || '.join([o.string for o in authors])
         structured['authors'] = authors
 
-        # Institution, Journal, Year etc...
+        # Institution, Journal, Year etc...
         pass
 
-        # References
+        # References
         references = [ ' '.join(str(r).split()) for r in soup.findAll('mixed-citation')]
         structured['references'] = ' || '.join(references)
 
@@ -203,7 +203,7 @@ class tfidf(IndexManager):
             is_duplicated = False
 
             if self.getfirst(shortpath, 'shortpath'):
-                # don't update document
+                # don't update document
                 # could compute a diff here...
                 is_known = True # assume already indexed
             else:
@@ -223,14 +223,14 @@ class tfidf(IndexManager):
                     #if not 'content' in first_m:
                     #    writer.delete_by_term('hash', doc['hash'])
                     #    continue
-                    # don't update document
+                    # don't update document
                     self.log.warning("Duplicate file detected: %s renaming to %s" % (first_m['shortpath'], shortpath))
                     first_m['shortpath'] = shortpath
                     writer.update_document(**first_m)
                     is_duplicated = True
                 else:
                     if self.expe.extract_structure:
-                        # structured content
+                        # structured content
                         structured = self.extract_structured_kw(doc)
                         doc.update(structured)
 

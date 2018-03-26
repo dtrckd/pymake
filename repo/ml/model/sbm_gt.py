@@ -39,7 +39,7 @@ class SBM_gt(ModelBase):
         #print("Change in description length:", ds)
         #print("Number of accepted vertex moves:", nmoves)
 
-        # state.get_edges_prob(e)
+        # state.get_edges_prob(e)
         #theta = state.get_ers()
         phi = state.get_matrix()
         print('theta')

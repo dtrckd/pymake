@@ -42,7 +42,7 @@ def load(fn, ext='pk', silent=False, driver=None):
     fn = resolve_filename(fn, ext)
     ext = fn.split('.')[-1]
 
-    # Seek for compressed data
+    # Seek for compressed data
     if os.path.exists(fn+'.gz'):
         compressed = True
         fn += '.gz'
@@ -110,7 +110,7 @@ def save(fn, data, ext='pk', silent=False, compress=None, driver=None,
                 return pickle.dump(data, _f, protocol=pickle.HIGHEST_PROTOCOL)
 
     elif ext == 'json':
-        # @Todo: Option to update if file exists:
+        # @Todo: Option to update if file exists:
         #res = json.load(open(fn,'r'))
         #res.update(data)
         #self.log.info('Updating json data: %s' % fn)
@@ -144,7 +144,7 @@ def is_empty_file(filen):
     else:
        return False
 
-# untested!
+# untested!
 def get_decorators(cls):
     target = cls
     decorators = {}
@@ -320,7 +320,7 @@ class ModelsLoader(PackageWalker):
         if not 'attr_filter' in kwargs:
             kwargs['attr_filter'] = 'fit'
 
-        # need of not needs ?
+        # need of not needs ?
         #if isinstance(module_name, list):
         #    packs = {}
         #    for m in module_name:
@@ -390,7 +390,7 @@ class CorpusLoader(PackageWalker):
 
     #@classmethod
     #def get_atoms(cls_type=None):
-    #    # get some information about what package to use in _spec ...
+    #    # get some information about what package to use in _spec ...
     #    atoms = cls.get_packages('pymake.data')
     #    return atoms
 
@@ -712,7 +712,7 @@ def forest_tensor(target_files, map_parameters):
                 pt[-1] = i
                 ### HOOK
                 # v:  is the measure name
-                # json_v: the value of the measure
+                # json_v: the value of the measure
                 if v == 'homo_model_e':
                     try:
                         json_v =  d.get('homo_model_o') - d.get(v)

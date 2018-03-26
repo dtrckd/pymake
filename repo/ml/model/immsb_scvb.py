@@ -113,7 +113,7 @@ class immsb_scvb(SVB):
             z[:, :, 0] = np.triu(z[:, :, 0]) + np.triu(z[:, :, 0], 1).T
             z[:, :, 1] = np.triu(z[:, :, 1]) + np.triu(z[:, :, 1], 1).T
 
-        ### Theta recovering
+        ### Theta recovering
         theta_left = np.zeros((N, K), dtype=float)
         theta_right = np.zeros((N, K), dtype=float)
 
@@ -185,7 +185,7 @@ class immsb_scvb(SVB):
         #self._qij = self.likelihood(*self.reduce_latent())
         self._symmetric_pt = self._is_symmetric +1
 
-        # Return sufficient statistics
+        # Return sufficient statistics
         return [N_phi, N_theta_left, N_theta_right]
 
     def _random_cvb_init(self):
@@ -339,7 +339,7 @@ class immsb_scvb(SVB):
             self.N_phi = (1 - self.gstep_phi)*self.N_phi + self.gstep_phi * (self._len['nnz'] / len(self.samples)) * self._N_phi
 
             #self.N_phi_sum = (1 - self.gstep_phi)*self.N_phi_sum + self.gstep_phi * (self._len['nnz'] / len(self.samples)) * self._N_phi.sum(0)
-            # Is the line above equivalent to the below for N_Phi_sum gradient ????
+            # Is the line above equivalent to the below for N_Phi_sum gradient ????
             self.N_phi_sum = self.N_phi.sum(0)
 
         self._update_gstep_phi()
@@ -352,32 +352,32 @@ class immsb_scvb(SVB):
     def compute_entropy(self):
         pij = self.likelihood(*self._reduce_latent())
 
-        # Log-likelihood
+        # Log-likelihood
         pij = self.frontend.data_A * pij + self.frontend.data_B
         #ll = np.log(pij).sum()
         ll = np.log(pij).sum()
 
-        # Entropy
+        # Entropy
         entropy = ll
 
         #entropy = - ll / self._len['nnz']
 
-        # Perplexity is 2**H(X).
+        # Perplexity is 2**H(X).
 
         return entropy
 
     def compute_entropy_t(self):
         pij = self.likelihood(*self._reduce_latent())
 
-        # Log-likelihood
+        # Log-likelihood
         pij = self.frontend.data_A_t * pij + self.frontend.data_B_t
         ll = np.log(pij).sum()
 
-        # Entropy
+        # Entropy
         entropy_t = ll
 
         #entropy_t = - ll / self._len['nnz_t']
-        # Perplexity is 2**H(X).
+        # Perplexity is 2**H(X).
 
         return entropy_t
 
@@ -387,7 +387,7 @@ class immsb_scvb(SVB):
 
         pij = ma.array(pij, mask=self.get_mask())
 
-        # Log-likelihood
+        # Log-likelihood
         ll = self.frontend.data_A * pij + self.frontend.data_B
 
 

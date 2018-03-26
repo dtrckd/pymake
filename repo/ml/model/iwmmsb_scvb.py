@@ -100,7 +100,7 @@ class iwmmsb_scvb(SVB):
         #self._qij = self.likelihood(*self.reduce_latent())
         self._symmetric_pt = self._is_symmetric +1
 
-        # Return sufficient statistics
+        # Return sufficient statistics
         return [N_phi, N_theta_left, N_theta_right]
 
 
@@ -258,33 +258,33 @@ class iwmmsb_scvb(SVB):
     def compute_entropy(self):
         pij = self.likelihood(*self._reduce_latent())
 
-        # Log-likelihood
+        # Log-likelihood
         ll = np.log(pij).sum()
 
-        # Entropy
+        # Entropy
         entropy = ll
         #self._entropy = - ll / self._len['nnz']
 
-        # Perplexity is 2**H(X).
+        # Perplexity is 2**H(X).
 
         return entropy
 
     def compute_entropy_t(self):
         pij = self.likelihood(*self._reduce_latent())
 
-        # Log-likelihood
+        # Log-likelihood
         ll = np.log(pij).sum()
 
-        # Entropy
+        # Entropy
         entropy_t = ll
         #self._entropy_t = - ll / self._len['nnz_t']
 
-        # Perplexity is 2**H(X).
+        # Perplexity is 2**H(X).
 
         return entropy_t
 
     def compute_elbo(self):
-        # how to compute elbo for all possible links wheigts, mean?
+        # how to compute elbo for all possible links wheigts, mean?
         return None
 
     def compute_roc(self):

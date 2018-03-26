@@ -75,7 +75,7 @@ def plot(P, logscale=False, colors=False, line=True, ax=None, title=None, sort=F
         y or (x, y), the curve (and optionnal, the x-axis)
     """
     if ax is None:
-        # Note: difference betwwen ax and plt method are the get_ and set_ suffix
+        # Note: difference betwwen ax and plt method are the get_ and set_ suffix
         ax = plt.gca()
 
     if isinstance(P, (list, tuple)):
@@ -122,7 +122,7 @@ def log_binning(counter_dict,bin_count=35):
 def plot_degree(y, spec=False,logscale=True, title=None, ax=None):
     """ Degree plot """
     if ax is None:
-        # Note: difference betwwen ax and plt method are the get_ and set_ suffix
+        # Note: difference betwwen ax and plt method are the get_ and set_ suffix
         ax = plt.gca()
 
     # To convert normalized degrees to raw degrees
@@ -164,7 +164,7 @@ def plot_degree_poly(y, scatter=True, spec=True, title=None, ax=None, logscale=T
 
     ### Matplotlib
     if ax is None:
-        # Note: difference betwwen ax and plt method are the get_ and set_ suffix
+        # Note: difference betwwen ax and plt method are the get_ and set_ suffix
         ax = plt.gca()
     if logscale:
         ax.set_xscale('log'); ax.set_yscale('log')
@@ -207,7 +207,7 @@ def plot_degree_poly_l(Y):
 def plot_degree_2(P, logscale=False, colors=False, line=False, ax=None, title=None):
     """ Plot degree distribution for different configuration"""
     if ax is None:
-        # Note: difference betwwen ax and plt method are the get_ and set_ suffix
+        # Note: difference betwwen ax and plt method are the get_ and set_ suffix
         ax = plt.gca()
 
     x, y, yerr = P
@@ -382,7 +382,7 @@ def adjshow(Y, title='', fig=True, ax=None, colorbar=False):
     if fig is True and ax is None:
         plt.figure()
     if ax is None:
-        # Note: difference betwwen ax and plt method are the get_ and set_ suffix
+        # Note: difference betwwen ax and plt method are the get_ and set_ suffix
         ax = plt.gca()
 
     ax.axis('off')
@@ -433,7 +433,7 @@ def adjshow_4(Y,title=[], pixelspervalue=20):
 ### Curve Plot
 ##########################
 
-# @deprecated
+# @deprecated
 def plot_csv(target_dirs='', columns=0, sep=' ', separate=False, title=None, twin=False, iter_max=None):
     if type(columns) is not list:
         columns = [columns]

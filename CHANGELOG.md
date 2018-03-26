@@ -1,4 +1,4 @@
-# (towards) 0.5
+# (towards) 0.5
 
 * add a test target to the makefile.
 * return a exit status positive if an expe failed.

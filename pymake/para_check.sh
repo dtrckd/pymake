@@ -1,4 +1,4 @@
-ps -aux | grep "ssh.*parallel"
+ps -aux | grep "ssh.*parallel"
 bz2.decompress(base64.b64decode(code))
 
 

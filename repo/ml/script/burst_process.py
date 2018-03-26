@@ -24,11 +24,11 @@ class BurstProcess(ExpeFormat):
     _default_expe = dict(
         block_plot = False,
         _write  = False,
-        _do            = ['burstiness', 'global'], # default
+        _do            = ['burstiness', 'global'], # default
         _mode         = 'generative',
         gen_size      = 1000,
         epoch         = 30 , # Gen,eration epoch
-        limit_gen   = 5, # Local superposition ! Ignored ?
+        limit_gen   = 5, # Local superposition ! Ignored ?
         limit_class   = 15, # Ignored ?
     )
 
@@ -140,7 +140,7 @@ class BurstProcess(ExpeFormat):
 
         expe = self.expe
 
-        # Force ONE epoch # bernoulli variance...
+        # Force ONE epoch # bernoulli variance...
         expe.epoch = 1
         self._generate()
 
@@ -200,9 +200,9 @@ class BurstProcess(ExpeFormat):
             process = np.cumsum(adj, 1)
             processes.append(process)
 
-        # Mean-Variance of the count process expectation
+        # Mean-Variance of the count process expectation
         mean_process = np.vstack((p.mean(0) for p in processes))
-        # Std-Variance of the count process expectation
+        # Std-Variance of the count process expectation
         var_process = np.vstack((p.var(0) for p in processes))
 
         legend = expe.model
@@ -238,7 +238,7 @@ class BurstProcess(ExpeFormat):
 
         expe = self.expe
 
-        # Force ONE epoch # bernoulli variance...
+        # Force ONE epoch # bernoulli variance...
         expe.epoch = 1
         self._generate()
 
@@ -319,9 +319,9 @@ class BurstProcess(ExpeFormat):
             process = np.cumsum(process, 2)
             processes.append(process)
 
-        # Mean-Variance of the count process expectation
+        # Mean-Variance of the count process expectation
         mean_process = np.stack((p.mean(1) for p in processes))
-        # Std-Variance of the count process expectation
+        # Std-Variance of the count process expectation
         var_process = np.stack((p.var(1) for p in processes))
 
         ax1 = frame.fig.add_subplot(1,2,1)
@@ -368,7 +368,7 @@ class BurstProcess(ExpeFormat):
         p = int(p)
         expe = self.expe
 
-        # Force ONE epoch # bernoulli variance...
+        # Force ONE epoch # bernoulli variance...
         expe.epoch = 1
         self._generate()
 
@@ -404,7 +404,7 @@ class BurstProcess(ExpeFormat):
         y = []
         burstiness = defaultdict(lambda:0)
         normalize_deg = defaultdict(lambda:0)
-        # Compute p(d(N)>n+1 | p(p)=n)
+        # Compute p(d(N)>n+1 | p(p)=n)
         for node, deg_n in degree_n.items():
             if deg_n == 0:
                 continue
@@ -436,7 +436,7 @@ class BurstProcess(ExpeFormat):
         p = int(p)
         expe = self.expe
 
-        # Force ONE epoch # bernoulli variance...
+        # Force ONE epoch # bernoulli variance...
         expe.epoch = 1
         self._generate()
 
@@ -496,7 +496,7 @@ class BurstProcess(ExpeFormat):
                 y = []
                 burstiness = defaultdict(lambda:0)
                 normalize_deg = defaultdict(lambda:0)
-                # Compute p(d(N)>n+1 | p(p)=n)
+                # Compute p(d(N)>n+1 | p(p)=n)
                 for node, deg_n in degree_n.items():
                     if deg_n == 0:
                         continue

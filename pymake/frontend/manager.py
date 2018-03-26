@@ -32,7 +32,7 @@ class FrontendManager(object):
         """ Return the frontend suited for the given expe"""
 
         corpus_name = expe.get('corpus') or expe.get('random') or expe.get('concept')
-        if expe.get('ext'):
+        if expe.get('driver'):
             corpus_name += '.' + expe.ext.strip('.')
 
         if '.' in corpus_name:
@@ -44,8 +44,8 @@ class FrontendManager(object):
 
         _corpus = Corpus.get(c_name)
         if c_ext in GramExp._frontend_ext:
-            # graph-tool object
-            # @Todo: Corpus intragation!
+            # graph-tool object
+            # @Todo: Corpus intragation!
             _corpus.update(data_format=c_ext)
         elif _corpus is False:
             raise ValueError('Unknown Corpus `%s\'!' % corpus)
@@ -58,7 +58,7 @@ class FrontendManager(object):
             if _corpus.get('data_format') == 'gt':
                 frontend = frontendNetwork_gt.from_expe(expe, corpus=_corpus)
             else:
-                # Obsolete loading design. @Todo
+                # Obsolete loading design. @Todo
                 frontend = frontendNetwork(expe)
                 frontend.load_data(randomize=False)
 
@@ -102,7 +102,7 @@ class ModelManager(object):
             self.log.error('Model Unknown : %s' % (self.expe.model))
             raise NotImplementedError()
 
-        # @Improve: * initialize all model with expe
+        # @Improve: * initialize all model with expe
         #           * fit with frontend, transform with frontend (as sklearn do)
         if self.is_model(_model, 'pymake'):
             model = _model(self.expe, frontend)
@@ -117,7 +117,7 @@ class ModelManager(object):
 
         _fn = io.resolve_filename(fn)
         if not os.path.isfile(_fn):
-            # io integration?
+            # io integration?
             _fn += '.gz'
 
         if not os.path.isfile(_fn) or os.stat(_fn).st_size == 0:
@@ -135,7 +135,7 @@ class ModelManager(object):
 
     @staticmethod
     def update_expe(expe, model):
-        ''' Configure some pymake settings if present in model. '''
+        ''' Configure some pymake settings if present in model. '''
 
         pmk_settings = ['_csv_typo', '_fmt']
 
@@ -146,7 +146,7 @@ class ModelManager(object):
 
     @classmethod
     def from_expe(cls, expe, frontend=None, load=False):
-    # frontend params is deprecated and will be removed soon...
+    # frontend params is deprecated and will be removed soon...
 
         if load is False:
             mm = cls(expe)

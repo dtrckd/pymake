@@ -92,7 +92,7 @@ def sorted_perm(a, label=None, reverse=False):
     """ return sorted $a and the induced permutation.
         Inplace operation """
     # np.asarray applied this tuple lead to error, if label is string
-    # because a should be used as elementwise comparison
+    # because a should be used as elementwise comparison
     if label is None:
         label = np.arange(a.shape[0])
     hist, label = zip(*sorted(zip(a, label), reverse=reverse))
@@ -192,7 +192,7 @@ def random_degree(Y, params=None):
 
     y = dc_mat.mean(0)
     yerr = dc_mat.std(0)
-    # 0 are filtered out in degree_hist
+    # 0 are filtered out in degree_hist
     return np.arange(1, len(y)+1),  np.round(y), yerr
 
 def reorder_mat(y, clusters, labels=False, reverse=True):

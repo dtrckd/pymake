@@ -67,7 +67,7 @@ class Plot(ExpeFormat):
         plt.legend(loc='upper right',prop={'size':1})
 
 
-    #@ExpeFormat.plot(1,2) # improve ergonomy ?
+    #@ExpeFormat.plot(1,2) # improve ergonomy ?
     @ExpeFormat.plot()
     def fig(self, frame, attribute, *args):
         ''' Plot all figure args is  `a:b..:c' (plot c by grouping by a, b...),
@@ -91,7 +91,7 @@ class Plot(ExpeFormat):
         ax.legend(loc='upper right',prop={'size':5})
 
 
-    #@ExpeFormat.table(1,2) # improve ergonomy ?
+    #@ExpeFormat.table(1,2) # improve ergonomy ?
     @ExpeFormat.table()
     def table(self, array, floc, x, y, z, *args):
         ''' Plot table according to parameter `x:y:z[-z2](param)'

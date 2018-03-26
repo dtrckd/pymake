@@ -47,7 +47,7 @@ class IndexManager(object):
     def __init__(self, default_index='model'):
         self._index_basename = 'ir_index'
         self._default_index = default_index
-        self._ix = {} # Index store by key
+        self._ix = {} # Index store by key
 
     def get_index_path(self, name=None):
         name = name or self._default_index
@@ -159,7 +159,7 @@ class IndexManager(object):
         for scriptname, _content in Scripts.items():
             self.log.info('\tindexing %s' % (str(scriptname)+str(_content['_module'])))
 
-            # Loop is context/model dependant
+            # Loop is context/model dependant
             for method in _content['methods']:
 
                 content = ''
@@ -180,7 +180,7 @@ class IndexManager(object):
         for surname, module in models.items():
             self.log.info('\tindexing %s' % (str(surname)+str(module)))
 
-            # Loop is context/model dependant
+            # Loop is context/model dependant
             topos = ' '.join(set(module.__module__.split('.')[1:]))
             content = ' '.join((surname, module.__name__, module.__module__))
 
@@ -270,7 +270,7 @@ class IndexManager(object):
         else:
             return self.getbydocid(results[0][0])
 
-    # not need to commit ?! /conflict forward...
+    # not need to commit ?! /conflict forward...
     #def delete_by_term(self, term, field):
     #    writer.delete_by_term('hash', doc['hash'])
 

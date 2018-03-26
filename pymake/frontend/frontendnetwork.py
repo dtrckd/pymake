@@ -238,22 +238,22 @@ class frontendNetwork(DataBase, DatasetDriver):
         if hasattr(self, 'clusters') and self.clusters is not None:
             self.clusters = self.clusters[:N]
 
-    def make_testset(self, percent_hole, diag_off=1):
+    def make_testset(self, testset_ratio, diag_off=1):
         ''' Make the test set with masked array. '''
 
-        percent_hole = float(percent_hole)
-        if percent_hole >= 1:
-            percent_hole = percent_hole / 100
-        elif 0 <= percent_hole < 1:
+        testset_ratio = float(testset_ratio)
+        if testset_ratio >= 1:
+            testset_ratio = testset_ratio / 100
+        elif 0 <= testset_ratio < 1:
             pass
         else:
-            raise ValueError('cross validation ratio not understood : %s' % percent_hole)
+            raise ValueError('cross validation ratio not understood : %s' % testset_ratio)
 
         mask_type =  self.expe.get('mask', 'unbalanced')
         if mask_type == 'unbalanced':
-            self.data_ma = self.get_masked(percent_hole, diag_off)
+            self.data_ma = self.get_masked(testset_ratio, diag_off)
         elif mask_type == 'balanced':
-            self.data_ma = self.get_masked_balanced(percent_hole, diag_off)
+            self.data_ma = self.get_masked_balanced(testset_ratio, diag_off)
         elif mask_type == 'zeros':
             self.data_ma = self.get_masked_zeros(diag_off)
         else:
@@ -262,7 +262,7 @@ class frontendNetwork(DataBase, DatasetDriver):
         return
 
 
-    def get_masked(self, percent_hole, diag_off=1):
+    def get_masked(self, testset_ratio, diag_off=1):
         """ Construct a random mask.
             Random training set on 20% on Data / debug5 - debug11 -- Unbalanced
         """
@@ -274,7 +274,7 @@ class frontendNetwork(DataBase, DatasetDriver):
         else:
             raise NotImplementedError('type %s unknow as corpus' % type(data))
 
-        n = int(data.size * percent_hole)
+        n = int(data.size * testset_ratio)
         mask_index = np.unravel_index(np.random.permutation(data.size)[:n], data.shape)
         mask = np.zeros(data.shape, dtype=data.dtype)
         mask[mask_index] = 1
@@ -288,7 +288,7 @@ class frontendNetwork(DataBase, DatasetDriver):
 
         return data_ma
 
-    def get_masked_balanced(self, percent_hole, diag_off=1):
+    def get_masked_balanced(self, testset_ratio, diag_off=1):
         ''' Construct Mask based on the proportion of 1/links.
             Random training set on 20% on Data vertex (0.2 * data == 1) / debug6 - debug 10 -- Balanced
             '''
@@ -302,7 +302,7 @@ class frontendNetwork(DataBase, DatasetDriver):
         # Correponding Index
         _0 = np.array(list(zip(*np.where(data == 0))))
         _1 = np.array(list(zip(*np.where(data == 1))))
-        n = int(len(_1) * percent_hole)
+        n = int(len(_1) * testset_ratio)
         # Choice of Index
         n_0 = _0[np.random.choice(len(_0), n, replace=False)]
         n_1 = _1[np.random.choice(len(_1), n, replace=False)]
@@ -395,7 +395,7 @@ class frontendNetwork(DataBase, DatasetDriver):
 
         fn = self._resolve_filename(self.expe)
 
-        # pmk file format...
+        # pmk file format...
         if self._force_load_data and os.path.isfile(fn+'.gz'):
             try:
                 data = self._load_data(fn)

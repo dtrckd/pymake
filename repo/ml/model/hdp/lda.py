@@ -420,7 +420,7 @@ class ZSamplerParametric(ZSampler):
 class NP_CGS(object):
 
     # Joint Sampler of topic Assignement, table configuration, and beta proportion.
-    # ref to direct assignement Sampling in HDP (Teh 2006)
+    # ref to direct assignement Sampling in HDP (Teh 2006)
     def __init__(self, zsampler, msampler, betasampler, hyper='auto'):
         zsampler.add_beta_sampler(betasampler)
 
