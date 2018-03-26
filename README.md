@@ -86,8 +86,8 @@ cd pymake && make
 The repo contains two main directories:
 
 * pymake/ -- Code source of pymake,
-* wiki/ -- Extra documentation
-* repo/ -- Poc projects that are structured with pymake,
+* [wiki/](https://github.com/dtrckd/pymake/tree/master/wiki) -- Extra documentation
+* [repo/](https://github.com/dtrckd/pymake/tree/master/repo) -- Poc projects that are structured with pymake,
     * repo/docsearch: A search-engine in local file (pdf).
     * repo/ml: Machine learning models and experiments.
 

@@ -9,6 +9,8 @@
 * [cli] make `-l script [script_name]` to list mehtod, doctring, and arguement !
 * [cli] pmk -l => show spec script and model.
 
+* Don't change model variable spec. Use an internal scope for model.
+
 
 Debug
 ----------

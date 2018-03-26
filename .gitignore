@@ -21,7 +21,6 @@ build/
 
 repo/ml/ID
 
-
 # Doc
 doc/html/
 doc/graph/
@@ -36,11 +35,7 @@ repo/*/data/reports/
 !repo/*/data/reports/backsync.sh
 !repo/*/data/reports/filter.py
 
-## Index
-repo/*/data/**/*_index/
-
 repo/ml/data/**/*.zip
 repo/ml/data/**/*.tgz
 repo/ml/data/**/*.gz
-
 

@@ -207,6 +207,9 @@ class GramExp(object):
     _default_expe = {
         '_verbose'   : logging.INFO,
         '_write'     : False,
+
+        '_ignore_format_unique' : False,
+
         '_force_load_data' : True, # if True, it will force the raw data parsing.
         '_force_save_data' : True, # if False, dont save corpus as pk/gt ont the filesystem.
         '_no_block_plot' : False,
@@ -465,16 +468,24 @@ class GramExp(object):
             @type: pk, json or inference.
         """
         expe = defaultdict(lambda: None, expe)
-        base = cls._base_name
-        hook = expe.get('_refdir', 'default')
 
-        basedir = os.path.join(cls._data_path, base, 'results')
+        dict_format = cls.transcript_expe(expe)
+        if _null:
+            dict_format.update(dict((k,None) for k in _null))
+
+        basedir = os.path.join(cls._data_path, cls._base_name, 'results')
+
+        hook = expe.get('_refdir', 'default')
+        hook = hook.format(**dict_format)
 
         rep = ''
-        if '_repeat' in expe and ( expe['_repeat'] is not None and expe['_repeat'] is not False):
+        if '_repeat' in expe and (expe['_repeat'] is not None and expe['_repeat'] is not False):
             rep = str(expe['_repeat'])
             if rep == '-1':
                 rep = ''
+            else:
+                rep = rep.format(**dict_format)
+
 
         p = os.path.join(hook, rep)
 
@@ -494,9 +505,6 @@ class GramExp(object):
 
             t = '-'.join(argnunique)
         else:
-            dict_format = cls.get_file_format(expe)
-            if _null:
-                dict_format.update(dict((k,None) for k in _null))
             t = expe['_format'].format(**dict_format)
 
         filen = os.path.join(basedir, p, t)
@@ -514,7 +522,6 @@ class GramExp(object):
         """ Make a single input path from a expe/dict """
         expe = defaultdict(lambda: None, expe)
         filen = None
-        base = cls._base_name
 
         # Corpus is an historical exception and has its own subfolder.
         c = expe.get('corpus')
@@ -528,12 +535,12 @@ class GramExp(object):
         if c.endswith(tuple('.'+ext for ext in cls._frontend_ext)):
             c = c[:-(1+len(c.split('.')[-1]))]
 
-        input_dir = os.path.join(cls._data_path, base, 'training', c)
+        input_dir = os.path.join(cls._data_path, cls._base_name, 'training', c)
 
         return input_dir
 
     @staticmethod
-    def get_file_format(expe):
+    def transcript_expe(expe):
         fmt_expe = expe.copy()
         # iteration over {expe} trow a 'RuntimeError: dictionary changed size during iteration',
         # maybe due to **expe pass in argument ?
@@ -789,15 +796,16 @@ class GramExp(object):
                 conf['model'] = arg
         return cls(conf, usage=usage)
 
+    def make_path(self, ext=None, status=None, fullpath=None):
+        return self.make_forest_path(self.lod, ext, status, fullpath)
+
+    #@deprecated
     def make_commandline(self):
         commands = self.make_commands()
         commands = [' '.join(c) for c in commands]
         return commands
 
-    def make_path(self, ext=None, status=None, fullpath=None):
-        return self.make_forest_path(self.lod, ext, status, fullpath)
-
-
+    #@deprecated
     def make_commands(self):
         lod = self.lod
         commands = []
