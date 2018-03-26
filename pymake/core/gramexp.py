@@ -562,7 +562,7 @@ class GramExp(object):
         import pymake.core.gram as _gram
         parser = _gram.ExpArgumentParser(description=description, epilog=usage,
                                         formatter_class=argparse.RawDescriptionHelpFormatter)
-        parser.add_argument('--version', action='version', version='%(prog)s '+ cls._version)
+        parser.add_argument('-V', '--version', action='version', version='%(prog)s '+ cls._version)
 
         return parser
 

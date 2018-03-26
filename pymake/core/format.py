@@ -655,7 +655,7 @@ class ExpeFormat(object):
         os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
         self.fname_i = self.output_path + '.inf'
         if not '_csv_typo' in self.expe:
-            self.log.warning('No _csv_typo, for this model %s, no inference file...'%(self.expe.get('model')))
+            self.log.debug('No _csv_typo, for this model %s, no inference file...'%(self.expe.get('model')))
         else:
             self._fitit_f = open(self.fname_i, 'wb')
             self._fitit_f.write(('#' + self.expe._csv_typo + '\n').encode('utf8'))
