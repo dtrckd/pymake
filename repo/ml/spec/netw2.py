@@ -124,7 +124,7 @@ class Netw2(ExpDesign):
     )
 
 
-    # Noel expe
+    # Noel expe
     noel = ExpGroup([scvb, compare_scvb], N='all', corpus=data_net_all, mask=['balanced', 'unbalanced'], _refdir='noel')
 
     noel_cvb = ExpGroup(cvb, N='all', corpus=data_net_all, mask=['balanced', 'unbalanced'], _refdir='noel')

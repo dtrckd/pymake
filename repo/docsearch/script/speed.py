@@ -32,7 +32,7 @@ class Speed(ExpeFormat):
 
 
 
-# To complete :
+# To complete :
 #   * count method : time to get the answer and save it with a simple format (take thinhs from blue).
 #   * plot method : show speed of search in function of max return results.
 

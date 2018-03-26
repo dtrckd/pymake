@@ -52,7 +52,7 @@ class IR(ExpeFormat):
         ndoc = s.doc_count()
         print('Number of documents: %d' %(ndoc))
         #'mean /var  size of content'
-        # Tree based on path / graph based on citation !
+        # Tree based on path / graph based on citation !
         #'waht field out there and type'
         s.close()
 

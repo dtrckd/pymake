@@ -5,7 +5,7 @@ shopt -s extglob
 #have pmk &&
 _pmk()
 {
-    # Automate variables init
+    # Automate variables init
     local cur prev opts project 
     local specs lists all_scripts sur_scripts dict_scripts
 
@@ -38,7 +38,7 @@ _pmk()
         return 0
     else
         case "$prev" in
-            pmk| run| runpara| show| path)
+            pmk| run| runpara| show| path)
                 COMPREPLY=( $(compgen -W "$specs" -- $cur) )
                 return 0
                 ;;

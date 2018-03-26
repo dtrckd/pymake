@@ -223,7 +223,7 @@ class IBP(object):
         if Z is None:
             Z = self._Z
         l = list(Z.T)
-        # tuple sorting: sort by first element, then second,etc
+        # tuple sorting: sort by first element, then second,etc
         l.sort(key=tuple)
         return np.array(l)[::-1].T
 

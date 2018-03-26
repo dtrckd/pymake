@@ -9,8 +9,8 @@ import logging
 lgg = logging.getLogger('root')
 
 
-# lambda fail to find import if _stirling if not
-# visible in the global scope.
+# lambda fail to find import if _stirling if not
+# visible in the global scope.
 import sympy
 from sympy.functions.combinatorial.numbers import stirling
 try:

@@ -10,11 +10,11 @@
 #
 
 
-### Global Path for data storage
+### Global Path for data storage
 project_data = $${project_data}
 project_figs = $${project_figs}
 
-### Lookup Modules
+### Lookup Modules
 default_model = $${default_model}
 default_spec = $${default_spec}
 default_script = $${default_script}
@@ -25,12 +25,12 @@ default_corpus = ?
 contrib_spec =
 contrib_script =
 
-### Project Settings Grammar.
-# Use to specify custom command line options whith pymake.
+### Project Settings Grammar.
+# Use to specify custom command line options whith pymake.
 gramarg = $${default_gramarg}
 
 ### Remote Options and configurations
-# Used when `--net' options is used.
+# Used when `--net' options is used.
 
 # Config file of gnu-parallel for remote computing.
 loginfile = 

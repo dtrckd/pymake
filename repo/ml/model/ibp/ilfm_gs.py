@@ -144,7 +144,7 @@ class IBPGibbsSampling(IBP, GibbsSampler):
         if not self.samples:
             self.samples.append([self._Z, self._W])
         self._reduce_latent()
-        self.samples = None # free space
+        self.samples = None # free space
 
         Yd = self._Y.data
         Yd[Yd <= 0 ] = 0
@@ -154,7 +154,7 @@ class IBPGibbsSampling(IBP, GibbsSampler):
 
     def compute_measures(self):
 
-        ### Output / Measures
+        ### Output / Measures
         self._entropy = self.log_likelihood
         self._entropy_t = None
         self._entropy_Z = np.nan # self.log_likelihood_Z()

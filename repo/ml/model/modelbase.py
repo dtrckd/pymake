@@ -19,9 +19,9 @@ import pymake.io as io
 # Todo: rethink sampler and Likelihood class definition.
 
 def mmm(fun):
-    # Todo / wrap latent variable routine
-    # text vs networks type of data ?
-    # * likelihood ?
+    # Todo / wrap latent variable routine
+    # text vs networks type of data ?
+    # * likelihood ?
     # * simlaritie ?
     return fun
 
@@ -37,7 +37,7 @@ class ModelBase():
     default_settings = {
         '_write' : False,
         '_csv_typo' : None,
-        '_fmt' : None, # unused...
+        '_fmt' : None, # unused...
         'iterations' : 3,
         'snapshot_freq': 42,
         'burnin' :  5, # (inverse burnin, last sample to keep
@@ -56,16 +56,16 @@ class ModelBase():
         self.expe = expe
         self.frontend = frontend
 
-        # change to semantic -> update value (t+1)
-        self.samples = [] # actual sample
-        self._samples    = [] # slice to save to avoid writing disk a each iteratoin. (ref format.write_current_state.)
+        # change to semantic -> update value (t+1)
+        self.samples = [] # actual sample
+        self._samples    = [] # slice to save to avoid writing disk a each iteratoin. (ref format.write_current_state.)
         self.time_it = 0
 
         for k, v in self.default_settings.items():
             self._init(k, expe, v)
 
-        # @debug Frontend integratoin !
-        # dev a Frontend.get_properties
+        # @debug Frontend integratoin !
+        # dev a Frontend.get_properties
         if hasattr(self.frontend, 'is_symmetric'):
             self._is_symmetric = self.frontend.is_symmetric()
         if hasattr(self.frontend, 'data_ma'):
@@ -344,7 +344,7 @@ class ModelSkl(ModelBase):
     def __init__(self, expe, frontend=None):
         super(ModelSkl, self).__init__(expe, frontend)
 
-        # Load Sklearn Model
+        # Load Sklearn Model
         if not hasattr(self, 'module'):
             self.log.error('ModelSkl base class need a {module} name attribute. Exiting.')
             exit(42)
@@ -352,7 +352,7 @@ class ModelSkl(ModelBase):
         _module, _model = self._mm_from_str(self.module)
         spec = self._spec_from_expe(_model)
 
-        # Init Sklearn model
+        # Init Sklearn model
         self.model = _model(**spec)
 
 
@@ -416,7 +416,7 @@ class ModelSkl(ModelBase):
         fun =  self.__hack_me_fit_transform
         return fun(*args, **kwargs)
 
-    # @Obsolete ?
+    # @Obsolete ?
     def predict(self, *args, **kwargs):
         fun =  self.__hack_me_predict
         return fun(*args, **kwargs)
@@ -494,7 +494,7 @@ class GibbsSampler(ModelBase):
         if not self.samples:
             self.samples.append([self._theta, self._phi])
         self._reduce_latent()
-        self.samples = None # free space
+        self.samples = None # free space
         return
 
 
@@ -655,13 +655,13 @@ class SVB(ModelBase):
         * self.iterations is actually the burnin phase of SVB.
         '''
 
-        # not good
+        # not good
         #self._timestep_a = 0
 
-        # self.iterations is actually the burnin phase of SVB.
+        # self.iterations is actually the burnin phase of SVB.
         for _it in range(self.iterations+1):
             self.log.debug('init timestep A ?')
-            #self._timestep_a = 0 # test, not good
+            #self._timestep_a = 0 # test, not good
             self._iteration = _it
             burnin = (_it < self.iterations)
             np.random.shuffle(minibatch)
@@ -701,7 +701,7 @@ class SVB(ModelBase):
         #self._entropy_t = np.nan
         self._entropy_t = self.compute_entropy_t()
 
-        # "true elbo"
+        # "true elbo"
         self._elbo = self.compute_elbo()
 
         if '_roc' in self.expe._csv_typo.split():

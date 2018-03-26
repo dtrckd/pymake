@@ -1,6 +1,6 @@
 import os
 if not os.environ.get('DISPLAY'):
-    # Plot in nil/void
+    # Plot in nil/void
     import matplotlib; matplotlib.use('Agg')
     print("==> Warning : Unable to load DISPLAY, try : `export DISPLAY=:0.0'")
 else:
@@ -13,7 +13,7 @@ else:
 from pymake.core.types import Spec, Corpus, Model, Script, ExpSpace, ExpVector, ExpTensor, ExpDesign, ExpGroup
 from pymake.core.format import ExpeFormat
 
-# Without whoosh fashion...
+# Without whoosh fashion...
 #from pymake.frontend.io import SpecLoader
 #__spec = SpecLoader.get_atoms()
 

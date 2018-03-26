@@ -15,7 +15,7 @@ from copy import deepcopy
 import numpy as np
 
 from pymake.core.types import ExpDesign, ExpTensor, ExpSpace, Model, Corpus, Script, Spec, ExpVector
-from pymake.core.types import ExpTensorV2 # @debug name integration
+from pymake.core.types import ExpTensorV2 # @debug name integration
 from pymake.core.format import ExpeFormat
 
 from pymake.io import is_empty_file
@@ -28,7 +28,7 @@ from pymake.util.utils import colored, basestring, get_pymake_settings, hash_obj
 
 
 # Custom formatter
-# From : https://stackoverflow.com/questions/14844970/modifying-logging-message-format-based-on-message-logging-level-in-python3
+# From : https://stackoverflow.com/questions/14844970/modifying-logging-message-format-based-on-message-logging-level-in-python3
 class MyLogFormatter(logging.Formatter):
 
     critical_fmt  = "====>>> CRITICAL: %(msg)s"
@@ -185,21 +185,21 @@ class GramExp(object):
         >> Network fitting :
         fit.py -m immsb -c alternate -n 100 -i 10'''
 
-    _frontend_ext = ['gt', # graph-tool
-                     'pk', # pickle
+    _frontend_ext = ['gt', # graph-tool
+                     'pk', # pickle
                     ]
     #_model_ext = @Todo: dense(numpy/pk.gz) or sparse => gt...?
 
-    # has special semantics on **output_path**.
+    # has special semantics on **output_path**.
     _special_keywords = [ '_refdir', '_repeat',
                          '_format', '_csv_typo',
-                        ] # output_path => pmk-basedire/{base_type}/{refdir}/{repeat}/${format}:${csv_typo}
+                        ] # output_path => pmk-basedire/{base_type}/{refdir}/{repeat}/${format}:${csv_typo}
 
-    # Reserved by GramExp for expe identification
-    _reserved_keywords = ['_spec', # for nested specification.
-                          '_id_expe', # unique (locally) expe identifier.
-                          '_name_expe', # exp name identifier, set before _default_expe
-                          '_expe_hash', # Unique spec identifier.
+    # Reserved by GramExp for expe identification
+    _reserved_keywords = ['_spec', # for nested specification.
+                          '_id_expe', # unique (locally) expe identifier.
+                          '_name_expe', # exp name identifier, set before _default_expe
+                          '_expe_hash', # Unique spec identifier.
                           '_pmk', # force to set some settings out of grammarg.
                          ]
     _private_keywords = _reserved_keywords + _special_keywords
@@ -207,8 +207,8 @@ class GramExp(object):
     _default_expe = {
         '_verbose'   : logging.INFO,
         '_write'     : False,
-        '_force_load_data' : True, # if True, it will force the raw data parsing.
-        '_force_save_data' : True, # if False, dont save corpus as pk/gt ont the filesystem.
+        '_force_load_data' : True, # if True, it will force the raw data parsing.
+        '_force_save_data' : True, # if False, dont save corpus as pk/gt ont the filesystem.
         '_no_block_plot' : False,
     }
 
@@ -224,7 +224,7 @@ class GramExp(object):
         _spec = {}
 
     def __init__(self, conf, usage=None, parser=None, parseargs=True, expdesign=None):
-        # @logger One logger by Expe ! # in preinit
+        # @logger One logger by Expe ! # in preinit
         setup_logger(level=conf.get('_verbose', logging.INFO))
 
         if conf is None:
@@ -234,7 +234,7 @@ class GramExp(object):
             kwargs, self.argparser, _ = self.parseargsexpe(usage)
             conf.update(kwargs)
         if parser is not None:
-            # merge parser an parsargs ?
+            # merge parser an parsargs ?
             self.argparser = parser
 
         # It pollute the spec output...
@@ -253,13 +253,13 @@ class GramExp(object):
         self._tensors = ExpTensorV2.from_conf(conf, private_keywords=self._private_keywords,
                                               expdesign=expdesign)
 
-        # Global settings (unique argument)
+        # Global settings (unique argument)
         self._conf = self._tensors.get_conf()
 
-        # Set expTensor init.
+        # Set expTensor init.
         self._user_spec = conf.get('_spec', {})
 
-        # makes it contextual.
+        # makes it contextual.
         self._preprocess_exp()
 
         # Make lod
@@ -272,7 +272,7 @@ class GramExp(object):
             self._update()
 
     def _update(self):
-        # Seems obsolete, _conf is not writtent in _tensors, right ?
+        # Seems obsolete, _conf is not writtent in _tensors, right ?
         self._conf = self._tensors._conf
         #
         self.lod = self._tensors._lod
@@ -284,14 +284,14 @@ class GramExp(object):
         else:
             default_expe = expformat._default_expe
 
-        # Use default _spec if no spec given
+        # Use default _spec if no spec given
         _names = self.get_list('_name_expe')
         if len(_names) == 1 and '_default_expe' in _names and '_spec' in default_expe:
             names = default_expe['_spec']
             names = [names] if isinstance(names, str) else names
             group = []
 
-            # Sensitive
+            # Sensitive
             conf = self._base_conf
             #conf['_do'] = [self._do]
 
@@ -324,7 +324,7 @@ class GramExp(object):
         if len(self) > 1 and 'write' in self._conf:
             self.check_format()
 
-        # Clean pymake extra args:
+        # Clean pymake extra args:
         extra_args = ['_ignore_format_unique', ('_net', False)]
         keys_to_remove = []
         for _key in extra_args:
@@ -333,13 +333,13 @@ class GramExp(object):
                     keys_to_remove.append(_key[0])
             elif _key in self._conf:
                     keys_to_remove.append(_key)
-        # |
+        # |
         for key in keys_to_remove:
             self._tensors.remove_all(key)
 
 
     def check_format(self):
-        ''' Check if all expVector are distinguishable in _format.
+        ''' Check if all expVector are distinguishable in _format.
 
             @debug: not valid check accros tensors !!!
             @debug: integration in ExpTensorV2 ?
@@ -479,7 +479,7 @@ class GramExp(object):
         p = os.path.join(hook, rep)
 
         if not expe['_format']:
-            # or give a hash if write is False ?
+            # or give a hash if write is False ?
             cls.log.debug('No _format given, please set _format for output_path settings.')
             nonunique = ['_name_expe', '_do']
             if _nonunique:
@@ -535,21 +535,21 @@ class GramExp(object):
     @staticmethod
     def get_file_format(expe):
         fmt_expe = expe.copy()
-        # iteration over {expe} trow a 'RuntimeError: dictionary changed size during iteration',
-        # maybe due to **expe pass in argument ?
+        # iteration over {expe} trow a 'RuntimeError: dictionary changed size during iteration',
+        # maybe due to **expe pass in argument ?
 
         id_str = 'expe' + str(expe['_id_expe'])
         id_name = expe['_name_expe']
         id_hash = expe['_expe_hash']
 
-        # Special aliase for _format
+        # Special aliase for _format
         fmt_expe['_id'] = id_str
         fmt_expe['_name'] = id_name
         fmt_expe['_hash'] = id_hash
 
         for k, v in fmt_expe.items():
             if isinstance(v, (list, dict)):
-                #fmt_expe[k] = id_str # don't do that, no robust get back expe.
+                #fmt_expe[k] = id_str # don't do that, no robust get back expe.
                 _hash = int((hash_objects(v)), 16) % 10**8
                 fmt_expe[k] = k + str(_hash) +'h'
 
@@ -619,7 +619,7 @@ class GramExp(object):
 
         s = parser.parse_args(args=args)
 
-        # Assume None value are non-filled options
+        # Assume None value are non-filled options
         settings = dict((key,value) for key, value in vars(s).items() if value is not None)
 
         # Purge default/unchanged settings
@@ -678,14 +678,14 @@ class GramExp(object):
         )
         ont_values = sum([w for k, w in ontology.items() if k != '_spec'] , [])
 
-        # Init _do value.
+        # Init _do value.
         if not request.get('_do'):
             request['_do'] = []
 
-        # Special Case for CLI.
+        # Special Case for CLI.
         if 'script' in request:
-            # check if no command is specified, and
-            # if 'script" is there, set 'run' command as default.
+            # check if no command is specified, and
+            # if 'script" is there, set 'run' command as default.
             do = request.get('_do', [])
             no_do = len(do) == 0
             no_do_command = len(request['_do']) > 0 and not request['_do'][0] in ontology['_do']
@@ -722,7 +722,7 @@ class GramExp(object):
                         checksum -= 1
                         break
 
-        # Check erros in the command line
+        # Check erros in the command line
         if checksum != 0:
             if (request.get('_do') or request.get('do_list')) and not GramExp.is_pymake_dir():
                 print('fatal: Not a pymake directory: %s not found.' % (cls._cfg_name))
@@ -980,7 +980,7 @@ class GramExp(object):
         elif type(_seed) is int:
             seed = [_seed, _seed]
         elif _seed is True:
-            # Load state
+            # Load state
             seed = None
             try:
                 self._seed = self.load(_seed_path)
@@ -995,17 +995,17 @@ class GramExp(object):
                 raise FileNotFoundError('%s file just created, try again !')
 
         if seed:
-            # if no seed is given, it's impossible to get a seed from numpy
+            # if no seed is given, it's impossible to get a seed from numpy
             # https://stackoverflow.com/questions/32172054/how-can-i-retrieve-the-current-seed-of-numpys-random-number-generator
             random.seed(seed[0])
             np.random.seed(seed[1])
 
-            # Save state
+            # Save state
             self.save(_seed_path, seed, silent=True)
             #self.save(_seed_path, [seed, np.random.get_state()], silent=True)
             self._seed = seed
 
-        # Init I/O settings
+        # Init I/O settings
         expe['_output_path'] = self.make_output_path(expe, _null=self._tensors._null, _nonunique=self.get_nounique_keys())
         expe['_input_path'] = self.make_input_path(expe)
 
@@ -1096,7 +1096,7 @@ class GramExp(object):
             cmd = cmd.split()
             try: idx = cmd.index('--cores')
             except: continue
-            cmd.pop(idx); cmd.pop(idx) # pop --cores int
+            cmd.pop(idx); cmd.pop(idx) # pop --cores int
             cmdlines[i] = ' '.join(cmd)
 
 
@@ -1133,13 +1133,13 @@ class GramExp(object):
 
         # Get chunked indexs
         if nhosts is None:
-            # cores by host
+            # cores by host
             n_cores = int(self._conf.get('_cores', 1))
         else:
-            # share run per host
+            # share run per host
             n_cores = len(indexs) // int(nhosts)
 
-            # Only --net 1, implement/understood from now.
+            # Only --net 1, implement/understood from now.
             if int(nhosts) == 1:
                 indexs = []
                 cmdlines = [' '.join(basecmd)]
@@ -1226,9 +1226,9 @@ class GramExp(object):
         nb = nbf.new_notebook()
 
         text = ''
-        # get the expe
-        # get the script
-        # get the figure
+        # get the expe
+        # get the script
+        # get the figure
         code = ''
         nb['cells'] = [nbf.new_markdown_cell(text),
                        nbf.new_code_cell(code) ]
@@ -1265,7 +1265,7 @@ class GramExp(object):
                     _f.write(template.substitute(spec))
                 settings.update({'default_%s'%(d):'.'.join((spec['projectname'], d))})
             elif d == '_current':
-                # Gramarg
+                # Gramarg
                 with open(join(cwd,'..', 'template', 'gramarg.template')) as _f:
                     template = PmkTemplate(_f.read())
                 with open(join(pwd, 'gramarg.py'), 'a') as _f:
@@ -1275,7 +1275,7 @@ class GramExp(object):
                 raise ValueError('Doh, Directory unknwow: %s' % d)
 
 
-        # Set and write pymake.cfg
+        # Set and write pymake.cfg
         reset_pymake_settings(settings)
 
         return self.update_index()
@@ -1356,14 +1356,14 @@ class GramExp(object):
         from pymake.index.indexmanager import IndexManager as IX
         os.chdir(os.getenv('PWD'))
 
-        ## Update index
+        ## Update index
         if len(index_name) == 0:
             IX.build_indexes()
         else:
             for name in index_name:
                 IX.build_indexes(name)
 
-        ## Update bash_completion file
+        ## Update bash_completion file
         home = os.path.expanduser('~')
         pwd = os.getenv('PWD')
         cwd = os.path.dirname(__file__)
@@ -1375,7 +1375,7 @@ class GramExp(object):
             with open(completion_fn) as _f:
                 template = _f.read()
 
-            # Reset completion file if version differs
+            # Reset completion file if version differs
             verpos = template.find('%%PMK')
             _ver = re.search(r'version=([0-9\.\-a-zA-Z_]*)', template[verpos:])
             if not _ver:
@@ -1390,7 +1390,7 @@ class GramExp(object):
                 template = _f.read()
 
 
-        # Get Specs
+        # Get Specs
         specs = ' '.join(list(cls._spec))
 
         # Get Scripts
@@ -1405,7 +1405,7 @@ class GramExp(object):
             all_scripts.update([script, action])
             sur_scripts.add(script)
 
-        # Create a Bash array of strings.
+        # Create a Bash array of strings.
         dict_scripts = []
         for sur in sur_scripts:
             dict_scripts.append('"'+ ' '.join(scripts[sur]) +'"')
@@ -1431,7 +1431,7 @@ class GramExp(object):
         _match = '[[ "$project" == "%s" ]]' % (pjt)
         back_pos = template.find(_match)
         if back_pos  >= 0:
-            # Remove old lines
+            # Remove old lines
             template = template.split('\n')
             pt = None
             for pos, line in enumerate(template):
@@ -1469,7 +1469,7 @@ class GramExp(object):
             print(*self.functable(sandbox) , sep='\n')
             exit()
 
-        # Default spec, expVector ?
+        # Default spec, expVector ?
         #if hasattr(sandbox, '_expe_default'):
         #    print(sandbox._expe_default)
 
@@ -1506,7 +1506,7 @@ class GramExp(object):
 
             # Setup handler
             if '_do' in expe and len(expe._do) > 0:
-                # ExpFormat task ? decorator and autoamtic argument passing ....
+                # ExpFormat task ? decorator and autoamtic argument passing ....
                 do = expe._do
                 pmk = getattr(expbox, do[0])
             else:

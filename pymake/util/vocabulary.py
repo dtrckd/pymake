@@ -32,7 +32,7 @@ class Vocabulary(object):
 
         stopwords_list = []
         if exclude_stopwords:
-            # Too much strict
+            # Too much strict
             #with open (os.path.join(os.path.dirname(__file__), 'stopwords.txt'), "r") as _f:
             #    stopwords_list = _f.read().replace('\n', '').split()
             if not _NLTK_DISABLED:

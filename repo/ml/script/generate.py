@@ -39,7 +39,7 @@ class GenNetwork(ExpeFormat):
     _default_expe = dict(
         block_plot = False,
         _write  = False,
-        _do            = ['burstiness', 'global'], # default
+        _do            = ['burstiness', 'global'], # default
         _mode         = 'generative',
         gen_size      = 1000,
         epoch         = 10 , # Gen,eration epoch
@@ -207,7 +207,7 @@ class GenNetwork(ExpeFormat):
         model = self.model
 
         if _type in ('global', 'all'):
-            # Global burstiness
+            # Global burstiness
             d, dc, yerr = random_degree(Y)
             fig = plt.figure()
             title = 'global | %s, %s' % (self.specname(expe.get('corpus')), self.specname(expe.model))
@@ -216,7 +216,7 @@ class GenNetwork(ExpeFormat):
             figs.append(plt.gcf())
 
         if _type in  ('local', 'all'):
-            # Local burstiness
+            # Local burstiness
             print ('Computing Local Preferential attachment')
             a, b = model.get_params()
             N,K = a.shape
@@ -289,7 +289,7 @@ class GenNetwork(ExpeFormat):
                         #degree_c += adj_to_degree(y_c).values()
                         #yerr= None
                         YY.append(y_c)
-                elif 'ilfm' in  expe.model: # or Corpus !
+                elif 'ilfm' in  expe.model: # or Corpus !
                     for _i , y in enumerate(Y):
                         theta = self._Theta[_i]
                         if theta.shape[1] <= max(k,l):
@@ -510,7 +510,7 @@ class GenNetwork(ExpeFormat):
         model = self.model
         #y = model.generate(**expe)
         theta, phi = model.get_params()
-        # NB mean/var
+        # NB mean/var
         mean, var = model.get_nb_ss()
 
         phi=mean
@@ -528,7 +528,7 @@ class GenNetwork(ExpeFormat):
         print('data shape', data.shape)
         print('sim shape', sim.shape)
 
-        # l2 norm
+        # l2 norm
         l2 = ((data - sim)**2).sum()**(0.5)
         print('l2', l2)
 
@@ -732,7 +732,7 @@ class GenNetwork(ExpeFormat):
         if _type == 'testset':
             y_true, probas = model.mask_probas(data)
             if not _predictall:
-                # take 20% of the size of the training set
+                # take 20% of the size of the training set
                 n_d =int( _ratio/100 * data.size * (1 - expe.testset_ratio/100) / (1 - _ratio/100))
                 y_true = y_true[:n_d]
                 probas = probas[:n_d]
@@ -745,7 +745,7 @@ class GenNetwork(ExpeFormat):
                 print('Theta: max: %s | min: %.4f | mean: %.4f | std: %.4f  ' % (theta.max(), theta.min(), theta.mean(), theta.std()))
                 print('Phi: shape: %s' %(str(phi.shape)))
                 print('Phi: max: %.4f | min: %.4f | mean: %.4f | std: %.4f  ' % (phi.max(), phi.min(), phi.mean(), phi.std()))
-                print('prediction:  links(1): %d | non-links(0): %d' % (y_true.sum(), (y_true==0).sum()))
+                print('prediction:  links(1): %d | non-links(0): %d' % (y_true.sum(), (y_true==0).sum()))
                 print('Prediction: probas stat: mean: %.4f | std: %.4f' % (probas.mean(), probas.std()))
                 print('---')
 
@@ -802,7 +802,7 @@ class GenNetwork(ExpeFormat):
         if _type == 'testset':
             y_true, probas = model.mask_probas(data)
             if not _predictall:
-                # take 20% of the size of the training set
+                # take 20% of the size of the training set
                 n_d =int( _ratio/100 * data.size * (1 - expe.testset_ratio/100) / (1 - _ratio/100))
                 y_true = y_true[:n_d]
                 probas = probas[:n_d]

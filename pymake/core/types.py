@@ -17,10 +17,10 @@ lgg = logging.getLogger('root')
 
 from tabulate import tabulate
 
-# Ugly, integrate.
+# Ugly, integrate.
 def _table_(tables, headers=[], max_line=10, max_row=30, name=''):
 
-    # tables is dict
+    # tables is dict
     if isinstance(headers, str):
         # Sort the dict
         ordered_keys = sorted(tables.keys())
@@ -53,7 +53,7 @@ def _table_(tables, headers=[], max_line=10, max_row=30, name=''):
 
 
 
-# Not sure this one is necessary, or not here
+# Not sure this one is necessary, or not here
 class BaseObject(object):
     ''' Notes : Avoid method conflict by ALWAYS settings this class in last
                 at class definitions.
@@ -104,7 +104,7 @@ class ExpSpace(dict):
         try:
             return self[key]
         except KeyError:
-            # Default pmk settings
+            # Default pmk settings
             if key == '_write':
                 return False
 
@@ -139,7 +139,7 @@ class ExpGroup(list, BaseObject):
         if isinstance(args, dict):
             args = [args]
 
-        # Don't work well, why ?
+        # Don't work well, why ?
         #for i, o in enumerate(args):
         #    if isinstance(o, (dict, ExpGroup)):
         #        args[i] = deepcopy(o)
@@ -147,7 +147,7 @@ class ExpGroup(list, BaseObject):
         list.__init__(self, args)
         BaseObject.__init__(args, **kwargs)
 
-        # Recursively update value if kwargs found.
+        # Recursively update value if kwargs found.
         if len(kwargs) > 0:
             self.update_all(self, kwargs)
 
@@ -179,7 +179,7 @@ class Spec(BaseObject):
 
     @staticmethod
     def load(expe_name, expe_module):
-        # debug to load from module or expe_name !
+        # debug to load from module or expe_name !
 
         p =  expe_module.split('.')
         modula, modulb = '.'.join(p[:-1]), p[-1]
@@ -250,15 +250,15 @@ class Script(BaseObject):
         ix = IX(default_index='script')
         topmethod = ix.getfirst(scriptname, field='scriptsurname')
         if not topmethod:
-            # get the first method that have this name
+            # get the first method that have this name
             topmethod = ix.getfirst(scriptname, field='method')
             if not topmethod:
                 return None
                 #try:
                 #    raise ValueError('error: Unknown script: %s' % (scriptname))
                 #except:
-                #    # Exception from pyclbr
-                #    # index commit race condition I guess.
+                #    # Exception from pyclbr
+                #    # index commit race condition I guess.
                 #    print('error: Unknown script: %s' % (scriptname))
                 #    exit(42)
 
@@ -288,10 +288,10 @@ class Corpus(ExpVector):
     #               dtype : "specific to a data_type"
     #               name : "object identifier"
     #               path : "disk repo"
-    #               source : url | random
+    #               source : url | random
     #             }
 
-    # IX integration needed..
+    # IX integration needed..
 
     _corpus_data = [
         dict(name='clique'        , data_type='network', data_source='random', directed=False),
@@ -318,8 +318,8 @@ class Corpus(ExpVector):
         dict(name='20ngroups' , data_type='text', data_source='web'),
         dict(name='odp'       , data_type='text', data_source='web'),
         dict(name='wikipedia' , data_type='text', data_source='web'),
-        dict(name='lucene', data_type='text', data_source='lucene'), # needs field spec
-        dict(name='mongo', data_type='text', data_source='mongo'), # needs field spec
+        dict(name='lucene', data_type='text', data_source='lucene'), # needs field spec
+        dict(name='mongo', data_type='text', data_source='mongo'), # needs field spec
     ]
 
     @classmethod
@@ -329,7 +329,7 @@ class Corpus(ExpVector):
 
         corpus = False
 
-        # index/mongo...
+        # index/mongo...
         for data in cls._corpus_data:
             if corpus_name.startswith(data['name']):
                 corpus = data.copy()
@@ -363,7 +363,7 @@ class Model(ExpVector):
             _res = ix.query(field='surname', terms=True)
             res = []
             for elt in _res:
-                # beurk
+                # beurk
                 if len(elt['category']) > 0:
                     # means that len(surname.split('.')) > 1
                     names = elt['surname'].split('.')
@@ -516,10 +516,10 @@ class ExpTensorV2(BaseObject):
         self._bind = []
         self._null = defaultdict(list)
         self._hash = []
-        self._ds_ = [] # ExpDesign class per tensor
+        self._ds_ = [] # ExpDesign class per tensor
         #
-        self._lod = [] # list of dict
-        self._ds = [] # ExpDesign class per expe
+        self._lod = [] # list of dict
+        self._ds = [] # ExpDesign class per expe
         # --- meta ---
         self._conf = {}
         self._size = None
@@ -543,7 +543,7 @@ class ExpTensorV2(BaseObject):
         while consume_expe < size_expe:
             o = _spec[consume_expe]
             if isinstance(o, tuple):
-                # _type => expdesign
+                # _type => expdesign
                 name, o, _type = o
 
             if isinstance(o, ExpGroup):
@@ -599,7 +599,7 @@ class ExpTensorV2(BaseObject):
     def set_default_all(self, defconf):
         ''' set default value in exp '''
 
-        # Update current spec with _default_expe
+        # Update current spec with _default_expe
         for k, v in defconf.items():
 
             for tensor in self._tensors:
@@ -690,7 +690,7 @@ class ExpTensorV2(BaseObject):
             for i, m in enumerate(models):
 
                 if not '.' in m:
-                    # Set the model ref name
+                    # Set the model ref name
                     pkg = get_pymake_settings('default_model')
                     if len(pkg) > 8:
                         prefix = pkg[:3]
@@ -753,12 +753,12 @@ class ExpTensorV2(BaseObject):
                     # simltaneous in each expe.
                     a, b = _bind
                     if b.startswith('!'):
-                        # Exclusif Rule
+                        # Exclusif Rule
                         b = b[1:]
                         if a in values and b in values:
                             idtoremove.append(expe_id)
                     else:
-                        # Inclusif Rule
+                        # Inclusif Rule
                         if a in values and not b in values:
                             idtoremove.append(expe_id)
 
@@ -772,18 +772,18 @@ class ExpTensorV2(BaseObject):
                         _type = lambda x: True if x in ['True', 'true', '1'] else False
 
                     if c.startswith('!'):
-                        # Exclusif Rule
+                        # Exclusif Rule
                         c = c[1:]
                         if a in values and _type(c) == d[b]:
                             idtoremove.append(expe_id)
                     else:
-                        # Inclusif Rule
+                        # Inclusif Rule
                         if a in values and _type(c) != d[b]:
                             idtoremove.append(expe_id)
 
 
         lod = [d for i,d in enumerate(lod) if i not in idtoremove]
-        # Save true size of tensor (_bind remove)
+        # Save true size of tensor (_bind remove)
         self._tensors[_id]._size = len(lod)
 
         # Add extra information in lod expes
@@ -879,13 +879,13 @@ class ExpDesign(dict, BaseObject):
     def __init__(self,  *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
 
-        # Not a Ultimate solution to keep a flexibility when defining Exp Design
+        # Not a Ultimate solution to keep a flexibility when defining Exp Design
         for k in dir(self):
             #_spec = ExpDesign((k, getattr(Netw, k)) for k in dir(Netw) if not k.startswith('__') )
             if not k.startswith('_'):
                 v = getattr(self, k)
-                #if not hasattr(v, '__call__'): # print a warning because hasattr call getattr in expSpace.
-                if not callable(v): #  python >3.2
+                #if not hasattr(v, '__call__'): # print a warning because hasattr call getattr in expSpace.
+                if not callable(v): #  python >3.2
                     self[k] = v
         # @debug: add callable in reserved keyword
         self._reserved_keywords = list(set([w for w in dir(self) if w.startswith('_')] + ['_reserved_keywords']+dir(dict)+dir(BaseObject)))

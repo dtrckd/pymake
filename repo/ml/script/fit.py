@@ -19,7 +19,7 @@ class Fit(ExpeFormat):
         expe = self.expe
         t0 = time.time()
 
-        # Load data
+        # Load data
         frontend = self.load_frontend()
 
         ### @Debug: Obsolete / Inside model
@@ -30,7 +30,7 @@ class Fit(ExpeFormat):
         expe['hyperparams'] = hyperparams
         #############################################################
 
-        # Load Model
+        # Load Model
         model = self.load_model(frontend)
 
         # Fit

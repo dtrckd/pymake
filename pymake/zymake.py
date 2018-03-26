@@ -52,9 +52,9 @@ def main():
         lines = zymake.show_history()
     elif zyvar['_do'] == 'diff':
         lines = zymake.show_diff()
-    elif zyvar['_do'] == 'notebook': # @Todo
+    elif zyvar['_do'] == 'notebook': # @Todo
         lines = zymake.notebook()
-    else: # list things
+    else: # list things
 
         if not 'do_list' in zyvar and zyvar['_do']:
             raise ValueError('Unknown command : %s' % zyvar['_do'])

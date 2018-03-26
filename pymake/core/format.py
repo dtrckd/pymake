@@ -35,7 +35,7 @@ class ExpeFormat(object):
     '''
 
     log = logging.getLogger('root')
-    _logfile = False # for external integration @deprcated ?
+    _logfile = False # for external integration @deprcated ?
 
     def __init__(self, pt, expe, expdesign, gramexp):
         ''' Sandbox class for scripts/actions.
@@ -77,10 +77,10 @@ class ExpeFormat(object):
         # @debug this, I dont know whyiam in lib/package sometimes, annoying !
         os.chdir(os.getenv('PWD'))
 
-        # Global
+        # Global
         self.expe_size = len(gramexp)
         self.gramexp = gramexp
-        self.D = self.gramexp.D # Global conteneur
+        self.D = self.gramexp.D # Global conteneur
         # Local
         self.pt = pt
         self.expe = expe
@@ -91,7 +91,7 @@ class ExpeFormat(object):
         self.markers = _markers.copy()
         self.colors = _colors.copy()
 
-        # to exploit / Vizu
+        # to exploit / Vizu
         self._it = pt['expe']
         self.corpus_pos = pt.get('corpus')
         self.model_pos = pt.get('model')
@@ -121,7 +121,7 @@ class ExpeFormat(object):
         prefix = 'Computing'
         n_it = self._it +1
         n_total = self.expe_size
-        # Normalize
+        # Normalize
         n_it_norm = 2*42 * n_it // n_total
 
         progress= n_it_norm * '='  + (2*42-n_it_norm) * ' '
@@ -179,7 +179,7 @@ class ExpeFormat(object):
     @staticmethod
     @decorator
     def plot_simple(fun, *args, **kwargs):
-        # @obsolete ? (no block in save, this is it?
+        # @obsolete ? (no block in save, this is it?
         import matplotlib.pyplot as plt
         self = args[0]
         expe = self.expe
@@ -262,7 +262,7 @@ class ExpeFormat(object):
                 from pymake.plot import _linestyle, _markers
 
                 self = args[0]
-                discr_args = [] # discriminant keys (to distinguish filename)
+                discr_args = [] # discriminant keys (to distinguish filename)
                 if len(args) == 1:
                     groups = ['corpus']
                     attribute = '_entropy'
@@ -343,7 +343,7 @@ class ExpeFormat(object):
             @wraps(fun)
             def wrapper(*args, **kwargs):
                 self = args[0]
-                discr_args = [] # discriminant keys (to distinguish filename)
+                discr_args = [] # discriminant keys (to distinguish filename)
                 if len(args) == 1:
                     x, y, z = 'corpus', 'model', '_entropy'
                 else:
@@ -353,7 +353,7 @@ class ExpeFormat(object):
 
                 if discr_args:
                     groups = discr_args
-                    # or None if args not in expe (tex option...)
+                    # or None if args not in expe (tex option...)
                     ggroup = self._file_part([self.expe.get(g) for g in groups], sep='-') or None
                 else:
                     groups = None
@@ -389,8 +389,8 @@ class ExpeFormat(object):
                         _table = self.gramexp._tables.pop(ggroup)
                         array = _table.array
                         for zpos, z in enumerate(_z):
-                            # Format table
-                            #tablefmt = 'latex' # 'simple'
+                            # Format table
+                            #tablefmt = 'latex' # 'simple'
                             tablefmt = 'latex' if 'tex' in discr_args else 'simple'
                             Meas = self.specname(self.gramexp.get_set(y))
                             arr = self.highlight_table(array[:,:,zpos])
@@ -429,7 +429,7 @@ class ExpeFormat(object):
     def highlight_table(self, array, highlight_dim=1):
         hack_float = np.vectorize(lambda x : '{:.3f}'.format(float(x)))
         table = np.char.array(hack_float(array), itemsize=42)
-        # vectorize
+        # vectorize
         for i, col in enumerate(array.argmax(1)):
             table[i, col] = colored(table[i, col], 'bold')
         for i, col in enumerate(array.argmin(1)):
@@ -516,7 +516,7 @@ class ExpeFormat(object):
             with open(fn, 'w') as _f:
                 _f.write(frame)
         else:
-            # assume figure
+            # assume figure
             ext = ext or 'pdf'
             fn = fn +'.'+ ext
             print('Writing frame: %s' % fn)
@@ -533,8 +533,8 @@ class ExpeFormat(object):
             Called once before running expe.
         '''
 
-        # Update defautl settings of  gramexp
-        # given _default_expe
+        # Update defautl settings of  gramexp
+        # given _default_expe
         gramexp.update_default_expe(cls)
 
         # Put a valid expe a the end.
@@ -561,9 +561,9 @@ class ExpeFormat(object):
 
     def _expe_preprocess(self):
         ''' system preprocess '''
-        # setup seed ?
-        # setup branch ?
-        # setup description ?
+        # setup seed ?
+        # setup branch ?
+        # setup description ?
 
         if hasattr(self, '_preprocess'):
             self._preprocess()
@@ -628,7 +628,7 @@ class ExpeFormat(object):
                         values = [str(elt) for elt in getattr(model, obj)]
                     except (KeyError, AttributeError) as e:
                         values = self.format_error(model, o)
-            else: # is atomic ie can be converted to string.
+            else: # is atomic ie can be converted to string.
                 try: values = str(getattr(model, o))
                 except (KeyError, AttributeError) as e: values = self.format_error(model, o)
 
@@ -757,7 +757,7 @@ class ExpeFormat(object):
             samples = self._samples
             #np.savetxt(f, samples, fmt=str(fmt))
             for line in samples:
-                # @debug manage float .4f !
+                # @debug manage float .4f !
                 line = ' '.join(line)+'\n'
                 _f.write(line.encode('utf8'))
 
@@ -778,16 +778,16 @@ class ExpeFormat(object):
 
         self.model = model
 
-        # Inject the inline-writing method
+        # Inject the inline-writing method
         setattr(model, 'write_current_state', self.write_current_state)
 
         if self.expe.get('_write'):
             self.init_fitfile()
 
-        # Could configure frontend/data path or more also here ?
+        # Could configure frontend/data path or more also here ?
         return
 
-    # frontend params is deprecated and will be removed soon...
+    # frontend params is deprecated and will be removed soon...
     def load_model(self, frontend=None, load=False):
         ''' :load: boolean. Load from **preprocess** file is true else
                             it is a raw loading.

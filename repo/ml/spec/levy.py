@@ -42,12 +42,12 @@ class Levy(ExpDesign):
     )
 
     warm = ExpTensor(
-        corpus        = ['manufacturing.gt'],
+        corpus        = ['manufacturing'],
         model         = 'iwmmsb_scvb',
         N             = 'all',
-        chunk         = 'adaptative_1',
-        K             = 6,
-        iterations    = 3,
+        chunk         = 'stratify',
+        K             = 10,
+        iterations    = 1,
         hyper         = 'auto',
         testset_ratio = 10,
 
@@ -58,6 +58,7 @@ class Levy(ExpDesign):
 
         homo = 0,
         mask = 'balanced',
+        driver = 'gt', # graph-tool driver
 
         _data_format = 'w',
         _data_type    = 'networks',

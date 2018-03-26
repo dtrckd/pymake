@@ -130,7 +130,7 @@ class Net(ExpeFormat):
         data = frontend.data
         figs = []
 
-        # Global burstiness
+        # Global burstiness
         d, dc = degree_hist(adj_to_degree(data), filter_zeros=True)
         fig = plt.figure()
         plot_degree(data, spec=True, title=self.specname(expe.corpus))
@@ -143,7 +143,7 @@ class Net(ExpeFormat):
         alpha = gof['alpha']
         x_min = gof['x_min']
         y_max = gof['y_max']
-        # plot linear law from power law estimation
+        # plot linear law from power law estimation
         #plt.figure()
         idx = d.searchsorted(x_min)
         i = int(idx  - 0.1 * len(d))
@@ -152,9 +152,9 @@ class Net(ExpeFormat):
         ylin = np.exp(-alpha * np.log(x/float(x_min)) + np.log(y_max))
         #ylin = np.exp(-alpha * np.log(x/float(x_min)) + np.log((alpha-1)/x_min))
 
-        # Hack xticks
-        fig.canvas.draw() # !
-        lim = plt.gca().get_xlim() # !
+        # Hack xticks
+        fig.canvas.draw() # !
+        lim = plt.gca().get_xlim() # !
         locs, labels = plt.xticks()
 
         idx_xmin = locs.searchsorted(x_min)
@@ -172,7 +172,7 @@ class Net(ExpeFormat):
         plt.plot(x, ylin , 'g--', label='power %.2f' % alpha)
         figs.append(plt.gcf())
 
-        # Local burstiness
+        # Local burstiness
 
         #
         # Get the Class/Cluster and local degree information
@@ -221,12 +221,12 @@ class Net(ExpeFormat):
 
                 if k == l:
                     title = 'Inner degree'
-                    y = np.zeros(data.shape) # some zeros...
+                    y = np.zeros(data.shape) # some zeros...
                     y[ixgrid] = data[ixgrid]
                     #ax = ax1
                 else:
                     title = 'Outer degree'
-                    y = np.zeros(data.shape) # some zeros...
+                    y = np.zeros(data.shape) # some zeros...
                     y[ixgrid] = data[ixgrid]
                     #ax = ax2
 
@@ -310,18 +310,13 @@ class Net(ExpeFormat):
             print(colored('\nPvalue Table:', 'green'))
             print (self.tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
 
-    #@deprecated ?
     def stats(self):
         ''' Show data stats '''
         expe = self.expe
         frontend = FrontendManager.load(expe)
 
-        try:
-            #@ugly debug
-            Table = self.gramexp.Table
-            Meas = self.gramexp.Meas
-        except AttributeError:
-            # Warning order sensitive @deprecated Table.
+        if self.is_first_expe():
+            # Warning order sensitive @deprecated Table.
             #corpuses = self.specname(self.gramexp.get_set('corpus'))
             corpuses = self.specname(self.gramexp.get_list('corpus'))
             Meas = ['num_nodes', 'num_edges', 'density',
@@ -330,11 +325,13 @@ class Net(ExpeFormat):
                      'is_symmetric', 'modularity', 'diameter', 'cluster-coef', 'net-type', 'feat-len']
             Table = np.zeros((len(corpuses), len(Meas))) * np.nan
             Table = np.column_stack((corpuses, Table))
-            self.gramexp.Table = Table
-            self.gramexp.Meas = Meas
-            self.gramexp.Meas_ = Meas_
+            self.D.Table = Table
+            self.D.Meas = Meas
+            self.D.Meas_ = Meas_
 
-        #print (frontend.get_data_prop())
+        Table = self.D.Table
+        Meas = self.D.Meas
+
         for i, v in enumerate(Meas):
             if frontend.data is None:
                 Table[self.corpus_pos, 1:] = np.nan
@@ -343,44 +340,14 @@ class Net(ExpeFormat):
             value = value if value is not None else np.nan
             Table[self.corpus_pos, i+1] = value
 
-        if self._it == self.expe_size -1:
+        if hasattr(frontend, '_check'):
+            frontend._check()
+
+        if self.is_last_expe():
             tablefmt = 'simple' # 'latex'
             print(colored('\nStats Table :', 'green'))
-            Meas_ = self.gramexp.Meas_
+            Meas_ = self.D.Meas_
             print(self.tabulate(Table, headers=Meas_, tablefmt=tablefmt, floatfmt='.3f'))
-
-    def _future_stats(self):
-        ''' Show data stats '''
-        expe = self.expe
-
-        corpuses = self.specname(self.gramexp.get_list('corpus'))
-        if not corpuses:
-            corpuses = ['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad', 'generator7', 'generator12', 'generator10', 'generator4']
-
-        Meas = ['num_nodes', 'num_edges', 'density']
-        Meas += ['is_symmetric', 'modularity', 'diameter', 'cluster-coef', 'net_type', 'feat_len']
-        Table = np.zeros((len(corpuses), len(Meas))) * np.nan
-        Table = np.column_stack((corpuses, Table))
-
-        for _corpus_cpt, corpus_name in enumerate(corpuses):
-
-            expe.update(corpus=corpus_name)
-            # @Heeere: big problme of data management:
-            #         if data_type is set heren input_path os wrong !?
-            #         how to corretcly manage this, think about it.
-            #         pmk looks in pmk-temp here.
-            expe.update(_data_type='networks')
-            frontend = FrontendManager.load(expe)
-
-            for i, v in enumerate(Meas):
-                if frontend.data is None:
-                    Table[self.corpus_pos, 1:] = 'none'
-                    break
-                Table[self.corpus_pos, i+1] = getattr(frontend, v)()
-
-        tablefmt = 'simple' # 'latex'
-        print(colored('\nStats Table :', 'green'))
-        print (self.tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
 
 
 

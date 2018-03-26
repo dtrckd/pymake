@@ -11,7 +11,7 @@ It can be represented as follows:
 
 ![MSA Model](wiki/msa.png)
 
-<!-- Build Powerful CLI | Create Beautiful UI | Browse your Experiments  -->
+<!-- Build Powerful CLI | Create Beautiful UI | Browse your Experiments  -->
 
 
 <!--  MSA Model-Specification-Action (or DMSA to add the layer data...)
@@ -177,7 +177,7 @@ class MyScripts(ExpeFormat):
 If the runs are parallelized (with `--cores` options), there is no current implemented way to do it although it is likely to be develloped in the future.
 
 
-###### How to tune the command-line options
+###### How to tune the command-line options
 
 The pymake.cfg have a settgins, by default `gramarg = project_name.grammarg`, which point to the python file gramarg.py. Inside this file you can add command-line options, fully compatible with the `argparse` python module. By default the file contains an empty list. If you want, let's say to set a parameter in your expe with the command line like this `pmk --my_key my_value` you can add a element in the list as follows:
 
@@ -240,8 +240,8 @@ In a pymake project there is 4 main components, associated to 4 directories (you
     + contains specification of (design) experiments (`ExpSpace`,`ExpTensor` and `ExpGroup`), -- can be given as an argument of pymake.
 
 Along with those directory there is two system files:
-* pymake.cfg: at the root of a project (basically define a project) specify the paths for the `data | model | script | spec`  and other global options, <!-- document each entry -->
-* gramarg.py: defines the command-line options for a project. <!-- explain the exp_append type -->
+* pymake.cfg: at the root of a project (basically define a project) specify the paths for the `data | model | script | spec`  and other global options, <!-- document each entry -->
+* gramarg.py: defines the command-line options for a project. <!-- explain the exp_append type -->
 
 
 ##### Pymake Commands
@@ -261,16 +261,16 @@ List/Search information:
 pmk -l spec   # show available designs of experimentation
 pmk -l model  # show available models
 pmk -l script # show available scripts
-pmk show expe_name # or just pymake expe_name
+pmk show expe_name # or just pymake expe_name
 ```
 
 Run experiments:
 
 ```bash
 pmk run [expe_name] --script script_name [script options...]
-# Or shortly (alias):
+# Or shortly (alias):
 pmk [expe_name] -x script_name
-# Run in parallel:
+# Run in parallel:
 pmk [expe_name] -x script_name --cores N_CORES
 ```
 
@@ -402,7 +402,7 @@ init = command$;
 command = 'pmk' [command_name] [expedesign_id]* [expe_id]* [pmk_options];
 command_name = 'run' | 'runpara' | 'path' | 'cmd' | 'update' | 'show' | 'hist' |  '' ;
 expe_id = int; # int identifier of an expe from 0 to; size(exp) -1.
-expedesign_id = [exp id/name]; # string identifier to an exp
+expedesign_id = [exp id/name]; # string identifier to an exp
 pmk_options = [pymake special options + project options];
 ```
 

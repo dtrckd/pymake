@@ -16,7 +16,7 @@ class DatasetDriver(object):
     _comment = '%'
     log = logging.getLogger('root')
 
-    # No pandas here....
+    # No pandas here....
     @classmethod
     def parse_tnet(cls, fn, sep=' '):
         ''' Grammar retro-ingennired from fb/emaileu.txt. tnet format is official ? '''
@@ -27,7 +27,7 @@ class DatasetDriver(object):
         line1_length = lines[0].strip().split(sep)
         edges = {}
         if len(line1_length) == 2:
-            # format 'i j' if edges.
+            # format 'i j' if edges.
             data_file_format = 'txt'
             for line in lines:
                 dyad = line.strip().split(sep)
@@ -35,7 +35,7 @@ class DatasetDriver(object):
                 edges[dyad] = edges.get(dyad, 0) + 1
             #edges = [l.strip().split(sep) for l in lines]
         elif len(line1_length) == 5:
-            # format '"date" i j weight'.
+            # format '"date" i j weight'.
             data_file_format = 'tnet'
             for line in lines:
                 _line = line.strip().split(sep)
@@ -55,7 +55,7 @@ class DatasetDriver(object):
         data = dict(data=g)
         return data
 
-    # No pandas here....
+    # No pandas here....
     @classmethod
     def parse_csv(cls, fn, sep=';'):
         ''' Grammar retro-ingennired from manufacturing.csv '''
@@ -141,7 +141,7 @@ class DatasetDriver(object):
                         break
             return len(data[0])
 
-        # Sender, Reiceiver, Edges
+        # Sender, Reiceiver, Edges
         row_len = _row_len(fn)
         if  row_len == 3:
             cols = ['s', 'r', 'weight']
@@ -192,13 +192,13 @@ class OnlineDatasetDriver(object):
             line1_length = line.split(sep)
 
             if len(line1_length) == 2:
-                # format 'i j' if edges.
+                # format 'i j' if edges.
                 data_file_format = 'txt'
                 v1, v2 = line.strip().split(sep)
                 w = 1
                 yield int(v1), int(v2), w, None
             elif len(line1_length) == 5:
-                # format '"date" i j weight'.
+                # format '"date" i j weight'.
                 data_file_format = 'tnet'
                 _line = line.strip().split(sep)
                 v1, v2 = _line[-3:-1]
@@ -218,7 +218,7 @@ class OnlineDatasetDriver(object):
         cpt = 0
         for line in open(fn):
             if cpt == 0:
-                # Ignore first status line
+                # Ignore first status line
                 cpt += 1
                 continue
             v1, v2 = line.strip().split(sep)[0:2]
@@ -253,7 +253,7 @@ class OnlineDatasetDriver(object):
                     inside['edges'] = True
                     continue
                 if line.startswith('#') or not line.strip() :
-                    inside['edges'] = False # break
+                    inside['edges'] = False # break
                 else:
                     # Parsing assignation
                     v1, v2 = line.split(sep)
@@ -292,7 +292,7 @@ class OnlineDatasetDriver(object):
                     splitline = line.split(sep)
                     row_size = len(splitline)
                     if row_size == 2:
-                        # like .txt
+                        # like .txt
                         v1, v2 = splitline
                         w = 1
                         yield int(v1), int(v2), w, None
@@ -330,7 +330,7 @@ class RawDatasetDriver(object):
         line1_length = lines[0].strip().split(sep)
         edges = {}
         if len(line1_length) == 2:
-            # format 'i j' if edges.
+            # format 'i j' if edges.
             data_file_format = 'txt'
             for line in lines:
                 dyad = line.strip().split(sep)
@@ -338,7 +338,7 @@ class RawDatasetDriver(object):
                 edges[dyad] = edges.get(dyad, 0) + 1
             #edges = [l.strip().split(sep) for l in lines]
         elif len(line1_length) == 5:
-            # format '"date" i j weight'.
+            # format '"date" i j weight'.
             data_file_format = 'tnet'
             for line in lines:
                 _line = line.strip().split(sep)
@@ -409,7 +409,7 @@ class RawDatasetDriver(object):
                     inside['edges'] = True
                     continue
                 if line.startswith('#') or not line.strip() :
-                    inside['edges'] = False # break
+                    inside['edges'] = False # break
                 else:
                     # Parsing assignation
                     data.append( line.strip() )
@@ -418,7 +418,7 @@ class RawDatasetDriver(object):
         g = np.zeros((N,N))
         g[[e[0] for e in edges], [e[1] for e in edges]] = 1
         g[[e[1] for e in edges], [e[0] for e in edges]] = 1
-        # ?! .T
+        # ?! .T
 
         try:
             parameters = parse_file_conf(os.path.join(os.path.dirname(fn), 'parameters'))
@@ -426,7 +426,7 @@ class RawDatasetDriver(object):
         except IOError:
             parameters = {}
         finally:
-            # @Obsolete !
+            # @Obsolete !
             parameters_ = parameters
 
         clusters = clusters
@@ -468,7 +468,7 @@ class RawDatasetDriver(object):
         edges = np.array([tuple(row.split(sep)) for row in data]).astype(int)-1
         edges = {}
         if row_size == 2:
-            # like .txt
+            # like .txt
             for line in data:
                 dyad = line.strip().split(sep)
                 dyad = '.'.join(dyad)
@@ -478,7 +478,7 @@ class RawDatasetDriver(object):
                 _line = line.strip().split(sep)
                 dyad = _line[0:2]
                 dyad = '.'.join(dyad)
-                w = int(_line[-1]) # can be zeros
+                w = int(_line[-1]) # can be zeros
                 edges[dyad] = edges.get(dyad, 0) + int(w)
         else:
             raise NotImplementedError

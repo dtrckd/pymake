@@ -159,10 +159,10 @@ def nxG(y):
     return G
 
 
-# Global settings
+# Global settings
 __default_config = defaultdict(lambda: '', dict(project_data = os.path.expanduser('data/'),
                                                 project_figs = os.path.expanduser('data/reports/figs/') ,
-                                                # @debug repo access ??
+                                                # @debug repo access ??
                                                 default_spec = 'pymake.spec',
                                                 default_script = 'pymake.script',
                                                 default_model = 'pymake.model',
@@ -238,7 +238,7 @@ def hash_objects(obj, algo='md5'):
 
     """ Return a hash of the input """
     if isinstance(obj, (np.ndarray, list, tuple)):
-        # array of int
+        # array of int
         hashed_obj = hashalgo(np.asarray(obj).tobytes()).hexdigest()
     elif isinstance(obj, str):
         hashed_obj = hashalgo(obj.encode("utf-8")).hexdigest()

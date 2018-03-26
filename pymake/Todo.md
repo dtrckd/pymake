@@ -1,6 +1,6 @@
-# WIP
+# WIP
 
-# @v0.5 ?
+# @v0.5 ?
 * ipython builder helper
 * web server interface and visualization  (flask...)
 * spec swagger integration ? https://swagger.io
@@ -17,7 +17,7 @@ Debug
 
 CLI
 ---
-* pmk push [spec] [opts] # push expe in spec !!! (Update MAN)
+* pmk push [spec] [opts] # push expe in spec !!! (Update MAN)
 * pmk fetch text/hugh (corpus etc !)
 * see: https://github.com/Kaggle/kaggle-api
 

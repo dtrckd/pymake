@@ -171,30 +171,30 @@ class immsb_cvb(GibbsSampler):
     def compute_entropy(self):
         pij = self.likelihood(*self._reduce_latent())
 
-        # Log-likelihood
+        # Log-likelihood
         pij = self.frontend.data_A * pij + self.frontend.data_B
         ll = np.log(pij).sum()
 
-        # Entropy
+        # Entropy
         entropy = ll
         #entropy = - ll / self._len['nnz']
 
-        # Perplexity is 2**H(X).
+        # Perplexity is 2**H(X).
 
         return entropy
 
     def compute_entropy_t(self):
         pij = self.likelihood(*self._reduce_latent())
 
-        # Log-likelihood
+        # Log-likelihood
         pij = self.frontend.data_A_t * pij + self.frontend.data_B_t
         ll = np.log(pij).sum()
 
-        # Entropy
+        # Entropy
         entropy = ll
         #entropy_t = - ll / self._len['nnz_t']
 
-        # Perplexity is 2**H(X).
+        # Perplexity is 2**H(X).
 
         return entropy
 

@@ -2,7 +2,7 @@
 SHELL = /bin/bash
 .PHONY : graph
 
-# @todo : docformat
+# @todo : docformat
 html:
 	epydoc ../pymake --graph all
 

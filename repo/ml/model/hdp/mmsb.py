@@ -77,7 +77,7 @@ class Likelihood(object):
 
 
     def compute(self, j, i, k_ji, k_ij):
-        # _reduce_one !
+        # _reduce_one !
         return self.loglikelihood(j, i, k_ji, k_ij)
 
     def get_nfeat(self):
@@ -101,8 +101,8 @@ class Likelihood(object):
         return len(self.data_ma.compressed())
 
     # Need it in the case of sampling sysmetric networks. (only case where ineed to map ?)
-    # return the true node index corresponding to arbitrary index i of matrix count/data position
-    # @pos: 0 indicate line picking, 1 indicate rows picking
+    # return the true node index corresponding to arbitrary index i of matrix count/data position
+    # @pos: 0 indicate line picking, 1 indicate rows picking
     def _nmap(self, i, pos):
         return self.nodes_list[pos][i]
 
@@ -232,7 +232,7 @@ class ZSampler(object):
             params = self.prob_zji(j, i, self._K + 1)
             sample_topic_raveled = categorical(params)
             k_j, k_i = np.unravel_index(sample_topic_raveled, (self._K+1, self._K+1))
-            k_j, k_i = k_j[0], k_i[0] # beurk :(
+            k_j, k_i = k_j[0], k_i[0] # beurk :(
             self.z[j, i, 0] = k_j
             self.z[j, i, 1] = k_i
 
@@ -266,7 +266,7 @@ class ZSampler(object):
         new_feat_2 = np.zeros((self.likelihood.nfeat, self._K+1), dtype=int)
         self.likelihood.word_topic_counts = np.dstack((self.likelihood.word_topic_counts, new_feat_1))
         self.likelihood.word_topic_counts = np.hstack((self.likelihood.word_topic_counts, new_feat_2[:, None]))
-        # sum all to update to fit the shape (a bit nasty if operation (new topic) occur a lot)
+        # sum all to update to fit the shape (a bit nasty if operation (new topic) occur a lot)
         self.likelihood.total_w_k = self.likelihood.word_topic_counts.sum(0)
 
     def update_matrix_count(self, j, i, k_j, k_i):
@@ -410,7 +410,7 @@ class ZSamplerParametric(ZSampler):
             params = self.prob_zji(j, i, self.K)
             sample_topic_raveled = categorical(params)
             k_j, k_i = np.unravel_index(sample_topic_raveled, (self._K, self._K))
-            k_j, k_i = k_j[0], k_i[0] # beurk :(
+            k_j, k_i = k_j[0], k_i[0] # beurk :(
             self.z[j, i, 0] = k_j
             self.z[j, i, 1] = k_i
             nodes_classes_ass = [(j, k_j), (i, k_i)]
@@ -429,7 +429,7 @@ class ZSamplerParametric(ZSampler):
 class NP_CGS(object):
 
     # Joint Sampler of topic Assignement, table configuration, and beta proportion.
-    # ref to direct assignement Sampling in HDP (Teh 2006)
+    # ref to direct assignement Sampling in HDP (Teh 2006)
     def __init__(self, zsampler, msampler, betasampler, hyper='auto', hyper_prior=None):
         zsampler.add_beta_sampler(betasampler)
 
@@ -802,15 +802,15 @@ class GibbsRun(GibbsSampler):
         self._theta, self._phi = buritos.estimate_latent_variables()
         pij = self.likelihood(self._theta, self._phi)
 
-        # Log-likelihood
+        # Log-likelihood
         pij = buritos.likelihood.data_A * pij + buritos.likelihood.data_B
         ll = np.log(pij).sum()
 
-        # Entropy
+        # Entropy
         entropy = ll
         #entropy = - ll / buritos.likelihood.nnz
 
-        # Perplexity is 2**H(X).
+        # Perplexity is 2**H(X).
 
         return entropy
 
@@ -819,15 +819,15 @@ class GibbsRun(GibbsSampler):
         self._theta, self._phi = buritos.estimate_latent_variables()
         pij = self.likelihood(self._theta, self._phi)
 
-        # Log-likelihood
+        # Log-likelihood
         pij = buritos.likelihood.data_A_t * pij + buritos.likelihood.data_B_t
         ll = np.log(pij).sum()
 
-        # Entropy
+        # Entropy
         entropy = ll
         #entropy = - ll / buritos.likelihood.nnz
 
-        # Perplexity is 2**H(X).
+        # Perplexity is 2**H(X).
 
         return entropy
 

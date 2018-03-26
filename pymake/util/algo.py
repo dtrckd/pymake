@@ -27,7 +27,7 @@ class Algo(object):
         pi = state.get('pi', self.pi)
 
         C = len(pi)
-        # ordered elements
+        # ordered elements
         clusters = np.asarray(sum([ [i] * len(pi[i]) for i in np.arange(C) ], []))
 
         if true_order is True:
@@ -124,7 +124,7 @@ class Annealing(Algo):
         # Clusters Boundary
         # Store for speed purpose
         self.B = np.linspace(0,self.K, C+1).astype(int)
-        # Cluters partitionning
+        # Cluters partitionning
         self.pi = self.get_partitions(self.B)
         # Total Energy
         self.E = self.energy()
@@ -397,7 +397,7 @@ def gofit(x, y, model='powerlaw', precision=0.03):
     """ (x, y): the empirical distribution with x the values and y **THE COUNTS** """
     y = y.astype(float)
     #### Power law Goodness of fit
-    # Estimate x_min
+    # Estimate x_min
     y_max = y.max()
 
     # Reconstruct the data samples
@@ -405,8 +405,8 @@ def gofit(x, y, model='powerlaw', precision=0.03):
     #x = np.arange(1, y.sum()) ?
 
     # X_min heuristic /Estim
-    index_min = len(y) - np.argmax(y[::-1]) # max from right
-    #index_min = np.argmax(y) # max from left
+    index_min = len(y) - np.argmax(y[::-1]) # max from right
+    #index_min = np.argmax(y) # max from left
     #x_min = x[index_min]
     index_min = 0
     x_min = x[index_min]
@@ -421,13 +421,13 @@ def gofit(x, y, model='powerlaw', precision=0.03):
     N = int(y.sum())
     n_tail = y[index_min:].sum()
     if n_tail < 25 or len(y) < 5:
-        # no enough point
+        # no enough point
         lgg.error('Not enough samples %s' % n_tail)
         return
     #elif n_tail / N < 3/4.0:
-    #    # tail not relevant
-    #    index_min = len(y) - np.argmax(y[::-1]) # max from left
-    #    #index_min = 0 # all the distribution
+    #    # tail not relevant
+    #    index_min = len(y) - np.argmax(y[::-1]) # max from left
+    #    #index_min = 0 # all the distribution
     #    x_min = x[index_min]
     #    n_tail = y[index_min:].sum()
 
