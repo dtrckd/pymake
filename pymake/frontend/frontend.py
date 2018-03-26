@@ -1,9 +1,6 @@
 import os
 import logging
 
-import numpy as np
-
-from pymake import GramExp
 
 
 class DataBase(object):

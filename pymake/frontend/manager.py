@@ -7,8 +7,6 @@ from numpy import ma
 
 # Frontend Manager Utilities
 from .frontend import DataBase
-from .frontendtext import frontendText
-from .frontendnetwork import frontendNetwork, frontendNetwork_gt
 from pymake import Model, Corpus,  GramExp
 import pymake.io as io
 
@@ -53,11 +51,14 @@ class FrontendManager(object):
             return None
 
         if _corpus['data_type'] == 'text':
+            from .frontendtext import frontendText
             frontend = frontendText(expe)
         elif _corpus['data_type'] == 'network':
             if _corpus.get('data_format') == 'gt':
+                from .frontendnetwork import frontendNetwork_gt
                 frontend = frontendNetwork_gt.from_expe(expe, corpus=_corpus)
             else:
+                from .frontendnetwork import frontendNetwork
                 # Obsolete loading design. @Todo
                 frontend = frontendNetwork(expe)
                 frontend.load_data(randomize=False)

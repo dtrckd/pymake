@@ -1,2 +1,1 @@
-from pymake.frontend.manager import FrontendManager
-from pymake.frontend.manager import ModelManager
+from pymake.frontend.manager import FrontendManager, ModelManager
