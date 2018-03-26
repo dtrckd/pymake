@@ -6,7 +6,7 @@ In the DMSA model, what we call actions are endpoint methods that can be called 
 * Actions are defines as method of any class that inherit the `ExpeFormat` class.
 * Those classe lives in python files that we call *scripts* and which are locate in the script/ dir by default.
 
-## Special method
+## Special method
 
 Any actions will be visible in pymake scope for execution, except if they start by an underscore `_`.
 
