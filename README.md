@@ -16,15 +16,15 @@ It can be represented as follows:
 <!-- Build Powerful CLI | Create Beautiful UI | Browse your Experiments  -->
 
 
-<!--  MSA Model-Specification-Action (or DMSA to add the layer data...)
+<!--  
 
-Web development methods introduced Model-View-Controller (MVC) paradigm (and others) to help and improve the workflow of developers.
+    * (future) Integration of datasets from [Zenodo](https://www.zenodo.org/)
+    * (future) Integration of Data drivers for major type of data beiing:
+        * Text (candidate: Nltk, Spacy)
+        * Network (candidate: networkx, Graph-tool)
+        * Image: (andidate: OpenCV)
 
-Pymake comes with a similar idea but with a more general, high level point of view, by saying that a a lot of use-cases in computer science can be embedded within the following paradigm:
 
--Schema-
-
-Explain the model workflow...
 
 -->
 
@@ -44,17 +44,18 @@ Explain the model workflow...
 * Simple grid search specification and navigation,
 * Support experiments rules filtering (experimental)
 * Support disks I/O management for training/input data and outputs results.
-    * Automatic filesystem I/O for data persitence.
+    * Automatic filesystem I/O for data persistence.
     * Automatic compression.
     * Pickle and Json format are currently supported.
 * Support plotting and table printing facilities powered by [matplotlib](https://matplotlib.org) and [pandas](https://pandas.pydata.org/)
 * Support experiments parallelization powered by [gnu-parallel](https://www.gnu.org/software/parallel/),
 * Browse, design and test several models and corpus found in the literature.
+    * Integration of models from [scikit-learn](http://scikit-learn.org),
 
 Perspectives:
 
+* IPFS integration to push/fetch/search  design of experimentation, models, scripts and corpus in the decentralized web,
 * Web server UI and notebook automatic builder,
-* An online repo to push/fetch/search in design of experimentation, models, scripts and corpus,
 * Better documentation (or just a documentation, needs feedback!).
 
 
@@ -176,25 +177,60 @@ class MyScripts(ExpeFormat):
 ```
 
 
-If the runs are parallelized (with `--cores` options), there is no current implemented way to do it although it is likely to be develloped in the future.
+If the runs are parallelized (with `--cores` options), there is no current implemented way to do it although it is likely to be developed in the future.
 
 
 ###### How to tune the command-line options
 
-The pymake.cfg have a settgins, by default `gramarg = project_name.grammarg`, which point to the python file gramarg.py. Inside this file you can add command-line options, fully compatible with the `argparse` python module. By default the file contains an empty list. If you want, let's say to set a parameter in your expe with the command line like this `pmk --my_key my_value` you can add a element in the list as follows:
+The pymake.cfg have a settings, by default `gramarg = project_name.grammarg`, which point to the python file gramarg.py. Inside this file you can add command-line options, fully compatible with the `argparse` python module. By default the file contains an empty list. If you want, let's say to set a parameter in your expe with the command line like this `pmk --my_key my_value` you can add a element in the list as follows:
 
 ```python
 _gram = [
-    #'--my_key',dict(type=str, help='simple option from command-line'),
+    '--my_key',dict(type=str, help='simple option from command-line'),
+]
+```
+
+Now suppose that you want to run several expe with different value for an argument, for example `--my-key 10 20` will result in a expTensor with two expe, one with "my-key" at 10 the other at 20. To activate this you can proceed as follows:
+
+```python
+from pymake.core.gram import exp_append
+
+_gram = [
+    '--my_key',dict(nargs='*', action=exp_append),
+]
+```
+
+Thus the argument you will get is a str for "my-key". If you want a int let's say, you can proceed as follows:
+
+```python
+from functools import partial
+from pymake.core.gram import exp_append
+
+_gram = [
+    '--my_key',dict(nargs='*',  action=partial(exp_append, _t=int)),
+]
+```
+
+Finally if you argument "my-key" should be a list of values (int here) and should not create several expe, you can proceed like this:
+
+```python
+from functools import partial
+from pymake.core.gram import exp_append_uniq
+
+_gram = [
+    '--my_key',dict(nargs='*',  action=partial(exp_append_uniq, _t=int)),
 ]
 ```
 
 
+###### How to change a settings in a spec from command-line without specifying it in the grammarg file
 
-###### How to change a setings in a spec from command-line whithout specifying it in the grammarg file
+Pymake provide a magic command line argument to specify any field in an expe. Let's say you want to give the value `my_value` in the field `my_key` in your expe, then you can do `pmk [...] --pmk my_value=my_key`. You can chain as many key=value pairs like this.
 
-Pymake provide a mamgic command line argument to specify any field in an expe. Let's say you want to give the value `my_value` in the field `my_key` in your expe, then you can do `pmk [...] --pmk my_value=my_key`. You can chain as many key=value pairs like this.
 
+###### How to virtually remove a spec term from the commandline
+
+If one parameter is accessible from the command line. You can deactivate it from the command line by giving the argument `_null`, from example `pmk a_complex_spec --my_key _null`. Thus the associated value will takes no value (or its default value.)
 
 
 ###### How to activate Spec/Script auto-completion
@@ -243,7 +279,7 @@ In a pymake project there is 4 main components, associated to 4 directories (you
 
 Along with those directory there is two system files:
 * pymake.cfg: at the root of a project (basically define a project) specify the paths for the `data | model | script | spec`  and other global options, <!-- document each entry -->
-* gramarg.py: defines the command-line options for a project. <!-- explain the exp_append type -->
+* gramarg.py: defines the command-line options for a project.
 
 
 ##### Pymake Commands
@@ -344,7 +380,7 @@ A script is a piece of code that you execute which is parameterized by a **speci
 
 Once you defined some scripts, you'll be able to list them with `pmk -l script`, and to run them, by their name, with `pmk [specification_id] -x script_name`.
 
-Then each experiments defined in your design (or _default_expe if no specification_id is given), will go through the script method. Then, a bunch of facilities are living inside the method at runtime:
+Then each experiments defined in your design (or _default_expe if no specification_id is given), will go through the script method. Then, a bunch of facilities are living inside the method at run-time:
 
 * `self.expe`:  The settings of the current experiment,
 * `self._it`: The ith script running inside the script,
@@ -353,13 +389,21 @@ Then each experiments defined in your design (or _default_expe if no specificati
 
 ##### Track your data and results
 
-In order to save and analyse your results, each unique experiment need to be identified in a file. To do so, Pymake comes with its own mechanism to map the settings/specification to an unique <filename>s. Pymake use the following conventions:
 
-* <filename>.inf: csv file where each lines contains the state of the iterative process of an experiment,
-* <filename>.pk: to save complex objects usually at the end of an experiments, and load it after for analysis/visualization,
-* <filename>.json: to save information of an experiments ("database friendly").
 
-###### formatting the filename -- _format
+If a your expe contain models, you can automatically load and save it in a expe if your spec have a field named "model", and that its value point to a valid model in your pmk path. Then you can load your model in a script by calling `self.load_model()`.  If you give the argument `-w` in the command-line, or (equivalent) your expe have have a pair `_write=True`, the model is automatically saved at the end of the expe, after the model have been updated. Then you can reload from its file br calling `self.load_model(load=True)`.
+
+
+In order to save and analyze your results, each unique experiment need to be identified in a file. To do so, Pymake comes with its own mechanism to map the settings/specification to an unique <filename>s. Pymake use the following conventions:
+
+* <filename>.inf: csv file where each lines contains the state of the iterative process of an experiment, (see \_scv_format)
+* <filename>.pk.gz: to save compressed binary object usually at the end of an experiments, and load it after for analysis/visualization,
+* <filename>.json: to save information in a JSON format.
+
+There is a bunch of special spec parameters to customize the behaviours of pymake describe in the following sections.
+
+
+###### Formatting the filename -- _format
 
 The choice of the filename will depends on the settings of the experiments. In order to specify the format of the filename, there is the special settings `--format  str_fmt`. `str_fmt` is a string template for the filename, with braces delimiter to specify what settings will be replaced, example:
 
@@ -379,11 +423,14 @@ The filename for this unique experiment will be 'myexpe-42-100_johndoe'
 
 To give an unique identifier of an expe belonging to a group of experiments (`ExpTensor` or `ExpGroup`) one can use the special term `{_id}` (unique counter identifier) and `${name}` (name of experiment as given in the ExpDesign class) in the `_format` attribute.
 
-###### settings the path -- _refdir
+###### Formatting the path -- _refdir and _repeat
 
-By default all experiments results files will be written in the same directory (specify in `pymake.cfg`). In order to give a special subdirectory name for an experiment, the settings `--refdir str` is a string that represents the subdirectory for results files of the experiments.
 
-###### Specifying what data to save in .inf files.
+The path of the filename identifying an expe is automatically inferred by pymake. Thus, if you want to better partition your results, there is two parameters to control the output_path. By default it is something like `.pmk/results/training/<refdir>/<repeat>/output_path`. Thus you can control in your spec parameter the two level of sub-directory customizable with the keys `_refdir` and `_repeat` (in spec). If not given, the default parameters are "default" and '' (void) for respectively `_refdir` and `_repeat`. Note that you can format it with the same syntax explained for `_format`.
+
+
+###### Specifying what measure to save -- _csv_typo.
+
 
 <!--
 Suppose you a script `fit` that execute a fit method of a given model. You may want to observe the convergence some quantities of your model trough iterations. The way to achieve this with pmk is to use the special settings `_csv_typo` that contains the attribute of your model you want to track.
@@ -393,6 +440,9 @@ Once you provide this settings, you need to inject a function in the fit method 
 -->
 
 to complete...
+
+* explain the `_scv_typo` parameters..
+* the model need to have a method injected a the end of its iterative process..
 
 
 ## man pymake [](#man)
