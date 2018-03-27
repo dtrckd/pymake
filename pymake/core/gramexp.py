@@ -771,6 +771,8 @@ class GramExp(object):
 
             sub_request = ExpVector()
             for vv in v:
+                if isinstance(vv, list):
+                    continue
                 if vv in cls._spec:
                     loaded_v, expdesign = Spec.load(vv, cls._spec[vv])
                     if isinstance(loaded_v, ExpVector):
@@ -1529,6 +1531,7 @@ class GramExp(object):
                     print(res)
             except KeyboardInterrupt:
                 # it's hard to detach matplotlib...
+                traceback.print_exc(file=sys.stdout)
                 break
             except Exception as e:
                 n_errors += 1
