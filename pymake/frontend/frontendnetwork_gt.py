@@ -230,6 +230,17 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
     def num_edges(self):
         return self.data.num_edges()
 
+    def num_nnz(self):
+        if self.is_symmetric():
+            T = N*(N-1)/2 - int(self.data_test.sum()/2)
+        else:
+            T = N*(N-1) - self.data_test
+
+        return T
+
+    def num_nnzsum(self):
+        return self.data.ep['weights'].a.sum()
+
     def diameter(self):
         diameter, end_points = gt.topology.pseudo_diameter(self.data)
         return int(diameter)
@@ -313,11 +324,10 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         return gt.stats.remove_self_loops(self.data)
 
     def sample(self, N):
-        ''' Reduce the numbre of nodes of the graph. '''
+        ''' Reduce randomly  the number of nodes of the graph. '''
         n_to_remove = self.data.num_vertices() - N
         ids = np.random.randint(0, self.data.num_vertices(), n_to_remove)
         self.data.remove_vertex(ids)
-
 
 
 
@@ -325,14 +335,26 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
     # Test/Validation set
     #
 
-    def make_testset(self, testset_ratio, diag_off=1):
-        ''' make the testset as a edge propertie of the graph. '''
+    def make_testset(self, testset_ratio, diag_off=1, set_filter=True):
+        ''' make the testset as a edge propertie of the graph.
+            If {set_filter} is True, activate the filtering property on the graph
 
-        testset_ratio = float(testset_ratio)
+            The algo try to build a equillibrite testset between edge and non-edge with
+            some uncertanty for undirected graph.
+
+            Notes
+            -----
+            For Undirected graph, the sparse matrice is symmetrized, so the value of
+            edges can be cummulated from the two inverted sample. Thus the ratio for the
+            non-edges is reduce to 1/3 of the edge ratio to be fair.
+
+            This operation can be sub-optimal since it compare array of size N**2.
+        '''
+
         if testset_ratio >= 1:
-            testset_ratio = testset_ratio / 100
+            testset_ratio = float(testset_ratio) / 100
         elif 0 <= testset_ratio < 1:
-            pass
+            testset_ratio = float(testset_ratio)
         else:
             raise ValueError('Testset ratio not understood : %s' % testset_ratio)
 
@@ -350,43 +372,48 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         y = self.adj()
         N = g.num_vertices()
         E = g.num_edges()
-        if self.is_symmetric():
-            T = N*(N-1)/2
-        else:
-            T = N*(N-1)
+        is_directed = not self.is_symmetric()
+        symmetric_scale = 1 if is_directed else 2
+        size = N**2
 
         #validset = lil_matrix((N,N))
-        testset = lil_matrix((N,N))
+        testset = lil_matrix((N,N), dtype=bool)
         n = int(E * testset_ratio)
 
-        # Sampling non-zeros
         edges = g.get_edges().astype(int)
-        #i,j = y.nonzero()
         i, j = edges[:, 0:2].T
+
+        # Sampling non-zeros
         ix = np.random.choice(E, n, replace=False)
-        ix = (i[ix], j[ix])
+        ix = np.array((i[ix], j[ix]))
         testset[ix[0], ix[1]] = 1
 
-        self._prop(g)
         # Now, Ignore the diagonal => include the diag indices
         # in (i,j) like if it they was selected in the testset.
-        size = T + N
-        i = np.hstack((i, np.arange(N)))
-        j = np.hstack((j, np.arange(N)))
+        # If Undirected also force ignore the lower part of the adjacency matrix.
+        if is_directed:
+            i = np.hstack((i, np.arange(N)))
+            j = np.hstack((j, np.arange(N)))
+        else:
+            testset[ix[1], ix[0]] = 1
+            _i = i
+            i = np.hstack((i, j, np.arange(N)))
+            j = np.hstack((j, _i, np.arange(N)))
 
         # Sampling zeros
+        # Notes: this sampling can fall on self-loop, but low probability...
         k = np.ravel_multi_index((i,j), y.shape)
-        jx = np.random.choice(size, n, replace=False)
+        jx = np.random.choice(size, int(n/symmetric_scale), replace=False)
 
         kind = np.bincount(k, minlength=size).astype(bool)
         jind = np.bincount(jx, minlength=size).astype(bool)
 
-        # xor on bool fastar ?!
+        # xor on bool faster ?!
         _n = (jind & (kind==0)).sum()
         max_loop = 100
         cpt = 0
-        while _n < n or cpt > max_loop:
-            jx = np.random.choice(T, n - _n, replace=False)
+        while _n < int(n/symmetric_scale) or cpt > max_loop:
+            jx = np.random.choice(size, int(n/symmetric_scale) - _n, replace=False)
             jind = jind|np.bincount(jx, minlength=size).astype(bool)
             _n = (jind & (kind==0)).sum()
             cpt += 1
@@ -394,16 +421,25 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         self.log.debug('Number of iteration for sampling non-edges: %d'%cpt)
 
         jx = np.arange(size)[jind & (kind==0)]
-        jx = np.unravel_index(jx, (N,N))
+        jx = np.array(np.unravel_index(jx, (N,N)))
         testset[jx[0], jx[1]] = 1
+        if not is_directed:
+            testset[jx[1], jx[0]] = 1
+
+        if set_filter:
+            testset_filter = g.new_ep('bool')
+            testset_filter.a = 1
+            for i, j in ix.T:
+                testset_filter[i,j] = 0
+            g.set_edge_filter(testset_filter)
 
         self._links_testset = ix
         self._nonlinks_testset = jx
         self.data_test = testset
 
-        return testset
+        return
 
-    def sample(self):
+    def __iter__(self):
 
         # Get the sampling strategy:
         chunk = expe.get('chunk', 'stratify')
@@ -419,49 +455,76 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         g = self.data
         is_directed = g.is_directed()
 
-        m = 10 # number if chunl for non-edges
+        m = 10 # number if chunk for non-edges
         l = 1 if is_directed else 2 # number of set containg each edges
 
         y = self.adj()
         E = g.num_edges()
         N = g.num_vertices()
-        if self.is_symmetric():
-            T = N*(N-1)/2
-        else:
-            T = N*(N-1)
 
         weights = g.ep['weights']
 
-        # Pick a node
-        for node in np.random.randint(0,N):
+        set_len = 2+is_directed
 
-            v = g.vertex(node)
+        # Build the array of neighbourhood for each nodes
+        self.log.debug('Building the neighbourhood array...')
+        neigs = []
+        for v in range(N):
+            _out = np.array([int(_v) for _v in v.out_neighbors()])
+            _in = np.array([int(_v) for _v in v.in_neighbors()])
+            neigs.append([_out, _in])
+
+        # Pick a node
+        for _it in range(N * set_len * m):
+
+            node = np.random.randint(0,N)
 
             # Pick a set and yield a minibatch
-            set_index = np.random.randint(0,2+is_directed)
+            set_index = np.random.randint(0, set_len)
 
             if set_index == 0:
-                yield '0', node, m
+                yield str(set_index), node, m
                 # Sample from non-links
-                np.random.choice(10, 3, p=[0.3,0,0.1,0,0.6,0,0,0,0,0], replace=False)
 
-                yield s,t,0
+                out_e = neigs[node][0]
+                zero_samples = np.arange(N)
+                zero_samples[out_e] = -1 # don't sample in edge
+                zero_samples[node] = -1 # don't sample in self loops
+                zero_samples[self.data_test[node, :].nonzero()[1]] = -1 # don't sample in testset
+                zero_samples = zero_samples[zero_samples >0]
+                zero_samples = np.random.choice(zero_samples,
+                                                 len(zero_samples)/m,
+                                                 replace=False)
+                for target in zero_samples:
+                    yield node, target, 0
+
+                in_e = neigs[node][1]
+                if not in_e:
+                    continue
+
+                zero_samples = np.arange(N)
+                zero_samples[in_e] = -1
+                zero_samples[node] = -1
+                zero_samples[self.data_test[:, node].nonzero()[1]] = -1
+                zero_samples = zero_samples[zero_samples >0]
+                zero_samples = np.random.choice(zero_samples,
+                                                 len(zero_samples)/m,
+                                                 replace=False)
+                for target in zero_samples:
+                    yield target, node, 0
+
             elif set_index == 1:
-                yield '1', node, l
+                yield str(set_index), node, l
                 # Sample from links
-                for e in v.out_neighbors():
-                    s, t = list(e)
-                    yield g.vertex_index[s], g.vertex_index[t], weights[e]
+                for target in neigs[node][0]:
+                    yield node, target, weights[node, target]
             elif set_index == 2:
-                yield '1', node, l
+                yield str(set_index), node, l
                 # Sample from links
-                for e in v.in_neighbors():
-                    s, t = list(e)
-                    yield g.vertex_index[s], g.vertex_index[t], weights[e]
+                for target in neigs[node][1]:
+                    yield target, node, weights[target, node]
             else:
                 raise ValueError('Set index error: %s' % set_index)
-
-
 
 
 
@@ -474,17 +537,13 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         y = self.adj()
         N = g.num_vertices()
         E = g.num_edges()
-        if self.is_symmetric():
-            T = N*(N-1)/2
-        else:
-            T = N*(N-1)
 
         # check no self-loop
         assert(y.diagonal().sum() == 0)
         # check directed/undirected is consistent
         is_directed = not self.is_symmetric()
-        adj_symetric = (y!=y.T).nnz == 0
-        assert(adj_symetric != is_directed)
+        adj_symmetric = (y!=y.T).nnz == 0
+        assert(adj_symmetric != is_directed)
         # check is not bipartite
         assert(not gt.topology.is_bipartite(g))
 
@@ -494,7 +553,10 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
                 testset_ratio = testset_ratio / 100
             elif 0 <= testset_ratio < 1:
                 pass
-            n = int(E * testset_ratio)
+            filter = g.get_edge_filter()
+            g.clear_filters()
+            y = self.adj()
+            n = int(g.num_edges() * testset_ratio)
             ix = self._links_testset
             jx = self._nonlinks_testset
             # check links testset
@@ -502,9 +564,12 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             # check non-links testset
             assert(np.all(y[jx[0], jx[1]] == 0))
 
-            print('Number of edge for testset: expected: %d, obtained: %d' % (n, len(ix)+len(jx)))
-            print('number of links: %d' % (len(ix)))
-            print('number of non-links: %d' % (len(jx)))
+            print('Number of edge for testset: expected: %d, obtained: %d' % (n, self.data_test.sum()))
+            print('number of links: %d' % (len(ix[0])))
+            print('number of non-links: %d' % (len(jx[0])))
+            if filter[0]:
+                g.set_edge_filter(filter[0], inverted=filter[1])
 
         return
+
 

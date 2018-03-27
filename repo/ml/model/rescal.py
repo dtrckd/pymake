@@ -13,8 +13,8 @@ from .modelbase import ModelBase
 
 class Rescal(ModelBase):
 
-    def fit(self):
-        data = self.frontend.data_ma
+    def fit(self, frontend):
+        data = frontend.data_ma
         K = self.expe.K
 
         data = [sp.sparse.csr_matrix(data)]

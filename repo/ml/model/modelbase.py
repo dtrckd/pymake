@@ -328,7 +328,7 @@ class ModelBase():
     def purge(self):
         for obj in self._purge_objects:
             if hasattr(self, obj):
-                setattr(self, obj, None)
+                delattr(self, obj)
 
 
 
@@ -460,7 +460,7 @@ class GibbsSampler(ModelBase):
         self.alpha_var = np.nan
         self.delta_var= np.nan
 
-    def fit(self):
+    def fit(self, *args, **kwargs):
 
         #self.fdebug()
         self.check_measures()
@@ -617,7 +617,7 @@ class SVB(ModelBase):
         print(pij.sum())
         print(ll)
 
-    def fit(self):
+    def fit(self, *args, **kwargs):
         ''' chunk is the number of row to threat in a minibach '''
 
         data_ma = self.frontend.data_ma

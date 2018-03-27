@@ -85,10 +85,12 @@ class DataBase(object):
 
         N = self.expe.get('N')
         if N is not None and N != 'all':
+            self.log.debug('sampling dataset to N=%d' % N)
             self.sample(N)
 
         testset_ratio = self.expe.get('testset_ratio')
         if testset_ratio is not None:
+            self.log.debug('Building testset.')
             self.make_testset(testset_ratio)
 
         sampling_strategy = self.expe.get('sampling')

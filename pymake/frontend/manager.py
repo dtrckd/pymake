@@ -31,7 +31,7 @@ class FrontendManager(object):
 
         corpus_name = expe.get('corpus') or expe.get('random') or expe.get('concept')
         if expe.get('driver'):
-            corpus_name += '.' + expe.ext.strip('.')
+            corpus_name += '.' + expe.driver.strip('.')
 
         if '.' in corpus_name:
             c_split = corpus_name.split('.')

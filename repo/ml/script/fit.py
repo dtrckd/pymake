@@ -34,7 +34,7 @@ class Fit(ExpeFormat):
         model = self.load_model(frontend)
 
         # Fit
-        model.fit()
+        model.fit(frontend)
 
         self.log.info('Expe %d finished in %.1f' % (self.pt['expe']+1, time.time()-t0))
 

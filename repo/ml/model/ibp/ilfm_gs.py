@@ -116,7 +116,7 @@ class IBPGibbsSampling(IBP, GibbsSampler):
 
         assert(self._W.shape == (self._K, self._K))
 
-    def fit(self):
+    def fit(self, *args, **kwargs):
         # Two things to merge unify with GibbsSample !!!
         #   * rename parameters _Z and _W ot _theta and _Phi
         #   * appand all the samplee in self.s to factorize the method self.sample

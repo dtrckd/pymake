@@ -15,9 +15,9 @@ class SBM_gt(ModelBase):
         self.frontend = frontend
         self.mask = self.frontend.data_ma.mask
 
-    def fit(self):
+    def fit(self, frontend):
         expe = self.expe
-        y = self.frontend.data_ma
+        y = frontend.data_ma
         K = self.expe.K
 
         # Frontend
@@ -34,7 +34,7 @@ class SBM_gt(ModelBase):
         mcmc_equilibrate(state, callback=collect_marginals, force_niter=expe.iterations, mcmc_args=dict(niter=1), gibbs=True)
         #mcmc_equilibrate(state, force_niter=expe.iterations, callback=collect_marginals, wait=0, mcmc_args=dict(niter=10))
 
-        entropy = - np.array(measures['entropy']) / self.frontend.ma_nnz()
+        entropy = - np.array(measures['entropy']) / frontend.ma_nnz()
 
         #print("Change in description length:", ds)
         #print("Number of accepted vertex moves:", nmoves)
