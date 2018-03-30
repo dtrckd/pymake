@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from datetime import datetime
+from time import time
 import itertools
 import logging
 lgg = logging.getLogger('root')
@@ -121,19 +121,20 @@ class IBPGibbsSampling(IBP, GibbsSampler):
         #   * rename parameters _Z and _W ot _theta and _Phi
         #   * appand all the samplee in self.s to factorize the method self.sample
 
+        self._init()
+
         lgg.info( '__init__  Entropy: %f' % (-self.log_likelihood_Y() / self.nnz))
         for _it in range(self.iterations):
             self._iteration = _it
 
-            begin_it = datetime.now()
+            begin_it = time()
             self.sample()
-            self.time_it = (datetime.now() - begin_it).total_seconds() / 60
 
             if _it >= self.iterations - self.burnin:
                 if _it % self.thinning == 0:
                     self.samples.append([self._Z, self._W])
 
-            self.compute_measures()
+            self.compute_measures(begin_it)
             lgg.info("iteration: %i,  Entropy : %f \t\t K=%i,  Entropy Z: %f, alpha: %f sigma_w: %f Z.sum(): %i" % (_it, self._entropy, self._K, self._entropy_Z, self._alpha, self._sigma_w, self.Z_sum))
             if self._write:
                 self.write_current_state(self)
@@ -152,7 +153,7 @@ class IBPGibbsSampling(IBP, GibbsSampler):
 
         return
 
-    def compute_measures(self):
+    def compute_measures(self, begin_it=0):
 
         ### Output / Measures
         self._entropy = self.log_likelihood
@@ -160,6 +161,7 @@ class IBPGibbsSampling(IBP, GibbsSampler):
         self._entropy_Z = np.nan # self.log_likelihood_Z()
         self.Z_sum = (self._Z == 1).sum()
 
+        self.time_it = time() - begin_it
 
     def sample(self):
 

@@ -1,6 +1,11 @@
 # (towards) 0.5
 
-* add a test target to the makefile.
+* graph-tool driver integration completed + wmms model.
+* improve frontend and model baseclasse, toward templating.
+* fix print format for returns of action-scripts in sandbox.
+* fix exp_append\* type for grammarg
+* ouptput_path formatting will convert float required from \_format to .2f.
+* add a test target to the makefile => functional test
 * return a exit status positive if an expe failed.
 * fix i/o auto compression filesystem.
 

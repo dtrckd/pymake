@@ -453,7 +453,7 @@ class ScriptsLoader(PackageWalker):
                 content['_module'] = _module
                 #content['module_name'] = '.'.join((module.name, module.module))
                 content['module_super'] = module.super
-                content['methods'] = methods
+                content['methods'] = set(methods)
                 atoms[name] = content
 
         return atoms

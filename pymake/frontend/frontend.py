@@ -78,25 +78,19 @@ class DataBase(object):
         Try the following steps:
             1. Sample the corpus (expe.N),
             2. Build a testset/validation set (expe.testset_ratio & mask),
-            3. build a sampling strategy (expe.sampling)
          '''
         if self.data is None:
             return
 
         N = self.expe.get('N')
         if N is not None and N != 'all':
-            self.log.debug('sampling dataset to N=%d' % N)
+            self.log.debug('sampling dataset to N=%d ...' % N)
             self.sample(N)
 
         testset_ratio = self.expe.get('testset_ratio')
         if testset_ratio is not None:
-            self.log.debug('Building testset.')
+            self.log.debug('Building testset ...')
             self.make_testset(testset_ratio)
-
-        sampling_strategy = self.expe.get('sampling')
-        if sampling_strategy is not None:
-            self.make_sampling(sampling_strategy)
-
 
         return
 

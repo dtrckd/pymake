@@ -163,7 +163,22 @@ class ExpeFormat(object):
     def get_expset(self, param):
         return self.gramexp.get_set(param)
 
-    def expe_description(self):
+    def get_figs(self):
+        return list(self.gramexp._figs.values())
+
+    def get_tables(self):
+        return list(self.gramexp._tables.values())
+
+    def get_current_group(self):
+        return self._file_part([self.expe.get(g) for g in self._groups], sep='-')
+
+    def get_current_frame(self):
+        group = self.get_current_group()
+        frame = self.gramexp._figs[group]
+        return frame
+
+
+    def get_description(self):
         return os.path.basename(self.output_path)
 
     @classmethod
@@ -187,10 +202,6 @@ class ExpeFormat(object):
         if '_no_block_plot' in expe and getattr(self, 'noplot', False) is not True:
             plt.show(block=expe._no_block_plot)
         return kernel
-
-    def get_current_frame(self):
-        frame = self.gramexp._figs[self.expe.corpus]
-        return frame
 
 
     @staticmethod
@@ -221,6 +232,7 @@ class ExpeFormat(object):
                     figs = dict()
                     for c in self.gramexp.get_set(group):
                         figs[c] = ExpSpace()
+                        figs[c].group = c
                         figs[c].fig = plt.figure()
                         figs[c].linestyle = _linestyle.copy()
                         figs[c].markers = _markers.copy()
@@ -279,7 +291,8 @@ class ExpeFormat(object):
 
                 if groups:
                     groups = groups.split('/')
-                    ggroup = self._file_part([self.expe.get(g) for g in groups], sep='-')
+                    self._groups = groups
+                    ggroup = self.get_current_group()
                 else:
                     ggroup = None
 
@@ -292,8 +305,9 @@ class ExpeFormat(object):
                         gset = [None]
 
                     for g in gset:
-                        gg = '-'.join(map(str,g)) if g else None
+                        gg = '-'.join(map(str,sorted(g))) if g else None
                         figs[gg] = ExpSpace()
+                        figs[gg].group = g
                         figs[gg].fig = plt.figure()
                         figs[gg].linestyle = _linestyle.copy()
                         figs[gg].markers = _markers.copy()
@@ -318,8 +332,19 @@ class ExpeFormat(object):
 
                 frame.base = '%s_%s' % (fun.__name__, attribute)
                 frame.args = discr_args
-                frame.ax().set_xlabel('iterations')
-                frame.ax().set_ylabel(attribute)
+
+                if 'xaxis' in frame or self.expe.get('xaxis'):
+                    xaxis_name = frame.get('xaxis', self.expe.get('xaxis'))
+                    frame.ax().set_xlabel(xaxis_name)
+                else:
+                    frame.ax().set_xlabel('iterations')
+
+                if 'yaxis' in frame or self.expe.get('yaxis'):
+                    yaxis_name = frame.get('yaxis', expe.get('yaxis'))
+                    frame.ax().set_ylabel(yaxis_name)
+                else:
+                    frame.ax().set_ylabel(attribute)
+
                 if 'title' in frame:
                     plt.suptitle(frame.title)
                 else:
@@ -353,8 +378,9 @@ class ExpeFormat(object):
 
                 if discr_args:
                     groups = discr_args
+                    self._groups = groups
                     # or None if args not in expe (tex option...)
-                    ggroup = self._file_part([self.expe.get(g) for g in groups], sep='-') or None
+                    ggroup = self.get_current_group() or None
                 else:
                     groups = None
                     ggroup = None
@@ -369,9 +395,10 @@ class ExpeFormat(object):
                         gset = [None]
 
                     for g in gset:
-                        gg = '-'.join(map(str,g)) if g else None
+                        gg = '-'.join(map(str,sorted(g))) if g else None
                         tables[gg] = ExpSpace()
                         array, floc = self.gramexp.get_array_loc(x, y, _z)
+                        tables[gg].name = gg
                         tables[gg].array = array
                         tables[gg].floc = floc
 

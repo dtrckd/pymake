@@ -140,8 +140,6 @@ class immsb_scvb(SVB):
         self.N_theta_right = theta_right
         self.N_phi = phi
 
-        self.N_phi_sum = self.N_phi.sum(0)
-
         # Temp Containers (for minibatch)
         self._N_phi = np.zeros((nfeat, K,K))
         self.hyper_phi_sum = self.hyper_phi.sum()
@@ -175,7 +173,6 @@ class immsb_scvb(SVB):
         self.N_theta_left = N_theta_left
         self.N_theta_right = N_theta_right
 
-        self.N_phi_sum = self.N_phi.sum(0)
 
         # Temp Containers (for minibatch)
         self._N_phi = np.zeros((nfeat, K,K))
@@ -337,10 +334,6 @@ class immsb_scvb(SVB):
         ''' Update the global gradient then purge containers '''
         if not self._is_container_empty():
             self.N_phi = (1 - self.gstep_phi)*self.N_phi + self.gstep_phi * (self._len['nnz'] / len(self.samples)) * self._N_phi
-
-            #self.N_phi_sum = (1 - self.gstep_phi)*self.N_phi_sum + self.gstep_phi * (self._len['nnz'] / len(self.samples)) * self._N_phi.sum(0)
-            # Is the line above equivalent to the below for N_Phi_sum gradient ????
-            self.N_phi_sum = self.N_phi.sum(0)
 
         self._update_gstep_phi()
 

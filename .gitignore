@@ -35,7 +35,9 @@ repo/*/data/reports/
 !repo/*/data/reports/backsync.sh
 !repo/*/data/reports/filter.py
 
+# Repo
 repo/ml/data/**/*.zip
 repo/ml/data/**/*.tgz
 repo/ml/data/**/*.gz
+repo/docsearch/data/tfidf/
 

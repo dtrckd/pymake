@@ -246,7 +246,7 @@ class OnlineDatasetDriver(object):
                     index = int(elements[0])
                     clust = int(elements[-1])
                     feats = list(map(float, elements[-2].split('|')))
-                    obj = {'label': clust, 'features': feats, 'index':index}
+                    obj = {'cluster': clust, 'features': feats, 'index':index}
                     yield obj
             elif line.startswith('# Edges') or inside['edges']:
                 if not inside['edges']:

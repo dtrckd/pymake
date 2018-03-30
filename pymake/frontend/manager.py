@@ -43,7 +43,10 @@ class FrontendManager(object):
         _corpus = Corpus.get(c_name)
         if c_ext in GramExp._frontend_ext:
             # graph-tool object
-            # @Todo: Corpus intragation!
+            # @Todo: Corpus integration!
+            if not _corpus:
+                dt_lut = {'gt':'network'}
+                _corpus = dict(data_type = dt_lut[c_ext])
             _corpus.update(data_format=c_ext)
         elif _corpus is False:
             raise ValueError('Unknown Corpus `%s\'!' % corpus)
@@ -63,7 +66,9 @@ class FrontendManager(object):
                 frontend = frontendNetwork(expe)
                 frontend.load_data(randomize=False)
 
-        frontend.configure()
+        if hasattr(frontend, 'configure'):
+            frontend.configure()
+
         return frontend
 
 

@@ -1,26 +1,21 @@
 # WIP
 
-# @v0.5 ?
-* ipython builder helper
-* web server interface and visualization  (flask...)
+ @next ?
+--------
+* web server (Flask) | Gui (Electron), UI modules? ipython builder helper
 * spec swagger integration ? https://swagger.io
 * [cli]["packet" manager]save and update the repo/ seen by pmk.
 * [cli] makes able to list them (the repo), and to select one by default => it will enable to execute pmk from any path, and to move/cd inside an existing repo/.
-* [cli] make `-l script [script_name]` to list mehtod, doctring, and arguement !
-* [cli] pmk -l => show spec script and model.
+* [cli] make `-l script [script_name]` to list mehtod, doctring, and argument !
 
-* Don't change model variable spec. Use an internal scope for model.
-
-
-Debug
-----------
-* there is a random effect when doing checknetworks zipf. Class re-ordering is stochastik f. why ?!
+* Don't change {model} variable spec. Use an internal scope for model.
 
 
 CLI
 ---
-* pmk push [spec] [opts] # push expe in spec !!! (Update MAN)
-* pmk fetch text/hugh (corpus etc !)
+* pmk pull/push/fetch/merge spec|text/hugh (corpus/data, spec, model, script? need a model of the decentralized model)
+* pmk sync/upgrade /web?
+* pmk rename (remove expe)
 * see: https://github.com/Kaggle/kaggle-api
 
 
@@ -36,8 +31,6 @@ Core
 Frontend
 --------
 * merge vocabulary and frontendtext
-* build_corpus and build_networks (and broken !) are identical : wrap in DataBase
-* @issue42
 
 Model
 -----
@@ -60,6 +53,10 @@ Corpus/Dataset
 * Whoosh integration !!!
 * LDA on my own paper !
 
+
+Debug
+----------
+* there is a random effect when doing checknetworks zipf. Class re-ordering is stochastik f. why ?!
 
 
 @purge: 

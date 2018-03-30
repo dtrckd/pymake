@@ -2,7 +2,7 @@ import inspect
 from importlib import import_module
 import sys
 import re
-from datetime import datetime
+from time import time
 import pickle
 from copy import deepcopy
 import logging
@@ -62,7 +62,7 @@ class ModelBase():
         self.time_it = 0
 
         for k, v in self.default_settings.items():
-            self._init(k, expe, v)
+            self._set_default_settings(k, expe, v)
 
         # @debug Frontend integratoin !
         # dev a Frontend.get_properties
@@ -73,12 +73,11 @@ class ModelBase():
         #np.fill_diagonal(self.frontend.data_ma, np.ma.masked)
 
         self._purge_objects = ['frontend', 'data_A', 'data_B']
+        if hasattr(self, '_purge'):
+            self._purge_objects.extend(self._purge)
 
-        if expe and hasattr(self, '_init_params'):
-            self._init_params()
 
-
-    def _init(self, key, expe, default):
+    def _set_default_settings(self, key, expe, default):
         if key in expe:
             value = expe[key]
         elif hasattr(self, key):
@@ -87,6 +86,18 @@ class ModelBase():
             value = default
 
         return setattr(self, key, value)
+
+    def _init(self, *args, **kwargs):
+        ''' Init for fit method.
+            Should initialize parmas that depend on the frontend/data.
+        '''
+
+        if hasattr(self, '_check_measures'):
+            self._check_measures()
+
+        if hasattr(self, '_init_params'):
+            self._init_params(*args, **kwargs)
+
 
     def data_iter(self, data=None, randomize=False):
         ''' Iterate over various type of data :
@@ -128,11 +139,14 @@ class ModelBase():
         return theta.shape[0]
 
 
-    def check_measures(self):
+    def _check_measures(self):
         if self.expe.get('deactivate_measures'):
             for m in self.expe.get('_csv_typo', '').split():
                 if not hasattr(self, m):
                     setattr(self, m, None)
+
+    def _init_params(self, *args, **kwargs):
+        pass
 
 
     @mmm #frontend
@@ -167,6 +181,12 @@ class ModelBase():
             sim = self.normalization_fun(sim)
         return sim
 
+
+    def get_params(self):
+        if hasattr(self, '_theta') and hasattr(self, '_phi'):
+            return np.asarray(self._theta), np.asarray(self._phi)
+        else:
+            return self._reduce_latent()
 
     def _reduce_latent(self):
         ''' Estimate global parameters of a model '''
@@ -297,13 +317,32 @@ class ModelBase():
               }
         return res
 
-    def get_params(self):
-        if hasattr(self, '_theta') and hasattr(self, '_phi'):
-            return np.asarray(self._theta), np.asarray(self._phi)
-        else:
-            return self._reduce_latent()
 
     def fit(self, *args, **kwargs):
+        ''' A core method.
+
+            Template
+            --------
+
+            # cant take argument, they will be passed to
+            # _init_params that you can safely  overwrite.
+            #
+            self._init()
+
+            for _it in range(self.expe.iterations):
+                # core process
+
+                if self.expe.get('_write'):
+                    self.write_current_state(self)
+
+                    # In addition to that, model is automatically
+                    # saved at the end of a script if the model
+                    # is configured ie (called to load_model())
+                    #
+                    if _it > 0 and _it % self.snapshot_freq == 0:
+                        self.save(silent=True)
+                        sys.stdout.flush()
+        '''
         raise NotImplementedError
 
     def transform(self, *args, **kwargs):
@@ -438,7 +477,7 @@ class GibbsSampler(ModelBase):
         super(GibbsSampler, self).__init__(expe, frontend)
 
     @mmm
-    def compute_measures(self):
+    def compute_measures(self, begin_it=0):
 
         if self.expe.get('deactivate_measures'):
             return
@@ -460,10 +499,12 @@ class GibbsSampler(ModelBase):
         self.alpha_var = np.nan
         self.delta_var= np.nan
 
+        self.time_it = time() - begin_it
+
     def fit(self, *args, **kwargs):
 
         #self.fdebug()
-        self.check_measures()
+        self._init()
 
         self._entropy = self.compute_entropy()
         print( '__init__ Entropy: %f' % self._entropy)
@@ -472,15 +513,14 @@ class GibbsSampler(ModelBase):
             self._iteration = _it
 
             ### Sampling
-            begin_it = datetime.now()
+            begin_it = time()
             self.sample()
-            self.time_it = (datetime.now() - begin_it).total_seconds() / 60
 
             if _it >= self.iterations - self.burnin:
                 if _it % self.thinning == 0:
                     self.samples.append([self._theta, self._phi])
 
-            self.compute_measures()
+            self.compute_measures(begin_it)
             print('.', end='')
             self.log.info('iteration %d, %s, Entropy: %f \t\t K=%d  alpha: %f gamma: %f' % (_it, '/'.join((self.expe.model, self.expe.corpus)),
                                                                                     self._entropy, self._K,self._alpha, self._gmma))
@@ -545,7 +585,10 @@ class GibbsSampler(ModelBase):
 
 class SVB(ModelBase):
 
-    '''online EM/SVB'''
+    '''online EM/SVB
+
+        Note: this obsolete base class is suited for dense masked numpy array.
+    '''
 
     __abstractmethods__ = 'model'
 
@@ -553,9 +596,6 @@ class SVB(ModelBase):
         super(SVB, self).__init__(expe, frontend)
 
         self.entropy_diff = 0
-
-    def _init_params(self):
-        raise NotImplementedError
 
     def _update_chunk_nnz(self, groups):
         _nnz = []
@@ -620,13 +660,14 @@ class SVB(ModelBase):
     def fit(self, *args, **kwargs):
         ''' chunk is the number of row to threat in a minibach '''
 
+        self._init()
+
         data_ma = self.frontend.data_ma
         groups = self.data_iter(data_ma, randomize=True)
         chunk_groups = np.array_split(groups, self.chunk_len)
         self._update_chunk_nnz(chunk_groups)
 
         #self.fdebug()
-        self.check_measures()
 
         self._entropy = self.compute_entropy()
         print( '__init__ Entropy: %f' % self._entropy)
@@ -634,11 +675,10 @@ class SVB(ModelBase):
 
             self.mnb_size = self._nnz_vector[_id_mnb]
 
-            begin_it = datetime.now()
+            begin_it = time()
             self.sample(minibatch)
-            self.time_it = (datetime.now() - begin_it).total_seconds() / 60
 
-            self.compute_measures()
+            self.compute_measures(begin_it)
             print('.', end='')
             self.log.info('Minibatch %d/%d, %s, Entropy: %f,  diff: %f' % (_id_mnb+1, self.chunk_len, '/'.join((self.expe.model, self.expe.corpus)),
                                                                         self._entropy, self.entropy_diff))
@@ -689,7 +729,10 @@ class SVB(ModelBase):
         #    print('ELBO get stuck during data iteration : Sampling useless, return ?!')
 
 
-    def compute_measures(self):
+    def compute_measures(self, begin_it=0):
+        ''' Compute measure from model attributes.
+            begin_it: is the time of the begining of the iteration.
+        '''
 
         if self.expe.get('deactivate_measures'):
             return
@@ -706,6 +749,8 @@ class SVB(ModelBase):
 
         if '_roc' in self.expe._csv_typo.split():
             self._roc = self.compute_roc()
+
+        self.time_it = time() - begin_it
 
     def maximization(self):
         raise NotImplementedError

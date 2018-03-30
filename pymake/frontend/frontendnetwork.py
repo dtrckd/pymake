@@ -346,6 +346,9 @@ class frontendNetwork(DataBase, DatasetDriver):
             self.symmetric = (self.data == self.data.T).all()
         return self.symmetric
 
+    def is_directed(self):
+        return not self.is_symmetric()
+
     def random_corpus(self, rnd):
         N = self.getN()
         if isinstance(N, str):

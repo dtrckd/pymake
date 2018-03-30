@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from time import time
 import itertools
 import logging
 lgg = logging.getLogger('root')
@@ -774,7 +775,7 @@ class GibbsRun(GibbsSampler):
         self.comm['block_ties'] = bm
         return bm
 
-    def compute_measures(self):
+    def compute_measures(self, begin_it=0):
         self._K = self.s.zsampler._K
 
         self._entropy = self.compute_entropy()
@@ -795,6 +796,8 @@ class GibbsRun(GibbsSampler):
         self.alpha_var = alpha.var()
         self.delta_mean = self.s.zsampler.likelihood.delta.mean()
         self.delta_var = self.s.zsampler.likelihood.delta.var()
+
+        self.time_it = time() - begin_it
 
     # Mean can be arithmetic or geometric
     def compute_entropy(self):

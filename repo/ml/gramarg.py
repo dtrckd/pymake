@@ -85,13 +85,15 @@ _gram = [
 
 
     # System
-     '--snapshot',dict(
-        dest='snapshot_freq', type=int),
+     '--snapshot',dict(dest='snapshot_freq', type=int),
 
-    '-g', '--generative',dict(
-        dest='_mode', action='store_const', const='generative'),
-    '-p', '--predictive', dict(
-        dest='_mode', action='store_const', const='predictive'),
+     '--driver', dict(
+         help='Choose the driver to use to load data frontend.'),
+
+    '-g', '--generative',dict(dest='_mode',
+                              action='store_const', const='generative'),
+    '-p', '--predictive', dict(dest='_mode',
+                               action='store_const', const='predictive'),
 
 
 ]

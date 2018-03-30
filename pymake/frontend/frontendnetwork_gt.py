@@ -7,11 +7,8 @@ from scipy.sparse import lil_matrix, csr_matrix
 from .frontend import DataBase
 from .drivers import OnlineDatasetDriver
 
-from pymake.util.math import *
-
 try:
     import graph_tool as gt
-    from graph_tool import collection as net_collection
     from graph_tool import stats, clustering, inference, spectral, topology, generation, search, draw
 except Exception as e:
     print('Error while importing graph-tool: %s' % e)
@@ -27,23 +24,44 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
 
     '''
 
-    def __init__(self, expe=None):
+    def __init__(self, expe, data, corpus=None):
         super(frontendNetwork_gt, self).__init__(expe)
         self._data_type = 'network'
+        corpus = corpus or {}
 
-        data_format = expe.get('_data_format', 'b')
-        if data_format in ['w', 'b']:
-            self._net_type = data_format
+        self.data = data
+
+        force_directed = expe.get('directed', corpus.get('directed'))
+        remove_self_loops = expe.get('remove_self_loops', True)
+
+        # Remove selfloop
+        if remove_self_loops:
+            # @Warning: the corresponding weight are kept in the map properties
+            self.log.debug('Self-loop are assumed to be remove from the graph.')
+            self.remove_self_loops()
+
+        # Set the direction and weights
+        if force_directed is not None:
+            self.set_directed(force_directed)
         else:
-            raise NotImplemented('Network format unknwown: %s' % data_format)
+            # Try to guess directed or not
+            y = self.adj()
+            adj_symmetric = (y!=y.T).nnz == 0
+            adj_symmetric |= sp.sparse.triu(y,1).nnz == 0
+            adj_symmetric |= sp.sparse.tril(y,-1).nnz == 0
+            if adj_symmetric:
+                self.log.info('Guessing undirected graph for: %s' % expe.corpus)
+                self.set_directed(False)
+
+            if y.max() > 1:
+                print('heere')
+
 
 
     @classmethod
-    def _extract_data(cls, expe, corpus=None, remove_self_loops=True):
+    def _extract_data(cls, expe, corpus=None):
         corpus = corpus or {}
         input_path = expe._input_path
-        data_format = expe.get('_data_format', 'b')
-        force_directed = expe.get('directed', False)
 
         if expe.corpus.endswith('.gt'):
             corpus_name = expe.corpus[:-len('.gt')]
@@ -83,15 +101,15 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
 
         parse_fun = getattr(cls, fun)
 
-        directed = corpus.get('directed', force_directed)
         N = corpus.get('nodes')
         E = corpus.get('edges')
 
-        g = gt.Graph(directed=directed)
+        g = gt.Graph(directed=True)
         #g.add_vertex(N)
 
-        labels = g.new_vertex_property("int") # g.new_vp
         weights = g.new_edge_property("int") # g.new_ep
+        labels = g.new_vertex_property("string") # g.new_vp
+        clusters = g.new_vertex_property("int") # g.new_vp
 
         ### Slower but weight correct
         for obj in parse_fun(fn):
@@ -113,7 +131,12 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
                 v = obj.pop('index')
                 if v >= n_nodes:
                     g.add_vertex(v - n_nodes + 1)
-                labels[v] = obj['label']
+
+                if 'label' in obj:
+                    labels[v] = obj['label']
+                if 'cluster' in obj:
+                    clusters[v] = obj['cluster']
+
         ### Faster but weigth wrong
         #_edges = []
         #_index = []
@@ -130,23 +153,27 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         #if _label:
         #    labels.a[_index] = _label
 
-        g.vertex_properties['labels'] = labels # g.vp
         g.edge_properties['weights'] = weights # g.ep
+        g.vertex_properties['labels'] = labels # g.vp
+        g.vertex_properties['clusters'] = clusters
+
+        # If nolabels remove that property
+        n_label = 0
+        for v in range(g.num_vertices()):
+            if g.vp['labels']:
+                n_label += 1
+                break
+
+        if n_label == 0:
+            del g.vp['labels']
+        # If all clusters are zeros, consider no label information
+        if g.vp['clusters'].a.sum() == 0:
+            del g.vp['clusters']
 
         # Remove first index in case of indexation start at 1
         zero_degree = g.vertex(0).out_degree() + g.vertex(0).in_degree()
         if zero_degree == 0:
             g.remove_vertex(0)
-
-        ## Remove selfloop
-        if remove_self_loops:
-            # @Warning: the corresponding weight are kept in the map properties
-            cls.log.debug('Self-loop are assumed to be removde from the graph.')
-            gt.stats.remove_self_loops(g)
-
-        # If all lables are zeros, consider no label information
-        if g.vp['labels'].a.sum() == 0:
-            del g.vp['labels']
 
         _N = g.num_vertices()
         _E = g.num_edges()
@@ -164,9 +191,9 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         input_path = expe._input_path
 
         if not os.path.exists(input_path):
-            self.log.error("Corpus `%s' Not found." % (input_path))
+            cls.log.error("Corpus `%s' Not found." % (input_path))
             print('please run "fetch_networks"')
-            self.data = None
+            cls.data = None
             return
 
         if expe.corpus.endswith('.gt'):
@@ -195,12 +222,18 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         if '_force_save_data' in expe:
             save = expe._force_save_data
 
+        try:
+            # Load from graph-tool Konnect graph
+            from graph_tool import collection
+            data = gt.load_graph(collection.get_data_path(expe.corpus))
+            return cls(expe, data)
+        except Exception as e:
+            pass
+
         fn = cls._resolve_filename(expe)
         target_file_exists = os.path.exists(fn)
 
-        if expe.corpus in net_collection.data:
-            data = gt.collection.data[expe.corpus]
-        elif load is False or not target_file_exists:
+        if load is False or not target_file_exists:
             data = cls._extract_data(expe, corpus=corpus)
             if save:
                 # ===== save ====
@@ -209,18 +242,40 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             # ===== load ====
             data = cls._load_data(fn)
 
-        frontend = cls(expe)
-        frontend.data = data
-
-        #exit()
-        return frontend
-
+        return cls(expe, data, corpus=corpus)
 
 
     #
-    # Get Statistics
+    # Get Properties
     #
 
+    def edge(self, i,j):
+        return self.data.edge(i,j)
+
+    def weight(self, i,j):
+        w = self.data.ep['weights']
+        if self.edge(i,j):
+            return w[i,j]
+        else:
+            return 0
+
+    def label(self, v):
+        l = self.data.vp['labels']
+        return l[v]
+
+    def cluster(self, v):
+        c = self.data.vp['clusters']
+        return c[v]
+
+    def num_neighbors(self):
+        neigs = []
+        for v in range(self.num_nodes()):
+            _v = self.data.vertex(v)
+            neigs.append(len(list(_v.all_neighbors())))
+        return np.asarray(neigs)
+
+    def is_directed(self):
+        return self.data.is_directed()
     def is_symmetric(self):
         return not self.data.is_directed()
 
@@ -231,15 +286,21 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         return self.data.num_edges()
 
     def num_nnz(self):
+        N = self.data.num_vertices()
         if self.is_symmetric():
-            T = N*(N-1)/2 - int(self.data_test.sum()/2)
+            T = N*(N-1)/2 - int(self.data_test.astype(bool).sum()/2)
         else:
-            T = N*(N-1) - self.data_test
+            T = N*(N-1) - self.data_test.astype(bool).sum()
 
         return T
 
     def num_nnzsum(self):
         return self.data.ep['weights'].a.sum()
+
+    def num_mnb(self):
+        ''' Minibatche size for the sampling. '''
+        ratio = float(self.expe.get('sampling_coverage')) * float(self.expe.get('zeros_set_len'))
+        return int(self.num_nodes()*ratio)
 
     def diameter(self):
         diameter, end_points = gt.topology.pseudo_diameter(self.data)
@@ -258,7 +319,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             return None
         labels = self.data.vp['labels']
 
-        if self._net_type == 'w':
+        if 'weights' in self.data.ep:
             weights = self.data.ep['weights']
         else:
             weights = None
@@ -272,9 +333,9 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
 
     def net_type(self):
         weights = self.data.ep['weights'].a
-        return '%s / min-max: %s %s' % (self._net_type,
-                                               weights.min(),
-                                               weights.max())
+        return 'mean/min/max: %.1f %d %d' % (weights.mean(),
+                                        weights.min(),
+                                        weights.max())
 
     def feat_len(self):
         weights = self.data.ep['weights'].a
@@ -294,6 +355,10 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
     # Transform
     #
 
+    def reverse_filter(self):
+        filter, is_inv = self.data.get_edge_filter()
+        self.data.set_edge_filter(filter, inverted=not is_inv)
+
     def adj(self):
         ''' Returns a sparse Adjacency matrix.
 
@@ -312,12 +377,11 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         # Or set a propertie with gt.stats.label_parallel_edges(g)
         return gt.stats.remove_parallel_edges(self.data)
 
-    def symmetrize(self):
-        raise NotImplementedError
-        ## Modifying the adjency matrix don't modify the gt graph
+    def set_directed(self, directed=True):
+        # Modifying the adjency matrix don't modify the gt graph
         #y = self.adj()
         #(y!=y.T).nnz == 0
-        self.data.set_directed(False)
+        self.data.set_directed(directed)
 
     def remove_self_loops(self):
         # Or set a propertie with gt.stats.remove_self_loops(g)
@@ -349,6 +413,8 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             non-edges is reduce to 1/3 of the edge ratio to be fair.
 
             This operation can be sub-optimal since it compare array of size N**2.
+
+            Warning: if set_filter=false, wiehgt is not set in the testset matrix.
         '''
 
         if testset_ratio >= 1:
@@ -358,15 +424,6 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         else:
             raise ValueError('Testset ratio not understood : %s' % testset_ratio)
 
-        mask_type =  self.expe.get('mask', 'unbalanced')
-        #if mask_type == 'unbalanced':
-        #    testset = self.get_masked(testset_ratio, diag_off)
-        #elif mask_type == 'balanced':
-        #    testset = self.get_masked_balanced(testset_ratio, diag_off)
-        #elif mask_type == 'zeros':
-        #    testset = self.get_masked_zeros(diag_off)
-        #else:
-        #    raise ValueError('mask type unknow :%s' % mask_type)
 
         g = self.data
         y = self.adj()
@@ -386,7 +443,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         # Sampling non-zeros
         ix = np.random.choice(E, n, replace=False)
         ix = np.array((i[ix], j[ix]))
-        testset[ix[0], ix[1]] = 1
+        #testset[ix[0], ix[1]] = 1
 
         # Now, Ignore the diagonal => include the diag indices
         # in (i,j) like if it they was selected in the testset.
@@ -395,7 +452,6 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             i = np.hstack((i, np.arange(N)))
             j = np.hstack((j, np.arange(N)))
         else:
-            testset[ix[1], ix[0]] = 1
             _i = i
             i = np.hstack((i, j, np.arange(N)))
             j = np.hstack((j, _i, np.arange(N)))
@@ -422,11 +478,18 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
 
         jx = np.arange(size)[jind & (kind==0)]
         jx = np.array(np.unravel_index(jx, (N,N)))
+        #testset[jx[0], jx[1]] = 1
+
+        # Actually settings the testset entries
+        testset[ix[0], ix[1]] = 1
         testset[jx[0], jx[1]] = 1
         if not is_directed:
+            testset[ix[1], ix[0]] = 1
             testset[jx[1], jx[0]] = 1
 
+
         if set_filter:
+            # Also set the weight here...
             testset_filter = g.new_ep('bool')
             testset_filter.a = 1
             for i, j in ix.T:
@@ -442,7 +505,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
     def __iter__(self):
 
         # Get the sampling strategy:
-        chunk = expe.get('chunk', 'stratify')
+        chunk = self.expe.get('chunk', 'stratify')
 
         if chunk == 'stratify':
             return self._sample_stratify()
@@ -450,13 +513,26 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
     def _sample_stratify(self):
         ''' Sample with node replacement.
             But edges in a minibatch is unique.
+
+            Returns
+            ------
+
+            yield ether: a triplet (source, target, weight), that can be of two kinf
+            1. at a new minibatch (mnb):
+                * source: str -- a str that identify from which subset the mnb comes.
+                * target: int -- the target node of the mnb.
+                * weight: int -- the probability of to sample a element in the current set/mnb
+                          in the corpus/dataset.
+            2. an obeservation (edges):
+                * source: int -- source node.
+                * target: int -- target node.
+                * weight: int -- edge weight.
         '''
         expe = self.expe
         g = self.data
         is_directed = g.is_directed()
 
-        m = 10 # number if chunk for non-edges
-        l = 1 if is_directed else 2 # number of set containg each edges
+        symmetric_scale = 1 if is_directed else 2 # number of set containg each edges
 
         y = self.adj()
         E = g.num_edges()
@@ -464,69 +540,83 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
 
         weights = g.ep['weights']
 
-        set_len = 2+is_directed
+        ### Sampling prior strategy
+        m = float(expe.get('zeros_set_len', 10))
+        #m = int(E/N) # adaptative => alpha ?
+        #if m >= E * (N-1)/N => update all zeros once yeah !
+
+        set_len = 2 + is_directed
+        # uniform between links and non-links
+        zero_prior = float(expe.get('zeros_set_prob', 0.5))
+        set_prior = [zero_prior] + [(1-zero_prior)/(set_len-1)]*(set_len-1)
 
         # Build the array of neighbourhood for each nodes
         self.log.debug('Building the neighbourhood array...')
         neigs = []
         for v in range(N):
-            _out = np.array([int(_v) for _v in v.out_neighbors()])
-            _in = np.array([int(_v) for _v in v.in_neighbors()])
+            _out = np.array([int(_v) for _v in g.vertex(v).out_neighbors()])
+            _in = np.array([int(_v) for _v in g.vertex(v).in_neighbors()])
             neigs.append([_out, _in])
 
-        # Pick a node
-        for _it in range(N * set_len * m):
+        for _mnb in range(self.num_mnb()):
 
+            # Pick a node
             node = np.random.randint(0,N)
 
             # Pick a set and yield a minibatch
-            set_index = np.random.randint(0, set_len)
+            set_index = np.random.choice(set_len, 1 , p=set_prior)
 
             if set_index == 0:
-                yield str(set_index), node, m
+                node_info = {'vertex':node, 'direction':0}
+                yield str(set_index), node_info, symmetric_scale*m
                 # Sample from non-links
 
                 out_e = neigs[node][0]
+                if len(out_e) == 0:
+                    continue
                 zero_samples = np.arange(N)
                 zero_samples[out_e] = -1 # don't sample in edge
                 zero_samples[node] = -1 # don't sample in self loops
                 zero_samples[self.data_test[node, :].nonzero()[1]] = -1 # don't sample in testset
                 zero_samples = zero_samples[zero_samples >0]
                 zero_samples = np.random.choice(zero_samples,
-                                                 len(zero_samples)/m,
+                                                 int(np.ceil(len(zero_samples)/m)),
                                                  replace=False)
                 for target in zero_samples:
                     yield node, target, 0
 
                 in_e = neigs[node][1]
-                if not in_e:
+                if len(in_e) == 0:
                     continue
+
+                node_info = {'vertex':node, 'direction':1}
+                yield str(set_index), node_info, symmetric_scale*m
 
                 zero_samples = np.arange(N)
                 zero_samples[in_e] = -1
                 zero_samples[node] = -1
-                zero_samples[self.data_test[:, node].nonzero()[1]] = -1
+                zero_samples[self.data_test[:, node].nonzero()[0]] = -1
                 zero_samples = zero_samples[zero_samples >0]
                 zero_samples = np.random.choice(zero_samples,
-                                                 len(zero_samples)/m,
-                                                 replace=False)
+                                                int(np.ceil(len(zero_samples)/m)),
+                                                replace=False)
                 for target in zero_samples:
                     yield target, node, 0
 
             elif set_index == 1:
-                yield str(set_index), node, l
+                node_info = {'vertex':node, 'direction':0}
+                yield str(set_index), node_info, symmetric_scale*N
                 # Sample from links
                 for target in neigs[node][0]:
                     yield node, target, weights[node, target]
             elif set_index == 2:
-                yield str(set_index), node, l
+                node_info = {'vertex':node, 'direction':1}
+                yield str(set_index), node_info, symmetric_scale*N
                 # Sample from links
                 for target in neigs[node][1]:
                     yield target, node, weights[target, node]
             else:
                 raise ValueError('Set index error: %s' % set_index)
-
-
 
 
     def _check(self):
@@ -564,7 +654,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             # check non-links testset
             assert(np.all(y[jx[0], jx[1]] == 0))
 
-            print('Number of edge for testset: expected: %d, obtained: %d' % (n, self.data_test.sum()))
+            print('Number of edge for testset: expected: %d, obtained: %d' % (n, self.data_test.astype(bool).sum()))
             print('number of links: %d' % (len(ix[0])))
             print('number of non-links: %d' % (len(jx[0])))
             if filter[0]:

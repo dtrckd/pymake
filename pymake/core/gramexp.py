@@ -309,7 +309,13 @@ class GramExp(object):
 
             if 'script' in conf:
                 script = conf.pop('script')
-                conf['_do'] = script
+                _script, script_args = Script.get(script[0], script[1:])
+                if script_args:
+                    conf['_do'] = script_args
+                    #self._tensors.update_all(_do=script_args)
+                else:
+                    conf['_do'] = ''
+                    #self._tensors.update_all(_do=[''])
 
             self.exp_setup(conf)
 
@@ -559,6 +565,9 @@ class GramExp(object):
                 #fmt_expe[k] = id_str # don't do that, no robust get back expe.
                 _hash = int((hash_objects(v)), 16) % 10**8
                 fmt_expe[k] = k + str(_hash) +'h'
+            elif isinstance(v, float):
+                if len(str(v).split('.')[1]) > 2:
+                    fmt_expe[k] = '%.2f' % v
 
         return fmt_expe
 
@@ -1525,10 +1534,11 @@ class GramExp(object):
             args = do[1:]
             try:
                 res = pmk(*args)
-                if res:
+                if res is not None:
                     print(res)
             except KeyboardInterrupt:
                 # it's hard to detach matplotlib...
+                traceback.print_exc(file=sys.stdout)
                 break
             except Exception as e:
                 n_errors += 1

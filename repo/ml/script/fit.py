@@ -16,6 +16,9 @@ Fit the data : This script is part of the repo/ml of pymake.
 class Fit(ExpeFormat):
 
     def __call__(self):
+        return self.fit()
+
+    def fit(self):
         expe = self.expe
         t0 = time.time()
 

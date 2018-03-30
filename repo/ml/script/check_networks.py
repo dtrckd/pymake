@@ -1,7 +1,8 @@
 import numpy as np
 from numpy import ma
-from pymake import ExpTensor, GramExp, ExpeFormat
-from pymake.frontend.manager import ModelManager, FrontendManager
+
+from pymake import ExpeFormat
+from pymake.manager import ModelManager, FrontendManager
 
 import logging
 lgg = logging.getLogger('root')
@@ -17,7 +18,6 @@ Inspect data on disk --or find the questions :
  |   zipf       : adjacency matrix + global degree.
  |   burstiness : global + local + feature burstiness.
  |   homo       : homophily based analysis.
-     stats      : standard measure abd stats.
 """
 
 
@@ -27,13 +27,15 @@ import matplotlib.pyplot as plt
 from pymake.plot import plot_degree, degree_hist, adj_to_degree, plot_degree_poly, adjshow, plot_degree_2
 from pymake.util.utils import colored
 
-class Net(ExpeFormat):
+class ZpifNet(ExpeFormat):
 
     _default_expe = dict(
-        _spec = 'data_net_all',
         _do           = ['zipf', 'source'],
         _data_type = 'networks'
     )
+
+    def _preprocess(self):
+        self.frontend = self.load_frontend()
 
     def init_fit_tables(self, _type, Y=[]):
         expe = self.expe
@@ -72,7 +74,7 @@ class Net(ExpeFormat):
                 cluster origin if from either ['source'|'model']
         '''
         expe = self.expe
-        frontend = FrontendManager.load(expe)
+        frontend = self.frontend
 
         #
         # Get the Class/Cluster and local degree information
@@ -126,7 +128,7 @@ class Net(ExpeFormat):
            (global burstiness) + local burstiness + feature burstiness
         '''
         expe = self.expe
-        frontend = FrontendManager.load(expe)
+        frontend = self.frontend
         data = frontend.data
         figs = []
 
@@ -285,7 +287,7 @@ class Net(ExpeFormat):
     def pvalue(self):
         ''' Compute Goodness of fit statistics '''
         expe = self.expe
-        frontend = FrontendManager.load(expe)
+        frontend = self.frontend
         data = frontend.data
 
         d, dc = degree_hist(adj_to_degree(data), filter_zeros=True)
@@ -310,44 +312,29 @@ class Net(ExpeFormat):
             print(colored('\nPvalue Table:', 'green'))
             print (self.tabulate(Table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f'))
 
-    def stats(self):
-        ''' Show data stats '''
+
+    def wsim(self):
         expe = self.expe
-        frontend = FrontendManager.load(expe)
+        frontend = self.frontend
+        model = self.load_model(load=True)
 
-        if self.is_first_expe():
-            # Warning order sensitive @deprecated Table.
-            #corpuses = self.specname(self.gramexp.get_set('corpus'))
-            corpuses = self.specname(self.gramexp.get_list('corpus'))
-            Meas = ['num_nodes', 'num_edges', 'density',
-                    'is_symmetric', 'modularity', 'diameter', 'clustering_coefficient', 'net_type', 'feat_len']
-            Meas_ = ['num_nodes', 'num_edges', 'density',
-                     'is_symmetric', 'modularity', 'diameter', 'cluster-coef', 'net-type', 'feat-len']
-            Table = np.zeros((len(corpuses), len(Meas))) * np.nan
-            Table = np.column_stack((corpuses, Table))
-            self.D.Table = Table
-            self.D.Meas = Meas
-            self.D.Meas_ = Meas_
+        #y = model.generate(**expe)
+        theta, phi = model.get_params()
+        # NB mean/var
+        mean, var = model.get_nb_ss()
 
-        Table = self.D.Table
-        Meas = self.D.Meas
+        phi=mean
 
-        for i, v in enumerate(Meas):
-            if frontend.data is None:
-                Table[self.corpus_pos, 1:] = np.nan
-                break
-            value = getattr(frontend, v)()
-            value = value if value is not None else np.nan
-            Table[self.corpus_pos, i+1] = value
+        print(theta.shape, theta.min(), theta.max())
+        print(phi.shape, phi.min(), phi.max())
 
-        if hasattr(frontend, '_check'):
-            frontend._check()
+        adjshow(theta, title='theta', colorbar=True)
+        adjshow(phi, title='Phi Mean', colorbar=True)
 
-        if self.is_last_expe():
-            tablefmt = 'simple' # 'latex'
-            print(colored('\nStats Table :', 'green'))
-            Meas_ = self.D.Meas_
-            print(self.tabulate(Table, headers=Meas_, tablefmt=tablefmt, floatfmt='.3f'))
+        y = self.frontend.adj()
+        sim = np.random.poisson(theta.dot(phi).dot(theta.T))
 
-
+        # l2 norm
+        l2 = ((y - sim)**2).sum()**(0.5)
+        print('l2', l2)
 

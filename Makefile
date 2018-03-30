@@ -41,7 +41,7 @@ build:
 
 test:
 	pushd pymake
-	DISPLAY= python3 unittest.py
+	DISPLAY= python3 functest.py
 	popd
 
 
