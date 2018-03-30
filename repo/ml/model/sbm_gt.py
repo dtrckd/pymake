@@ -2,49 +2,38 @@ from collections import defaultdict
 import numpy as np
 from graph_tool.all import *
 
-
 from .modelbase import ModelBase
+
+
 
 class SBM_gt(ModelBase):
 
-    def __init__(self, expe, frontend):
-        super().__init__(expe, frontend)
-
-        self.expe = expe
-
-        self.frontend = frontend
-        self.mask = self.frontend.data_ma.mask
 
     def fit(self, frontend):
-        expe = self.expe
-        y = frontend.data_ma
         K = self.expe.K
 
-        # Frontend
-        g = Graph()
-        g.add_edge_list(np.transpose(y.nonzero()))
+        g = frontend.data
 
         measures = defaultdict(list)
         def collect_marginals(s):
             measures['entropy'].append(s.entropy())
 
-
         # Model
         state = BlockState(g, B=K)
-        mcmc_equilibrate(state, callback=collect_marginals, force_niter=expe.iterations, mcmc_args=dict(niter=1), gibbs=True)
+        mcmc_equilibrate(state, callback=collect_marginals)
+        #mcmc_equilibrate(state, callback=collect_marginals, force_niter=expe.iterations, mcmc_args=dict(niter=1), gibbs=True)
         #mcmc_equilibrate(state, force_niter=expe.iterations, callback=collect_marginals, wait=0, mcmc_args=dict(niter=10))
 
-        entropy = - np.array(measures['entropy']) / frontend.ma_nnz()
+        entropy = np.array(measures['entropy'])
 
         #print("Change in description length:", ds)
         #print("Number of accepted vertex moves:", nmoves)
 
         # state.get_edges_prob(e)
         #theta = state.get_ers()
+
+        theta = state.get_blocks()
         phi = state.get_matrix()
-        print('theta')
-        #print(theta)
-        print(phi.shape)
 
         print('entropy:')
         print(entropy)

@@ -51,6 +51,15 @@ class iwmmsb_scvb2(SVB):
         self.hyper_theta /= self.hyper_theta.sum()
 
         self.hyper_phi = np.asarray(self.expe['delta'])
+        hyper_phi = self.expe['delta']
+        if hyper_phi == 'auto':
+            self.hyper_phi = np.array([1,1])
+            self._hyper_phi = 'auto'
+        elif len(hyper_phi) == 2:
+            self.hyper_phi = np.asarray(hyper_phi)
+            self._hyper_phi = 'fix'
+        else:
+            raise ValueError('hyper parmeter hyper_phi dont understood: %s' % hyper_phi)
 
         self._random_ss_init()
 
@@ -155,6 +164,36 @@ class iwmmsb_scvb2(SVB):
         outer_kk = np.log(np.outer(self.pik, self.pjk)) + np.log(kernel)
 
         return lognormalize(outer_kk.ravel())
+
+    def _optimize_hyper(self):
+        n, t = self.hyper_phi
+        K = self.N_theta_left.shape[1]
+
+        phi_mean = self.get_mean_phi() / (1+self._is_symmetric)
+        # debug: Underflow
+        #phi_mean[phi_mean<=1e-300] = 1e-300
+        phi_sum = phi_mean.sum()
+        phi_mean[phi_mean<=1e-300] = 1e-300
+        log_phi_sum = np.log(phi_mean).sum()
+
+        K_len = (K*(K-1)/2 +K) if self._is_symmetric else K**2
+
+        # http://bariskurt.com/calculating-the-inverse-of-digamma-function/
+        n = log_phi_sum / K_len - np.log(t)
+        x0 = lambda x: -1/(x + sp.special.digamma(1)) if x<-2.22 else np.exp(x)+0.5
+
+        n = float(sp.optimize.minimize(sp.special.digamma, x0(n)).x)
+        t = n * K_len / phi_sum
+        if n<=0 or t<=0 :
+            self.log.warning('get negative shape parameter for phi: n=%f t=%f' % (n,t))
+            n = t = 1
+
+        self.hyper_phi = np.array([n,t])
+
+    def get_mean_phi(self):
+        k = self.N_Y + self.hyper_phi[0]
+        p = (self.N_phi + self.hyper_phi[1] + 1)**-1
+        return  k*p / (1-p)
 
     def get_nb_ss(self):
         k = self.N_Y + self.hyper_phi[0]
@@ -347,8 +386,12 @@ class iwmmsb_scvb2(SVB):
                     self._timestep_c += scaler
                     self._update_gstep_y()
 
+                    if self._hyper_phi == 'auto':
+                        self._optimize_hyper()
+
                 self._timestep_b += scaler
                 self._update_gstep_phi()
+
 
                 # Allocate current state variable
                 set_pos = _set_pos

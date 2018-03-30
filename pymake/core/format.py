@@ -170,7 +170,7 @@ class ExpeFormat(object):
         return list(self.gramexp._tables.values())
 
     def get_current_group(self):
-        return self._file_part([self.expe.get(g) for g in self._groups], sep='-')
+        return self._file_part(sorted([str(self.expe.get(g)) for g in self._groups]), sep='-')
 
     def get_current_frame(self):
         group = self.get_current_group()
@@ -178,8 +178,11 @@ class ExpeFormat(object):
         return frame
 
 
-    def get_description(self):
-        return os.path.basename(self.output_path)
+    def get_description(self, full=False):
+        if full:
+            return '/'.join((self.expe._refdir, os.path.basename(self.output_path)))
+        else:
+            return os.path.basename(self.output_path)
 
     @classmethod
     def tabulate(cls, *args, **kwargs):
@@ -305,7 +308,7 @@ class ExpeFormat(object):
                         gset = [None]
 
                     for g in gset:
-                        gg = '-'.join(map(str,sorted(g))) if g else None
+                        gg = '-'.join(sorted(map(str,g))) if g else None
                         figs[gg] = ExpSpace()
                         figs[gg].group = g
                         figs[gg].fig = plt.figure()
@@ -333,14 +336,14 @@ class ExpeFormat(object):
                 frame.base = '%s_%s' % (fun.__name__, attribute)
                 frame.args = discr_args
 
-                if 'xaxis' in frame or self.expe.get('xaxis'):
-                    xaxis_name = frame.get('xaxis', self.expe.get('xaxis'))
+                if 'fig_xaxis' in frame or self.expe.get('fig_xaxis'):
+                    xaxis_name = frame.get('xaxis', self.expe.get('fig_xaxis'))
                     frame.ax().set_xlabel(xaxis_name)
                 else:
                     frame.ax().set_xlabel('iterations')
 
-                if 'yaxis' in frame or self.expe.get('yaxis'):
-                    yaxis_name = frame.get('yaxis', expe.get('yaxis'))
+                if 'fig_yaxis' in frame or self.expe.get('fig_yaxis'):
+                    yaxis_name = frame.get('yaxis', expe.get('fig_yaxis'))
                     frame.ax().set_ylabel(yaxis_name)
                 else:
                     frame.ax().set_ylabel(attribute)
@@ -395,7 +398,7 @@ class ExpeFormat(object):
                         gset = [None]
 
                     for g in gset:
-                        gg = '-'.join(map(str,sorted(g))) if g else None
+                        gg = '-'.join(sorted(map(str,g))) if g else None
                         tables[gg] = ExpSpace()
                         array, floc = self.gramexp.get_array_loc(x, y, _z)
                         tables[gg].name = gg

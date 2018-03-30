@@ -402,7 +402,18 @@ class GramExp(object):
 
     def get_set(self, key, default=[]):
         ''' Return the set of values of expVector of that {key}. '''
-        return sorted(set(self._tensors.get_all(key, default)))
+        try:
+            return sorted(set(self._tensors.get_all(key, default)))
+        except TypeError:
+            self.log.warning('Unshashable value in tensor for key: %s' % key)
+            _set = set()
+            for v in self._tensors.get_all(key, default):
+                if isinstance(v, (list, set, dict)):
+                    _set.add(str(v))
+                else:
+                    _set.add(v)
+            return sorted(_set)
+
 
     def get_list(self, key, default=[]):
         ''' Return the list of values of expVector of that {key}. '''
@@ -547,6 +558,8 @@ class GramExp(object):
 
     @staticmethod
     def transcript_expe(expe):
+        ''' Transcipt value to be used in spec's path formating '''
+
         fmt_expe = expe.copy()
         # iteration over {expe} trow a 'RuntimeError: dictionary changed size during iteration',
         # maybe due to **expe pass in argument ?

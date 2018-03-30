@@ -38,7 +38,6 @@ class Plot(ExpeFormat):
         values = data[attribute]
         values = self._to_masked(values)
 
-        burnin = 5
         description = '/'.join((expe._refdir, os.path.basename(self.output_path)))
 
         ax = frame.ax()
@@ -63,7 +62,6 @@ class Plot(ExpeFormat):
         values = data[attribute]
         values = self._to_masked(values)
 
-        burnin = 5
         description = '/'.join((expe._refdir, os.path.basename(self.output_path)))
 
         plt.plot(values, label=description, marker=_markers.next())
@@ -95,13 +93,13 @@ class Plot(ExpeFormat):
 
         values = self._to_masked(values)
 
-        burnin = 5
-        description = '/'.join((expe._refdir, os.path.basename(self.output_path)))
+        burnin = 0
+        description = self.get_description()
 
         ax = frame.ax()
 
-        if expe.get('xaxis'):
-            xaxis = expe['xaxis']
+        if expe.get('fig_xaxis'):
+            xaxis = expe['fig_xaxis']
             if isinstance(xaxis, (tuple, list)):
                 xaxis_name = xaxis[0]
                 xaxis_surname = xaxis[1]
@@ -118,10 +116,10 @@ class Plot(ExpeFormat):
         else:
             x = range(len(values))
 
-        ax.plot(x, values, label=description, marker=frame.markers.next())
-        ax.legend(loc='upper right',prop={'size':5})
+        ax.plot(x[burnin:], values, label=description, marker=frame.markers.next())
+        ax.legend(loc=expe.get('fig_legend',1), prop={'size':5})
 
-        #if self.is_last_expe() and expe.get('xaxis'):
+        #if self.is_last_expe() and expe.get('fig_xaxis'):
         #    for frame in self.get_figs():
         #        xmax = max(frame.xmax)
         #        xmin = min(frame.xmin)

@@ -44,17 +44,18 @@ class Levy(ExpDesign):
     )
     noelw3 = ExpGroup(wmmsb, N='all', chunk=['adaptative_0.1', 'adaptative_1'], corpus=data_net_all, mask=['unbalanced'], _refdir='noel3')
 
+
+
     warm = ExpTensor(
         corpus        = ['manufacturing'],
         model         = 'iwmmsb_scvb2',
         N             = 'all',
         chunk         = 'stratify',
         K             = 10,
-        iterations    = 1,
         hyper         = 'auto',
         testset_ratio = 10,
 
-        delta = [[2,2]],
+        delta = 'auto',
 
         # Sampling
         sampling_coverage = 0.33,
@@ -65,15 +66,20 @@ class Levy(ExpDesign):
         zeros_set_len = 10,
         zeros_set_prob = 1/2,
 
-        xaxis = [('_observed_pt', 'visited edges')],
+        fig_xaxis = [('_observed_pt', 'visited edges')],
+        fig_legend = 4,
 
         homo = 0,
         driver = 'gt', # graph-tool driver
 
         _data_type    = 'networks',
-        _refdir       = 'debug_scvb' ,
-        _format='{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{testset_ratio}_{chunk}_{chi_a}-{tau_a}-{kappa_a}_{chi_b}-{tau_b}-{kappa_b}_{zeros_set_len}_{zeros_set_prob}',
+        _refdir       = 'debug_scvb2',
+        _format='{corpus}_{model}_{N}_{K}_{hyper}_{homo}_{testset_ratio}_{chunk}_{chi_a}-{tau_a}-{kappa_a}_{chi_b}-{tau_b}-{kappa_b}_{delta}_{zeros_set_len}_{zeros_set_prob}',
         _csv_typo     = '_observed_pt time_it _entropy _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
     )
-    warm_sampling = ExpGroup(warm, zeros_set_prob = [1/2, 1/3, 1/4],  zeros_set_len=[10, 50])
+    warm_sampling = ExpGroup(warm, delta=[[1,1],[0.5,10],[10,0.5]],
+                             zeros_set_prob = [1/2, 1/3, 1/4],  zeros_set_len=[10, 50])
+
+    warm_visu = ExpGroup(warm, delta=[[1,1],'auto'],
+                             zeros_set_prob = [1/2],  zeros_set_len=[10])
 

@@ -57,13 +57,13 @@ _gram = [
         help='Centrality type (NotImplemented)'),
 
     '--alpha', dict(
-        nargs='*', action=partial(exp_append, _t=float),
+        nargs='*', action=exp_append,
         help='First hyperparameter.'),
     '--gmma', dict(
-        nargs='*', action=partial(exp_append, _t=float),
+        nargs='*', action=exp_append,
         help='Second hyperparameter.'),
     '--delta', dict(
-        nargs='*', action=partial(exp_append, _t=float),
+        nargs='*', action=exp_append,
         help='Third hyperparameter.'),
     '--chunk', dict(
         nargs='*', action=partial(exp_append, _t=str),
