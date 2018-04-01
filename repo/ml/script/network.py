@@ -32,8 +32,8 @@ class Net(ExpeFormat):
             corpuses = self.specname(self.gramexp.get_list('corpus'))
             Meas = ['num_nodes', 'num_edges', 'density',
                     'is_directed', 'modularity', 'diameter', 'clustering_coefficient', 'net_type', 'feat_len']
-            Meas_ = ['num_nodes', 'num_edges', 'density',
-                     'is_directed', 'modularity', 'diameter', 'cluster-coef', 'net-type', 'feat-len']
+            Meas_ = ['nodes', 'edges', 'density',
+                     'directed', 'modularity', 'diameter', 'cluster-coef', 'weights', 'feat-len']
             Table = np.zeros((len(corpuses), len(Meas))) * np.nan
             Table = np.column_stack((corpuses, Table))
             self.D.Table = Table

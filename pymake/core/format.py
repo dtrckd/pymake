@@ -723,6 +723,7 @@ class ExpeFormat(object):
         col_typo = self.expe._csv_typo.split()
         array = []
         last_elt_size = None
+        _pos_failed = set()
         # Format the data in a list of dict by entry
         for data_line in data:
             line = {}
@@ -731,12 +732,18 @@ class ExpeFormat(object):
                 pos = true_pos + offset
                 if pos >= len(data_line):
                     break
+
                 try:
                     o = col_typo[true_pos]
                 except:
-                    print(col_typo)
-                    print(data_line)
-                    print(true_pos)
+                    #print(col_typo)
+                    #print(data_line)
+                    #print(true_pos)
+                    if true_pos not in _pos_failed:
+                        self.log.warning('No value found for pos: %d' % true_pos)
+                        _pos_failed.add(true_pos)
+                    continue
+
                 if data_line[0] in comments:
                     break
                 elif o.startswith('{'): # is a list
@@ -754,6 +761,7 @@ class ExpeFormat(object):
                 else:
                     line[o] = data_line[pos]
                     if str.isdigit(line[o]):
+                        # size of the list behind.
                         last_elt_size = int(line[o])
 
             array.append(line)

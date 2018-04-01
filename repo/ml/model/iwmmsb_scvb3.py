@@ -14,7 +14,7 @@ from ml.model.modelbase import SVB
 ##np.seterr(all='print')
 
 
-class iwmmsb_scvb2(SVB):
+class iwmmsb_scvb3(SVB):
 
     _purge = ['_kernel', '_lut_nbinom']
 
@@ -54,7 +54,7 @@ class iwmmsb_scvb2(SVB):
         self.hyper_phi = np.asarray(self.expe['delta'])
         hyper_phi = self.expe['delta']
         if hyper_phi == 'auto':
-            self.hyper_phi = np.array([10,0.5])
+            self.hyper_phi = np.array([1,1])
             self._hyper_phi = 'auto'
         elif len(hyper_phi) == 2:
             self.hyper_phi = np.asarray(hyper_phi)
@@ -65,16 +65,20 @@ class iwmmsb_scvb2(SVB):
         self._random_ss_init()
 
     def _init_gradient(self):
-        self._timestep_a = 0
+        N = self._len['N']
+        self._timestep_a = np.zeros(N)
+        self.gstep_theta = np.zeros(N)
         self._timestep_b = 0
         self._timestep_c = 0
+
         self._chi_a = self.expe.get('chi_a', 5)
         self._tau_a = self.expe.get('tau_a', 10)
         self._kappa_a = self.expe.get('kappa_a', 0.9)
         self._chi_b = self.expe.get('chi_b', 1)
         self._tau_b = self.expe.get('tau_b', 100)
         self._kappa_b = self.expe.get('kappa_b', 0.9)
-        self._update_gstep_theta()
+
+        self._update_gstep_theta(np.arange(len(self._timestep_a)))
         self._update_gstep_phi()
         self._update_gstep_y()
 
@@ -101,13 +105,13 @@ class iwmmsb_scvb2(SVB):
             self.N_Y = np.triu(self.N_Y) + np.triu(self.N_Y, 1).T
 
 
-    def _update_gstep_theta(self):
+    def _update_gstep_theta(self, idxs):
         ''' Gradient converge for kappa _in (0.5,1] '''
         chi = self._chi_a
         tau = self._tau_a
         kappa = self._kappa_a
 
-        self.gstep_theta = chi / ((tau + self._timestep_a)**kappa)
+        self.gstep_theta[idxs] = chi / ((tau + self._timestep_a[idxs])**kappa)
 
     def _update_gstep_phi(self):
         chi = self._chi_b
@@ -170,7 +174,9 @@ class iwmmsb_scvb2(SVB):
         n, t = self.hyper_phi
         K = self.N_theta_left.shape[1]
 
+        #phi_mean = self.get_mean_phi() / (1+self._is_symmetric)
         phi_mean = self.get_mean_phi() / (1+self._is_symmetric) * self._len['nnz_ones']
+
         # debug: Underflow
         #phi_mean[phi_mean<=1e-300] = 1e-300
         phi_sum = phi_mean.sum()
@@ -272,11 +278,42 @@ class iwmmsb_scvb2(SVB):
         # how to compute elbo for all possible links weights, mean?
         return None
 
-    def compute_roc(self, theta=None, phi=None, treshold='auto'):
+    def compute_roc(self, theta=None, phi=None, treshold='mean_model'):
         from sklearn.metrics import roc_curve, auc, precision_recall_curve
 
         if theta is None:
             theta, phi = self._reduce_latent()
+
+        weights = self.data_test[:,2]
+        phi_mean = self.get_mean_phi()
+
+        if treshold == 'mean_data':
+            mean = weights[weights>0].mean()
+            std = weights[weights>0].std()
+        if treshold == 'mean_model':
+            mean_, var_ = self.get_nb_ss()
+            mean = mean_.mean()
+            std = var_.mean()**0.5
+
+        trsh = int(mean+std)
+
+        y_true = []
+        probas = []
+        for i,j, xij in self.data_test:
+            qij = theta[i].dot(phi_mean).dot(theta[j])
+            pij =  1 - sp.stats.poisson.cdf(trsh, qij)
+            y_true.append(xij>0)
+            probas.append(pij)
+
+        fpr, tpr, thresholds = roc_curve(y_true, probas)
+        roc = auc(fpr, tpr)
+        return roc
+
+    def mask_probas(self, *args):
+        # Copy of compute_roc
+        from sklearn.metrics import roc_curve, auc, precision_recall_curve
+
+        theta, phi = self._reduce_latent()
 
         weights = self.data_test[:,2]
         phi_mean = self.get_mean_phi()
@@ -286,8 +323,9 @@ class iwmmsb_scvb2(SVB):
             mean = weights[weights>0].mean()
             std = weights[weights>0].std()
         if treshold == 'mean_model':
-            mean = phi_mean.mean()
-            std = phi_mean.std()
+            mean_, var_ = self.get_nb_ss()
+            mean = mean_.mean()
+            std = var_.mean()**0.5
 
         #trsh = int(mean_w)
         trsh = int(mean+std)
@@ -296,17 +334,12 @@ class iwmmsb_scvb2(SVB):
         probas = []
         for i,j, xij in self.data_test:
             qij = theta[i].dot(phi_mean).dot(theta[j])
-            #qij = theta[i].dot(phi_mean).dot(theta[j])
-            #print(qij, xij)
             pij =  1 - sp.stats.poisson.cdf(trsh, qij)
             y_true.append(xij>0)
             probas.append(pij)
 
+        return np.array(y_true), np.array(probas)
 
-        fpr, tpr, thresholds = roc_curve(y_true, probas)
-
-        roc = auc(fpr, tpr)
-        return roc
 
     def compute_wsim(self, theta=None, phi=None):
         if theta is None:
@@ -380,10 +413,9 @@ class iwmmsb_scvb2(SVB):
         return Y
 
     def fit(self, frontend):
-        ''' chunk is the number of row to threat in a minibach '''
+        ''' chunk is the number of row to process in a minibach '''
 
         self._init(frontend)
-        mnb_total = frontend.num_mnb()
 
         # Init sampling variables
         observed_pt = 0
@@ -419,20 +451,13 @@ class iwmmsb_scvb2(SVB):
                 # Maximization
                 qij_samples.append( self._reduce_one(i,j, weight, update_kernel).reshape(self._len['K'], self._len['K']) )
 
-                # Update local gradient / Expectation
-                # will be longer but faster ???
-                # try updating only  J => ima sure it will increase perf (j here and i in the global set (ore reversly selon la direction)
-                #
-                #self.N_theta_left[i] = (1 - self.gstep_theta)*self.N_theta_left[i] + (self.gstep_theta * scaler * qij_samples[-1].sum(0))
-                #self.N_theta_right[j] = (1 - self.gstep_theta)*self.N_theta_right[j] + (self.gstep_theta * scaler * qij_samples[-1].sum(1))
-                #self._timestep_a += 1
-                #self._update_gstep_theta()
-                update_kernel = False
-
                 observed_pt += 1
+                update_kernel = False
 
             if vertex is None or not qij_samples:
                 # Enter here only once !%!
+                mnb_total = frontend.num_mnb()
+
                 set_pos = _set_pos
                 vertex = _vertex
                 direction = _direction
@@ -452,15 +477,19 @@ class iwmmsb_scvb2(SVB):
                 norm = qijs.shape[0]
                 qijs_sum = qijs.sum(0)
 
-                if direction == 0:
-                    self.N_theta_left[i] = (1-self.gstep_theta)*self.N_theta_left[i] + self.gstep_theta*scaler*qijs_sum.sum(0) /norm
-                    self.N_theta_right[node_idxs] = (1-self.gstep_theta)*self.N_theta_right[node_idxs] + self.gstep_theta*scaler*qijs.sum(2) /norm
-                else:
-                    self.N_theta_left[node_idxs] = (1-self.gstep_theta)*self.N_theta_left[node_idxs] + self.gstep_theta*scaler*qijs.sum(1) /norm
-                    self.N_theta_right[j] = (1-self.gstep_theta)*self.N_theta_right[j] + self.gstep_theta*scaler*qijs_sum.sum(1) /norm
+                gstep_v = self.gstep_theta[vertex]
+                gstep_nodes = self.gstep_theta[node_idxs][None].T
 
-                self._timestep_a += scaler
-                self._update_gstep_theta()
+                if direction == 0:
+                    self.N_theta_left[i] = (1-gstep_v)*self.N_theta_left[i] + gstep_v*scaler*qijs_sum.sum(0) /norm
+                    self.N_theta_right[node_idxs] = (1-gstep_nodes)*self.N_theta_right[node_idxs] + gstep_nodes*scaler*qijs.sum(2) /norm
+                else:
+                    self.N_theta_left[node_idxs] = (1-gstep_nodes)*self.N_theta_left[node_idxs] + gstep_nodes*scaler*qijs.sum(1) /norm
+                    self.N_theta_right[j] = (1-gstep_v)*self.N_theta_right[j] + gstep_v*scaler*qijs_sum.sum(1) /norm
+
+                self._timestep_a[vertex] += scaler
+                self._timestep_a[node_idxs] += 1
+                self._update_gstep_theta([vertex]+node_idxs)
 
                 #scaler = self._len['nnz']
                 self.N_phi = (1 - self.gstep_phi)*self.N_phi + self.gstep_phi * scaler * qijs_sum /norm
@@ -469,8 +498,9 @@ class iwmmsb_scvb2(SVB):
                     self._timestep_c += scaler
                     self._update_gstep_y()
 
-                    if self._hyper_phi == 'auto':
+                    if self._hyper_phi == 'auto' and (mnb_num <100 or mnb_num%1000==0):
                         self._optimize_hyper()
+
 
                 self._timestep_b += scaler
                 self._update_gstep_phi()

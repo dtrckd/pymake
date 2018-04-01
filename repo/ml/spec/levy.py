@@ -48,14 +48,14 @@ class Levy(ExpDesign):
 
     warm = ExpTensor(
         corpus        = ['manufacturing'],
-        model         = 'iwmmsb_scvb2',
+        model         = 'iwmmsb_scvb3',
         N             = 'all',
         chunk         = 'stratify',
         K             = 10,
         hyper         = 'auto',
         testset_ratio = 10,
 
-        delta = 'auto',
+        delta = [[10,0.5]],
 
         # Sampling
         sampling_coverage = 0.33,
@@ -73,13 +73,25 @@ class Levy(ExpDesign):
         driver = 'gt', # graph-tool driver
 
         _data_type    = 'networks',
-        _refdir       = 'debug_scvb2',
+        _refdir       = 'debug_scvb3',
         _format='{corpus}_{model}_{N}_{K}_{hyper}_{homo}_{testset_ratio}_{chunk}_{chi_a}-{tau_a}-{kappa_a}_{chi_b}-{tau_b}-{kappa_b}_{delta}_{zeros_set_len}_{zeros_set_prob}',
         _csv_typo     = '_observed_pt time_it _entropy _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b'
     )
+    # Full measure
+    warm_debug = ExpGroup(warm, _csv_typo='_observed_pt time_it _entropy _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b _roc _wsim')
+
+    # Sampling sensiblity | hyper-delta sensibility
     warm_sampling = ExpGroup(warm, delta=[[1,1],[0.5,10],[10,0.5]],
                              zeros_set_prob = [1/2, 1/3, 1/4],  zeros_set_len=[10, 50])
+    warm_sampling_d = ExpGroup(warm_sampling, _csv_typo='_observed_pt time_it _entropy _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b _roc _wsim')
 
-    warm_visu = ExpGroup(warm, delta=[[1,1],'auto'],
+
+    # gradient step sensibility
+    # todo(step size sensibility) /  one step for each i => done; wmmsb3
+    # todo(sampling sensibility) / same amount of zeros than edge for each node
+
+
+    warm_visu = ExpGroup(warm_debug, delta=[[1,1],'auto'],
                              zeros_set_prob = [1/2],  zeros_set_len=[10])
+
 

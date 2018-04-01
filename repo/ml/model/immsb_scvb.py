@@ -179,7 +179,7 @@ class immsb_scvb(SVB):
         self.hyper_phi_sum = self.hyper_phi.sum()
         self.hyper_theta_sum = self.hyper_theta.sum()
 
-        #self._qij = self.likelihood(*self.reduce_latent())
+        #self._qij = self.likelihood(*self._reduce_latent())
         self._symmetric_pt = self._is_symmetric +1
 
         # Return sufficient statistics

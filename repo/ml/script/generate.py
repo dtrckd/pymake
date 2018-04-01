@@ -712,8 +712,11 @@ class GenNetwork(ExpeFormat):
                 print('--- Params stats')
                 print('Theta: shape: %s' %(str(theta.shape)))
                 print('Theta: max: %s | min: %.4f | mean: %.4f | std: %.4f  ' % (theta.max(), theta.min(), theta.mean(), theta.std()))
-                print('Phi: shape: %s' %(str(phi.shape)))
-                print('Phi: max: %.4f | min: %.4f | mean: %.4f | std: %.4f  ' % (phi.max(), phi.min(), phi.mean(), phi.std()))
+                try:
+                    print('Phi: shape: %s' %(str(phi.shape)))
+                    print('Phi: max: %.4f | min: %.4f | mean: %.4f | std: %.4f  ' % (phi.max(), phi.min(), phi.mean(), phi.std()))
+                except:
+                    pass
                 print('prediction:  links(1): %d | non-links(0): %d' % (y_true.sum(), (y_true==0).sum()))
                 print('Prediction: probas stat: mean: %.4f | std: %.4f' % (probas.mean(), probas.std()))
                 print('---')

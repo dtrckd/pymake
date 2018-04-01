@@ -45,7 +45,11 @@ class Plot(ExpeFormat):
         ax.legend(loc='upper right',prop={'size':5})
 
     def _to_masked(self, lst, dtype=float):
-        return np.ma.masked_invalid(np.array(lst, dtype=dtype))
+        themask = lambda x:np.nan if x=='--' else x
+        if isinstance(lst, list):
+            return ma.masked_invalid(np.array(list(map(themask, lst)), dtype=dtype))
+        else:
+            return themask(lst)
 
 
     @ExpeFormat.raw_plot
@@ -84,7 +88,7 @@ class Plot(ExpeFormat):
         try:
             values = data[attribute]
         except KeyError as e:
-            func_name = 'get_'+attribute
+            func_name = 'get_'+attribute.lstrip('_')
             if hasattr(self, func_name):
                 values = getattr(self, func_name)(data)
             else:
@@ -127,10 +131,12 @@ class Plot(ExpeFormat):
         #        ax = frame.ax()
         #        ax.set_xticks(x)
 
+        return
+
 
     #@ExpeFormat.table(1,2) # improve ergonomy ?
     @ExpeFormat.table()
-    def table(self, array, floc, x, y, z, *args):
+    def tab(self, array, floc, x, y, z, *args):
         ''' Plot table according to parameter `x:y:z[-z2](param)'
             if args is given, use for filename discrimination `key1[/key2]...'
         '''
@@ -139,23 +145,28 @@ class Plot(ExpeFormat):
         if not data:
             self.log.warning('No data for expe : %s' % self.output_path)
 
-        if not data or z not in data:
+        if data and z in data:
+            # Extract from savec measure (.inf file).
+            data = self._to_masked(data[z][-1])
+        else:
+            # Compute it directly from the model.
             if not self.model:
                 self.log.warning('No model for expe : %s' % self.output_path)
                 return
+            else:
+                model = self.model
 
-            func_name = 'get_'+z
-            if hasattr(self, func_name):
-                data = getattr(self, func_name)()
+            if hasattr(model, 'compute_'+z.lstrip('_')):
+                data = getattr(model, 'compute_'+z.lstrip('_'))()
+            elif hasattr(self, 'get_'+z.lstrip('_')):
+                data = getattr(self, 'get_'+z.lstrip('_'))()[-1]
             else:
                 self.log.error('attribute unknown: %s' % z)
                 return
-        else:
-            data = data[z][-1]
-            #data = np.ma.masked_invalid(np.array(data, dtype='float'))
 
         loc = floc(expe[x], expe[y], z)
         array[loc] = data
+        return
 
 
     #
@@ -163,62 +174,11 @@ class Plot(ExpeFormat):
     #
 
 
-    def get_roc(self, _ratio=100):
-        from sklearn.metrics import roc_curve, auc, precision_recall_curve
-        expe = self.expe
-        model = self.model
-
-        frontend = FrontendManager.load(expe)
-        data = frontend.data
-
-        _ratio = int(_ratio)
-        _predictall = (_ratio >= 100) or (_ratio < 0)
-        if not hasattr(expe, 'testset_ratio'):
-            setattr(expe, 'testset_ratio', 20)
-
-        y_true, probas = model.mask_probas(data)
-        theta, phi = model.get_params()
-
-        try:
-            fpr, tpr, thresholds = roc_curve(y_true, probas)
-        except Exception as e:
-            print(e)
-            self.log.error('cant format expe : %s' % (self.output_path))
-            return
-
-        roc_auc = auc(fpr, tpr)
-        return roc_auc
 
     def get_perplexity(self, data):
         entropy = self._to_masked(data['_entropy'])
-        testset = self.model._data_test
-        nnz = testset.shape[0]
-        return 2 ** (-entropy / nnz)
-
-
-    def get_wsim(self):
-        expe = self.expe
-        #frontend = self.frontend
-        model = self.model
-
-        #y = model.generate(**expe)
-        theta, phi = model.get_params()
-        # NB mean/var
-        mean, var = model.get_nb_ss()
-
-        phi = mean
         nnz = self.model._data_test.shape[0]
-
-        sim = []
-        for i,j,_w in model._data_test:
-            w = np.random.poisson(theta[i].dot(phi).dot(theta[j].T))
-            sim.append(w)
-
-        # l1 norm
-        mean_dist = np.abs(np.array(w) - model._data_test[:,2].T).sum() / nnz
-        return mean_dist
-
-
+        return 2 ** (-entropy / nnz)
 
 
 

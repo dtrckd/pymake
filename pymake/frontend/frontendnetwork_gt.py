@@ -279,6 +279,9 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
     def is_symmetric(self):
         return not self.data.is_directed()
 
+    def getN(self):
+        return self.num_nodes()
+
     def num_nodes(self):
         return self.data.num_vertices()
 
@@ -299,7 +302,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
 
     def num_mnb(self):
         ''' Minibatche size for the sampling. '''
-        ratio = float(self.expe.get('sampling_coverage')) * float(self.expe.get('zeros_set_len'))
+        ratio = float(self.expe.get('sampling_coverage')) * self._zeros_set_len
         return int(self.num_nodes()*ratio)
 
     def diameter(self):
@@ -333,9 +336,10 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
 
     def net_type(self):
         weights = self.data.ep['weights'].a
-        return 'mean/min/max: %.1f %d %d' % (weights.mean(),
-                                        weights.min(),
-                                        weights.max())
+        return 'mean/std/min/max: %.1f %.1f %d %d' % (weights.mean(),
+                                                      weights.std(),
+                                                      weights.min(),
+                                                      weights.max())
 
     def feat_len(self):
         weights = self.data.ep['weights'].a
@@ -510,7 +514,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         if chunk == 'stratify':
             return self._sample_stratify()
 
-    def _sample_stratify(self):
+    def _sample_stratify_old(self):
         ''' Sample with node replacement.
             But edges in a minibatch is unique.
 
@@ -542,8 +546,6 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
 
         ### Sampling prior strategy
         m = float(expe.get('zeros_set_len', 10))
-        #m = int(E/N) # adaptative => alpha ?
-        #if m >= E * (N-1)/N => update all zeros once yeah !
 
         set_len = 2 + is_directed
         # uniform between links and non-links
@@ -599,6 +601,138 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
                 zero_samples = zero_samples[zero_samples >0]
                 zero_samples = np.random.choice(zero_samples,
                                                 int(np.ceil(len(zero_samples)/m)),
+                                                replace=False)
+                for target in zero_samples:
+                    yield target, node, 0
+
+            elif set_index == 1:
+                node_info = {'vertex':node, 'direction':0}
+                yield str(set_index), node_info, symmetric_scale*N
+                # Sample from links
+                for target in neigs[node][0]:
+                    yield node, target, weights[node, target]
+            elif set_index == 2:
+                node_info = {'vertex':node, 'direction':1}
+                yield str(set_index), node_info, symmetric_scale*N
+                # Sample from links
+                for target in neigs[node][1]:
+                    yield target, node, weights[target, node]
+            else:
+                raise ValueError('Set index error: %s' % set_index)
+
+
+
+    def _sample_stratify(self):
+        ''' Sample with node replacement.
+            But edges in a minibatch is unique.
+
+            Returns
+            ------
+
+            yield ether: a triplet (source, target, weight), that can be of two kinf
+            1. at a new minibatch (mnb):
+                * source: str -- a str that identify from which subset the mnb comes.
+                * target: int -- the target node of the mnb.
+                * weight: int -- the probability of to sample a element in the current set/mnb
+                          in the corpus/dataset.
+            2. an obeservation (edges):
+                * source: int -- source node.
+                * target: int -- target node.
+                * weight: int -- edge weight.
+        '''
+        expe = self.expe
+        g = self.data
+        is_directed = g.is_directed()
+
+        symmetric_scale = 1 if is_directed else 2 # number of set containg each edges
+
+        y = self.adj()
+        E = g.num_edges()
+        N = g.num_vertices()
+        T = N*(N-1)/symmetric_scale
+
+        weights = g.ep['weights']
+
+        ### Build the array of neighbourhood for each nodes
+        self.log.debug('Building the neighbourhood array...')
+        neigs = []
+        for v in range(N):
+            _out = np.array([int(_v) for _v in g.vertex(v).out_neighbors()])
+            _in = np.array([int(_v) for _v in g.vertex(v).in_neighbors()])
+            neigs.append([_out, _in])
+
+        ### Chunk prior probability
+        set_len = 2 + is_directed
+        # uniform between links and non-links
+        zero_prior = float(expe.get('zeros_set_prob', 0.5))
+        set_prior = [zero_prior] + [(1-zero_prior)/(set_len-1)]*(set_len-1)
+
+        ### Sampling prior strategy
+        zeros_set_len = expe.get('zeros_set_len', 10)
+        if zeros_set_len == 'auto':
+            mask = np.zeros((N,2))
+            for v in range(N):
+                if g.vertex(v).out_degree() == 0:
+                    out_d = N
+                else:
+                    out_d = g.vertex(v).out_degree()
+
+                if g.vertex(v).in_degree() == 0:
+                    in_d = N
+                else:
+                    in_d = g.vertex(v).in_degree()
+
+                mask[v,0] = int((N - len(neigs[v][0]))/out_d) or 1
+                mask[v,1] = int((N - len(neigs[v][1]))/in_d) or 1
+
+            self._zeros_set_len = T/E if T/E>10 else 10
+        else:
+            # 10 as default
+            self._zeros_set_len = float(zeros_set_len)
+            mask = np.ones((N,2)) * self._zeros_set_len
+
+
+        for _mnb in range(self.num_mnb()):
+
+            # Pick a node
+            node = np.random.randint(0,N)
+
+            # Pick a set and yield a minibatch
+            set_index = np.random.choice(set_len, 1 , p=set_prior)
+
+            if set_index == 0:
+                node_info = {'vertex':node, 'direction':0}
+                yield str(set_index), node_info, symmetric_scale*mask[node, 0]
+                # Sample from non-links
+
+                out_e = neigs[node][0]
+                if len(out_e) == 0:
+                    continue
+                zero_samples = np.arange(N)
+                zero_samples[out_e] = -1 # don't sample in edge
+                zero_samples[node] = -1 # don't sample in self loops
+                zero_samples[self.data_test[node, :].nonzero()[1]] = -1 # don't sample in testset
+                zero_samples = zero_samples[zero_samples >0]
+                zero_samples = np.random.choice(zero_samples,
+                                                 int(np.ceil(len(zero_samples)/mask[node, 0])),
+                                                 replace=False)
+                for target in zero_samples:
+                    yield node, target, 0
+
+                in_e = neigs[node][1]
+                if len(in_e) == 0:
+                    continue
+
+                node_info = {'vertex':node, 'direction':1}
+                yield str(set_index), node_info, symmetric_scale*mask[node, 1]
+
+                zero_samples = np.arange(N)
+                zero_samples[in_e] = -1
+                zero_samples[node] = -1
+                zero_samples[self.data_test[:, node].nonzero()[0]] = -1
+                zero_samples = zero_samples[zero_samples >0]
+                zero_samples = np.random.choice(zero_samples,
+                                                int(np.ceil(len(zero_samples)/mask[node, 1])),
                                                 replace=False)
                 for target in zero_samples:
                     yield target, node, 0

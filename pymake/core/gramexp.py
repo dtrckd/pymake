@@ -452,7 +452,9 @@ class GramExp(object):
             d3[k] = i
         loc.append(d3)
 
-        floc = lambda k1, k2, z:(d1[k1], d2[k2], d3[z])
+        tr = lambda d,k:d[str(k)] if isinstance(k, (list, set, dict)) else d[k]
+
+        floc = lambda k1, k2, z:(tr(d1,k1), tr(d2,k2), d3[z])
         array = np.ma.array(np.empty(list(map(len, loc)))*np.nan, mask=True)
         return array, floc
 

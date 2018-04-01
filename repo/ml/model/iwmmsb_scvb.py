@@ -95,7 +95,7 @@ class iwmmsb_scvb(SVB):
         #self.N_Y = np.random.poisson(0.1, (K,K)) * N
         self.N_Y = np.random.dirichlet([0.1]*K**2).reshape(K,K) * nnzsum
 
-        #self._qij = self.likelihood(*self.reduce_latent())
+        #self._qij = self.likelihood(*self._reduce_latent())
         self._symmetric_pt = self._is_symmetric +1
 
         # Return sufficient statistics

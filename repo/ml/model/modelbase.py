@@ -248,29 +248,32 @@ class ModelBase():
                 continue
         return result
 
+    #@dense mmsb
     def get_mask(self):
         return self.mask
 
+    #@dense mmsb
     def mask_probas(self, data):
         mask = self.get_mask()
         y_test = data[mask]
-        p_ji = self.likelihood(*self.get_params())
+        p_ji = self.likelihood(*self._reduce_latent())
         probas = p_ji[mask]
         return y_test, probas
 
+    #@dense mmsb
     def compute_roc(self):
         from sklearn.metrics import roc_curve, auc, precision_recall_curve
 
         data = self.frontend.data
 
         y_true, probas = self.mask_probas(data)
-        theta, phi = self.get_params()
         fpr, tpr, thresholds = roc_curve(y_true, probas)
 
         roc = auc(fpr, tpr)
         return roc
 
 
+    #@dense mmsb
     @mmm
     def predictMask(self, data, mask=True):
         self.log.info('Reducing latent variables...')
