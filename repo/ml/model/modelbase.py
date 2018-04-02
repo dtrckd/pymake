@@ -99,6 +99,7 @@ class ModelBase():
             self._init_params(*args, **kwargs)
 
 
+    # @Dense mmsb
     def data_iter(self, data=None, randomize=False):
         ''' Iterate over various type of data :
             * ma.array (ignore masked
@@ -107,6 +108,7 @@ class ModelBase():
         '''
         return self._data_iter_ma(data, randomize)
 
+    # @Dense mmsb
     def _data_iter_ma(self, data, randomize):
         if data is None:
             data_ma = self.frontend.data_ma
@@ -138,6 +140,8 @@ class ModelBase():
         theta, _ = self.get_params()
         return theta.shape[0]
 
+    def _init_params(self, *args, **kwargs):
+        pass
 
     def _check_measures(self):
         if self.expe.get('deactivate_measures'):
@@ -145,8 +149,36 @@ class ModelBase():
                 if not hasattr(self, m):
                     setattr(self, m, None)
 
-    def _init_params(self, *args, **kwargs):
-        pass
+    def compute_measures(self, begin_it=0):
+        ''' Compute measure as model attributes.
+            begin_it: is the time of the begining of the iteration.
+        '''
+
+        if self.expe.get('deactivate_measures'):
+            return
+
+        params = self._reduce_latent()
+        ll = self.likelihood(*params)
+        kws = {'likelihood':ll}
+        self.time_it = (time() - begin_it)
+
+        for meas in self.expe._csv_typo.split():
+
+            if meas.lstrip('_') == 'entropy':
+                old_entropy = self._entropy
+                _meas = self.compute_entropy(*params, **kws)
+                self.entropy_diff = _meas - old_entropy
+            elif hasattr(self, 'compute_'+meas.lstrip('_')):
+                _meas = getattr(self, 'compute_'+meas.lstrip('_'))(*params, **kws)
+            else:
+                # Assume already computed
+                getattr(self, meas) # raise exception if not here.
+                continue
+
+            setattr(self, meas, _meas)
+
+        return
+
 
 
     @mmm #frontend
@@ -356,8 +388,6 @@ class ModelBase():
 
     # Search ?
 
-    def compute_measures(self):
-        raise NotImplementedError
 
     def generate(self):
         raise NotImplementedError
@@ -506,7 +536,6 @@ class GibbsSampler(ModelBase):
 
     def fit(self, *args, **kwargs):
 
-        #self.fdebug()
         self._init()
 
         self._entropy = self.compute_entropy()
@@ -591,6 +620,7 @@ class SVB(ModelBase):
     '''online EM/SVB
 
         Note: this obsolete base class is suited for dense masked numpy array.
+              Base class for dense matrix svb...
     '''
 
     __abstractmethods__ = 'model'
@@ -640,25 +670,6 @@ class SVB(ModelBase):
 
         return chunk
 
-    def fdebug(self):
-
-        theta = self.N_theta_right
-        phi = self.N_phi
-        dma = self.frontend.data_ma
-
-        _theta, _phi = self._reduce_latent()
-        print(_theta.sum())
-        print(_phi.sum())
-
-        p_ij = _theta.dot(_phi).dot(_theta.T)
-        pij = self.data_A * p_ij + self.data_B
-
-        ll = - np.log(pij).sum() / self._len['nnz']
-
-        print(dma.sum())
-        print(p_ij.sum())
-        print(pij.sum())
-        print(ll)
 
     def fit(self, *args, **kwargs):
         ''' chunk is the number of row to threat in a minibach '''
@@ -669,8 +680,6 @@ class SVB(ModelBase):
         groups = self.data_iter(data_ma, randomize=True)
         chunk_groups = np.array_split(groups, self.chunk_len)
         self._update_chunk_nnz(chunk_groups)
-
-        #self.fdebug()
 
         self._entropy = self.compute_entropy()
         print( '__init__ Entropy: %f' % self._entropy)
@@ -732,35 +741,4 @@ class SVB(ModelBase):
         #    print('ELBO get stuck during data iteration : Sampling useless, return ?!')
 
 
-    def compute_measures(self, begin_it=0):
-        ''' Compute measure from model attributes.
-            begin_it: is the time of the begining of the iteration.
-        '''
-
-        if self.expe.get('deactivate_measures'):
-            return
-
-        old_entropy = self._entropy
-        self._entropy = self.compute_entropy()
-        self.entropy_diff = self._entropy - old_entropy
-
-        #self._entropy_t = np.nan
-        self._entropy_t = self.compute_entropy_t()
-
-        # "true elbo"
-        self._elbo = self.compute_elbo()
-
-        if '_roc' in self.expe._csv_typo.split():
-            self._roc = self.compute_roc()
-
-        self.time_it = time() - begin_it
-
-    def maximization(self):
-        raise NotImplementedError
-
-    def expectation(self):
-        raise NotImplementedError
-
-    def _purge_minibatch(self):
-        raise NotImplementedError
 

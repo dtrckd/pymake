@@ -746,8 +746,8 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             else:
                 in_d = g.vertex(v).in_degree()
 
-            mask[v,0] = int((N - len(neigs[v][0]))/out_d) or 1
-            mask[v,1] = int((N - len(neigs[v][1]))/in_d) or 1
+            mask[v,0] = int((N - out_d)/out_d) or 1
+            mask[v,1] = int((N - in_d)/in_d) or 1
 
         self._zeros_set_len = 2+is_directed
 

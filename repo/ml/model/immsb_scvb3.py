@@ -30,6 +30,13 @@ class immsb_scvb3(SVB):
         frontend.reverse_filter()
         self.data_test = np.hstack((data_test, np.array(weights)[None].T))
 
+        # For fast computation of bernoulli pmf.
+        self._w_a = self.data_test[:,2].T.astype(int)
+        self._w_a[self._w_a > 0] = 1
+        self._w_a[self._w_a == 0] = -1
+        self._w_b = np.zeros(self._w_a.shape, dtype=int)
+        self._w_b[self._w_a == -1] = 1
+
         # Data statistics
         _len = {}
         _len['K'] = self.expe.get('K')
@@ -173,66 +180,56 @@ class immsb_scvb3(SVB):
         if phi is None:
             phi = self._phi
 
-        likelihood = []
+        # -- -- /too much memory
+        #sources = self.data_test[:,0].T
+        #targets = self.data_test[:,1].T
+        #qijs = np.diag(theta[sources].dot(phi).dot(theta[targets].T))
+
+        qijs = []
         for i,j, xij in self.data_test:
-            l = theta[i].dot(phi).dot(theta[j])
-            if xij == 0:
-                l = 1-l
-            likelihood.append(l or ma.masked)
+            qijs.append( theta[i].dot(phi).dot(theta[j]) )
 
-        likelihood = ma.array(likelihood)
+        qijs = ma.masked_invalid(qijs)
+        return qijs
 
-        return likelihood
-
-    def compute_entropy(self, theta=None, phi=None):
-        if theta is None:
-            theta, phi = self._reduce_latent()
+    def compute_entropy(self, theta=None, phi=None, **kws):
         return self.compute_entropy_t(theta, phi)
 
-    def compute_entropy_t(self, theta=None, phi=None):
-        if theta is None:
-            theta, phi = self._reduce_latent()
+    def compute_entropy_t(self, theta=None, phi=None, **kws):
+        if 'likelihood' in kws:
+            pij = kws['likelihood']
+        else:
+            if theta is None:
+                theta, phi = self._reduce_latent()
+            pij = self.likelihood(theta, phi)
 
-        pij = self.likelihood(theta, phi)
+        ll = pij * self._w_a + self._w_b
 
+        ll[ll<=1e-300] = 1e-300
         # Log-likelihood
-        ll = np.log(pij).sum()
-
-        # Entropy
-        entropy_t = ll
-        #self._entropy_t = - ll / self._len['nnz_t']
-
+        ll = np.log(ll).sum()
         # Perplexity is 2**H(X).
+        return ll
 
-        return entropy_t
-
-    def compute_perplexity(self, theta=None, phi=None):
-        if theta is None:
-            theta, phi = self._reduce_latent()
-
-        entropy = self.compute_entropy(theta,phi)
-        nnz = self.data_test.shape[0]
-        return 2 ** (-entropy / nnz)
-
-
-    def compute_elbo(self, theta=None, phi=None):
+    def compute_elbo(self, theta=None, phi=None, **kws):
         # how to compute elbo for all possible links weights, mean?
         return None
 
-    def compute_roc(self, theta=None, phi=None):
+    def compute_roc(self, theta=None, phi=None, **kws):
         from sklearn.metrics import roc_curve, auc, precision_recall_curve
 
-        if theta is None:
-            theta, phi = self._reduce_latent()
+        if 'likelihood' in kws:
+            pij = kws['likelihood']
+        else:
+            if theta is None:
+                theta, phi = self._reduce_latent()
+            pij = self.likelihood(theta, phi)
 
-        y_true = []
-        probas = []
-        for i,j, xij in self.data_test:
-            pij = theta[i].dot(phi).dot(theta[j])
-            y_true.append(xij>0)
-            probas.append(pij)
+        weights = np.squeeze(self.data_test[:,2].T)
 
-        fpr, tpr, thresholds = roc_curve(y_true, probas)
+        y_true = weights.astype(bool)*1
+
+        fpr, tpr, thresholds = roc_curve(y_true, pij)
         roc = auc(fpr, tpr)
         self._eta.append(roc)
         return roc
@@ -243,48 +240,13 @@ class immsb_scvb3(SVB):
 
         theta, phi = self._reduce_latent()
 
+        y_true = weights.astype(bool)*1
+        probas = self.likelihood(theta, phi)
 
-        y_true = []
-        probas = []
-        for i,j, xij in self.data_test:
-            pij = theta[i].dot(phi).dot(theta[j])
-            y_true.append(xij>0)
-            probas.append(pij)
+        return y_true, probas
 
-        return np.array(y_true), np.array(probas)
-
-    def compute_wsim(self, *args):
+    def compute_wsim(self, *args, **kws):
         return
-
-    def compute_measures(self, begin_it=0):
-        ''' Compute measure as model attributes.
-            begin_it: is the time of the begining of the iteration.
-        '''
-
-        if self.expe.get('deactivate_measures'):
-            return
-
-
-        params = self._reduce_latent()
-        self.time_it = (time() - begin_it)
-
-        for meas in self.expe._csv_typo.split():
-
-            if meas.lstrip('_') == 'entropy':
-                old_entropy = self._entropy
-                _meas = self.compute_entropy(*params)
-                self.entropy_diff = _meas - old_entropy
-            elif hasattr(self, 'compute_'+meas.lstrip('_')):
-                _meas = getattr(self, 'compute_'+meas.lstrip('_'))(*params)
-            else:
-                # Assume already computed
-                getattr(self, meas) # raise exception if not here.
-                continue
-
-            setattr(self, meas, _meas)
-
-        return
-
 
 
     def fit(self, frontend):

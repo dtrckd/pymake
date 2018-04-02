@@ -5,14 +5,45 @@ from graph_tool.all import *
 from .modelbase import ModelBase
 
 
+class SBM_BASE(ModelBase):
+    __abstractmethods__ = 'model'
 
-class SBM_gt(ModelBase):
+    def _init_params(self, frontend):
+        frontend = self.frontend
 
+        # Save the testdata
+        data_test = np.transpose(self.frontend.data_test.nonzero())
+        frontend.reverse_filter()
+        weights = []
+        for i,j in data_test:
+            weights.append(frontend.weight(i,j))
+        frontend.reverse_filter()
+        self.data_test = np.hstack((data_test, np.array(weights)[None].T))
 
-    def fit(self, frontend):
+        _len = {}
+        _len['K'] = self.expe.get('K')
+        _len['N'] = frontend.num_nodes()
+        _len['E'] = frontend.num_edges()
+        _len['nnz'] = frontend.num_nnz()
+        #_len['nnz_t'] = frontend.num_nnz_t()
+        _len['dims'] = frontend.num_neighbors()
+        _len['nnz_ones'] = frontend.num_edges()
+        _len['nnzsum'] = frontend.num_nnzsum()
+        self._len = _len
+
+        self._K = self._len['K']
+        self._is_symmetric = frontend.is_symmetric()
+
+    def _reduce_latent(self):
+        theta = self._state.get_blocks()
+        phi = self._state.get_matrix()
+
+        return theta, phi
+
+    def _equilibrate(self):
         K = self.expe.K
 
-        g = frontend.data
+        g = self.frontend.data
 
         measures = defaultdict(list)
         def collect_marginals(s):
@@ -32,25 +63,14 @@ class SBM_gt(ModelBase):
         # state.get_edges_prob(e)
         #theta = state.get_ers()
 
-        theta = state.get_blocks()
-        phi = state.get_matrix()
-
         print('entropy:')
         print(entropy)
         print(len(entropy))
 
 
-    def likelihood(self, theta=None, phi=None):
-        if theta is None:
-            theta = self._theta
-        if phi is None:
-            phi = self._phi
+class SBM_gt(ModelBase):
 
-        bilinear_form = theta.dot(phi).dot(theta.T)
-        likelihood = 1 / (1 + np.exp(-bilinear_form))
+    def fit(self):
+        self._state =
 
-        likelihood =  likelihood[:,0,:]
-        return likelihood
 
-    def generate(self, N=None, K=None, hyperparams=None, mode='predictive', symmetric=True, **kwargs):
-        pass

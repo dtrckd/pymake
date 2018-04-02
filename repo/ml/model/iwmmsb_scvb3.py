@@ -137,9 +137,11 @@ class iwmmsb_scvb3(SVB):
         theta = self.N_theta_right + self.N_theta_left + np.tile(self.hyper_theta, (self.N_theta_left.shape[0],1))
         self._theta = (theta.T / theta.sum(axis=1)).T
 
-        k = self.N_Y + self.hyper_phi[0]
-        p = (self.N_phi + self.hyper_phi[1] + 1)**-1
-        self._phi = lambda x:sp.stats.nbinom.pmf(x, k, 1-p)
+        self._k = self.N_Y + self.hyper_phi[0]
+        self._p = (self.N_phi + self.hyper_phi[1] + 1)**-1
+        #self._phi = lambda x:sp.stats.nbinom.pmf(x, k, 1-p)
+        self._phi = self._k*self._p / (1-self._p)
+
         #mean = k*p / (1-p)
         #var = k*p / (1-p)**2
 
@@ -179,8 +181,8 @@ class iwmmsb_scvb3(SVB):
         n, t = self.hyper_phi
         K = self.N_theta_left.shape[1]
 
-        phi_mean = self.get_mean_phi() / (1+self._is_symmetric)
-        #phi_mean = self.get_mean_phi() / (1+self._is_symmetric) * self._len['nnz_ones']
+        phi_mean = self._phi() / (1+self._is_symmetric)
+        #phi_mean = self._phi() / (1+self._is_symmetric) * self._len['nnz_ones']
 
         # debug: Underflow
         #phi_mean[phi_mean<=1e-300] = 1e-300
@@ -204,16 +206,10 @@ class iwmmsb_scvb3(SVB):
         self.hyper_phi = np.array([n,t])
 
     def get_mean_phi(self):
-        k = self.N_Y + self.hyper_phi[0]
-        p = (self.N_phi + self.hyper_phi[1] + 1)**-1
-        return  k*p / (1-p)
+        return  self._k*self._p / (1-self._p)
 
-    def get_nb_ss(self):
-        k = self.N_Y + self.hyper_phi[0]
-        p = (self.N_phi + self.hyper_phi[1] + 1)**-1
-        mean = k*p / (1-p)
-        var = k*p / (1-p)**2
-        return mean, var
+    def get_var_phi(self):
+        return self._k*self._p / (1-self._p)**2
 
     def likelihood(self, theta=None, phi=None):
         if theta is None:
@@ -221,94 +217,82 @@ class iwmmsb_scvb3(SVB):
         if phi is None:
             phi = self._phi
 
-        #lut_nbinom = [phi(x) for x in range(42)]
-        kern = self.get_mean_phi()
+        # 1ts interpretation /wrong
+        #lut_nbinom = [phi(x) for x in range(12)]
+        #qijs = []
+        #for i,j, xij in self.data_test:
 
-        likelihood = []
+        #    if len(lut_nbinom) > xij:
+        #        # Wins some times...
+        #        kernel = lut_nbinom[xij]
+        #    else:
+        #        kernel = phi(xij)
 
+        #    qijs.append( theta[i].dot(kernel).dot(theta[j]))
+
+        # 2nd interpretation /too much memory
+        #sources = self.data_test[:,0].T
+        #targets = self.data_test[:,1].T
+        #qijs = np.diag(theta[sources].dot(phi).dot(theta[targets].T))
+
+        qijs = []
         for i,j, xij in self.data_test:
+            qijs.append( theta[i].dot(phi).dot(theta[j]) )
 
-            # 1ts interpretation
-            #if len(lut_nbinom) > xij:
-            #    # Wins some times...
-            #    kernel = lut_nbinom[xij]
-            #else:
-            #    kernel = phi(xij)
-            #l = theta[i].dot(kernel).dot(theta[j])
+        qijs = ma.masked_invalid(qijs)
+        return qijs
 
-            # 2nd interpretation
-            qij = theta[i].dot(kern).dot(theta[j])
-            l = sp.stats.poisson.pmf(xij, qij)
+    def compute_entropy(self, theta=None, phi=None, **kws):
+        return self.compute_entropy_t(theta, phi, **kws)
 
-            likelihood.append(l or ma.masked)
+    def compute_entropy_t(self, theta=None, phi=None, **kws):
+        if 'likelihood' in kws:
+            pij = kws['likelihood']
+        else:
+            if theta is None:
+                theta, phi = self._reduce_latent()
+            pij = self.likelihood(theta, phi)
 
-        likelihood = ma.array(likelihood)
+        weights = self.data_test[:,2].T
+        ll = sp.stats.poisson.pmf(weights, pij)
 
-        return likelihood
 
-    def compute_entropy(self, theta=None, phi=None):
-        if theta is None:
-            theta, phi = self._reduce_latent()
-        return self.compute_entropy_t(theta, phi)
-
-    def compute_entropy_t(self, theta=None, phi=None):
-        if theta is None:
-            theta, phi = self._reduce_latent()
-
-        pij = self.likelihood(theta, phi)
-
+        ll[ll<=1e-300] = 1e-300
         # Log-likelihood
-        ll = np.log(pij).sum()
-
-        # Entropy
-        entropy_t = ll
-        #self._entropy_t = - ll / self._len['nnz_t']
-
+        ll = np.log(ll).sum()
         # Perplexity is 2**H(X).
+        return ll
 
-        return entropy_t
-
-    def compute_perplexity(self, theta=None, phi=None):
-        if theta is None:
-            theta, phi = self._reduce_latent()
-
-        entropy = self.compute_entropy(theta,phi)
-        nnz = self.data_test.shape[0]
-        return 2 ** (-entropy / nnz)
-
-
-    def compute_elbo(self, theta=None, phi=None):
+    def compute_elbo(self, theta=None, phi=None, **kws):
         # how to compute elbo for all possible links weights, mean?
         return None
 
-    def compute_roc(self, theta=None, phi=None, treshold=1):
+    def compute_roc(self, theta=None, phi=None, treshold=1, **kws):
         from sklearn.metrics import roc_curve, auc, precision_recall_curve
 
-        if theta is None:
-            theta, phi = self._reduce_latent()
+        if 'likelihood' in kws:
+            pij = kws['likelihood']
+        else:
+            if theta is None:
+                theta, phi = self._reduce_latent()
+            pij = self.likelihood(theta, phi)
 
-        weights = self.data_test[:,2]
-        phi_mean = self.get_mean_phi()
+        weights = np.squeeze(self.data_test[:,2].T)
 
         if treshold == 'mean_data':
             mean = weights[weights>0].mean()
             std = weights[weights>0].std()
             trsh = int(mean+std)
         if treshold == 'mean_model':
-            mean_, var_ = self.get_nb_ss()
+            mean_, var_ = self.get_mean_phi(), self.get_var_phi()
             mean = mean_.mean()
             std = var_.mean()**0.5
             trsh = int(mean+std)
         else:
             trsh = treshold
 
-        y_true = []
-        probas = []
-        for i,j, xij in self.data_test:
-            qij = theta[i].dot(phi_mean).dot(theta[j])
-            pij =  1 - sp.stats.poisson.cdf(trsh, qij)
-            y_true.append(xij>0)
-            probas.append(pij)
+        probas = 1 - sp.stats.poisson.cdf(trsh, pij)
+        y_true = weights.astype(bool)*1
 
         fpr, tpr, thresholds = roc_curve(y_true, probas)
         roc = auc(fpr, tpr)
@@ -322,79 +306,43 @@ class iwmmsb_scvb3(SVB):
         theta, phi = self._reduce_latent()
 
         weights = self.data_test[:,2]
-        phi_mean = self.get_mean_phi()
 
         treshold = 'mean_model'
         if treshold == 'mean_data':
             mean = weights[weights>0].mean()
             std = weights[weights>0].std()
         if treshold == 'mean_model':
-            mean_, var_ = self.get_nb_ss()
+            mean_, var_ = self.get_mean_phi(), self.get_var_phi()
             mean = mean_.mean()
             std = var_.mean()**0.5
 
         #trsh = int(mean_w)
         trsh = int(mean+std)
 
-        y_true = []
-        probas = []
-        for i,j, xij in self.data_test:
-            qij = theta[i].dot(phi_mean).dot(theta[j])
-            pij =  1 - sp.stats.poisson.cdf(trsh, qij)
-            y_true.append(xij>0)
-            probas.append(pij)
+        qijs = self.likelihood(theta, phi)
+        y_true = weights.astype(bool)*1
+        probas = 1 - sp.stats.poisson.cdf(trsh, qijs)
 
-        return np.array(y_true), np.array(probas)
+        return y_true, probas
 
 
-    def compute_wsim(self, theta=None, phi=None):
-        if theta is None:
-            theta, phi = self._reduce_latent()
+    def compute_wsim(self, theta=None, phi=None, **kws):
+        if 'likelihood' in kws:
+            pij = kws['likelihood']
+        else:
+            if theta is None:
+                theta, phi = self._reduce_latent()
+            pij = self.likelihood(theta, phi)
 
-        # NB mean/var
-        mean, var = self.get_nb_ss()
-        phi = mean
-
-        weights = self.data_test[:,2]
+        weights = self.data_test[:,2].T
         nnz = self.data_test.shape[0]
-        sim = []
-        for i,j,_w in self.data_test:
-            w = np.random.poisson(theta[i].dot(phi).dot(theta[j].T))
-            sim.append(w)
+        pij = self.likelihood(theta, phi)
+        #ws = np.random.poisson(pij)
+        ws = pij # Expectation
 
         # l1 norm
-        mean_dist = np.abs(np.array(w) - weights.T).sum() / nnz
+        mean_dist = np.abs(ws - weights).sum() / nnz
         return mean_dist
-
-
-    def compute_measures(self, begin_it=0):
-        ''' Compute measure as model attributes.
-            begin_it: is the time of the begining of the iteration.
-        '''
-
-        if self.expe.get('deactivate_measures'):
-            return
-
-
-        params = self._reduce_latent()
-        self.time_it = (time() - begin_it)
-
-        for meas in self.expe._csv_typo.split():
-
-            if meas.lstrip('_') == 'entropy':
-                old_entropy = self._entropy
-                _meas = self.compute_entropy(*params)
-                self.entropy_diff = _meas - old_entropy
-            elif hasattr(self, 'compute_'+meas.lstrip('_')):
-                _meas = getattr(self, 'compute_'+meas.lstrip('_'))(*params)
-            else:
-                # Assume already computed
-                getattr(self, meas) # raise exception if not here.
-                continue
-
-            setattr(self, meas, _meas)
-
-        return
 
 
     def generate(self, N=None, K=None, hyperparams=None, mode='predictive', symmetric=True, **kwargs):

@@ -50,12 +50,12 @@ class Fit(ExpeFormat):
         self()
 
 
-    def fit_missing(self, _type='pk'):
+    def fit_missing(self, ext=None):
 
-        is_fitted = self.gramexp.make_output_path(self.expe, _type=_type, status='f')
+        is_fitted = self.gramexp.make_output_path(self.expe, ext=ext, status='f')
         if not is_fitted:
-            self.expe['_write'] = True
-            self()
+            self.fitw()
+            #print(self.output_path)
         else:
             self.log.info("Expe `%s' already fitted, passing..." % self._it)
 
