@@ -5,9 +5,11 @@ class Levy(ExpDesign):
 
 
     data_net_all = Corpus(['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad', 'generator7', 'generator12', 'generator10', 'generator4'])
-    net_gt = Corpus(['astro-ph', 'cond-mat-2003', 'email-Enron', 'hep-th', 'netscience']) # all undirected
+    net_gt = Corpus(['astro-ph', 'cond-mat', 'email-Enron', 'hep-th', 'netscience']) # all undirected
     net_all = data_net_all + net_gt
     net_random = Corpus(['clique6', 'BA'])
+
+    net_weighted = Corpus(['astro-ph', 'cond-mat', 'email-Enron', 'hep-th', 'netscience'])
 
     data_text_all = Corpus(['kos', 'nips12', 'nips', 'reuter50', '20ngroups']) # lucene
 
@@ -50,26 +52,28 @@ class Levy(ExpDesign):
         corpus        = ['manufacturing'],
         model         = 'iwmmsb_scvb3',
         N             = 'all',
-        chunk         = 'stratify',
         K             = 10,
         hyper         = 'auto',
+        homo = 0,
         testset_ratio = 10,
 
-        delta = [[10,0.5]],
 
         # Sampling
-        sampling_coverage = 0.33,
+        chunk         = 'stratify',
+        sampling_coverage = 0.42,
         #chi_a=10, tau_a=100, kappa_a=0.6,
         #chi_b=10, tau_b=500, kappa_b=0.9,
         chi_a=1, tau_a=1024, kappa_a=0.5,
         chi_b=1, tau_b=1024, kappa_b=0.5,
-        zeros_set_len = 10,
         zeros_set_prob = 1/2,
+        zeros_set_len = 50,
+
+        delta = [[1, 1]],
+        #delta = [[0.5, 10]],
 
         fig_xaxis = [('_observed_pt', 'visited edges')],
         fig_legend = 4,
 
-        homo = 0,
         driver = 'gt', # graph-tool driver
 
         _data_type    = 'networks',
@@ -80,15 +84,21 @@ class Levy(ExpDesign):
     # Full measure
     warm_debug = ExpGroup(warm, _csv_typo='_observed_pt time_it _entropy _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b _roc _wsim')
 
+    warm_sparse_chunk = ExpGroup(warm_debug, sampling_coverage=1, chunk='sparse')
+
     # Sampling sensiblity | hyper-delta sensibility
     warm_sampling = ExpGroup(warm, delta=[[1,1],[0.5,10],[10,0.5]],
                              zeros_set_prob = [1/2, 1/3, 1/4],  zeros_set_len=[10, 50])
+
     warm_sampling_d = ExpGroup(warm_sampling, _csv_typo='_observed_pt time_it _entropy _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b _roc _wsim')
+    arm_sampling_d = ExpGroup(warm_sampling, delta='auto', model='immsb_scvb3',
+                              _csv_typo='_observed_pt time_it _entropy _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b _roc _wsim')
 
+    eta = ExpGroup([warm_sampling_d, arm_sampling_d], _refdir='eta', corpus=net_weighted,
+                   zeros_set_prob=[1/2, 1/4])
 
-    # gradient step sensibility
     # todo(step size sensibility) /  one step for each i => done; wmmsb3
-    # todo(sampling sensibility) / same amount of zeros than edge for each node
+    # todo(sampling sensibility) / same amount of zeros than edge for each node => done; sparse_sampling (chunk=sparse)
 
 
     warm_visu = ExpGroup(warm_debug, delta=[[1,1],'auto'],

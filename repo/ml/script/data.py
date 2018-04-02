@@ -20,13 +20,13 @@ class Data(ExpeFormat):
     _default_expe = { '_expe_silent' : True }
 
     # @need an expe
-    def missing(self, _type='pk'):
+    def missing(self, ext=None):
         ''' Show missing expe. '''
         if self.is_first_expe():
             self.gramexp.n_exp_total = self.expe_size
             self.gramexp.n_exp_missing = 0
 
-        is_fitted = self.gramexp.make_output_path(self.expe, _type=_type, status='f')
+        is_fitted = self.gramexp.make_output_path(self.expe, ext=ext, status='f')
         if not is_fitted:
             self.gramexp.n_exp_missing += 1
             self.log.debug(self.expe['_output_path'])
@@ -40,13 +40,13 @@ class Data(ExpeFormat):
 
 
     # @need an expe
-    def completed(self, _type='pk'):
+    def completed(self, ext=None):
         ''' Show completed expe. '''
         if self.is_first_expe():
             self.gramexp.n_exp_total = self.expe_size
             self.gramexp.n_exp_completed = 0
 
-        is_fitted = self.gramexp.make_output_path(self.expe, _type=_type, status='f')
+        is_fitted = self.gramexp.make_output_path(self.expe, ext=ext, status='f')
         if is_fitted:
             self.gramexp.n_exp_completed += 1
             self.log.debug(self.expe['_output_path'])

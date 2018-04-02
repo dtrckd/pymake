@@ -530,6 +530,9 @@ class GramExp(object):
 
         if ext:
             filen = filen +'.'+ ext
+        elif status and not ext:
+            # Assume pickle driver for models.
+            filen = filen +'.'+ 'pk'
 
         if status is 'f' and is_empty_file(filen):
             return  None

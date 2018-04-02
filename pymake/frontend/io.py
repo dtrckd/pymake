@@ -134,6 +134,10 @@ def is_abstract(cls):
     return isabc
 
 def is_empty_file(filen):
+
+    if os.path.exists(filen+'.gz'):
+        filen = filen+'.gz'
+
     if not os.path.isfile(filen) or os.stat(filen).st_size == 0:
         return True
 

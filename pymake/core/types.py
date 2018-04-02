@@ -306,6 +306,13 @@ class Corpus(ExpVector):
         dict(name='propro'        , data_type='network', data_source='web', directed=False, nodes=2113, edges=1432, density=0.001, weighted=False),
         dict(name='euroroad'      , data_type='network', data_source='web', directed=True, nodes=1177, edges=1432, density=0.001, weighted=False),
 
+        # gt
+        dict(name='astro-ph',    data_type='network', data_source='gt', directed=False, nodes=16706, edges=121251, weighted=True),
+        dict(name='cond-mat',    data_type='network', data_source='gt', directed=False, nodes=16726, edges=47594 , weighted=True),
+        dict(name='hep-th',      data_type='network', data_source='gt', directed=False, nodes=8361,  edges=15751 , weighted=True),
+        dict(name='netscience',  data_type='network', data_source='gt', directed=False, nodes=1589,  edges=2742  , weighted=True),
+        dict(name='email-Enron', data_type='network', data_source='gt', directed=False, nodes=36692, edges=367662, weighted=False), # time weighted
+
         dict(name='facebook'     ,  data_type='network', data_source='web', directed=True, nodes=None, edges=None, density=None, wheigted=None),
 
         dict(name='reuter50'  , data_type='text', data_source='web'),

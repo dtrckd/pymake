@@ -14,7 +14,7 @@ from ml.model.modelbase import SVB
 ##np.seterr(all='print')
 
 
-class iwmmsb_scvb3(SVB):
+class immsb_scvb3(SVB):
 
     _purge = ['_kernel', '_lut_nbinom']
 
@@ -56,16 +56,17 @@ class iwmmsb_scvb3(SVB):
         self.hyper_theta = np.asarray([1.0 / (i + np.sqrt(self._len['K'])) for i in range(self._len['K'])])
         self.hyper_theta /= self.hyper_theta.sum()
 
-        self.hyper_phi = np.asarray(self.expe['delta'])
         hyper_phi = self.expe['delta']
         if hyper_phi == 'auto':
-            self.hyper_phi = np.array([0.5,10])
+            self.hyper_phi = np.array([0.1,0.1])
             self._hyper_phi = 'auto'
         elif len(hyper_phi) == 2:
-            self.hyper_phi = np.asarray(hyper_phi)
+            self.hyper_phi = np.array([0.1,0.1])
             self._hyper_phi = 'fix'
         else:
             raise ValueError('hyper parmeter hyper_phi dont understood: %s' % hyper_phi)
+
+        self.hyper_phi_sum = self.hyper_phi.sum()
 
         self._random_ss_init()
 
@@ -92,6 +93,7 @@ class iwmmsb_scvb3(SVB):
         ''' Sufficient Statistics Initialization '''
         K = self._len['K']
         N = self._len['N']
+        E = self._len['E']
         nnz = self._len['nnz']
         nnzsum = self._len['nnzsum']
         dims = self._len['dims']
@@ -99,15 +101,14 @@ class iwmmsb_scvb3(SVB):
         self.N_theta_left = (dims[:, None] * np.random.dirichlet([0.5]*K, N))
         self.N_theta_right = (dims[:, None] * np.random.dirichlet([0.5]*K, N))
 
-        self.N_phi = np.random.dirichlet([0.5]*K**2).reshape(K,K) *nnz
-
-        #self.N_Y = np.random.poisson(0.1, (K,K)) * N
-        self.N_Y = np.random.dirichlet([0.1]*K**2).reshape(K,K) * nnzsum
+        self.N_phi = np.zeros((2,K,K))
+        self.N_phi[0] = np.random.dirichlet([0.5]*K**2).reshape(K,K) * nnz-E
+        self.N_phi[1] = np.random.dirichlet([0.5]*K**2).reshape(K,K) * E
 
         if self._is_symmetric:
             self.N_theta_left = self.N_theta_right
-            self.N_phi = np.triu(self.N_phi) + np.triu(self.N_phi, 1).T
-            self.N_Y = np.triu(self.N_Y) + np.triu(self.N_Y, 1).T
+            self.N_phi[0] = np.triu(self.N_phi[0]) + np.triu(self.N_phi[0], 1).T
+            self.N_phi[1] = np.triu(self.N_phi[1]) + np.triu(self.N_phi[1], 1).T
 
 
     def _update_gstep_theta(self, idxs):
@@ -137,11 +138,9 @@ class iwmmsb_scvb3(SVB):
         theta = self.N_theta_right + self.N_theta_left + np.tile(self.hyper_theta, (self.N_theta_left.shape[0],1))
         self._theta = (theta.T / theta.sum(axis=1)).T
 
-        k = self.N_Y + self.hyper_phi[0]
-        p = (self.N_phi + self.hyper_phi[1] + 1)**-1
-        self._phi = lambda x:sp.stats.nbinom.pmf(x, k, 1-p)
-        #mean = k*p / (1-p)
-        #var = k*p / (1-p)**2
+        phi = self.N_phi + np.tile(self.hyper_phi, (self.N_phi.shape[1], self.N_phi.shape[2], 1)).T
+        #phi = (phi / np.linalg.norm(phi, axis=0))[1]
+        self._phi = (phi / phi.sum(0))[1]
 
         return self._theta, self._phi
 
@@ -155,65 +154,18 @@ class iwmmsb_scvb3(SVB):
             self.pjk = self.N_theta_right[j] + self.hyper_theta
 
         if update_kernel:
-            k = self.N_Y + self.hyper_phi[0]
-            p = (self.N_phi + self.hyper_phi[1] + 1)**-1
-            # @debug: Some invalie values here sometime !!
-            self._kernel = lambda x:sp.stats.nbinom.pmf(x, k, 1-p)
-            self._lut_nbinom = [sp.stats.nbinom.pmf(x, k, 1-p) for x in range(42)]
-            #kernel = sp.stats.nbinom.pmf(xij, k, 1-p)
+            self.N_phi[self.N_phi<=1e-300] = 1e-300
+            pxk = self.N_phi[xij] + self.hyper_phi[xij]
+            # debug: Underflow
+            self._kern = np.log(pxk)- np.log(self.N_phi.sum(0) + self.hyper_phi_sum)
 
-        if len(self._lut_nbinom) > xij:
-            # Wins some times...
-            kernel = self._lut_nbinom[xij]
-        else:
-            kernel = self._kernel(xij)
-
-        # debug: Underflow
-        kernel[kernel<=1e-300] = 1e-300
-
-        outer_kk = np.log(np.outer(self.pik, self.pjk)) + np.log(kernel)
+        out = np.outer(self.pik, self.pjk)
+        #out = ma.masked_invalid(out)
+        #out[out<=1e-300] = 1e-300
+        outer_kk = np.log(out) + self._kern
 
         return lognormalize(outer_kk.ravel())
 
-    def _optimize_hyper(self):
-        n, t = self.hyper_phi
-        K = self.N_theta_left.shape[1]
-
-        phi_mean = self.get_mean_phi() / (1+self._is_symmetric)
-        #phi_mean = self.get_mean_phi() / (1+self._is_symmetric) * self._len['nnz_ones']
-
-        # debug: Underflow
-        #phi_mean[phi_mean<=1e-300] = 1e-300
-        phi_sum = phi_mean.sum()
-        phi_mean[phi_mean<=1e-300] = 1e-300
-        log_phi_sum = np.log(phi_mean).sum()
-
-        K_len = (K*(K-1)/2 +K) if self._is_symmetric else K**2
-
-        t = n * K_len / phi_sum
-
-        # http://bariskurt.com/calculating-the-inverse-of-digamma-function/
-        #s = log_phi_sum / K_len + np.log(t)
-        #x0 = lambda x: -1/(x + sp.special.digamma(1)) if x<-2.22 else np.exp(x)+0.5
-
-        s = -log_phi_sum / K_len - np.log(K_len/phi_sum)
-        x0 = lambda x: (3 - x + np.sqrt((x-3)**2 + 24*x))/(12*x)
-        dig = lambda x: np.log(x) - sp.special.digamma(x) -s
-        n = float(sp.optimize.minimize(dig, x0(s)).x)
-
-        self.hyper_phi = np.array([n,t])
-
-    def get_mean_phi(self):
-        k = self.N_Y + self.hyper_phi[0]
-        p = (self.N_phi + self.hyper_phi[1] + 1)**-1
-        return  k*p / (1-p)
-
-    def get_nb_ss(self):
-        k = self.N_Y + self.hyper_phi[0]
-        p = (self.N_phi + self.hyper_phi[1] + 1)**-1
-        mean = k*p / (1-p)
-        var = k*p / (1-p)**2
-        return mean, var
 
     def likelihood(self, theta=None, phi=None):
         if theta is None:
@@ -221,25 +173,11 @@ class iwmmsb_scvb3(SVB):
         if phi is None:
             phi = self._phi
 
-        #lut_nbinom = [phi(x) for x in range(42)]
-        kern = self.get_mean_phi()
-
         likelihood = []
-
         for i,j, xij in self.data_test:
-
-            # 1ts interpretation
-            #if len(lut_nbinom) > xij:
-            #    # Wins some times...
-            #    kernel = lut_nbinom[xij]
-            #else:
-            #    kernel = phi(xij)
-            #l = theta[i].dot(kernel).dot(theta[j])
-
-            # 2nd interpretation
-            qij = theta[i].dot(kern).dot(theta[j])
-            l = sp.stats.poisson.pmf(xij, qij)
-
+            l = theta[i].dot(phi).dot(theta[j])
+            if xij == 0:
+                l = 1-l
             likelihood.append(l or ma.masked)
 
         likelihood = ma.array(likelihood)
@@ -281,32 +219,16 @@ class iwmmsb_scvb3(SVB):
         # how to compute elbo for all possible links weights, mean?
         return None
 
-    def compute_roc(self, theta=None, phi=None, treshold=1):
+    def compute_roc(self, theta=None, phi=None):
         from sklearn.metrics import roc_curve, auc, precision_recall_curve
 
         if theta is None:
             theta, phi = self._reduce_latent()
 
-        weights = self.data_test[:,2]
-        phi_mean = self.get_mean_phi()
-
-        if treshold == 'mean_data':
-            mean = weights[weights>0].mean()
-            std = weights[weights>0].std()
-            trsh = int(mean+std)
-        if treshold == 'mean_model':
-            mean_, var_ = self.get_nb_ss()
-            mean = mean_.mean()
-            std = var_.mean()**0.5
-            trsh = int(mean+std)
-        else:
-            trsh = treshold
-
         y_true = []
         probas = []
         for i,j, xij in self.data_test:
-            qij = theta[i].dot(phi_mean).dot(theta[j])
-            pij =  1 - sp.stats.poisson.cdf(trsh, qij)
+            pij = theta[i].dot(phi).dot(theta[j])
             y_true.append(xij>0)
             probas.append(pij)
 
@@ -321,51 +243,18 @@ class iwmmsb_scvb3(SVB):
 
         theta, phi = self._reduce_latent()
 
-        weights = self.data_test[:,2]
-        phi_mean = self.get_mean_phi()
-
-        treshold = 'mean_model'
-        if treshold == 'mean_data':
-            mean = weights[weights>0].mean()
-            std = weights[weights>0].std()
-        if treshold == 'mean_model':
-            mean_, var_ = self.get_nb_ss()
-            mean = mean_.mean()
-            std = var_.mean()**0.5
-
-        #trsh = int(mean_w)
-        trsh = int(mean+std)
 
         y_true = []
         probas = []
         for i,j, xij in self.data_test:
-            qij = theta[i].dot(phi_mean).dot(theta[j])
-            pij =  1 - sp.stats.poisson.cdf(trsh, qij)
+            pij = theta[i].dot(phi).dot(theta[j])
             y_true.append(xij>0)
             probas.append(pij)
 
         return np.array(y_true), np.array(probas)
 
-
-    def compute_wsim(self, theta=None, phi=None):
-        if theta is None:
-            theta, phi = self._reduce_latent()
-
-        # NB mean/var
-        mean, var = self.get_nb_ss()
-        phi = mean
-
-        weights = self.data_test[:,2]
-        nnz = self.data_test.shape[0]
-        sim = []
-        for i,j,_w in self.data_test:
-            w = np.random.poisson(theta[i].dot(phi).dot(theta[j].T))
-            sim.append(w)
-
-        # l1 norm
-        mean_dist = np.abs(np.array(w) - weights.T).sum() / nnz
-        return mean_dist
-
+    def compute_wsim(self, *args):
+        return
 
     def compute_measures(self, begin_it=0):
         ''' Compute measure as model attributes.
@@ -397,22 +286,6 @@ class iwmmsb_scvb3(SVB):
         return
 
 
-    def generate(self, N=None, K=None, hyperparams=None, mode='predictive', symmetric=True, **kwargs):
-        #self.update_hyper(hyperparams)
-        #alpha, gmma, delta = self.get_hyper()
-
-        # predictive
-        try: theta, phi = self.get_params()
-        except: return self.generate(N, K, hyperparams, 'generative', symmetric)
-        K = theta.shape[1]
-
-        raise NotImplementedError
-
-        pij = self.likelihood(theta, phi)
-        pij = np.clip(pij, 0, 1)
-        Y = sp.stats.bernoulli.rvs(pij)
-
-        return Y
 
     def fit(self, frontend):
         ''' chunk is the number of row to process in a minibach '''
@@ -444,6 +317,7 @@ class iwmmsb_scvb3(SVB):
             else:
                 i = source
                 j = target
+                weight = int(weight>0)
                 weights.append(weight)
                 if direction == 0:
                     node_idxs.append(j)
@@ -494,14 +368,8 @@ class iwmmsb_scvb3(SVB):
                 self._update_gstep_theta([vertex]+node_idxs)
 
                 #scaler = self._len['nnz']
-                self.N_phi = (1 - self.gstep_phi)*self.N_phi + self.gstep_phi * scaler * qijs_sum /norm
-                if set_pos != '0':
-                    self.N_Y = (1 - self.gstep_y)*self.N_Y + self.gstep_y * scaler * np.sum([weights[n]*qijs[n] for n in range(len(weights)) ],0) /norm
-                    self._timestep_c += scaler
-                    self._update_gstep_y()
-
-                    if self._hyper_phi == 'auto' and (mnb_num <100 or mnb_num%100==0):
-                        self._optimize_hyper()
+                x = 1 if set_pos != '0' else 0
+                self.N_phi[x] = (1 - self.gstep_phi)*self.N_phi[x] + self.gstep_phi * scaler * qijs_sum /norm
 
 
                 self._timestep_b += scaler

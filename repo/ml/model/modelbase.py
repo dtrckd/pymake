@@ -194,7 +194,7 @@ class ModelBase():
 
 
     def update_hyper(self):
-        self.log.warning('no method to update hyperparams')
+        self.log.warning('No method to update hyperparams..')
         return
 
     def get_hyper(self):
