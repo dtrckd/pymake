@@ -12,10 +12,9 @@ def main():
     zymake = GramExp.zymake()
     zyvar = zymake._conf
 
-    if zyvar.get('simulate') and ( not zyvar['_do'] in ['run', 'runpara'] or not zyvar.get('script')):
+    if zyvar.get('simulate') and ( not zyvar['_do'] in ['run', 'runpara', 'path'] or not zyvar.get('script')):
         # same as show !
         zymake.simulate()
-
 
     lines = None
     line_prefix = ''

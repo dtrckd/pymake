@@ -9,7 +9,7 @@ class Levy(ExpDesign):
     net_all = data_net_all + net_gt
     net_random = Corpus(['clique6', 'BA'])
 
-    net_weighted = Corpus(['astro-ph', 'cond-mat', 'email-Enron', 'hep-th', 'netscience'])
+    net_weighted = Corpus(['astro-ph', 'cond-mat', 'hep-th', 'netscience'])
 
     data_text_all = Corpus(['kos', 'nips12', 'nips', 'reuter50', '20ngroups']) # lucene
 

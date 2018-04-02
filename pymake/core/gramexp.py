@@ -698,8 +698,8 @@ class GramExp(object):
          |   pmk run SPEC [--script [fun][*args]] ...         : execute tasks (default if -x is given)
          |   pmk runpara SPEC [--script [fun][*args]] ...     : parallelize tasks (implicit if --cores is given)
          |   pmk hist [-n n_lines]                            : show command history
-         |   pmk cmd SPEC ...                                 : generate command-line
-         |   pmk path SPEC Filetype(pk|json|inf) [status] ... : show output_path
+         |   pmk cmd SPEC ...                                 : Try to generate the command-line for each expe.
+         |   pmk path SPEC Filetype(pk|json|inf) [status] ... : show output_path of each expe.
         ''' + '\n' + usage
 
         s, parser, expdesign_lkp = GramExp.parseargsexpe(usage)
@@ -739,6 +739,7 @@ class GramExp(object):
         for i, v in enumerate(do.copy()):
             if str.isdigit(v):
                 run_indexs.append(int(v))
+                do.remove(v)
                 checksum -= 1
             else:
                 for ont, words in ontology.items():
@@ -865,7 +866,7 @@ class GramExp(object):
                     else:
                         _arg = e[a.dest]
                         if isinstance(_arg, (list, set, tuple)):
-                            _arg = ' '.join(_arg)
+                            _arg = ' '.join(str(_arg))
                         command += [a.option_strings[0]] + [str(_arg)]
                         args_seen.append(a.dest)
 
