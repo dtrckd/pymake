@@ -401,7 +401,7 @@ class GramExp(object):
                     raise ValueError('error, exp value should be iterable: %s' % k, v)
 
     def get_set(self, key, default=[]):
-        ''' Return the set of values of expVector of that {key}. '''
+        ''' Return the (ordered) set of values of expVector of that {key}. '''
         try:
             return sorted(set(self._tensors.get_all(key, default)))
         except TypeError:
@@ -430,7 +430,7 @@ class GramExp(object):
 
         return nk
 
-    def get_array_loc(self, key1, key2, params):
+    def get_array_loc(self, key1, key2, params, repeat=False):
         ''' Construct an 2d sink array.
             Return the zeros valued array of dimensions given by x and y {keys} dimension
         '''
@@ -455,7 +455,10 @@ class GramExp(object):
         tr = lambda d,k:d[str(k)] if isinstance(k, (list, set, dict)) else d[k]
 
         floc = lambda k1, k2, z:(tr(d1,k1), tr(d2,k2), d3[z])
-        array = np.ma.array(np.empty(list(map(len, loc)))*np.nan, mask=True)
+        shape = list(map(len, loc))
+        if repeat:
+            shape = [len(self.get_set('_repeat'))] + shape
+        array = np.ma.array(np.empty(shape)*np.nan, mask=True)
         return array, floc
 
 

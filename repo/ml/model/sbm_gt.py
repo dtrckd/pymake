@@ -1,11 +1,15 @@
+from time import time
 from collections import defaultdict
 import numpy as np
-from graph_tool.all import *
+from numpy import ma
 
 from .modelbase import ModelBase
 
+import graph_tool as gt
+from graph_tool import inference
 
-class SBM_BASE(ModelBase):
+
+class SbmBase(ModelBase):
     __abstractmethods__ = 'model'
 
     def _init_params(self, frontend):
@@ -19,6 +23,13 @@ class SBM_BASE(ModelBase):
             weights.append(frontend.weight(i,j))
         frontend.reverse_filter()
         self.data_test = np.hstack((data_test, np.array(weights)[None].T))
+
+        # For fast computation of bernoulli pmf.
+        self._w_a = self.data_test[:,2].T.astype(int)
+        self._w_a[self._w_a > 0] = 1
+        self._w_a[self._w_a == 0] = -1
+        self._w_b = np.zeros(self._w_a.shape, dtype=int)
+        self._w_b[self._w_a == -1] = 1
 
         _len = {}
         _len['K'] = self.expe.get('K')
@@ -34,11 +45,6 @@ class SBM_BASE(ModelBase):
         self._K = self._len['K']
         self._is_symmetric = frontend.is_symmetric()
 
-    def _reduce_latent(self):
-        theta = self._state.get_blocks()
-        phi = self._state.get_matrix()
-
-        return theta, phi
 
     def _equilibrate(self):
         K = self.expe.K
@@ -67,10 +73,150 @@ class SBM_BASE(ModelBase):
         print(entropy)
         print(len(entropy))
 
+    def _reduce_latent(self):
+        if hasattr(self, 'get_overlap_blocks'):
+            raise NotImplementedError
+        else:
+            try:
+               _theta = self._state.get_blocks().a
+               theta = np.zeros((len(_theta), self._K))
+               theta[(np.arange(len(_theta)), _theta)] = 1
+            except AttributeError as e:
+                return self._theta, self._phi
 
-class SBM_gt(ModelBase):
+        phi = self._state.get_matrix().A
+        phi = phi / phi.sum()
 
-    def fit(self):
-        self._state =
+        self._theta, self._phi = theta, phi
+
+        return theta, phi
+
+    def likelihood(self, theta=None, phi=None):
+        if theta is None:
+            theta = self._theta
+        if phi is None:
+            phi = self._phi
+
+        # method 1
+        #qijs = []
+        #for i,j, xij in self.data_test:
+        #    qijs.append( theta[i].dot(phi).dot(theta[j]) )
+
+        # method 2
+        qijs = []
+        for i,j, xij in self.data_test:
+            try:
+                pij = np.exp(self._state.get_edges_prob([(i,j),]))
+            except AttributeError:
+                # If recomputed with fig :_roc...
+                pij =  theta[i].dot(phi).dot(theta[j])
+
+            qijs.append( pij )
+
+        qijs = ma.masked_invalid(qijs)
+        return qijs
+
+
+    def compute_entropy(self, theta=None, phi=None, **kws):
+        if 'likelihood' in kws:
+            pij = kws['likelihood']
+        else:
+            if theta is None:
+                theta, phi = self._reduce_latent()
+            pij = self.likelihood(theta, phi)
+
+        ll = pij * self._w_a + self._w_b
+
+        ll[ll<=1e-300] = 1e-300
+        # Log-likelihood
+        ll = np.log(ll).sum()
+        # Perplexity is 2**H(X).
+        return ll
+        #return self._state.entropy()
+
+    def compute_roc(self, theta=None, phi=None, **kws):
+        from sklearn.metrics import roc_curve, auc, precision_recall_curve
+
+        if 'likelihood' in kws:
+            pij = kws['likelihood']
+        else:
+            if theta is None:
+                theta, phi = self._reduce_latent()
+            pij = self.likelihood(theta, phi)
+
+        weights = np.squeeze(self.data_test[:,2].T)
+
+        y_true = weights.astype(bool)*1
+
+        fpr, tpr, thresholds = roc_curve(y_true, pij)
+        roc = auc(fpr, tpr)
+        return roc
+
+    def compute_wsim(self, *args, **kws):
+        return None
+
+
+    def _spec_from_expe(self, _model):
+        ''' Set Sklearn parameters. '''
+        import inspect # @temp to be integrated
+
+        model_params = list(inspect.signature(_model).parameters)
+        spec = dict()
+        spec_map = getattr(self, 'spec_map', {})
+        default_spec = getattr(self, '_default_spec', {})
+        for k in model_params:
+            if k in list(self.expe)+list(spec_map):
+                _k = spec_map.get(k, k)
+                if _k in self.expe:
+                    spec[k] = self.expe[_k]
+                elif callable(_k):
+                    spec[k] = _k(self)
+            elif k in default_spec:
+                spec[k] = default_spec[k]
+
+
+        return spec
+
+    def fit(self, frontend):
+        self._init(frontend)
+        g = self.frontend.data
+
+        fit_fun = inference.minimize_blockmodel_dl
+        spec = self._spec_from_expe(fit_fun)
+
+        self.log.info("Fitting `%s' model with spec: %s" % (type(self), str(spec)))
+        self._state = fit_fun(g, **spec)
+
+        self.compute_measures()
+        if self.expe.get('_write'):
+            self.write_current_state(self)
+
+
+class SBM_gt(SbmBase):
+
+    _default_spec = dict(deg_corr=False, overlap=False, layers=False)
+    spec_map = dict(B_min='K', B_max='K')
+
+
+class OSBM_gt(SbmBase):
+
+    _default_spec = dict(deg_corr=False, overlap=True, layers=False)
+    spec_map = dict(B_min='K', B_max='K')
+
+class WSBM_gt(SbmBase):
+
+    _default_spec = dict(deg_corr=False, overlap=False, layers=False)
+    spec_map = dict(B_min='K', B_max='K', state_args=lambda self: {'recs':[self.frontend.data.ep.weights], 'rec_types' : ["discrete-poisson"]})
+
+class WSBM2_gt(SbmBase):
+    # graph_tool work in progress for weithed networds...
+    _default_spec = dict(deg_corr=False, overlap=False, layers=False)
+    spec_map = dict(B_min='K', B_max='K',
+                    state_args=lambda self:{'eweight': self.frontend.data.ep.weights,'recs':[self.frontend.data.ep.weights], 'rec_types': ["discrete-poisson"]})
+
+
+
+class OWSBM_gt(SbmBase):
+    pass
 
 

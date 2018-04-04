@@ -54,6 +54,9 @@ class Net(ExpeFormat):
         if hasattr(frontend, '_check'):
             frontend._check()
 
+        g = frontend.data
+        print(g.vp)
+
         if self.is_last_expe():
             tablefmt = 'simple' # 'latex'
             print(colored('\nStats Table :', 'green'))

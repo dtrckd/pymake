@@ -245,7 +245,7 @@ class ExpeFormat(object):
                 frame = self.gramexp._figs[expe[group]]
                 frame.ax = lambda: frame.fig.gca()
 
-                kernel = fun(self, frame, *args[1:], **kwargs)
+                kernel = fun(self, frame, *args[1:])
 
                 # Set title and filename
                 title = ' '.join('{{{0}}}'.format(w) for w in groups).format(**self.specname(expe))
@@ -320,7 +320,7 @@ class ExpeFormat(object):
                 frame = self.gramexp._figs[ggroup]
                 frame.ax = lambda: frame.fig.gca()
 
-                kernel = fun(self, frame, attribute, **kwargs)
+                kernel = fun(self, frame, attribute)
 
                 # Set title and filename
                 if groups and self.expe.get(groups[0]):
@@ -390,6 +390,7 @@ class ExpeFormat(object):
 
                 _z = z.split('-')
 
+                # self.is_first_expe
                 if not hasattr(self.gramexp, '_tables'):
                     tables = dict()
                     if groups:
@@ -400,7 +401,7 @@ class ExpeFormat(object):
                     for g in gset:
                         gg = '-'.join(sorted(map(str,g))) if g else None
                         tables[gg] = ExpSpace()
-                        array, floc = self.gramexp.get_array_loc(x, y, _z)
+                        array, floc = self.gramexp.get_array_loc(x, y, _z, repeat=kwargs.get('repeat'))
                         tables[gg].name = gg
                         tables[gg].array = array
                         tables[gg].floc = floc
@@ -408,36 +409,47 @@ class ExpeFormat(object):
                     self.gramexp._tables = tables
 
                 frame = self.gramexp._tables[ggroup]
-                array = frame.array
                 floc = frame.floc
+                if kwargs.get('repeat'):
+                    repeat_pos = self.pt['_repeat']
+                    array = frame.array[repeat_pos]
+                else:
+                    array = frame.array
+
 
                 for z in _z:
-                    kernel = fun(self, array, floc, x, y, z, **kwargs)
+                    kernel = fun(self, array, floc, x, y, z)
 
                 if self._it == self.expe_size -1:
-                    for ggroup in list(self.gramexp._tables):
-                        _table = self.gramexp._tables.pop(ggroup)
-                        array = _table.array
-                        for zpos, z in enumerate(_z):
-                            # Format table
-                            #tablefmt = 'latex' # 'simple'
-                            tablefmt = 'latex' if 'tex' in discr_args else 'simple'
-                            Meas = self.specname(self.gramexp.get_set(y))
-                            arr = self.highlight_table(array[:,:,zpos])
-                            table = np.column_stack((self.specname(self.gramexp.get_set(x)), arr))
-                            Table = tabulate(table, headers=Meas, tablefmt=tablefmt, floatfmt='.3f')
+                    #tablefmt = 'latex' # 'simple'
+                    tablefmt = 'latex' if 'tex' in discr_args else 'simple'
+                    if kwargs.get('repeat'):
+                        #for _model, table in self.gramexp.tables.items():
+                        for ggroup in list(self.gramexp._tables):
+                            _table = self.gramexp._tables.pop(ggroup)
+                            array = _table.array
+                            for zpos, z in enumerate(_z):
+                                Meas = self.specname(self.gramexp.get_set(y))
 
-                            gg = z +'-'+ ggroup if ggroup else z
-                            self.gramexp._tables[gg] = ExpSpace({'table': Table,
-                                                                 'base':'_'.join((fun.__name__,
-                                                                                  str(self.expe[x]),
-                                                                                  str(self.expe[y]))),
-                                                                 'args':discr_args,
-                                                                 #'args':self.gramexp.get_nounique_keys(x, y),
-                                                                })
+                                # Mean and standard deviation
+                                table = array[:,:,:,zpos]
+                                mtable = self.highlight_table(np.around(table.mean(0), decimals=3))
+                                vtable = np.around(table.std(0), decimals=3)
+                                table_mean = np.char.array(mtable).astype("|S42")
+                                table_std = np.char.array(vtable).astype("|S42")
+                                arr = table_mean + b' pm ' + table_std
 
-                            print(colored('\n%s Table:'%(gg), 'green'))
-                            print(Table)
+                                self.log_table(x, y, z, arr, Meas, fun, ggroup, discr_args, tablefmt=tablefmt)
+
+                    else:
+                        for ggroup in list(self.gramexp._tables):
+                            _table = self.gramexp._tables.pop(ggroup)
+                            array = _table.array
+                            for zpos, z in enumerate(_z):
+                                Meas = self.specname(self.gramexp.get_set(y))
+                                arr = self.highlight_table(array[:,:,zpos])
+
+                                self.log_table(x, y, z, arr, Meas, fun, ggroup, discr_args, tablefmt=tablefmt)
 
 
                     if self.expe._write:
@@ -447,13 +459,47 @@ class ExpeFormat(object):
                 return kernel
             return wrapper
 
-
         return decorator
 
 
     @staticmethod
+    def expe_repeat(fun):
+
+        def wrapper(self, *args, **kwargs):
+
+            repeats = self.get_expset('_repeat')
+            if len(repeats)>1:
+                kwargs['repeat'] = True
+
+            res = fun(self, *args, **kwargs)
+
+            return res
+
+        return wrapper
+
+    def log_table(self, x, y, z, arr, headers, fun, ggroup, discr_args, tablefmt='simple', floatfmt='.3f'):
+        table = np.column_stack((self.specname(self.gramexp.get_set(x)), arr))
+        Table = tabulate(table, headers=headers, tablefmt=tablefmt, floatfmt=floatfmt)
+
+        gg = z +'-'+ ggroup if ggroup else z
+        self.gramexp._tables[gg] = ExpSpace({'table': Table,
+                                             'base':'_'.join((fun.__name__,
+                                                              str(self.expe[x]),
+                                                              str(self.expe[y]))),
+                                             'args':discr_args,
+                                             #'args':self.gramexp.get_nounique_keys(x, y),
+                                            })
+
+        print(colored('\n%s Table:'%(gg), 'green'))
+        print(Table)
+
+
+
+    @staticmethod
     def _file_part(group, sep='_'):
-        part = sep.join(map(str, filter(None, group)))
+        part = map(str, filter(None, group))
+        part = [e for e in part if e  != 'None']
+        part = sep.join(part)
         return part
 
     def highlight_table(self, array, highlight_dim=1):

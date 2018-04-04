@@ -72,9 +72,8 @@ class Plot(ExpeFormat):
         plt.legend(loc='upper right',prop={'size':1})
 
 
-    #@ExpeFormat.plot(1,2) # improve ergonomy ?
     @ExpeFormat.plot()
-    def fig(self, frame, attribute, *args):
+    def fig(self, frame, attribute):
         ''' Plot all figure args is  `a:b..:c' (plot c by grouping by a, b...),
             if args is given, use for filename discrimination `key1[/key2]...'.
         '''
@@ -134,9 +133,9 @@ class Plot(ExpeFormat):
         return
 
 
-    #@ExpeFormat.table(1,2) # improve ergonomy ?
+    @ExpeFormat.expe_repeat
     @ExpeFormat.table()
-    def tab(self, array, floc, x, y, z, *args):
+    def tab(self, array, floc, x, y, z):
         ''' Plot table according to parameter `x:y:z[-z2](param)'
             if args is given, use for filename discrimination `key1[/key2]...'
         '''
@@ -167,6 +166,8 @@ class Plot(ExpeFormat):
         loc = floc(expe[x], expe[y], z)
         array[loc] = data
         return
+
+
 
 
     #

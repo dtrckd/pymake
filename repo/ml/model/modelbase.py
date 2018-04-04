@@ -59,7 +59,6 @@ class ModelBase():
         # change to semantic -> update value (t+1)
         self.samples = [] # actual sample
         self._samples    = [] # slice to save to avoid writing disk a each iteratoin. (ref format.write_current_state.)
-        self.time_it = 0
 
         for k, v in self.default_settings.items():
             self._set_default_settings(k, expe, v)
@@ -97,6 +96,8 @@ class ModelBase():
 
         if hasattr(self, '_init_params'):
             self._init_params(*args, **kwargs)
+
+        self.begin_it = time()
 
 
     # @Dense mmsb
@@ -149,7 +150,7 @@ class ModelBase():
                 if not hasattr(self, m):
                     setattr(self, m, None)
 
-    def compute_measures(self, begin_it=0):
+    def compute_measures(self):
         ''' Compute measure as model attributes.
             begin_it: is the time of the begining of the iteration.
         '''
@@ -157,15 +158,17 @@ class ModelBase():
         if self.expe.get('deactivate_measures'):
             return
 
+        if hasattr(self, 'begin_it'):
+            self.time_it = time() - self.begin_it
+
         params = self._reduce_latent()
         ll = self.likelihood(*params)
         kws = {'likelihood':ll}
-        self.time_it = (time() - begin_it)
 
         for meas in self.expe._csv_typo.split():
 
             if meas.lstrip('_') == 'entropy':
-                old_entropy = self._entropy
+                old_entropy = getattr(self, '_entropy', -np.inf)
                 _meas = self.compute_entropy(*params, **kws)
                 self.entropy_diff = _meas - old_entropy
             elif hasattr(self, 'compute_'+meas.lstrip('_')):
@@ -422,10 +425,10 @@ class ModelSkl(ModelBase):
             exit(42)
 
         _module, _model = self._mm_from_str(self.module)
-        spec = self._spec_from_expe(_model)
+        self._spec = self._spec_from_expe(_model)
 
         # Init Sklearn model
-        self.model = _model(**spec)
+        self.model = _model(**self._spec)
 
 
     @staticmethod
@@ -469,6 +472,7 @@ class ModelSkl(ModelBase):
 
     def fit(self, *args, **kwargs):
         fun =  self.__hack_me_fit
+        self.log.info("Fitting `%s' model with spec: %s" % (type(self), str(self._spec)))
         return fun(*args, **kwargs)
 
     def transform(self, *args, **kwargs):

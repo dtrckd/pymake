@@ -1,5 +1,7 @@
 # WIP
 
+Same syntax for plot and tab !!!! (fig should be able to select x and y to. => write the kernel decoratro, and then upper decoratro, for fig/table,  repeat/3D! etc..
+
  @next ?
 --------
 * web server (Flask) | Gui (Electron), UI modules? ipython builder helper

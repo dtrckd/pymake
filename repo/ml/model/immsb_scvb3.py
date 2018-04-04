@@ -51,6 +51,8 @@ class immsb_scvb3(SVB):
 
         self._K = self._len['K']
         self._is_symmetric = frontend.is_symmetric()
+
+        # Eta init
         self._eta = []
         self._eta_limit = 1e-3
         self._eta_control = -1
@@ -109,13 +111,40 @@ class immsb_scvb3(SVB):
         self.N_theta_right = (dims[:, None] * np.random.dirichlet([0.5]*K, N))
 
         self.N_phi = np.zeros((2,K,K))
-        self.N_phi[0] = np.random.dirichlet([0.5]*K**2).reshape(K,K) * nnz-E
-        self.N_phi[1] = np.random.dirichlet([0.5]*K**2).reshape(K,K) * E
+        nnz0 = nnz-E
+        if self.expe.get('homo') == 'assortative':
+            N_phi_d = np.diag(np.random.dirichlet([0.5]*K)) *nnz0*3/4
+            N_phi_d1 = np.diag(np.random.dirichlet([0.5]*(K-1)), 1) *nnz0*1/8
+            if self._is_symmetric:
+                N_phi_d1 += np.diag(np.random.dirichlet([0.5]*(K-1)), -1) *nnz0*1/8
+                du = np.diag(np.ones(K-1), 1)==1
+                dl = np.diag(np.ones(K-1), -1)==1
+                N_phi_d1[dl] = N_phi_d1[du]
+            else:
+                N_phi_d1 += np.diag(np.random.dirichlet([0.5]*(K-1)), -1) *nnz0*1/8
+            N_phi = N_phi_d + N_phi_d1
+            self.N_phi[0] = ma.masked_where(N_phi==0, N_phi)
 
-        if self._is_symmetric:
-            self.N_theta_left = self.N_theta_right
-            self.N_phi[0] = np.triu(self.N_phi[0]) + np.triu(self.N_phi[0], 1).T
-            self.N_phi[1] = np.triu(self.N_phi[1]) + np.triu(self.N_phi[1], 1).T
+            N_phi_d = np.diag(np.random.dirichlet([0.5]*K)) *E*3/4
+            N_phi_d1 = np.diag(np.random.dirichlet([0.5]*(K-1)), 1) *E*1/8
+            if self._is_symmetric:
+                N_phi_d1 += np.diag(np.random.dirichlet([0.5]*(K-1)), -1) *E*1/8
+                du = np.diag(np.ones(K-1), 1)==1
+                dl = np.diag(np.ones(K-1), -1)==1
+                N_phi_d1[dl] = N_phi[du]
+            else:
+                N_phi_d1 += np.diag(np.random.dirichlet([0.5]*(K-1)), -1) *E*1/8
+            N_phi = N_phi_d + N_phi_d1
+            self.N_phi[1] = ma.masked_where(N_phi==0, N_phi)
+
+        else:
+            self.N_phi[0] = np.random.dirichlet([0.5]*K**2).reshape(K,K) * nnz0
+            self.N_phi[1] = np.random.dirichlet([0.5]*K**2).reshape(K,K) * E
+
+            if self._is_symmetric:
+                self.N_theta_left = self.N_theta_right
+                self.N_phi[0] = np.triu(self.N_phi[0]) + np.triu(self.N_phi[0], 1).T
+                self.N_phi[1] = np.triu(self.N_phi[1]) + np.triu(self.N_phi[1], 1).T
 
 
     def _update_gstep_theta(self, idxs):
@@ -304,6 +333,7 @@ class immsb_scvb3(SVB):
                 node_idxs = _node_idxs
                 weights = _weights
                 new_mnb = False
+                self.begin_it = time()
                 continue
 
             if new_mnb:

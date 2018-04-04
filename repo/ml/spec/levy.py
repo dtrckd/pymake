@@ -5,13 +5,12 @@ class Levy(ExpDesign):
 
 
     data_net_all = Corpus(['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad', 'generator7', 'generator12', 'generator10', 'generator4'])
-    net_gt = Corpus(['astro-ph', 'cond-mat', 'email-Enron', 'hep-th', 'netscience']) # all undirected
+    net_gt = Corpus(['astro-ph', 'cond-mat', 'hep-th', 'netscience']) # all undirected
+    #net_gt = Corpus(['astro-ph', 'cond-mat', 'email-Enron', 'hep-th', 'netscience']) # all undirected
     net_all = data_net_all + net_gt
     net_random = Corpus(['clique6', 'BA'])
 
-    net_weighted = Corpus(['astro-ph', 'cond-mat', 'hep-th', 'netscience'])
-
-    data_text_all = Corpus(['kos', 'nips12', 'nips', 'reuter50', '20ngroups']) # lucene
+    net_w = Corpus(['manufacturing', 'fb_uc']) + net_gt
 
     #
     # Poisson Point process :
@@ -94,14 +93,25 @@ class Levy(ExpDesign):
     arm_sampling_d = ExpGroup(warm_sampling, delta='auto', model='immsb_scvb3',
                               _csv_typo='_observed_pt time_it _entropy _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b _roc _wsim')
 
-    eta = ExpGroup([warm_sampling_d, arm_sampling_d], _refdir='eta', corpus=net_weighted,
+    eta_b = ExpGroup([arm_sampling_d], _refdir='eta', corpus=net_w,
                    zeros_set_prob=[1/2, 1/4])
+    eta_w = ExpGroup([warm_sampling_d], _refdir='eta', corpus=net_w,
+                   zeros_set_prob=[1/2, 1/4])
+    eta = ExpGroup([eta_b, eta_w])
 
-    # todo(step size sensibility) /  one step for each i => done; wmmsb3
-    # todo(sampling sensibility) / same amount of zeros than edge for each node => done; sparse_sampling (chunk=sparse)
+    eta_sbm = ExpGroup(warm, _refdir='eta', corpus=net_w, model=['sbm_gt', 'wsbm_gt', 'wsbm2_gt', 'rescal_als'],
+                       zeros_set_prob=None, zeros_set_len=None, delta=None,
+                       _csv_typo='time_it _entropy _K _roc _wsim')
+
 
 
     warm_visu = ExpGroup(warm_debug, delta=[[1,1],'auto'],
-                             zeros_set_prob = [1/2],  zeros_set_len=[10])
+                         zeros_set_prob = [1/2],  zeros_set_len=[10])
+
+    # Best selection visu
+    best_mmsb = ExpGroup(eta_b, zeros_set_prob=1/4, zeros_set_len=50, delta='auto')
+    best_wmmsb = ExpGroup(eta_w, zeros_set_prob=1/4, zeros_set_len=50, delta=[[0.5,10]])
+    best_scvb = ExpGroup([best_mmsb, best_wmmsb])
+    eta_best = ExpGroup([best_scvb, eta_sbm])
 
 

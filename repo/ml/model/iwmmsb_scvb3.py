@@ -44,6 +44,8 @@ class iwmmsb_scvb3(SVB):
 
         self._K = self._len['K']
         self._is_symmetric = frontend.is_symmetric()
+
+        # Eta init
         self._eta = []
         self._eta_limit = 1e-3
         self._eta_control = -1
@@ -99,15 +101,40 @@ class iwmmsb_scvb3(SVB):
         self.N_theta_left = (dims[:, None] * np.random.dirichlet([0.5]*K, N))
         self.N_theta_right = (dims[:, None] * np.random.dirichlet([0.5]*K, N))
 
-        self.N_phi = np.random.dirichlet([0.5]*K**2).reshape(K,K) *nnz
+        if self.expe.get('homo') == 'assortative':
+            N_phi_d = np.diag(np.random.dirichlet([0.5]*K)) *nnz*3/4
+            N_phi_d1 = np.diag(np.random.dirichlet([0.5]*(K-1)), 1) *nnz*1/8
+            if self._is_symmetric:
+                N_phi_d1 += np.diag(np.random.dirichlet([0.5]*(K-1)), -1) *nnz*1/8
+                du = np.diag(np.ones(K-1), 1)==1
+                dl = np.diag(np.ones(K-1), -1)==1
+                N_phi_d1[dl] = N_phi_d1[du]
+            else:
+                N_phi_d1 += np.diag(np.random.dirichlet([0.5]*(K-1)), -1) *nnz*1/8
+            N_phi = N_phi_d + N_phi_d1
+            self.N_phi = ma.masked_where(N_phi==0, N_phi)
 
-        #self.N_Y = np.random.poisson(0.1, (K,K)) * N
-        self.N_Y = np.random.dirichlet([0.1]*K**2).reshape(K,K) * nnzsum
+            N_Y_d = np.diag(np.random.dirichlet([0.5]*K)) *nnzsum*3/4
+            N_Y_d1 = np.diag(np.random.dirichlet([0.5]*(K-1)), 1) *nnzsum*1/8
+            if self._is_symmetric:
+                N_Y_d1 += np.diag(np.random.dirichlet([0.5]*(K-1)), -1) *nnzsum*1/8
+                du = np.diag(np.ones(K-1), 1)==1
+                dl = np.diag(np.ones(K-1), -1)==1
+                N_Y_d1[dl] = N_Y_d1[du]
+            else:
+                N_Y_d1 += np.diag(np.random.dirichlet([0.5]*(K-1)), -1) *nnzsum*1/8
+            N_Y = N_Y_d + N_Y_d1
+            self.N_Y = ma.masked_where(N_Y==0, N_Y)
 
-        if self._is_symmetric:
-            self.N_theta_left = self.N_theta_right
-            self.N_phi = np.triu(self.N_phi) + np.triu(self.N_phi, 1).T
-            self.N_Y = np.triu(self.N_Y) + np.triu(self.N_Y, 1).T
+        else:
+            self.N_phi = np.random.dirichlet([0.5]*K**2).reshape(K,K) * nnz
+            self.N_Y = np.random.dirichlet([0.5]*K**2).reshape(K,K) * nnzsum
+            #self.N_Y = np.random.poisson(0.1, (K,K)) * N
+
+            if self._is_symmetric:
+                self.N_theta_left = self.N_theta_right
+                self.N_phi = np.triu(self.N_phi) + np.triu(self.N_phi, 1).T
+                self.N_Y = np.triu(self.N_Y) + np.triu(self.N_Y, 1).T
 
 
     def _update_gstep_theta(self, idxs):
@@ -172,6 +199,7 @@ class iwmmsb_scvb3(SVB):
 
         # debug: Underflow
         kernel[kernel<=1e-300] = 1e-300
+        kernel = ma.masked_invalid(kernel)
 
         outer_kk = np.log(np.outer(self.pik, self.pjk)) + np.log(kernel)
 
@@ -181,7 +209,7 @@ class iwmmsb_scvb3(SVB):
         n, t = self.hyper_phi
         K = self.N_theta_left.shape[1]
 
-        phi_mean = self._phi() / (1+self._is_symmetric)
+        phi_mean = np.triu(self._phi) if self._is_symmetric else self._phi
         #phi_mean = self._phi() / (1+self._is_symmetric) * self._len['nnz_ones']
 
         # debug: Underflow
@@ -416,6 +444,7 @@ class iwmmsb_scvb3(SVB):
                 node_idxs = _node_idxs
                 weights = _weights
                 new_mnb = False
+                self.begin_it = time()
                 continue
 
             if new_mnb:
@@ -448,7 +477,7 @@ class iwmmsb_scvb3(SVB):
                     self._timestep_c += scaler
                     self._update_gstep_y()
 
-                    if self._hyper_phi == 'auto' and (mnb_num <100 or mnb_num%100==0):
+                    if self._hyper_phi == 'auto':
                         self._optimize_hyper()
 
 
@@ -507,5 +536,6 @@ class iwmmsb_scvb3(SVB):
                 print('-', end='')
             else:
                 self._eta = [self._eta[-1]]
+
 
 

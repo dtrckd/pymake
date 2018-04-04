@@ -11,20 +11,31 @@ except ImportError as e:
 
 from .modelbase import ModelBase
 
-class Rescal(ModelBase):
+class Rescal_als(ModelBase):
 
-    def fit(self, frontend):
-        data = frontend.data_ma
-        K = self.expe.K
+    def _init_params(self, frontend):
+        frontend = self.frontend
 
-        data = [sp.sparse.csr_matrix(data)]
-        A, R, fit, itr, exectimes = rescal_als(data, K, init='nvecs', lambda_A=10, lambda_R=10, maxIter=self.iterations)
+        # Save the testdata
+        data_test = np.transpose(self.frontend.data_test.nonzero())
+        frontend.reverse_filter()
+        weights = []
+        for i,j in data_test:
+            weights.append(frontend.weight(i,j))
+        frontend.reverse_filter()
+        self.data_test = np.hstack((data_test, np.array(weights)[None].T))
 
-        self.log.info('Rescal fit info : ')
-        print('fit: %s; itr: %s, exectimes: %s' % (fit, itr, exectimes))
+        # For fast computation of bernoulli pmf.
+        self._w_a = self.data_test[:,2].T.astype(int)
+        self._w_a[self._w_a > 0] = 1
+        self._w_a[self._w_a == 0] = -1
+        self._w_b = np.zeros(self._w_a.shape, dtype=int)
+        self._w_b[self._w_a == -1] = 1
 
-        self._theta = A
-        self._phi = R
+        self._K = self.expe.K
+
+    def _reduce_latent(self):
+        return self._theta, self._phi
 
     def likelihood(self, theta=None, phi=None):
         if theta is None:
@@ -32,11 +43,51 @@ class Rescal(ModelBase):
         if phi is None:
             phi = self._phi
 
-        bilinear_form = theta.dot(phi).dot(theta.T)
-        likelihood = 1 / (1 + np.exp(-bilinear_form))
+        qijs = []
+        for i,j, xij in self.data_test:
+            qijs.append( theta[i].dot(phi[0]).dot(theta[j]) )
 
-        likelihood =  likelihood[:,0,:]
+        qijs = np.array(qijs)
+        likelihood = 1 / (1 + np.exp(-qijs))
+
         return likelihood
+
+    def compute_entropy(self, theta=None, phi=None, **kws):
+        if 'likelihood' in kws:
+            pij = kws['likelihood']
+        else:
+            if theta is None:
+                theta, phi = self._reduce_latent()
+            pij = self.likelihood(theta, phi)
+
+        ll = pij * self._w_a + self._w_b
+
+        ll[ll<=1e-300] = 1e-300
+        # Log-likelihood
+        ll = np.log(ll).sum()
+        # Perplexity is 2**H(X).
+        return ll
+
+    def compute_roc(self, theta=None, phi=None, **kws):
+        from sklearn.metrics import roc_curve, auc, precision_recall_curve
+
+        if 'likelihood' in kws:
+            pij = kws['likelihood']
+        else:
+            if theta is None:
+                theta, phi = self._reduce_latent()
+            pij = self.likelihood(theta, phi)
+
+        weights = np.squeeze(self.data_test[:,2].T)
+
+        y_true = weights.astype(bool)*1
+
+        fpr, tpr, thresholds = roc_curve(y_true, pij)
+        roc = auc(fpr, tpr)
+        return roc
+
+    def compute_wsim(self, *args, **kws):
+        return None
 
     def generate(self, N=None, K=None, hyperparams=None, mode='predictive', symmetric=True, **kwargs):
         likelihood = self.likelihood()
@@ -45,6 +96,27 @@ class Rescal(ModelBase):
         #Y = likelihood
         Y = sp.stats.bernoulli.rvs(likelihood)
         return Y
+
+    def fit(self, frontend):
+        self._init(frontend)
+        K = self.expe.K
+        data = [frontend.adj()]
+
+        self.log.info("Fitting `%s' model" % (type(self)))
+        A, R, fit, itr, exectimes = rescal_als(data, K, init='nvecs', lambda_A=10, lambda_R=10)
+
+        self._theta = A
+        self._phi = R
+
+        self.log.info('rescal fit info: %s; itr: %s, exectimes: %s' % (fit, itr, exectimes))
+
+        self.compute_measures()
+        if self.expe.get('_write'):
+            self.write_current_state(self)
+
+
+
+
 
 
 def rescal(X, K):
@@ -66,3 +138,4 @@ def rescal(X, K):
     Y[Y > 0.5] = 1
     #Y = sp.stats.bernoulli.rvs(Y)
     return Y
+
