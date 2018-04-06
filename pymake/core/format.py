@@ -478,7 +478,8 @@ class ExpeFormat(object):
         return wrapper
 
     def log_table(self, x, y, z, arr, headers, fun, ggroup, discr_args, tablefmt='simple', floatfmt='.3f'):
-        table = np.column_stack((self.specname(self.gramexp.get_set(x)), arr))
+        table = arr.astype(str)
+        table = np.column_stack((self.specname(self.gramexp.get_set(x)), table))
         Table = tabulate(table, headers=headers, tablefmt=tablefmt, floatfmt=floatfmt)
 
         gg = z +'-'+ ggroup if ggroup else z

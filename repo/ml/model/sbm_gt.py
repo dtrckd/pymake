@@ -16,13 +16,7 @@ class SbmBase(ModelBase):
         frontend = self.frontend
 
         # Save the testdata
-        data_test = np.transpose(self.frontend.data_test.nonzero())
-        frontend.reverse_filter()
-        weights = []
-        for i,j in data_test:
-            weights.append(frontend.weight(i,j))
-        frontend.reverse_filter()
-        self.data_test = np.hstack((data_test, np.array(weights)[None].T))
+        self.data_test = frontend.data_test_w
 
         # For fast computation of bernoulli pmf.
         self._w_a = self.data_test[:,2].T.astype(int)

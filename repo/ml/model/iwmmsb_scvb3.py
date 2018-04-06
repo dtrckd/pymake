@@ -22,13 +22,8 @@ class iwmmsb_scvb3(SVB):
         self.frontend = frontend
 
         # Save the testdata
-        data_test = np.transpose(self.frontend.data_test.nonzero())
-        frontend.reverse_filter()
-        weights = []
-        for i,j in data_test:
-            weights.append(frontend.weight(i,j))
-        frontend.reverse_filter()
-        self.data_test = np.hstack((data_test, np.array(weights)[None].T))
+        if hasattr(self.frontend, 'data_test'):
+            self.data_test = frontend.data_test_w
 
         # Data statistics
         _len = {}
@@ -63,6 +58,7 @@ class iwmmsb_scvb3(SVB):
         if hyper_phi == 'auto':
             self.hyper_phi = np.array([0.5,10])
             self._hyper_phi = 'auto'
+            self.log.info('Optimizing hyper enabled.')
         elif len(hyper_phi) == 2:
             self.hyper_phi = np.asarray(hyper_phi)
             self._hyper_phi = 'fix'
@@ -188,7 +184,7 @@ class iwmmsb_scvb3(SVB):
             p = (self.N_phi + self.hyper_phi[1] + 1)**-1
             # @debug: Some invalie values here sometime !!
             self._kernel = lambda x:sp.stats.nbinom.pmf(x, k, 1-p)
-            self._lut_nbinom = [sp.stats.nbinom.pmf(x, k, 1-p) for x in range(42)]
+            self._lut_nbinom = [sp.stats.nbinom.pmf(x, k, 1-p) for x in range(10)]
             #kernel = sp.stats.nbinom.pmf(xij, k, 1-p)
 
         if len(self._lut_nbinom) > xij:
@@ -210,7 +206,6 @@ class iwmmsb_scvb3(SVB):
         K = self.N_theta_left.shape[1]
 
         phi_mean = np.triu(self._phi) if self._is_symmetric else self._phi
-        #phi_mean = self._phi() / (1+self._is_symmetric) * self._len['nnz_ones']
 
         # debug: Underflow
         #phi_mean[phi_mean<=1e-300] = 1e-300
@@ -274,6 +269,9 @@ class iwmmsb_scvb3(SVB):
         return self.compute_entropy_t(theta, phi, **kws)
 
     def compute_entropy_t(self, theta=None, phi=None, **kws):
+        if not hasattr(self, 'data_test'):
+            return np.nan
+
         if 'likelihood' in kws:
             pij = kws['likelihood']
         else:
@@ -432,22 +430,34 @@ class iwmmsb_scvb3(SVB):
                 observed_pt += 1
                 update_kernel = False
 
-            if vertex is None or not qij_samples:
-                # Enter here only once !%!
-                mnb_total = frontend.num_mnb()
-
-                set_pos = _set_pos
-                vertex = _vertex
-                direction = _direction
-                scaler = _scaler
-                qij_samples = _qij_samples
-                node_idxs = _node_idxs
-                weights = _weights
-                new_mnb = False
-                self.begin_it = time()
-                continue
-
             if new_mnb:
+                if vertex is None:
+                    # Enter here only once !%!
+                    mnb_total = frontend.num_mnb()
+                    self.begin_it = time()
+
+                    set_pos = _set_pos
+                    vertex = _vertex
+                    direction = _direction
+                    scaler = _scaler
+                    qij_samples = _qij_samples
+                    node_idxs = _node_idxs
+                    weights = _weights
+                    new_mnb = False
+                    continue
+                elif not qij_samples:
+                    # Assume new_mnb is true here
+                    #  Node egde/or non-edge for this guy.
+                    set_pos = _set_pos
+                    vertex = _vertex
+                    direction = _direction
+                    scaler = _scaler
+                    qij_samples = _qij_samples
+                    node_idxs = _node_idxs
+                    weights = _weights
+
+                    new_mnb = False
+                    continue
 
                 qijs = np.asarray(qij_samples)
                 # Update global gradient / Expectation

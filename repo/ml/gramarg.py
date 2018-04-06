@@ -45,7 +45,7 @@ _gram = [
         help='Set paramters of the hyper-optimization [auto|fix|symmetric|asymmetric]'),
 
     '--testset-ratio', dict(
-        dest='testset_ratio', nargs='*', action=partial(exp_append, _t=int),
+        dest='testset_ratio', nargs='*', action=partial(exp_append, _t=float),
         help='testset/learnset percentage for testing.'),
 
     '--mask', dict(

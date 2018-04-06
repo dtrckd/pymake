@@ -22,20 +22,15 @@ class immsb_scvb3(SVB):
         self.frontend = frontend
 
         # Save the testdata
-        data_test = np.transpose(self.frontend.data_test.nonzero())
-        frontend.reverse_filter()
-        weights = []
-        for i,j in data_test:
-            weights.append(frontend.weight(i,j))
-        frontend.reverse_filter()
-        self.data_test = np.hstack((data_test, np.array(weights)[None].T))
+        if hasattr(self.frontend, 'data_test'):
+            self.data_test = frontend.data_test_w
 
-        # For fast computation of bernoulli pmf.
-        self._w_a = self.data_test[:,2].T.astype(int)
-        self._w_a[self._w_a > 0] = 1
-        self._w_a[self._w_a == 0] = -1
-        self._w_b = np.zeros(self._w_a.shape, dtype=int)
-        self._w_b[self._w_a == -1] = 1
+            # For fast computation of bernoulli pmf.
+            self._w_a = self.data_test[:,2].T.astype(int)
+            self._w_a[self._w_a > 0] = 1
+            self._w_a[self._w_a == 0] = -1
+            self._w_b = np.zeros(self._w_a.shape, dtype=int)
+            self._w_b[self._w_a == -1] = 1
 
         # Data statistics
         _len = {}
@@ -225,6 +220,9 @@ class immsb_scvb3(SVB):
         return self.compute_entropy_t(theta, phi)
 
     def compute_entropy_t(self, theta=None, phi=None, **kws):
+        if not hasattr(self, 'data_test'):
+            return np.nan
+
         if 'likelihood' in kws:
             pij = kws['likelihood']
         else:
@@ -321,22 +319,34 @@ class immsb_scvb3(SVB):
                 observed_pt += 1
                 update_kernel = False
 
-            if vertex is None or not qij_samples:
-                # Enter here only once !%!
-                mnb_total = frontend.num_mnb()
-
-                set_pos = _set_pos
-                vertex = _vertex
-                direction = _direction
-                scaler = _scaler
-                qij_samples = _qij_samples
-                node_idxs = _node_idxs
-                weights = _weights
-                new_mnb = False
-                self.begin_it = time()
-                continue
-
             if new_mnb:
+                if vertex is None:
+                    # Enter here only once !%!
+                    mnb_total = frontend.num_mnb()
+                    self.begin_it = time()
+
+                    set_pos = _set_pos
+                    vertex = _vertex
+                    direction = _direction
+                    scaler = _scaler
+                    qij_samples = _qij_samples
+                    node_idxs = _node_idxs
+                    weights = _weights
+                    new_mnb = False
+                    continue
+                elif not qij_samples:
+                    # Assume new_mnb is true here
+                    #  Node egde/or non-edge for this guy.
+                    set_pos = _set_pos
+                    vertex = _vertex
+                    direction = _direction
+                    scaler = _scaler
+                    qij_samples = _qij_samples
+                    node_idxs = _node_idxs
+                    weights = _weights
+
+                    new_mnb = False
+                    continue
 
                 qijs = np.asarray(qij_samples)
                 # Update global gradient / Expectation

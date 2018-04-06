@@ -17,13 +17,7 @@ class Rescal_als(ModelBase):
         frontend = self.frontend
 
         # Save the testdata
-        data_test = np.transpose(self.frontend.data_test.nonzero())
-        frontend.reverse_filter()
-        weights = []
-        for i,j in data_test:
-            weights.append(frontend.weight(i,j))
-        frontend.reverse_filter()
-        self.data_test = np.hstack((data_test, np.array(weights)[None].T))
+        self.data_test = frontend.data_test_w
 
         # For fast computation of bernoulli pmf.
         self._w_a = self.data_test[:,2].T.astype(int)
@@ -100,7 +94,8 @@ class Rescal_als(ModelBase):
     def fit(self, frontend):
         self._init(frontend)
         K = self.expe.K
-        data = [frontend.adj()]
+        y = frontend.adj()
+        data = [y]
 
         self.log.info("Fitting `%s' model" % (type(self)))
         A, R, fit, itr, exectimes = rescal_als(data, K, init='nvecs', lambda_A=10, lambda_R=10)

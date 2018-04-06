@@ -589,6 +589,10 @@ class GramExp(object):
             elif isinstance(v, float):
                 if len(str(v).split('.')[1]) > 2:
                     fmt_expe[k] = '%.2f' % v
+                elif str(v).split('.')[1] == '0':
+                    fmt_expe[k] = '%d' % v
+                else:
+                    fmt_expe[k] = v
 
         return fmt_expe
 

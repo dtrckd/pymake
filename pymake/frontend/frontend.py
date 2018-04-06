@@ -82,6 +82,12 @@ class DataBase(object):
         if self.data is None:
             return
 
+        if self.expe.get('exponentiate'):
+            MAX = 300
+            self.data.ep['weights'].a = 2**self.data.ep['weights'].a
+            self.data.ep['weights'].a[self.data.ep['weights'].a > MAX] = int(MAX)
+            self.data.ep['weights'].a[self.data.ep['weights'].a < 0] = int(MAX)
+
         N = self.expe.get('N')
         if N is not None and N != 'all':
             self.log.debug('sampling dataset to N=%d ...' % N)
@@ -91,6 +97,10 @@ class DataBase(object):
         if testset_ratio is not None:
             self.log.debug('Building testset ...')
             self.make_testset(testset_ratio)
+
+
+        if self.expe.get('noise'):
+            self.make_noise()
 
         return
 

@@ -45,7 +45,7 @@ class Plot(ExpeFormat):
         ax.legend(loc='upper right',prop={'size':5})
 
     def _to_masked(self, lst, dtype=float):
-        themask = lambda x:np.nan if x=='--' else x
+        themask = lambda x:np.nan if x in ('--', 'None') else x
         if isinstance(lst, list):
             return ma.masked_invalid(np.array(list(map(themask, lst)), dtype=dtype))
         else:
@@ -146,7 +146,8 @@ class Plot(ExpeFormat):
 
         if data and z in data:
             # Extract from savec measure (.inf file).
-            data = self._to_masked(data[z][-1])
+            data = self._to_masked(max(data[z]))
+            #data = self._to_masked(data[z][-1])
         else:
             # Compute it directly from the model.
             if not self.model:
@@ -156,7 +157,7 @@ class Plot(ExpeFormat):
                 model = self.model
 
             if hasattr(model, 'compute_'+z.lstrip('_')):
-                data = getattr(model, 'compute_'+z.lstrip('_'))()
+                data = getattr(model, 'compute_'+z.lstrip('_'))(**expe)
             elif hasattr(self, 'get_'+z.lstrip('_')):
                 data = getattr(self, 'get_'+z.lstrip('_'))()[-1]
             else:

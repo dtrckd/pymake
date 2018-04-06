@@ -684,6 +684,8 @@ class ExpTensorV2(BaseObject):
                 _bind = tensor.pop('_bind')
                 if not isinstance(_bind, list):
                     _bind = [_bind]
+                elif len(_bind) ==1 and isinstance(_bind[0], list):
+                    _bind = _bind[0]
             else:
                 #_bind = getattr(self, '_bind', [])
                 _bind = []
