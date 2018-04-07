@@ -300,6 +300,19 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
     def getN(self):
         return self.num_nodes()
 
+    def get_testset_ratio(self):
+
+        testset_ratio = self.expe.get('testset_ratio')
+
+        if testset_ratio >= 1:
+            testset_ratio = float(testset_ratio) / 100
+        elif 0 <= testset_ratio < 1:
+            testset_ratio = float(testset_ratio)
+        else:
+            testset_ratio = None
+
+        return testset_ratio
+
     def num_nodes(self):
         return self.data.num_vertices()
 
@@ -421,7 +434,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
     # Test/Validation set
     #
 
-    def make_testset(self, testset_ratio, diag_off=1, set_filter=True):
+    def make_testset(self, diag_off=1, set_filter=True):
         ''' make the testset as a edge propertie of the graph.
             If {set_filter} is True, activate the filtering property on the graph
 
@@ -439,11 +452,8 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             Warning: if set_filter=false, wiehgt is not set in the testset matrix.
         '''
 
-        if testset_ratio >= 1:
-            testset_ratio = float(testset_ratio) / 100
-        elif 0 <= testset_ratio < 1:
-            testset_ratio = float(testset_ratio)
-        else:
+        testset_ratio = self.get_testset_ratio()
+        if not testset_ratio:
             raise ValueError('Testset ratio not understood : %s' % testset_ratio)
 
         g = self.data
@@ -552,11 +562,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         assert(not gt.topology.is_bipartite(g))
 
         if 'testset_ratio' in expe:
-            testset_ratio = float(expe.testset_ratio)
-            if testset_ratio >= 1:
-                testset_ratio = testset_ratio / 100
-            elif 0 <= testset_ratio < 1:
-                pass
+            testset_ratio = self.get_testset_ratio()
             filter = g.get_edge_filter()
             g.clear_filters()
             y = self.adj()
@@ -591,6 +597,12 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         weights = g.ep['weights']
 
         ratio = 1/float(expe['noise'])
+        ts = self.get_testset_ratio()
+        if ts:
+            ratio -= 2*ts*E/T
+            if ratio < 0:
+                raise ValueError('Negative prior for noise ration')
+
         edges = g.get_edges()
         edges_to_remove = np.random.choice(E, int(ratio*E), replace=False)
         for pos in edges_to_remove:
@@ -601,7 +613,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             else:
                 g.remove_edge(g.edge(i,j))
 
-        num_to_add = T*ratio
+        num_to_add = (T-E)*ratio
         cpt = 0
         while cpt < num_to_add:
             i, j = np.random.randint(0,N, 2)

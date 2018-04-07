@@ -48,7 +48,7 @@ class DataBase(object):
         input_path = expe._input_path
 
         if not os.path.exists(input_path):
-            self.log.error("Corpus `%s' Not found." % (input_path))
+            cls.log.error("Corpus `%s' Not found." % (input_path))
             print('please run "fetch_networks"')
             self.data = None
             return
@@ -96,7 +96,7 @@ class DataBase(object):
         testset_ratio = self.expe.get('testset_ratio')
         if testset_ratio is not None:
             self.log.debug('Building testset ...')
-            self.make_testset(testset_ratio)
+            self.make_testset()
 
 
         if self.expe.get('noise'):

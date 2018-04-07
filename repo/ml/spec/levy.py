@@ -126,11 +126,27 @@ class Levy(ExpDesign):
                         zeros_set_prob=None, zeros_set_len=None, delta=None,
                         _csv_typo='time_it _entropy _K _roc _wsim')
     eta2_b = ExpGroup(eta2_base, model="immsb_scvb3", zeros_set_prob=1/2, zeros_set_len=10, delta='auto')
+
+    eta0_w = ExpGroup(eta2_base, model="iwmmsb_scvb3", zeros_set_prob=1/2, zeros_set_len=10, delta=[[10, 0.5]])
+    eta1_w = ExpGroup(eta2_base, model="iwmmsb_scvb3", zeros_set_prob=1/2, zeros_set_len=10, delta=[[1, 1]])
     eta2_w = ExpGroup(eta2_base, model="iwmmsb_scvb3", zeros_set_prob=1/2, zeros_set_len=10, delta=[[0.5, 10]])
+    eta3_w = ExpGroup(eta2_base, model="iwmmsb_scvb3", zeros_set_prob=1/2, zeros_set_len=10, delta=[[0.1, 10]])
+    eta0_w50 = ExpGroup(eta2_base, model="iwmmsb_scvb3", zeros_set_prob=1/2, zeros_set_len=50, delta=[[10, 0.5]])
+    eta1_w50 = ExpGroup(eta2_base, model="iwmmsb_scvb3", zeros_set_prob=1/2, zeros_set_len=50, delta=[[1, 1]])
+    eta2_w50 = ExpGroup(eta2_base, model="iwmmsb_scvb3", zeros_set_prob=1/2, zeros_set_len=50, delta=[[0.5, 10]])
+
+
     eta2_ww = ExpGroup([eta2_w, eta2_wsbm])
     eta2 = ExpGroup([eta2_b, eta2_w]) # repeat 0 1 2 tstratio=20 have 2*n zeros in testset.
 
     roc_1 = ExpGroup([eta2, sbm_base], _refdir='roc1', corpus=net_w, testset_ratio=[10,20])
     roc_1_noise = ExpGroup([eta2, sbm_base], _refdir='roc1_noise', noise=20, corpus=net_w, testset_ratio=[10,20])
     roc_full = ExpGroup([roc_1, roc_1_noise])
+
+    roc_1_visu_w = ExpGroup(eta2, _refdir='roc1')
+    roc_1_visu_sbm = ExpGroup(sbm_base, _refdir='roc1', corpus=net_w, testset_ratio=20, model=['sbm_gt', 'wsbm_gt'])
+    roc_1_visu = ExpGroup([roc_1_visu_w, roc_1_visu_sbm])
+
+    roc1_w = ExpGroup([eta0_w, eta1_w, eta2_w, eta0_w50, eta1_w50, eta2_w50], _refdir='roc1')
+    roc2_w = ExpGroup([eta2_w, eta3_w], _refdir='roc1', zeros_set_len=[5,10])
 

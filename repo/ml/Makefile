@@ -3,14 +3,15 @@ SHELL = /bin/bash
 
 default:  install
 
-install:
+install: fetch_data
 	pip3 install --user -r requirements.txt
 
 
 fetch_data: net_data text_data lut
 
 net_data:
-	pushd data/networks 
+	pushd data/
+	mkdir -p .pmk/
 	python3 fetch_datasets.py
 	pushd
 

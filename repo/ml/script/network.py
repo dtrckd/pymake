@@ -21,7 +21,7 @@ class Net(ExpeFormat):
     def __call__(self):
         return self.stats()
 
-    def stats(self):
+    def stats(self, fmt='simple'):
         ''' Show data stats '''
         expe = self.expe
         frontend = FrontendManager.load(expe)
@@ -58,7 +58,7 @@ class Net(ExpeFormat):
         print(g.vp)
 
         if self.is_last_expe():
-            tablefmt = 'simple' # 'latex'
+            tablefmt = 'latex' if fmt == 'tex' else fmt
             print(colored('\nStats Table :', 'green'))
             Meas_ = self.D.Meas_
             print(self.tabulate(Table, headers=Meas_, tablefmt=tablefmt, floatfmt='.3f'))

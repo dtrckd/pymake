@@ -1,1 +1,4 @@
 sympy
+nose
+#rescal # scikit-kge ?
+
