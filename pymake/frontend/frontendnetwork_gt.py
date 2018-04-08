@@ -63,7 +63,8 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
                 raise NotImplementedError
             elif 'value' in data.ep:
                 w = data.ep['value'].copy()
-                w.a = (2**0.5)**w.a
+                #w.a = (2**0.5)**w.a
+                w.a = np.round((w.a+1)**2)
                 data.ep['weights'] = w.copy('int')
             else:
                 weights = data.new_ep("int")
@@ -367,7 +368,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
 
     def net_type(self):
         weights = self.data.ep['weights'].a
-        return 'mean/std/min/max: %.1f %.1f %d %d' % (weights.mean(),
+        return 'm/std/mn/mx: %.1f %.1f %d %d' % (weights.mean(),
                                                       weights.std(),
                                                       weights.min(),
                                                       weights.max())
@@ -477,7 +478,9 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         ix = np.array((i[ix], j[ix]))
         #testset[ix[0], ix[1]] = 1
 
-        # Now, Ignore the diagonal => include the diag indices
+        # Sampling non-edges
+        #
+        # Ignore the diagonal => include the diag indices
         # in (i,j) like if it they was selected in the testset.
         # If Undirected also force ignore the lower part of the adjacency matrix.
         if is_directed:
@@ -488,29 +491,47 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             i = np.hstack((i, j, np.arange(N)))
             j = np.hstack((j, _i, np.arange(N)))
 
-        # Sampling non-edges
-        # Notes: this sampling can fall on self-loop, but low probability...
-        k = np.ravel_multi_index((i,j), y.shape)
-        jx = np.random.choice(size, int(nz/symmetric_scale), replace=False)
+        edge_set = set(np.ravel_multi_index((i,j), y.shape))
 
-        kind = np.bincount(k, minlength=size).astype(bool)
-        jind = np.bincount(jx, minlength=size).astype(bool)
-
-        # xor on bool faster ?!
-        _n = (jind & (kind==0)).sum()
-        max_loop = 100
+        nonlinks_set = set()
+        max_loop = 150
         cpt = 0
-        while _n < int(nz/symmetric_scale) or cpt > max_loop:
-            jx = np.random.choice(size, int(nz/symmetric_scale) - _n, replace=False)
-            jind = jind|np.bincount(jx, minlength=size).astype(bool)
-            _n = (jind & (kind==0)).sum()
-            cpt += 1
-            #print(_n, n)
-        self.log.debug('Number of iteration for sampling non-edges: %d'%cpt)
+        # Add the probability to sample symmetric edge...
+        zeros_len = int(nz + int(not is_directed)*nz/size)
+        while len(nonlinks_set) < zeros_len or cpt >= max_loop:
+            nnz = zeros_len - len(nonlinks_set)
+            nonlinks_set.update(set(np.random.choice(size, nnz)))
+            nonlinks_set -= edge_set
+            cpt+=1
 
-        jx = np.arange(size)[jind & (kind==0)]
-        jx = np.array(np.unravel_index(jx, (N,N)))
-        #testset[jx[0], jx[1]] = 1
+        self.log.debug('Number of iteration for sampling non-edges: %d' % cpt)
+        if cpt >= max_loop:
+            self.log.warning('Sampling tesset nonlinks failed:')
+            print('desires size: %d, obtained: %s' % (zeros_len, len(nonlinks_set)))
+
+        jx = np.array(np.unravel_index(list(nonlinks_set), (N,N)))
+
+        #k = np.ravel_multi_index((i,j), y.shape)
+        #jx = np.random.choice(size, int(nz/symmetric_scale), replace=False)
+
+        #kind = np.bincount(k, minlength=size).astype(bool)
+        #jind = np.bincount(jx, minlength=size).astype(bool)
+
+        ## xor on bool faster ?!
+        #_n = (jind & (kind==0)).sum()
+        #max_loop = 100
+        #cpt = 0
+        #while _n < int(nz/symmetric_scale) or cpt > max_loop:
+        #    jx = np.random.choice(size, int(nz/symmetric_scale) - _n, replace=False)
+        #    jind = jind|np.bincount(jx, minlength=size).astype(bool)
+        #    _n = (jind & (kind==0)).sum()
+        #    cpt += 1
+        #    #print(_n, n)
+        #self.log.debug('Number of iteration for sampling non-edges: %d'%cpt)
+
+        #jx = np.arange(size)[jind & (kind==0)]
+        #jx = np.array(np.unravel_index(jx, (N,N)))
+
 
         # Actually settings the testset entries
         testset[ix[0], ix[1]] = 1
@@ -532,6 +553,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             # Also set the weight here...
             testset_filter = g.new_ep('bool')
             testset_filter.a = 1
+            self.log.info('Looping to set the testset edge eproperties (graph-tool)...')
             for i, j in ix.T:
                 testset_filter[i,j] = 0
             g.set_edge_filter(testset_filter)
@@ -544,6 +566,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         return
 
     def _check(self):
+        ''' Warning: will clear the filter! '''
         expe = self.expe
         g = self.data
         self._prop(g)
@@ -567,6 +590,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             g.clear_filters()
             y = self.adj()
             n = int(g.num_edges() * testset_ratio)
+            nz = int(n *float(self.expe.get('zeros_ratio', 1)))
             ix = self._links_testset
             jx = self._nonlinks_testset
             # check links testset
@@ -574,7 +598,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             # check non-links testset
             assert(np.all(y[jx[0], jx[1]] == 0))
 
-            print('Number of edge for testset: expected: %d, obtained: %d' % (n, self.data_test.sum()))
+            print('Size of testset: expected: %d, obtained: %d' % (n+nz, self.data_test.sum()))
             print('number of links: %d' % (len(ix[0])))
             print('number of non-links: %d' % (len(jx[0])))
             if filter[0]:
@@ -597,23 +621,27 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         weights = g.ep['weights']
 
         ratio = 1/float(expe['noise'])
-        ts = self.get_testset_ratio()
-        if ts:
-            ratio -= 2*ts*E/T
-            if ratio < 0:
-                raise ValueError('Negative prior for noise ration')
+        #ts = self.get_testset_ratio()
+        #if ts:
+        #    ratio -= 2*ts*E/T
+        #    if ratio < 0:
+        #        raise ValueError('Negative prior for noise ration')
+        g.set_fast_edge_removal()
 
         edges = g.get_edges()
         edges_to_remove = np.random.choice(E, int(ratio*E), replace=False)
+        _removed = set()
         for pos in edges_to_remove:
             i,j = edges[pos, :2]
             w = weights[i,j]
             if w > 1:
                 weights[i,j] = w-1
             else:
-                g.remove_edge(g.edge(i,j))
+                e = g.edge(i,j)
+                _removed.add(e)
+                g.remove_edge(e)
 
-        num_to_add = (T-E)*ratio
+        num_to_add = ratio*E*2
         cpt = 0
         while cpt < num_to_add:
             i, j = np.random.randint(0,N, 2)
@@ -621,8 +649,12 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
                 continue
             else:
                 e = g.add_edge(i,j)
+                if e in _removed:
+                    continue
                 weights[e] = 1
                 cpt+=1
+
+        return g.set_fast_edge_removal(fast=False)
 
     def __iter__(self):
 
@@ -696,7 +728,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             node = np.random.randint(0,N)
 
             # Pick a set and yield a minibatch
-            set_index = np.random.choice(set_len, 1 , p=set_prior)
+            set_index = np.random.choice(set_len, 1, p=set_prior)
 
             if set_index == 0:
                 out_e = neigs[node][0]
@@ -710,7 +742,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
 
                     zero_samples[out_e] = -1 # don't sample in edge
                     zero_samples[node] = -1 # don't sample in self loops
-                    zero_samples[self.data_test[node, :].nonzero()[1]] = -1 # don't sample in testset
+                    #zero_samples[self.data_test[node, :].nonzero()[1]] = -1 # don't sample in testset
                     zero_samples = zero_samples[zero_samples >0]
                     zero_samples = np.random.choice(zero_samples,
                                                      int(np.ceil(len(zero_samples)/mask[node, 0])),
@@ -741,7 +773,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
                     if len(in_e) > 0:
                         zero_samples[in_e] = -1
                     zero_samples[node] = -1
-                    zero_samples[self.data_test[:, node].nonzero()[0]] = -1
+                    #zero_samples[self.data_test[:, node].nonzero()[0]] = -1
                     zero_samples = zero_samples[zero_samples >0]
                     zero_samples = np.random.choice(zero_samples,
                                                     int(np.ceil(len(zero_samples)/mask[node, 1])),

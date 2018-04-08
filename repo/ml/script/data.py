@@ -70,5 +70,34 @@ class Data(ExpeFormat):
              ''')
         pass
 
+    def move(self, *args):
+        import glob
+        import shutil
+        assert(len(args)>0)
+
+        expe = self.expe
+        new_expe = expe.copy()
+
+        for o in args:
+            k,v = o.split('=')
+            new_expe[k] = v
+
+        opath = self.output_path
+        npath = self.gramexp.make_output_path(new_expe)
+
+        if self.is_first_expe():
+            self.log.info('Moving files for request: %s' % args)
+            self.D.mesg = []
+
+        for ofn in glob.glob(opath+'.*'):
+            ext = ofn[len(opath):]
+            nfn = npath + ext
+            self.D.mesg.append("`%s' -> `%s'" % (ofn, nfn))
+            shutil.move(ofn, nfn)
+
+        if self.is_last_expe():
+            self.log.debug('\n'.join(self.D.mesg))
+            self.log.info('%d files moved.' % len(self.D.mesg))
+
 
 

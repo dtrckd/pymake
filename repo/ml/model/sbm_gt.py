@@ -1,7 +1,8 @@
-from time import time
 from collections import defaultdict
 import numpy as np
+import scipy as sp
 from numpy import ma
+import scipy.stats
 
 from .modelbase import ModelBase
 
@@ -79,7 +80,9 @@ class SbmBase(ModelBase):
                 return self._theta, self._phi
 
         phi = self._state.get_matrix().A
-        phi = phi / phi.sum()
+
+        if not getattr(self, '_weighted', False):
+            phi = phi / phi.sum()
 
         self._theta, self._phi = theta, phi
 
@@ -102,7 +105,7 @@ class SbmBase(ModelBase):
             try:
                 pij = np.exp(self._state.get_edges_prob([(i,j),]))
             except AttributeError:
-                # If recomputed with fig :_roc...
+                # If recomputed with fig :roc...
                 pij =  theta[i].dot(phi).dot(theta[j])
 
             qijs.append( pij )
@@ -201,12 +204,60 @@ class WSBM_gt(SbmBase):
 
     _default_spec = dict(deg_corr=False, overlap=False, layers=False)
     spec_map = dict(B_min='K', B_max='K', state_args=lambda self: {'recs':[self.frontend.data.ep.weights], 'rec_types' : ["discrete-poisson"]})
+    _weighted = True
+
+    def compute_entropy(self, theta=None, phi=None, **kws):
+        if 'likelihood' in kws:
+            pij = kws['likelihood']
+        else:
+            if theta is None:
+                theta, phi = self._reduce_latent()
+            pij = self.likelihood(theta, phi)
+
+        weights = self.data_test[:,2].T
+        ll = sp.stats.poisson.pmf(weights, pij)
+
+        ll[ll<=1e-300] = 1e-300
+        # Log-likelihood
+        ll = np.log(ll).sum()
+        # Perplexity is 2**H(X).
+        return ll
+        #return self._state.entropy()
+
+    def compute_roc(self, theta=None, phi=None, treshold=1, **kws):
+        from sklearn.metrics import roc_curve, auc, precision_recall_curve
+
+        if 'likelihood' in kws:
+            pij = kws['likelihood']
+        else:
+            if theta is None:
+                theta, phi = self._reduce_latent()
+            pij = self.likelihood(theta, phi)
+
+        trsh = treshold
+        weights = np.squeeze(self.data_test[:,2].T)
+
+        phi = phi / phi.sum()
+        probas = []
+        for i,j, xij in self.data_test:
+            pij =  theta[i].dot(phi).dot(theta[j])
+            probas.append( pij )
+
+        probas = ma.masked_invalid(probas)
+        #probas = 1 - sp.stats.poisson.cdf(trsh, pij)
+
+        y_true = weights.astype(bool)*1
+
+        fpr, tpr, thresholds = roc_curve(y_true, probas)
+        roc = auc(fpr, tpr)
+        return roc
 
 class WSBM2_gt(SbmBase):
     # graph_tool work in progress for weithed networds...
     _default_spec = dict(deg_corr=False, overlap=False, layers=False)
     spec_map = dict(B_min='K', B_max='K',
                     state_args=lambda self:{'eweight': self.frontend.data.ep.weights,'recs':[self.frontend.data.ep.weights], 'rec_types': ["discrete-poisson"]})
+
 
 
 

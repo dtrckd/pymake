@@ -175,17 +175,18 @@ class immsb_scvb3(SVB):
 
         return self._theta, self._phi
 
-    def _reduce_one(self, i, j, xij, update_kernel=True):
+    def _reduce_one(self, i, j, xij, update_local=True, update_kernel=True):
 
-        if self._is_symmetric:
-            self.pik = self.pjk = self.N_theta_left[i] + self.hyper_theta
-            self.pjk = self.pik
-        else:
-            self.pik = self.N_theta_left[i] + self.hyper_theta
-            self.pjk = self.N_theta_right[j] + self.hyper_theta
+        if update_local:
+            if self._is_symmetric:
+                self.pik = self.pjk = self.N_theta_left[i] + self.hyper_theta
+                self.pjk = self.pik
+            else:
+                self.pik = self.N_theta_left[i] + self.hyper_theta
+                self.pjk = self.N_theta_right[j] + self.hyper_theta
 
         if update_kernel:
-            self.N_phi[self.N_phi<=1e-300] = 1e-300
+            #self.N_phi[self.N_phi<=1e-300] = 1e-300
             pxk = self.N_phi[xij] + self.hyper_phi[xij]
             # debug: Underflow
             self._kern = np.log(pxk)- np.log(self.N_phi.sum(0) + self.hyper_phi_sum)
@@ -213,7 +214,7 @@ class immsb_scvb3(SVB):
         for i,j, xij in self.data_test:
             qijs.append( theta[i].dot(phi).dot(theta[j]) )
 
-        qijs = ma.masked_invalid(qijs)
+        #qijs = ma.masked_invalid(qijs)
         return qijs
 
     def compute_entropy(self, theta=None, phi=None, **kws):
@@ -232,7 +233,7 @@ class immsb_scvb3(SVB):
 
         ll = pij * self._w_a + self._w_b
 
-        ll[ll<=1e-300] = 1e-300
+        #ll[ll<=1e-300] = 1e-300
         # Log-likelihood
         ll = np.log(ll).sum()
         # Perplexity is 2**H(X).
@@ -286,6 +287,13 @@ class immsb_scvb3(SVB):
         mnb_num = 0
         vertex = None
 
+        self.BURNIN = 150
+        qij_samples = []
+        node_idxs = []
+        weights = []
+        _qijs_sum = 0
+        _norm = 0
+
         self._entropy = self.compute_entropy()
         print( '__init__ Entropy: %f' % self._entropy)
         for _it, obj in enumerate(frontend):
@@ -303,6 +311,8 @@ class immsb_scvb3(SVB):
                 new_mnb = True
 
                 update_kernel = True
+                update_local = True
+                burnin = 0
             else:
                 i = source
                 j = target
@@ -314,10 +324,42 @@ class immsb_scvb3(SVB):
                     node_idxs.append(i)
 
                 # Maximization
-                qij_samples.append( self._reduce_one(i,j, weight, update_kernel).reshape(self._len['K'], self._len['K']) )
+                qij_samples.append( self._reduce_one(i,j, weight, update_local, update_kernel).reshape(self._len['K'], self._len['K']) )
 
                 observed_pt += 1
+                burnin += 1
                 update_kernel = False
+                update_local = False
+
+            if (new_mnb or burnin % self.BURNIN == 0) and qij_samples:
+                qijs = np.asarray(qij_samples)
+                ## Update global gradient / Expectation
+                ##norm=1
+                norm = qijs.shape[0]
+                qijs_sum = qijs.sum(0)
+
+                _qijs_sum += qijs_sum
+                _norm += norm
+
+                gstep_v = self.gstep_theta[vertex]
+                gstep_nodes = self.gstep_theta[node_idxs][None].T
+
+                if direction == 0:
+                    self.N_theta_left[i] = (1-gstep_v)*self.N_theta_left[i] + gstep_v*scaler*qijs_sum.sum(0) /norm
+                    self.N_theta_right[node_idxs] = (1-gstep_nodes)*self.N_theta_right[node_idxs] + gstep_nodes*scaler*qijs.sum(2)
+                else:
+                    self.N_theta_left[node_idxs] = (1-gstep_nodes)*self.N_theta_left[node_idxs] + gstep_nodes*scaler*qijs.sum(1)
+                    self.N_theta_right[j] = (1-gstep_v)*self.N_theta_right[j] + gstep_v*scaler*qijs_sum.sum(1) /norm
+
+                self._timestep_a[vertex] += norm
+                self._timestep_a[node_idxs] += 1
+                self._update_gstep_theta([vertex]+node_idxs)
+
+                qij_samples.clear()
+                node_idxs.clear()
+                weights.clear()
+
+                update_local = True
 
             if new_mnb:
                 if vertex is None:
@@ -329,52 +371,14 @@ class immsb_scvb3(SVB):
                     vertex = _vertex
                     direction = _direction
                     scaler = _scaler
-                    qij_samples = _qij_samples
-                    node_idxs = _node_idxs
-                    weights = _weights
-                    new_mnb = False
-                    continue
-                elif not qij_samples:
-                    # Assume new_mnb is true here
-                    #  Node egde/or non-edge for this guy.
-                    set_pos = _set_pos
-                    vertex = _vertex
-                    direction = _direction
-                    scaler = _scaler
-                    qij_samples = _qij_samples
-                    node_idxs = _node_idxs
-                    weights = _weights
-
                     new_mnb = False
                     continue
 
-                qijs = np.asarray(qij_samples)
-                # Update global gradient / Expectation
-                # Normalize or not ?
-                #norm=1
-                norm = qijs.shape[0]
-                qijs_sum = qijs.sum(0)
 
-                gstep_v = self.gstep_theta[vertex]
-                gstep_nodes = self.gstep_theta[node_idxs][None].T
-
-                if direction == 0:
-                    self.N_theta_left[i] = (1-gstep_v)*self.N_theta_left[i] + gstep_v*scaler*qijs_sum.sum(0) /norm
-                    self.N_theta_right[node_idxs] = (1-gstep_nodes)*self.N_theta_right[node_idxs] + gstep_nodes*scaler*qijs.sum(2) /norm
-                else:
-                    self.N_theta_left[node_idxs] = (1-gstep_nodes)*self.N_theta_left[node_idxs] + gstep_nodes*scaler*qijs.sum(1) /norm
-                    self.N_theta_right[j] = (1-gstep_v)*self.N_theta_right[j] + gstep_v*scaler*qijs_sum.sum(1) /norm
-
-                self._timestep_a[vertex] += scaler
-                self._timestep_a[node_idxs] += 1
-                self._update_gstep_theta([vertex]+node_idxs)
-
-                #scaler = self._len['nnz']
                 x = 1 if set_pos != '0' else 0
-                self.N_phi[x] = (1 - self.gstep_phi)*self.N_phi[x] + self.gstep_phi * scaler * qijs_sum /norm
+                self.N_phi[x] = (1 - self.gstep_phi)*self.N_phi[x] + self.gstep_phi * scaler * _qijs_sum /_norm
 
-
-                self._timestep_b += scaler
+                self._timestep_b += _norm
                 self._update_gstep_phi()
 
 
@@ -383,14 +387,14 @@ class immsb_scvb3(SVB):
                 vertex = _vertex
                 direction = _direction
                 scaler = _scaler
-                qij_samples = _qij_samples
-                node_idxs = _node_idxs
-                weights = _weights
-                new_mnb = False
 
+                _qijs_sum = 0
+                _norm = 0
+
+                new_mnb = False
                 mnb_num += 1
 
-                if mnb_num % 50 == 0:
+                if mnb_num % (self.expe['zeros_set_len']*5) == 0:
                     prop_edge = observed_pt / self._len['nnz']
                     self._observed_pt = observed_pt
                     self.compute_measures()

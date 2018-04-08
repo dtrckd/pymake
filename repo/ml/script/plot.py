@@ -144,9 +144,11 @@ class Plot(ExpeFormat):
         if not data:
             self.log.warning('No data for expe : %s' % self.output_path)
 
-        if data and z in data and not expe.model.endswith('_gt'):
-            # Extract from savec measure (.inf file).
-            data = self._to_masked(max(data[z]))
+        #if data and z in data:
+        if data and z in data and not (expe.model.endswith('_gt') and z == '_roc'):
+            # Extract from saved measure (.inf file).
+
+            data = self._to_masked(data[z]).max()
             #data = self._to_masked(data[z][-1])
         else:
             # Compute it directly from the model.

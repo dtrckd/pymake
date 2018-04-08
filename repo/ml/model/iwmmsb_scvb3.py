@@ -22,8 +22,10 @@ class iwmmsb_scvb3(SVB):
         self.frontend = frontend
 
         # Save the testdata
+        self._max_w = 10
         if hasattr(self.frontend, 'data_test'):
             self.data_test = frontend.data_test_w
+            self._max_w = self.data_test[:,2].max()
 
         # Data statistics
         _len = {}
@@ -170,21 +172,22 @@ class iwmmsb_scvb3(SVB):
 
         return self._theta, self._phi
 
-    def _reduce_one(self, i, j, xij, update_kernel=True):
+    def _reduce_one(self, i, j, xij, update_local=True, update_kernel=True):
 
-        if self._is_symmetric:
-            self.pik = self.pjk = self.N_theta_left[i] + self.hyper_theta
-            self.pjk = self.pik
-        else:
-            self.pik = self.N_theta_left[i] + self.hyper_theta
-            self.pjk = self.N_theta_right[j] + self.hyper_theta
+        if update_local:
+            if self._is_symmetric:
+                self.pik = self.pjk = self.N_theta_left[i] + self.hyper_theta
+                self.pjk = self.pik
+            else:
+                self.pik = self.N_theta_left[i] + self.hyper_theta
+                self.pjk = self.N_theta_right[j] + self.hyper_theta
 
         if update_kernel:
             k = self.N_Y + self.hyper_phi[0]
             p = (self.N_phi + self.hyper_phi[1] + 1)**-1
             # @debug: Some invalie values here sometime !!
             self._kernel = lambda x:sp.stats.nbinom.pmf(x, k, 1-p)
-            self._lut_nbinom = [sp.stats.nbinom.pmf(x, k, 1-p) for x in range(10)]
+            self._lut_nbinom = [sp.stats.nbinom.pmf(x, k, 1-p) for x in range(min(self._max_w, 20))]
             #kernel = sp.stats.nbinom.pmf(xij, k, 1-p)
 
         if len(self._lut_nbinom) > xij:
@@ -194,8 +197,8 @@ class iwmmsb_scvb3(SVB):
             kernel = self._kernel(xij)
 
         # debug: Underflow
-        kernel[kernel<=1e-300] = 1e-300
-        kernel = ma.masked_invalid(kernel)
+        kernel[kernel<=1e-300] = 1e-100
+        #kernel = ma.masked_invalid(kernel)
 
         outer_kk = np.log(np.outer(self.pik, self.pjk)) + np.log(kernel)
 
@@ -208,9 +211,8 @@ class iwmmsb_scvb3(SVB):
         phi_mean = np.triu(self._phi) if self._is_symmetric else self._phi
 
         # debug: Underflow
-        #phi_mean[phi_mean<=1e-300] = 1e-300
         phi_sum = phi_mean.sum()
-        phi_mean[phi_mean<=1e-300] = 1e-300
+        #phi_mean[phi_mean<=1e-300] = 1e-300
         log_phi_sum = np.log(phi_mean).sum()
 
         K_len = (K*(K-1)/2 +K) if self._is_symmetric else K**2
@@ -262,7 +264,7 @@ class iwmmsb_scvb3(SVB):
         for i,j, xij in self.data_test:
             qijs.append( theta[i].dot(phi).dot(theta[j]) )
 
-        qijs = ma.masked_invalid(qijs)
+        #qijs = ma.masked_invalid(qijs)
         return qijs
 
     def compute_entropy(self, theta=None, phi=None, **kws):
@@ -283,7 +285,7 @@ class iwmmsb_scvb3(SVB):
         ll = sp.stats.poisson.pmf(weights, pij)
 
 
-        ll[ll<=1e-300] = 1e-300
+        ll[ll<=1e-300] = 1e-100
         # Log-likelihood
         ll = np.log(ll).sum()
         # Perplexity is 2**H(X).
@@ -398,6 +400,14 @@ class iwmmsb_scvb3(SVB):
         mnb_num = 0
         vertex = None
 
+        self.BURNIN = 150
+        qij_samples = []
+        node_idxs = []
+        weights = []
+        _qijs_sum = 0
+        _qijs_w_sum = 0
+        _norm = 0
+
         self._entropy = self.compute_entropy()
         print( '__init__ Entropy: %f' % self._entropy)
         for _it, obj in enumerate(frontend):
@@ -409,12 +419,11 @@ class iwmmsb_scvb3(SVB):
                 _vertex = target['vertex']
                 _direction = target['direction']
                 _scaler = weight
-                _qij_samples = []
-                _node_idxs = []
-                _weights = []
                 new_mnb = True
 
                 update_kernel = True
+                update_local = True
+                burnin = 0
             else:
                 i = source
                 j = target
@@ -425,46 +434,24 @@ class iwmmsb_scvb3(SVB):
                     node_idxs.append(i)
 
                 # Maximization
-                qij_samples.append( self._reduce_one(i,j, weight, update_kernel).reshape(self._len['K'], self._len['K']) )
+                qij_samples.append( self._reduce_one(i,j, weight, update_local, update_kernel).reshape(self._len['K'], self._len['K']) )
 
                 observed_pt += 1
+                burnin += 1
                 update_kernel = False
+                update_local = False
 
-            if new_mnb:
-                if vertex is None:
-                    # Enter here only once !%!
-                    mnb_total = frontend.num_mnb()
-                    self.begin_it = time()
-
-                    set_pos = _set_pos
-                    vertex = _vertex
-                    direction = _direction
-                    scaler = _scaler
-                    qij_samples = _qij_samples
-                    node_idxs = _node_idxs
-                    weights = _weights
-                    new_mnb = False
-                    continue
-                elif not qij_samples:
-                    # Assume new_mnb is true here
-                    #  Node egde/or non-edge for this guy.
-                    set_pos = _set_pos
-                    vertex = _vertex
-                    direction = _direction
-                    scaler = _scaler
-                    qij_samples = _qij_samples
-                    node_idxs = _node_idxs
-                    weights = _weights
-
-                    new_mnb = False
-                    continue
-
+            if (new_mnb or burnin % self.BURNIN == 0) and qij_samples:
                 qijs = np.asarray(qij_samples)
-                # Update global gradient / Expectation
-                # Normalize or not ?
-                #norm=1
+                ## Update global gradient / Expectation
+                ##norm=1
                 norm = qijs.shape[0]
                 qijs_sum = qijs.sum(0)
+
+                _qijs_sum += qijs_sum
+                if set_pos != '0':
+                    _qijs_w_sum += np.sum([weights[n]*qijs[n] for n in range(len(weights)) ],0)
+                _norm += norm
 
                 gstep_v = self.gstep_theta[vertex]
                 gstep_nodes = self.gstep_theta[node_idxs][None].T
@@ -476,22 +463,41 @@ class iwmmsb_scvb3(SVB):
                     self.N_theta_left[node_idxs] = (1-gstep_nodes)*self.N_theta_left[node_idxs] + gstep_nodes*scaler*qijs.sum(1)
                     self.N_theta_right[j] = (1-gstep_v)*self.N_theta_right[j] + gstep_v*scaler*qijs_sum.sum(1) /norm
 
-                self._timestep_a[vertex] += scaler
+                self._timestep_a[vertex] += norm
                 self._timestep_a[node_idxs] += 1
                 self._update_gstep_theta([vertex]+node_idxs)
 
-                #scaler = self._len['nnz']
-                self.N_phi = (1 - self.gstep_phi)*self.N_phi + self.gstep_phi * scaler * qijs_sum /norm
+                qij_samples.clear()
+                node_idxs.clear()
+                weights.clear()
+
+                update_local = True
+
+
+            if new_mnb:
+                if vertex is None:
+                    # Enter here only once !%!
+                    mnb_total = frontend.num_mnb()
+                    self.begin_it = time()
+
+                    set_pos = _set_pos
+                    vertex = _vertex
+                    direction = _direction
+                    scaler = _scaler
+                    new_mnb = False
+                    continue
+
+
+                self.N_phi = (1 - self.gstep_phi)*self.N_phi + self.gstep_phi * scaler * _qijs_sum /_norm
                 if set_pos != '0':
-                    self.N_Y = (1 - self.gstep_y)*self.N_Y + self.gstep_y * scaler * np.sum([weights[n]*qijs[n] for n in range(len(weights)) ],0) /norm
-                    self._timestep_c += scaler
+                    self.N_Y = (1 - self.gstep_y)*self.N_Y + self.gstep_y * scaler * _qijs_w_sum /_norm
+                    self._timestep_c += _norm
                     self._update_gstep_y()
 
-                    if self._hyper_phi == 'auto':
+                    if self._hyper_phi == 'auto' and mnb_num % 50 == 0:
                         self._optimize_hyper()
 
-
-                self._timestep_b += scaler
+                self._timestep_b += _norm
                 self._update_gstep_phi()
 
 
@@ -500,14 +506,15 @@ class iwmmsb_scvb3(SVB):
                 vertex = _vertex
                 direction = _direction
                 scaler = _scaler
-                qij_samples = _qij_samples
-                node_idxs = _node_idxs
-                weights = _weights
-                new_mnb = False
 
+                _qijs_sum = 0
+                _qijs_w_sum = 0
+                _norm = 0
+
+                new_mnb = False
                 mnb_num += 1
 
-                if mnb_num % 50 == 0:
+                if mnb_num % (self.expe['zeros_set_len']*5) == 0:
                     prop_edge = observed_pt / self._len['nnz']
                     self._observed_pt = observed_pt
                     self.compute_measures()
