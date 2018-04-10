@@ -26,6 +26,7 @@ class iwmmsb_scvb3(SVB):
         if hasattr(self.frontend, 'data_test'):
             self.data_test = frontend.data_test_w
             self._max_w = self.data_test[:,2].max()
+            self._min_w = self.data_test[:,2].min() or 1
 
         # Data statistics
         _len = {}
@@ -57,10 +58,25 @@ class iwmmsb_scvb3(SVB):
 
         self.hyper_phi = np.asarray(self.expe['delta'])
         hyper_phi = self.expe['delta']
+
+        shift = self.expe.get('shift_w')
+        #
+        # Warn: Instable Part
+        #
         if hyper_phi == 'auto':
-            self.hyper_phi = np.array([0.5,10])
             self._hyper_phi = 'auto'
+            w = frontend.data.ep['weights'].a
+            m = w.mean()
+            v = w.var()
+            a = m**2/v
+            b = v/m
+            self.hyper_phi = np.array([a,1/b])
+            #self.hyper_phi = np.array([1,1])
             self.log.info('Optimizing hyper enabled.')
+        elif shift:
+            a = 10
+            b = shift
+            self.hyper_phi = np.array([a,b])
         elif len(hyper_phi) == 2:
             self.hyper_phi = np.asarray(hyper_phi)
             self._hyper_phi = 'fix'
@@ -295,7 +311,7 @@ class iwmmsb_scvb3(SVB):
         # how to compute elbo for all possible links weights, mean?
         return None
 
-    def compute_roc(self, theta=None, phi=None, treshold=1, **kws):
+    def compute_roc(self, theta=None, phi=None, treshold=None, **kws):
         from sklearn.metrics import roc_curve, auc, precision_recall_curve
 
         if 'likelihood' in kws:
@@ -307,25 +323,37 @@ class iwmmsb_scvb3(SVB):
 
         weights = np.squeeze(self.data_test[:,2].T)
 
+        #treshold = treshold or 'mean_data'
+
         if treshold == 'mean_data':
             mean = weights[weights>0].mean()
             std = weights[weights>0].std()
-            trsh = int(mean+std)
-        if treshold == 'mean_model':
+            trsh = int(mean)
+            #trsh = int(mean+std)
+        elif treshold == 'mean_model':
             mean_, var_ = self.get_mean_phi(), self.get_var_phi()
             mean = mean_.mean()
             std = var_.mean()**0.5
-            trsh = int(mean+std)
+            trsh = int(mean)
+            #trsh = int(mean+std)
         else:
-            trsh = treshold
+            trsh = int(self.expe.get('shift_w',1)) if treshold is None else treshold
+
+        trsh = trsh if trsh>=0 else 1
 
         probas = 1 - sp.stats.poisson.cdf(trsh, pij)
         y_true = weights.astype(bool)*1
+        self._probas = probas
+        self._y_true = y_true
 
         fpr, tpr, thresholds = roc_curve(y_true, probas)
         roc = auc(fpr, tpr)
         self._eta.append(roc)
         return roc
+
+    def compute_pr(self, *args, **kwargs):
+        from sklearn.metrics import average_precision_score
+        return average_precision_score(self._y_true, self._probas)
 
     def mask_probas(self, *args):
         # Copy of compute_roc
@@ -494,8 +522,8 @@ class iwmmsb_scvb3(SVB):
                     self._timestep_c += _norm
                     self._update_gstep_y()
 
-                    if self._hyper_phi == 'auto' and mnb_num % 50 == 0:
-                        self._optimize_hyper()
+                    #if self._hyper_phi == 'auto' and mnb_num % 50 == 0:
+                    #    self._optimize_hyper()
 
                 self._timestep_b += _norm
                 self._update_gstep_phi()

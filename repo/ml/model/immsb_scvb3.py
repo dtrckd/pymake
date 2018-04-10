@@ -256,11 +256,17 @@ class immsb_scvb3(SVB):
         weights = np.squeeze(self.data_test[:,2].T)
 
         y_true = weights.astype(bool)*1
+        self._probas = pij
+        self._y_true = y_true
 
         fpr, tpr, thresholds = roc_curve(y_true, pij)
         roc = auc(fpr, tpr)
         self._eta.append(roc)
         return roc
+
+    def compute_pr(self, *args, **kwargs):
+        from sklearn.metrics import average_precision_score
+        return average_precision_score(self._y_true, self._probas)
 
     def mask_probas(self, *args):
         # Copy of compute_roc

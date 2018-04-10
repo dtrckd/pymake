@@ -412,7 +412,7 @@ class GramExp(object):
                     _set.add(str(v))
                 else:
                     _set.add(v)
-            return sorted(_set)
+            return sorted(_set, key=lambda x: (x is None, x))
 
 
     def get_list(self, key, default=[]):
@@ -1162,6 +1162,10 @@ class GramExp(object):
             if :nhosts: (int) is given, limit the numner of remote machines.
         '''
 
+        NDL = get_pymake_settings('loginfile')
+        workdir = get_pymake_settings('remote_pwd')
+        remotes = list(filter(None, [s for s in open(NDL).read().split('\n') if not s.startswith(('#', '%'))]))
+
         basecmd = sys.argv.copy()
         #Target = './zymake.py'
         #basecmd = ['python3', Target] + basecmd[1:]
@@ -1193,7 +1197,8 @@ class GramExp(object):
 
         if cmdlines is None:
             indexs = list(map(str, indexs))
-            indexs = [indexs[i:i+n_cores] for i in range(0, len(indexs), n_cores)]
+            chunk = int(np.ceil(len(indexs) / len(remotes)))
+            indexs = [indexs[i:i+chunk] for i in range(0, len(indexs), chunk)]
 
             # Creates a list of commands that pick each index
             # from base requests commands.
@@ -1213,7 +1218,6 @@ class GramExp(object):
             #cmdlines[i] = cmd.replace('--net', '').strip()
             cmdlines[i] = re.sub(r'--net\s+[0-9]*', '', cmd).strip()
 
-        NDL = get_pymake_settings('loginfile')
         if nhosts is not None:
             tempf = '/tmp/pmk_' + uuid.uuid4().hex
             nhosts = int(nhosts)
@@ -1225,7 +1229,6 @@ class GramExp(object):
                         _f_w.write(l)
             NDL = tempf
 
-        workdir = get_pymake_settings('remote_pwd')
         cmd = ['parallel', '-u', '-C', "' '", '--eta', '--progress',
                '--sshloginfile', NDL, '--workdir', workdir,
                '--env', 'OMP_NUM_THREADS', '--env', 'PYTHONPATH', '--env', 'PATH',

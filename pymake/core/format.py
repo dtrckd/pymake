@@ -418,7 +418,7 @@ class ExpeFormat(object):
 
 
                 for z in _z:
-                    kernel = fun(self, array, floc, x, y, z)
+                    kernel = fun(self, array, floc, x, y, z, *discr_args)
 
                 if self._it == self.expe_size -1:
                     #tablefmt = 'latex' # 'simple'
@@ -431,9 +431,12 @@ class ExpeFormat(object):
                             for zpos, z in enumerate(_z):
                                 Meas = self.specname(self.gramexp.get_set(y))
 
+                                fop = np.max if 'max' in discr_args else np.mean
+                                fop = np.min if 'min' in discr_args else fop
+
                                 # Mean and standard deviation
                                 table = array[:,:,:,zpos]
-                                mtable = self.highlight_table(np.around(table.mean(0), decimals=3))
+                                mtable = self.highlight_table(np.around(fop(table, 0), decimals=3))
                                 vtable = np.around(table.std(0), decimals=3)
                                 table_mean = np.char.array(mtable).astype("|S42")
                                 table_std = np.char.array(vtable).astype("|S42")

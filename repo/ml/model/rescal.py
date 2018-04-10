@@ -75,10 +75,16 @@ class Rescal_als(ModelBase):
         weights = np.squeeze(self.data_test[:,2].T)
 
         y_true = weights.astype(bool)*1
+        self._probas = pij
+        self._y_true = y_true
 
         fpr, tpr, thresholds = roc_curve(y_true, pij)
         roc = auc(fpr, tpr)
         return roc
+
+    def compute_pr(self, *args, **kwargs):
+        from sklearn.metrics import average_precision_score
+        return average_precision_score(self._y_true, self._probas)
 
     def compute_wsim(self, *args, **kws):
         return None

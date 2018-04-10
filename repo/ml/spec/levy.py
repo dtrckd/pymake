@@ -4,14 +4,13 @@ from pymake import ExpSpace, ExpTensor, Corpus, ExpDesign, ExpGroup
 class Levy(ExpDesign):
 
 
-    data_net_all = Corpus(['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad', 'generator7', 'generator12', 'generator10', 'generator4'])
+    net_old = Corpus(['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad', 'generator7', 'generator12', 'generator10', 'generator4'])
     net_gt = Corpus(['astro-ph', 'hep-th', 'netscience', 'cond-mat']) # all undirected
-    #net_gt = Corpus(['astro-ph', 'cond-mat', 'email-Enron', 'hep-th', 'netscience']) # all undirected
-    net_all = data_net_all + net_gt
     net_random = Corpus(['clique6', 'BA'])
     net_test = Corpus(['manufacturing', 'fb_uc', 'netscience'])
-
+    net_large = Corpus(['link-dynamic-simplewiki', 'enron', 'foldoc'])
     net_w = Corpus(['manufacturing', 'fb_uc']) + net_gt
+    net_all = net_old + net_gt + net_large
 
     #
     # Poisson Point process :
@@ -42,9 +41,9 @@ class Levy(ExpDesign):
         _data_type    = 'networks',
         _refdir       = 'debug_scvb' ,
         _format='{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}_{chi_a}-{tau_a}-{kappa_a}_{chi_b}-{tau_b}-{kappa_b}',
-        _csv_typo     = '_iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b _elbo _roc'
+        _csv_typo     = '_iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b _elbo _roc _pr'
     )
-    noelw3 = ExpGroup(wmmsb, N='all', chunk=['adaptative_0.1', 'adaptative_1'], corpus=data_net_all, mask=['unbalanced'], _refdir='noel3')
+    noelw3 = ExpGroup(wmmsb, N='all', chunk=['adaptative_0.1', 'adaptative_1'], corpus=net_old, mask=['unbalanced'], _refdir='noel3')
 
 
 
@@ -79,7 +78,7 @@ class Levy(ExpDesign):
         _data_type    = 'networks',
         _refdir       = 'debug_scvb3',
         _format='{corpus}_{model}_{N}_{K}_{hyper}_{homo}_{testset_ratio}_{chunk}_{chi_a}-{tau_a}-{kappa_a}_{chi_b}-{tau_b}-{kappa_b}_{delta}_{zeros_set_len}_{zeros_set_prob}',
-        _csv_typo     = '_observed_pt time_it _entropy _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b _roc _wsim',
+        _csv_typo     = '_observed_pt time_it _entropy _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b _roc _wsim _pr',
     )
 
     # Sparse sampling
@@ -93,7 +92,7 @@ class Levy(ExpDesign):
 
     sbm_base = ExpGroup(warm, model=['sbm_gt', 'wsbm_gt', 'rescal_als'],
                         zeros_set_prob=None, zeros_set_len=None, delta=None,
-                        _csv_typo='time_it _entropy _K _roc _wsim')
+                        _csv_typo='time_it _entropy _K _roc _wsim _pr')
     wsbm_base = ExpGroup(sbm_base, model = ['wsm_g', 'wsbm2_gt'])
 
     # Compare sensibility
@@ -121,7 +120,7 @@ class Levy(ExpDesign):
     eta2_base = ExpGroup(warm, testset_ratio=20, _refdir="eta2", corpus=net_w)
     eta2_sbm = ExpGroup(eta2_base, model=['sbm_gt', 'wsbm_gt', 'rescal_als'],
                         zeros_set_prob=None, zeros_set_len=None, delta=None,
-                        _csv_typo='time_it _entropy _K _roc _wsim')
+                        _csv_typo='time_it _entropy _K _roc _wsim _pr')
 
     eta2_b = ExpGroup(eta2_base, model="immsb_scvb3", zeros_set_prob=1/2, zeros_set_len=10, delta='auto')
     eta2_b50 = ExpGroup(eta2_base, model="immsb_scvb3", zeros_set_prob=1/2, zeros_set_len=50, delta='auto')
@@ -134,19 +133,29 @@ class Levy(ExpDesign):
     eta1_w50 = ExpGroup(eta2_base, model="iwmmsb_scvb3", zeros_set_prob=1/2, zeros_set_len=50, delta=[[1, 1]])
     eta2_w50 = ExpGroup(eta2_base, model="iwmmsb_scvb3", zeros_set_prob=1/2, zeros_set_len=50, delta=[[0.5, 10]])
 
+    eta101_w50 = ExpGroup(eta2_base, model="iwmmsb_scvb3", zeros_set_prob=1/2, zeros_set_len=50, delta=[[10, 0.1]])
+    etas10_w50 = ExpGroup(eta2_base, model="iwmmsb_scvb3", zeros_set_prob=1/2, zeros_set_len=50, delta=[[5, 1]])
+    etas2_w50 = ExpGroup(eta2_base, model="iwmmsb_scvb3", zeros_set_prob=1/2, zeros_set_len=50, delta=[[0.5*100, 100/(20)]])
+
 
     eta2 = ExpGroup([eta2_b, eta2_w], _refdir='roc1') # repeat 0 1 2 tstratio=20 have 2*n zeros in testset.
     eta4 = ExpGroup([eta2_b50, eta2_w50], _refdir='roc4') # weighte are squared
+    eta42 = ExpGroup([eta2_b50, eta2_w50], _refdir='roc4', zeros_set_len=[10, 50]) # weighte are squared
 
     roc1 = ExpGroup([eta2, sbm_base], _refdir='roc3', corpus=net_w, testset_ratio=[10,20])
     roc2_noise = ExpGroup([eta2, sbm_base], _refdir='roc2_noise', noise=10, corpus=net_w, testset_ratio=10)
 
     roc1_visu_sbm = ExpGroup(sbm_base, corpus=net_w, testset_ratio=20, model=['sbm_gt', 'wsbm_gt'])
+    roc1_visu_sbm_full = ExpGroup(sbm_base, corpus=net_w, testset_ratio=20, model=['rescal_als', 'sbm_gt', 'wsbm_gt'])
     roc1_visu = ExpGroup([eta2, roc1_visu_sbm], _refdir='roc3')
     roc4_visu = ExpGroup([eta4, roc1_visu_sbm], _refdir='roc4')
+    roc4_visu_full = ExpGroup([eta4, roc1_visu_sbm_full], _refdir='roc4')
+    roc4_visu_final = ExpGroup([eta2_b50, eta2_w, roc1_visu_sbm], _refdir='roc4')
 
     roc1_w = ExpGroup([eta0_w, eta1_w, eta2_w, eta0_w50, eta1_w50, eta2_w50], _refdir='roc3') # roc2 (norm corrected), roc3(burnin)
     roc4_w = ExpGroup([eta0_w, eta1_w, eta2_w, eta0_w50, eta1_w50, eta2_w50], _refdir='roc4') # squred weight
+    roc4_b = ExpGroup(eta2_base, model="immsb_scvb3", zeros_set_prob=1/2, zeros_set_len=[10, 50], delta='auto', _refdir='roc4')
+
 
     roc2_w = ExpGroup([eta2_w, eta3_w], _refdir='roc3', zeros_set_len=[5,10])
 

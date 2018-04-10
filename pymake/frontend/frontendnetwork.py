@@ -238,10 +238,11 @@ class frontendNetwork(DataBase, DatasetDriver):
         if hasattr(self, 'clusters') and self.clusters is not None:
             self.clusters = self.clusters[:N]
 
-    def make_testset(self, testset_ratio, diag_off=1):
+    def make_testset(self, diag_off=1):
         ''' Make the test set with masked array. '''
 
-        testset_ratio = float(testset_ratio)
+        testset_ratio = float(self.expe.get('testset_ratio'))
+
         if testset_ratio >= 1:
             testset_ratio = testset_ratio / 100
         elif 0 <= testset_ratio < 1:

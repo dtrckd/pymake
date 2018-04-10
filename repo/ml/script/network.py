@@ -54,13 +54,11 @@ class Net(ExpeFormat):
         if hasattr(frontend, '_check'):
             frontend._check()
 
-        g = frontend.data
-        print(g.vp)
 
         if self.is_last_expe():
             tablefmt = 'latex' if fmt == 'tex' else fmt
             print(colored('\nStats Table :', 'green'))
             Meas_ = self.D.Meas_
-            print(self.tabulate(Table, headers=Meas_, tablefmt=tablefmt, floatfmt='.3f'))
+            print(self.tabulate(Table, headers=Meas_, tablefmt=tablefmt, floatfmt='.4f'))
 
 

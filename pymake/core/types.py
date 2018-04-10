@@ -313,20 +313,20 @@ class Corpus(ExpVector):
         dict(name='netscience',  data_type='network', data_source='gt', directed=False, nodes=1589,  edges=2742  , weighted=True),
         dict(name='email-Enron', data_type='network', data_source='gt', directed=False, nodes=36692, edges=367662, weighted=False), # time weighted
 
-        dict(name='facebook'     ,  data_type='network', data_source='web', directed=True, nodes=None, edges=None, density=None, wheigted=None),
+        #dict(name='facebook'     ,  data_type='network', data_source='web', directed=True, nodes=None, edges=None, density=None, wheigted=None),
 
-        dict(name='reuter50'  , data_type='text', data_source='web'),
-        dict(name='nips12'    , data_type='text', data_source='web'),
-        dict(name='nips'      , data_type='text', data_source='web'),
-        dict(name='enron'     , data_type='text', data_source='web'),
-        dict(name='kos'       , data_type='text', data_source='web'),
-        dict(name='nytimes'   , data_type='text', data_source='web'),
-        dict(name='pubmed'    , data_type='text', data_source='web'),
-        dict(name='20ngroups' , data_type='text', data_source='web'),
-        dict(name='odp'       , data_type='text', data_source='web'),
-        dict(name='wikipedia' , data_type='text', data_source='web'),
-        dict(name='lucene', data_type='text', data_source='lucene'), # needs field spec
-        dict(name='mongo', data_type='text', data_source='mongo'), # needs field spec
+        #dict(name='reuter50'  , data_type='text', data_source='web'),
+        #dict(name='nips12'    , data_type='text', data_source='web'),
+        #dict(name='nips'      , data_type='text', data_source='web'),
+        #dict(name='enron'     , data_type='text', data_source='web'),
+        #dict(name='kos'       , data_type='text', data_source='web'),
+        #dict(name='nytimes'   , data_type='text', data_source='web'),
+        #dict(name='pubmed'    , data_type='text', data_source='web'),
+        #dict(name='20ngroups' , data_type='text', data_source='web'),
+        #dict(name='odp'       , data_type='text', data_source='web'),
+        #dict(name='wikipedia' , data_type='text', data_source='web'),
+        #dict(name='lucene', data_type='text', data_source='lucene'), # needs field spec
+        #dict(name='mongo', data_type='text', data_source='mongo'), # needs field spec
     ]
 
     @classmethod

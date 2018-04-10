@@ -62,21 +62,42 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
                 self.log.critical('Already Weight propertye in the graph, need to check ')
                 raise NotImplementedError
             elif 'value' in data.ep:
-                w = data.ep['value'].copy()
-                #w.a = (2**0.5)**w.a
-                w.a = np.round((w.a+1)**2)
-                data.ep['weights'] = w.copy('int')
+                weights = data.ep['value'].copy()
+                #w.a = (2**0.5)**w.a # exponentiate
+                #weights.a = np.round((weights.a+1)**2) # squared
+                weights.a = np.round(weights.a *10) # assume ten authors by paper for (collaboration networks)
+                data.ep['weights'] = weights.copy('int')
             else:
                 weights = data.new_ep("int")
                 weights.a = 1
                 data.ep['weights'] = weights
+        else:
+            weights = data.ep.weights
+
+        if self.expe.get('shift_w'):
+            shift = self.expe.get('shift_w')
+            if str(shift).startswith('linear'):
+                _, shift = shift.split('_')
+                #shift = weights.a.max()
+                shift = int(shift)
+                expe['shift_w'] = shift
+                weights.a = shift*weights.a +shift
+            else:
+                shift = int(self.expe['shift_w'])
+                weights.a += shift
 
 
 
     @classmethod
-    def _extract_data(cls, expe, corpus=None):
+    def _extract_data_file(cls, expe, corpus=None):
         corpus = corpus or {}
         input_path = expe._input_path
+
+        if not os.path.exists(input_path):
+            cls.log.error("Corpus `%s' Not found." % (input_path))
+            print('please run "fetch_networks"')
+            cls.data = None
+            return
 
         if expe.corpus.endswith('.gt'):
             corpus_name = expe.corpus[:-len('.gt')]
@@ -203,14 +224,99 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
 
 
     @classmethod
+    def _clean_data_konect(cls, expe, data):
+        cls.log.info('Cleaning konect graph %s...' % expe.corpus)
+
+        g = data
+        edges = g.get_edges()
+        y = gt.spectral.adjacency(g)
+        parallel = gt.stats.label_parallel_edges(g, mark_only=True)
+
+        weights = g.new_ep('int')
+
+        if 'weight' in g.ep:
+
+            w = g.ep.weight
+
+            if w.a.sum() == len(w.a):
+                # Assume parrallel edge
+                # Building the real weights
+                weights.a = 1
+                for _ix in np.where(parallel.a == 0)[0]:
+                    ix = np.where(edges[:,2]==_ix)[0][0]
+                    i, j = edges[ix, :2]
+                    weights[i,j] += len(g.edge(i,j, all_edges=True))
+
+
+                del g.ep['weight']
+            elif w.a.max() == 1 and w.a.min() == -1:
+                for i,j, ix in edges:
+                    weights[i,j] += w[i,j]
+
+                if weights.a.min() < 0:
+                    # Remove negative edges
+                    cls.log.warning('Negative weights here? removing edges...')
+                    print('Number of negative edges: %d' % (weights.a < 0).sum() )
+                    #print('Number of negative edges: %d' % (weights.a < 0).sum() )
+                    #edge_f = g.new_ep('bool')
+                    #edge_f.a = 1
+                    #edge_f.a[weights.a < 0] = 0
+                    #g.set_edge_filter(edge_f)
+                    #g.purge_edges()
+                    #g.clear_filters()
+                    weights.a[weights.a < 0] = 1
+
+                if (weights.a==0).sum() > 0:
+                    # Remove empty edges
+                    cls.log.warning('Removing zeros weighted edges...')
+                    print('Number of zeros edges: %d' % (weights.a == 0).sum() )
+                    #edge_f = g.new_ep('bool')
+                    #edge_f.a = 1
+                    #edge_f.a[weights.a == 0] = 0
+                    #g.set_edge_filter(edge_f)
+                    #g.purge_edges()
+                    #g.clear_filters()
+                    weights.a[weights.a == 0] = 1
+
+            elif y.max() == 1:
+                # Assume weight are the real one, copy
+                weights = g.ep.weight.copy('int')
+                cls.log.warning('Weight regression to int values.')
+
+            elif y.max() > 1:
+                raise NotImplementedError('Multi edge + weight property for %s, manual check needed' % expe.corpus)
+            else:
+                raise NotImplementedError('Edge propertie unknown for %s, manual check needed' % expe.corpus)
+
+        elif 'weights' in g.ep:
+            self.log.critical('Already weights property for %s, manual check needed' % expe.corpus)
+            raise NotImplementedError
+        elif y.max() > 1:
+            # If multiple edge detected, set the weights.
+            weights.a = 1
+            for _ix in np.where(parallel.a == 0)[0]:
+                ix = np.where(edges[:,2]==_ix)[0][0]
+                i, j = edges[ix][:2]
+                weights[i,j] += len(g.edge(i,j, all_edges=True))
+        else:
+            # Assume unweighted network
+            weights.a = 1
+
+
+        # Remove parallel edges
+        #gt.stats.remove_parallel_edges(g) # dont't resize .a !
+        g.set_edge_filter(parallel, inverted=True)
+        g.purge_edges()
+        g.clear_filters()
+
+        g.shrink_to_fit()
+        g.ep['weights'] = weights
+        return g
+
+
+    @classmethod
     def _resolve_filename(cls, expe):
         input_path = expe._input_path
-
-        if not os.path.exists(input_path):
-            cls.log.error("Corpus `%s' Not found." % (input_path))
-            print('please run "fetch_networks"')
-            cls.data = None
-            return
 
         if expe.corpus.endswith('.gt'):
             basename = expe.corpus
@@ -238,22 +344,45 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         if '_force_save_data' in expe:
             save = expe._force_save_data
 
-        try:
-            # Load from graph-tool Konnect graph
-            from graph_tool import collection
-            data = gt.load_graph(collection.get_data_path(expe.corpus))
-            return cls(expe, data, corpus=corpus)
-        except FileNotFoundError as e:
-            pass
-        except Exception as e:
-            cls.log.error("Error in loading corpus `%s': %s" % (expe.corpus, e))
-            return
 
+        input_path = expe._input_path
+
+        data = None
         fn = cls._resolve_filename(expe)
         target_file_exists = os.path.exists(fn)
 
         if load is False or not target_file_exists:
-            data = cls._extract_data(expe, corpus=corpus)
+
+            # Data loading Strategy
+            if not data:
+                try:
+                    # Load from graph-tool Konnect repo
+                    from graph_tool import collection
+                    data = gt.load_graph(collection.get_data_path(expe.corpus))
+                    os.makedirs(os.path.join(input_path), exist_ok=True)
+                except FileNotFoundError as e:
+                    pass
+                except Exception as e:
+                    cls.log.error("Error in loading corpus `%s': %s" % (expe.corpus, e))
+                    raise e
+
+            if not data:
+                try:
+                    from urllib.error import HTTPError
+                    # Load from graph-tool Konnect site
+                    data = gt.collection.konect_data[expe.corpus]
+                    data = cls._clean_data_konect(expe, data)
+                    os.makedirs(os.path.join(input_path), exist_ok=True)
+                except HTTPError:
+                    pass
+                except Exception as e:
+                    cls.log.error("Error in loading corpus `%s': %s" % (expe.corpus, e))
+                    raise e
+
+            if not data:
+                # Load manually from file
+                data = cls._extract_data_file(expe, corpus=corpus)
+
             if save:
                 # ===== save ====
                 cls._save_data(fn, data)
@@ -381,10 +510,13 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
     def _prop(g):
         n, e, y = g.num_vertices(), g.num_edges(), gt.spectral.adjacency(g)
         sum = y.sum()
-        sl = np.diag(y.A).sum()
+        #sl = np.diag(y.A).sum()
+        sl = y[(np.arange(n),np.arange(n))].sum()
         print(g)
         print('N: %d, E: %d, adj.sum: %d, adj.selfloop: %d' % (n,e,sum,sl))
         print('edges shape', g.get_edges().shape)
+        print('Vertex prop', g.vp)
+        print('Edge prop', g.ep)
 
 
     #
@@ -428,6 +560,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         n_to_remove = self.data.num_vertices() - N
         ids = np.random.randint(0, self.data.num_vertices(), n_to_remove)
         self.data.remove_vertex(ids)
+        self.data.shrink_to_fit()
 
 
 
@@ -744,12 +877,14 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
                     zero_samples[node] = -1 # don't sample in self loops
                     #zero_samples[self.data_test[node, :].nonzero()[1]] = -1 # don't sample in testset
                     zero_samples = zero_samples[zero_samples >0]
+
                     zero_samples = np.random.choice(zero_samples,
                                                      int(np.ceil(len(zero_samples)/mask[node, 0])),
                                                      replace=False)
                     # Weaker results !
                     #step = int(np.ceil(len(zero_samples)/mask[node, 0]))
                     #if len(mask_pos[node][0]) == 0:
+                    #    continue
                     #    zero_samples = np.random.choice(zero_samples,
                     #                                    int(np.ceil(len(zero_samples)/mask[node, 0])),
                     #                                    replace=False)
@@ -775,12 +910,14 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
                     zero_samples[node] = -1
                     #zero_samples[self.data_test[:, node].nonzero()[0]] = -1
                     zero_samples = zero_samples[zero_samples >0]
+
                     zero_samples = np.random.choice(zero_samples,
                                                     int(np.ceil(len(zero_samples)/mask[node, 1])),
                                                     replace=False)
                     # Weaker results !
                     #step = int(np.ceil(len(zero_samples)/mask[node, 1]))
                     #if len(mask_pos[node][1]) == 0:
+                    #    continue
                     #    zero_samples = np.random.choice(zero_samples,
                     #                                    int(np.ceil(len(zero_samples)/mask[node, 1])),
                     #                                    replace=False)
@@ -821,21 +958,6 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
 
     def _sample_sparse(self):
         ''' Sample with node replacement.
-            But edges in a minibatch is unique.
-
-            Returns
-            ------
-
-            yield ether: a triplet (source, target, weight), that can be of two kinf
-            1. at a new minibatch (mnb):
-                * source: str -- a str that identify from which subset the mnb comes.
-                * target: int -- the target node of the mnb.
-                * weight: int -- the probability of to sample a element in the current set/mnb
-                          in the corpus/dataset.
-            2. an obeservation (edges):
-                * source: int -- source node.
-                * target: int -- target node.
-                * weight: int -- edge weight.
         '''
         expe = self.expe
         g = self.data
@@ -850,94 +972,120 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
 
         weights = g.ep['weights']
 
+        ### Chunk prior probability
+        set_len = 2 + is_directed
+        # uniform between links and non-links
+        zero_prior = float(expe.get('zeros_set_prob', 0.5))
+        set_prior = [zero_prior] + [(1-zero_prior)/(set_len-1)]*(set_len-1)
+
+        ### Sampling prior strategy
+        zeros_set_len = expe.get('zeros_set_len', 10)
+        self._zeros_set_len = int(zeros_set_len)
+        mask = np.ones((N,2), dtype=int) * self._zeros_set_len
+
         ### Build the array of neighbourhood for each nodes
         self.log.debug('Building the neighbourhood array...')
         neigs = []
+        mask_pos = []
         for v in range(N):
             _out = np.array([int(_v) for _v in g.vertex(v).out_neighbors()])
             _in = np.array([int(_v) for _v in g.vertex(v).in_neighbors()])
             neigs.append([_out, _in])
+            mask_pos.append( [list(range(self._zeros_set_len))]*2 )
 
-        ### Chunk prior probability
-        # Not applicable...
-
-        ### Sampling prior strategy
-        mask = np.zeros((N,2))
-        for v in range(N):
-            if g.vertex(v).out_degree() == 0:
-                out_d = N
-            else:
-                out_d = g.vertex(v).out_degree()
-
-            if g.vertex(v).in_degree() == 0:
-                in_d = N
-            else:
-                in_d = g.vertex(v).in_degree()
-
-            mask[v,0] = int((N - out_d)/out_d) or 1
-            mask[v,1] = int((N - in_d)/in_d) or 1
-
-        self._zeros_set_len = 2+is_directed
-
-        _nodes = np.arange(N)
-        np.random.shuffle(_nodes)
-        _nodes = np.repeat(_nodes, 2+is_directed)
 
         for _mnb in range(self.num_mnb()):
 
             # Pick a node
-            node = _nodes[_mnb]
+            node = np.random.randint(0,N)
 
             # Pick a set and yield a minibatch
-            set_index = _mnb % (2 +is_directed)
+            set_index = np.random.choice(set_len, 1, p=set_prior)
 
             if set_index == 0:
-                node_info = {'vertex':node, 'direction':0}
-                yield str(set_index), node_info, symmetric_scale*mask[node, 0]
-                # Sample from non-links
-
                 out_e = neigs[node][0]
-                if len(out_e) == 0:
-                    continue
-                zero_samples = np.arange(N)
-                zero_samples[out_e] = -1 # don't sample in edge
-                zero_samples[node] = -1 # don't sample in self loops
-                zero_samples[self.data_test[node, :].nonzero()[1]] = -1 # don't sample in testset
-                zero_samples = zero_samples[zero_samples >0]
-                zero_samples = np.random.choice(zero_samples,
-                                                 int(np.ceil(len(zero_samples)/mask[node, 0])),
-                                                 replace=False)
-                for target in zero_samples:
-                    yield node, target, 0
+                if N-len(out_e) > 0 and len(out_e) > 0:
+
+                    node_info = {'vertex':node, 'direction':0}
+                    yield str(set_index), node_info, (N-len(out_e)-1)* mask[node,0]* symmetric_scale
+                    # Sample from non-links
+
+                    zero_samples = np.arange(N)
+
+                    zero_samples[out_e] = -1 # don't sample in edge
+                    zero_samples[node] = -1 # don't sample in self loops
+                    #zero_samples[self.data_test[node, :].nonzero()[1]] = -1 # don't sample in testset
+                    zero_samples = zero_samples[zero_samples >0]
+                    zero_samples = np.random.choice(zero_samples,
+                                                     int(np.ceil(len(zero_samples)/mask[node, 0])),
+                                                     replace=False)
+                    # Weaker results !
+                    #step = int(np.ceil(len(zero_samples)/mask[node, 0]))
+                    #if len(mask_pos[node][0]) == 0:
+                    #    zero_samples = np.random.choice(zero_samples,
+                    #                                    int(np.ceil(len(zero_samples)/mask[node, 0])),
+                    #                                    replace=False)
+                    #else:
+                    #    _p = np.random.choice(mask_pos[node][0],1).item()
+                    #    mask_pos[node][0].remove(_p)
+                    #    zero_samples = zero_samples[_p:_p+step]
+
+                    if len(zero_samples) == 0:
+                        continue
+
+                    for target in zero_samples:
+                        yield node, target, 0
 
                 in_e = neigs[node][1]
-                if len(in_e) == 0:
-                    continue
+                if N-len(in_e) > 0 and len(in_e) > 0:
+                    node_info = {'vertex':node, 'direction':1}
+                    yield str(set_index), node_info, (N-len(in_e)-1)* mask[node,1]* symmetric_scale
 
-                node_info = {'vertex':node, 'direction':1}
-                yield str(set_index), node_info, symmetric_scale*mask[node, 1]
+                    zero_samples = np.arange(N)
+                    if len(in_e) > 0:
+                        zero_samples[in_e] = -1
+                    zero_samples[node] = -1
+                    #zero_samples[self.data_test[:, node].nonzero()[0]] = -1
+                    zero_samples = zero_samples[zero_samples >0]
+                    zero_samples = np.random.choice(zero_samples,
+                                                    #int(np.ceil(len(zero_samples)/(10*len(in_e)))),
+                                                    int(np.ceil(len(zero_samples)/mask[node, 1])),
+                                                    replace=False)
+                    # Weaker results !
+                    #step = int(np.ceil(len(zero_samples)/mask[node, 1]))
+                    #if len(mask_pos[node][1]) == 0:
+                    #    zero_samples = np.random.choice(zero_samples,
+                    #                                    int(np.ceil(len(zero_samples)/mask[node, 1])),
+                    #                                    replace=False)
+                    #else:
+                    #    _p = np.random.choice(mask_pos[node][1],1).item()
+                    #    mask_pos[node][1].remove(_p)
+                    #    zero_samples = zero_samples[_p:_p+step]
 
-                zero_samples = np.arange(N)
-                zero_samples[in_e] = -1
-                zero_samples[node] = -1
-                zero_samples[self.data_test[:, node].nonzero()[0]] = -1
-                zero_samples = zero_samples[zero_samples >0]
-                zero_samples = np.random.choice(zero_samples,
-                                                int(np.ceil(len(zero_samples)/mask[node, 1])),
-                                                replace=False)
-                for target in zero_samples:
-                    yield target, node, 0
+                    if len(zero_samples) == 0:
+                        continue
+
+                    for target in zero_samples:
+                        yield target, node, 0
 
             elif set_index == 1:
-                node_info = {'vertex':node, 'direction':0}
-                yield str(set_index), node_info, symmetric_scale*N
                 # Sample from links
+                if len(neigs[node][0]) == 0:
+                    continue
+
+                node_info = {'vertex':node, 'direction':0}
+                yield str(set_index), node_info, symmetric_scale*N*len(neigs[node][0])
+
                 for target in neigs[node][0]:
                     yield node, target, weights[node, target]
             elif set_index == 2:
-                node_info = {'vertex':node, 'direction':1}
-                yield str(set_index), node_info, symmetric_scale*N
                 # Sample from links
+                if len(neigs[node][1]) == 0:
+                    continue
+
+                node_info = {'vertex':node, 'direction':1}
+                yield str(set_index), node_info, symmetric_scale*N*len(neigs[node][1])
+
                 for target in neigs[node][1]:
                     yield target, node, weights[target, node]
             else:

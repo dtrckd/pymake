@@ -94,19 +94,15 @@ class SbmBase(ModelBase):
         if phi is None:
             phi = self._phi
 
-        # method 1
-        #qijs = []
-        #for i,j, xij in self.data_test:
-        #    qijs.append( theta[i].dot(phi).dot(theta[j]) )
-
-        # method 2
         qijs = []
         for i,j, xij in self.data_test:
-            try:
-                pij = np.exp(self._state.get_edges_prob([(i,j),]))
-            except AttributeError:
-                # If recomputed with fig :roc...
-                pij =  theta[i].dot(phi).dot(theta[j])
+            #try:
+                # Too long !
+            #    pij = np.exp(self._state.get_edges_prob([(i,j),]))
+            #except AttributeError:
+            #    # If recomputed with fig :roc...
+            #    pij = theta[i].dot(phi).dot(theta[j])
+            pij = theta[i].dot(phi).dot(theta[j])
 
             qijs.append( pij )
 
@@ -144,10 +140,16 @@ class SbmBase(ModelBase):
         weights = np.squeeze(self.data_test[:,2].T)
 
         y_true = weights.astype(bool)*1
+        self._probas = pij
+        self._y_true = y_true
 
         fpr, tpr, thresholds = roc_curve(y_true, pij)
         roc = auc(fpr, tpr)
         return roc
+
+    def compute_pr(self, *args, **kwargs):
+        from sklearn.metrics import average_precision_score
+        return average_precision_score(self._y_true, self._probas)
 
     def compute_wsim(self, *args, **kws):
         return None
@@ -247,6 +249,8 @@ class WSBM_gt(SbmBase):
         #probas = 1 - sp.stats.poisson.cdf(trsh, pij)
 
         y_true = weights.astype(bool)*1
+        self._y_true = y_true
+        self._probas = probas
 
         fpr, tpr, thresholds = roc_curve(y_true, probas)
         roc = auc(fpr, tpr)

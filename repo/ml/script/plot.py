@@ -135,7 +135,7 @@ class Plot(ExpeFormat):
 
     @ExpeFormat.expe_repeat
     @ExpeFormat.table()
-    def tab(self, array, floc, x, y, z):
+    def tab(self, array, floc, x, y, z, *args):
         ''' Plot table according to parameter `x:y:z[-z2](param)'
             if args is given, use for filename discrimination `key1[/key2]...'
         '''
@@ -144,11 +144,13 @@ class Plot(ExpeFormat):
         if not data:
             self.log.warning('No data for expe : %s' % self.output_path)
 
-        #if data and z in data:
         if data and z in data and not (expe.model.endswith('_gt') and z == '_roc'):
+        #if data and z in data:
             # Extract from saved measure (.inf file).
-
-            data = self._to_masked(data[z]).max()
+            if 'min' in args:
+                data = self._to_masked(data[z]).min()
+            else:
+                data = self._to_masked(data[z]).max()
             #data = self._to_masked(data[z][-1])
         else:
             # Compute it directly from the model.
