@@ -141,21 +141,26 @@ class Levy(ExpDesign):
     eta2 = ExpGroup([eta2_b, eta2_w], _refdir='roc1') # repeat 0 1 2 tstratio=20 have 2*n zeros in testset.
     eta4 = ExpGroup([eta2_b50, eta2_w50], _refdir='roc4') # weighte are squared
     eta42 = ExpGroup([eta2_b50, eta2_w50], _refdir='roc4', zeros_set_len=[10, 50]) # weighte are squared
+    # roc5, weight times 10.
 
     roc1 = ExpGroup([eta2, sbm_base], _refdir='roc3', corpus=net_w, testset_ratio=[10,20])
     roc2_noise = ExpGroup([eta2, sbm_base], _refdir='roc2_noise', noise=10, corpus=net_w, testset_ratio=10)
 
     roc1_visu_sbm = ExpGroup(sbm_base, corpus=net_w, testset_ratio=20, model=['sbm_gt', 'wsbm_gt'])
     roc1_visu_sbm_full = ExpGroup(sbm_base, corpus=net_w, testset_ratio=20, model=['rescal_als', 'sbm_gt', 'wsbm_gt'])
-    roc1_visu = ExpGroup([eta2, roc1_visu_sbm], _refdir='roc3')
+    roc1_visu = ExpGroup([eta2, roc1_visu_sbm], _refdir='roc4')
     roc4_visu = ExpGroup([eta4, roc1_visu_sbm], _refdir='roc4')
     roc4_visu_full = ExpGroup([eta4, roc1_visu_sbm_full], _refdir='roc4')
     roc4_visu_final = ExpGroup([eta2_b50, eta2_w, roc1_visu_sbm], _refdir='roc4')
 
-    roc1_w = ExpGroup([eta0_w, eta1_w, eta2_w, eta0_w50, eta1_w50, eta2_w50], _refdir='roc3') # roc2 (norm corrected), roc3(burnin)
-    roc4_w = ExpGroup([eta0_w, eta1_w, eta2_w, eta0_w50, eta1_w50, eta2_w50], _refdir='roc4') # squred weight
+    roc4_w = ExpGroup([eta0_w, eta1_w, eta2_w, eta0_w50, eta1_w50, eta2_w50], _refdir='roc4') # squared weight
     roc4_b = ExpGroup(eta2_base, model="immsb_scvb3", zeros_set_prob=1/2, zeros_set_len=[10, 50], delta='auto', _refdir='roc4')
 
 
     roc2_w = ExpGroup([eta2_w, eta3_w], _refdir='roc3', zeros_set_len=[5,10])
+    gap = ExpGroup([eta2_w50], _refdir='gap_hyper', delta='auto', testset_ratio=20, corpus=net_w,
+                   c0=[0.1,1,10], r0=[0.1,1,10],
+                   ce=[0.1,1,10], eps=[1e-3, 1e-6],
+                   _format='{corpus}_{model}_{N}_{K}_{hyper}_{homo}_{testset_ratio}_{chunk}_{chi_a}-{tau_a}-{kappa_a}_{chi_b}-{tau_b}-{kappa_b}_{delta}_{zeros_set_len}_{zeros_set_prob}-{c0}-{r0}-{ce}-{eps}',
+                  )
 

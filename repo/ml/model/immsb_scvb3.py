@@ -210,9 +210,7 @@ class immsb_scvb3(SVB):
         #targets = self.data_test[:,1].T
         #qijs = np.diag(theta[sources].dot(phi).dot(theta[targets].T))
 
-        qijs = []
-        for i,j, xij in self.data_test:
-            qijs.append( theta[i].dot(phi).dot(theta[j]) )
+        qijs = np.array([ theta[i].dot(phi).dot(theta[j]) for i,j,xij in self.data_test])
 
         #qijs = ma.masked_invalid(qijs)
         return qijs

@@ -21,7 +21,7 @@ Plot utility :
 class Plot(ExpeFormat):
 
     def _preprocess(self):
-        self.model = ModelManager.from_expe(self.expe, load=True)
+        pass
 
     @ExpeFormat.raw_plot('corpus')
     def __call__(self, frame,  attribute='_entropy'):
@@ -154,8 +154,8 @@ class Plot(ExpeFormat):
             #data = self._to_masked(data[z][-1])
         else:
             # Compute it directly from the model.
+            self.model = ModelManager.from_expe(self.expe, load=True)
             if not self.model:
-                self.log.warning('No model for expe : %s' % self.output_path)
                 return
             else:
                 model = self.model

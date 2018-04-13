@@ -5,6 +5,7 @@ import scipy as sp
 from numpy import ma
 import scipy.stats
 
+from pymake.util.utils import defaultdict2
 from pymake.util.math import lognormalize, categorical, sorted_perm, adj_to_degree, gem
 from ml.model.modelbase import SVB
 
@@ -16,7 +17,7 @@ from ml.model.modelbase import SVB
 
 class iwmmsb_scvb3(SVB):
 
-    _purge = ['_kernel', '_lut_nbinom']
+    _purge = ['_kernel', '_lut_nbinom', '_likelihood']
 
     def _init_params(self, frontend):
         self.frontend = frontend
@@ -59,20 +60,37 @@ class iwmmsb_scvb3(SVB):
         self.hyper_phi = np.asarray(self.expe['delta'])
         hyper_phi = self.expe['delta']
 
+
+        self._random_ss_init()
+
         shift = self.expe.get('shift_w')
         #
         # Warn: Instable Part
         #
         if hyper_phi == 'auto':
+            K = self._K
+            N = self._len['N']
             self._hyper_phi = 'auto'
-            w = frontend.data.ep['weights'].a
-            m = w.mean()
-            v = w.var()
-            a = m**2/v
-            b = v/m
-            self.hyper_phi = np.array([a,1/b])
-            #self.hyper_phi = np.array([1,1])
+            #self.c0 = 1
+            #self.r0 = 1
+            #self.ce = 1
+            #self.eps = 1e-3
+
+            self.c0 = float(self.expe.get('c0', 10)) #weights mean
+            self.r0 = float(self.expe.get('r0', 0.1))
+            self.ce = float(self.expe.get('ce', 10))
+            self.eps = float(self.expe.get('eps', 1e-6))
+
+            self.c0_r0 = self.c0*self.r0
+            self.ce_eps = self.ce*self.eps
+            self.ce_minus_eps = self.ce*(1-self.eps)
+
+            rk = np.ones((K,K)) * self.r0
+            pk = np.ones((K,K)) * self.eps
+            self.hyper_phi = np.array([rk, (1-pk)/pk])
+
             self.log.info('Optimizing hyper enabled.')
+            #self.hyper_phi = np.array([1,1])
         elif shift:
             a = 10
             b = shift
@@ -82,8 +100,6 @@ class iwmmsb_scvb3(SVB):
             self._hyper_phi = 'fix'
         else:
             raise ValueError('hyper parmeter hyper_phi dont understood: %s' % hyper_phi)
-
-        self._random_ss_init()
 
     def _init_gradient(self):
         N = self._len['N']
@@ -202,21 +218,41 @@ class iwmmsb_scvb3(SVB):
             k = self.N_Y + self.hyper_phi[0]
             p = (self.N_phi + self.hyper_phi[1] + 1)**-1
             # @debug: Some invalie values here sometime !!
-            self._kernel = lambda x:sp.stats.nbinom.pmf(x, k, 1-p)
-            self._lut_nbinom = [sp.stats.nbinom.pmf(x, k, 1-p) for x in range(min(self._max_w, 20))]
-            #kernel = sp.stats.nbinom.pmf(xij, k, 1-p)
+            self._kernel = defaultdict2(lambda x:sp.stats.nbinom.pmf(x, k, 1-p))
 
-        if len(self._lut_nbinom) > xij:
-            # Wins some times...
-            kernel = self._lut_nbinom[xij]
-        else:
-            kernel = self._kernel(xij)
+            if self._hyper_phi == 'auto':
+                N = len(self.pik)
+                qk = self.hyper_phi[1]
+                pk = 1 / (qk+1)
+                #print('Gamma %s, %s' % (self.c0*self.r0, 1/(self.c0 - N*np.log(1-pk))))
+                a = self.c0_r0
+                _pk = 1-pk
+                _pk[_pk < 1e-100] = 1e-100
+                b = 1/(self.c0 - N*np.log(_pk))
+
+                rk = np.random.gamma(a, b)
+                #rk = a*b
+
+                c = self.ce_eps + self.N_Y
+                d = self.ce_minus_eps + N*rk
+
+                pk = np.random.beta(c, d)
+                #pk = c/(c+d)
+
+                pk[pk < 1e-100] = 1e-100
+                #print('Beta %s, %s' % (self.ce*self.eps + self.N_Y, self.ce*(1-self.eps) + N*rk))
+                self.hyper_phi = [rk, (1-pk)/pk]
+
+                # No Residu, in CGS? since p(F, Phi|Z, Y) = q(F,Phi|Z)
+                #self._residu = np.array([sp.stats.gamma.pdf(rk, self.c0*self.r0, scale=1/self.c0), sp.stats.beta.pdf(pk, self.ce*self.eps, self.ce*(1-self.eps)) ])
+
+        kernel = self._kernel[xij]
 
         # debug: Underflow
         kernel[kernel<=1e-300] = 1e-100
         #kernel = ma.masked_invalid(kernel)
 
-        outer_kk = np.log(np.outer(self.pik, self.pjk)) + np.log(kernel)
+        outer_kk = np.log(np.outer(self.pik, self.pjk)) + np.log(kernel) #+ np.log(self._residu).sum()
 
         return lognormalize(outer_kk.ravel())
 
@@ -258,28 +294,10 @@ class iwmmsb_scvb3(SVB):
         if phi is None:
             phi = self._phi
 
-        # 1ts interpretation /wrong
-        #lut_nbinom = [phi(x) for x in range(12)]
-        #qijs = []
-        #for i,j, xij in self.data_test:
+        _likelihood = defaultdict2(lambda x : sp.stats.poisson.pmf(x, phi))
+        qijs = np.array([ theta[i].dot(_likelihood[xij]).dot(theta[j]) for i,j,xij in self.data_test])
 
-        #    if len(lut_nbinom) > xij:
-        #        # Wins some times...
-        #        kernel = lut_nbinom[xij]
-        #    else:
-        #        kernel = phi(xij)
-
-        #    qijs.append( theta[i].dot(kernel).dot(theta[j]))
-
-        # 2nd interpretation /too much memory
-        #sources = self.data_test[:,0].T
-        #targets = self.data_test[:,1].T
-        #qijs = np.diag(theta[sources].dot(phi).dot(theta[targets].T))
-
-        qijs = []
-        for i,j, xij in self.data_test:
-            qijs.append( theta[i].dot(phi).dot(theta[j]) )
-
+        self._likelihood = _likelihood
         #qijs = ma.masked_invalid(qijs)
         return qijs
 
@@ -297,9 +315,9 @@ class iwmmsb_scvb3(SVB):
                 theta, phi = self._reduce_latent()
             pij = self.likelihood(theta, phi)
 
-        weights = self.data_test[:,2].T
-        ll = sp.stats.poisson.pmf(weights, pij)
-
+        #weights = self.data_test[:,2].T
+        #ll = sp.stats.poisson.pmf(weights, pij)
+        ll = pij
 
         ll[ll<=1e-300] = 1e-100
         # Log-likelihood
@@ -341,12 +359,12 @@ class iwmmsb_scvb3(SVB):
 
         trsh = trsh if trsh>=0 else 1
 
-        probas = 1 - sp.stats.poisson.cdf(trsh, pij)
+        self._probas = np.array([ 1 - sum([theta[i].dot(self._likelihood[v]).dot(theta[j]) for v in range(trsh)]) for i,j,_ in self.data_test])
+
         y_true = weights.astype(bool)*1
-        self._probas = probas
         self._y_true = y_true
 
-        fpr, tpr, thresholds = roc_curve(y_true, probas)
+        fpr, tpr, thresholds = roc_curve(y_true, self._probas)
         roc = auc(fpr, tpr)
         self._eta.append(roc)
         return roc
@@ -392,9 +410,8 @@ class iwmmsb_scvb3(SVB):
 
         weights = self.data_test[:,2].T
         nnz = self.data_test.shape[0]
-        pij = self.likelihood(theta, phi)
-        #ws = np.random.poisson(pij)
-        ws = pij # Expectation
+
+        ws = np.array([ theta[i].dot(phi).dot(theta[j]) for i,j,_ in self.data_test])
 
         # l1 norm
         mean_dist = np.abs(ws - weights).sum() / nnz

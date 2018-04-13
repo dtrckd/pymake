@@ -339,3 +339,12 @@ def reverse_readline(filename, buf_size=8192):
             yield segment
 
 
+class defaultdict2(defaultdict):
+	def __missing__(self, key):
+		if self.default_factory is None:
+			raise KeyError( key )
+		else:
+			ret = self[key] = self.default_factory(key)
+			return ret
+
+

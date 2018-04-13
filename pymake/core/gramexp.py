@@ -587,7 +587,9 @@ class GramExp(object):
                 _hash = int((hash_objects(v)), 16) % 10**8
                 fmt_expe[k] = k + str(_hash) +'h'
             elif isinstance(v, float):
-                if len(str(v).split('.')[1]) > 2:
+                if 'e' in str(v):
+                    fmt_expe[k] = str(v)
+                elif len(str(v).split('.')[1]) > 2:
                     fmt_expe[k] = '%.2f' % v
                 elif str(v).split('.')[1] == '0':
                     fmt_expe[k] = '%d' % v
@@ -1148,6 +1150,10 @@ class GramExp(object):
         if self._conf.get('simulate'):
             self.simulate()
 
+        #for r in cmdlines:
+        #    print(r)
+        #exit()
+
         cmd = ['parallel', '-j', n_cores, '-u', '-C', "' '", '--eta', '--progress', ':::', '%s'%('\n'.join(cmdlines))]
 
         #stdout = subprocess.check_output(cmd)
@@ -1216,7 +1222,7 @@ class GramExp(object):
         # remove the --net options
         for i, cmd in enumerate(cmdlines):
             #cmdlines[i] = cmd.replace('--net', '').strip()
-            cmdlines[i] = re.sub(r'--net\s+[0-9]*', '', cmd).strip()
+            cmdlines[i] = re.sub(r'--net\s*[0-9]*', '', cmd).strip()
 
         if nhosts is not None:
             tempf = '/tmp/pmk_' + uuid.uuid4().hex
@@ -1229,6 +1235,10 @@ class GramExp(object):
                         _f_w.write(l)
             NDL = tempf
 
+        #for r in cmdlines:
+        #    print(r)
+        #exit()
+
         cmd = ['parallel', '-u', '-C', "' '", '--eta', '--progress',
                '--sshloginfile', NDL, '--workdir', workdir,
                '--env', 'OMP_NUM_THREADS', '--env', 'PYTHONPATH', '--env', 'PATH',
@@ -1239,6 +1249,7 @@ class GramExp(object):
 
         if self._conf.get('simulate'):
             self.simulate()
+
 
         #stdout = subprocess.check_output(cmd)
         #print(stdout.decode())
