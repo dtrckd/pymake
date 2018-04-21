@@ -15,6 +15,7 @@ from ml.model.modelbase import SVB
 ##np.seterr(all='print')
 
 
+
 class iwmmsb_scvb3(SVB):
 
     _purge = ['_kernel', '_lut_nbinom', '_likelihood']
@@ -77,7 +78,7 @@ class iwmmsb_scvb3(SVB):
             #self.eps = 1e-3
 
             self.c0 = float(self.expe.get('c0', 10)) #weights mean
-            self.r0 = float(self.expe.get('r0', 0.1))
+            self.r0 = float(self.expe.get('r0', 0.2))
             self.ce = float(self.expe.get('ce', 10))
             self.eps = float(self.expe.get('eps', 1e-6))
 
@@ -222,24 +223,29 @@ class iwmmsb_scvb3(SVB):
 
             if self._hyper_phi == 'auto':
                 N = len(self.pik)
+                rk = self.hyper_phi[0]
                 qk = self.hyper_phi[1]
                 pk = 1 / (qk+1)
-                #print('Gamma %s, %s' % (self.c0*self.r0, 1/(self.c0 - N*np.log(1-pk))))
-                a = self.c0_r0
+
+                # Way 1
+                ##print('Gamma %s, %s' % (self.c0*self.r0, 1/(self.c0 - N*np.log(1-pk))))
+                a = np.ones(self.N_phi.shape)*(self.c0_r0 -1)
+                a[self.N_Y < 1] += 1
+                a = np.ones(self.N_phi.shape)*(self.c0_r0)
                 _pk = 1-pk
                 _pk[_pk < 1e-100] = 1e-100
-                b = 1/(self.c0 - N*np.log(_pk))
-
+                b = 1/(self.c0 - (self.N_phi)*np.log(_pk))
                 rk = np.random.gamma(a, b)
                 #rk = a*b
 
                 c = self.ce_eps + self.N_Y
-                d = self.ce_minus_eps + N*rk
+                d = self.ce_minus_eps + rk*self.N_phi
 
-                pk = np.random.beta(c, d)
                 #pk = c/(c+d)
-
+                pk = np.random.beta(c, d)
                 pk[pk < 1e-100] = 1e-100
+
+
                 #print('Beta %s, %s' % (self.ce*self.eps + self.N_Y, self.ce*(1-self.eps) + N*rk))
                 self.hyper_phi = [rk, (1-pk)/pk]
 
@@ -294,7 +300,9 @@ class iwmmsb_scvb3(SVB):
         if phi is None:
             phi = self._phi
 
-        _likelihood = defaultdict2(lambda x : sp.stats.poisson.pmf(x, phi))
+
+        #_likelihood = defaultdict2(lambda x : sp.stats.poisson.pmf(x, phi))
+        _likelihood = defaultdict2(lambda x:sp.stats.nbinom.pmf(x, self._k, 1-self._p))
         qijs = np.array([ theta[i].dot(_likelihood[xij]).dot(theta[j]) for i,j,xij in self.data_test])
 
         self._likelihood = _likelihood
@@ -409,12 +417,13 @@ class iwmmsb_scvb3(SVB):
             pij = self.likelihood(theta, phi)
 
         weights = self.data_test[:,2].T
-        nnz = self.data_test.shape[0]
 
-        ws = np.array([ theta[i].dot(phi).dot(theta[j]) for i,j,_ in self.data_test])
+        ws = np.array([ theta[i].dot(phi).dot(theta[j]) for i,j,w in self.data_test if w > 0])
 
         # l1 norm
-        mean_dist = np.abs(ws - weights).sum() / nnz
+        wd = weights[weights>0]
+        nnz = len(wd)
+        mean_dist = np.abs(ws - wd).sum() / nnz
         return mean_dist
 
 
@@ -600,4 +609,13 @@ class iwmmsb_scvb3(SVB):
                 self._eta = [self._eta[-1]]
 
 
+
+
+class iwmmsb_scvb3_auto(iwmmsb_scvb3):
+    def __init__(self, expe, frontend):
+
+        if expe['delta'] != 'auto':
+            raise ValueError("Delta should be `auto' for wmmsb_scvb_np model...")
+
+        super().__init__(expe, frontend)
 

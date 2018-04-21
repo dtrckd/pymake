@@ -3,6 +3,17 @@ from pymake import ExpSpace, ExpTensor, Corpus, ExpDesign, ExpGroup
 
 class Levy(ExpDesign):
 
+    #refdir=gapv1 is old likelihood + sampling r/p.sampling
+    #rocw1: new likelihood + sampling r/p
+    #rocw2: newlikelihood + mixed samling/VB r/p
+    #rocw3: new likelihood + mixed samling/VB r/p and N_Phi added. (partial some correction and inversion sample/expectation)
+    #rocw4: new likelihood + samling r/p and
+
+    _alias = {'ml.iwmmsb_scvb3' : 'WMMSB',
+              'ml.iwmmsb_scvb3_auto' : 'gb-WMMSB',
+              'ml.immsb_scvb3' : 'MMSB',
+              'link-dynamic-simplewiki': 'wiki-link',
+             }
 
     net_old = Corpus(['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad', 'generator7', 'generator12', 'generator10', 'generator4'])
     net_gt = Corpus(['astro-ph', 'hep-th', 'netscience', 'cond-mat']) # all undirected
@@ -10,6 +21,7 @@ class Levy(ExpDesign):
     net_test = Corpus(['manufacturing', 'fb_uc', 'netscience'])
     net_large = Corpus(['link-dynamic-simplewiki', 'enron', 'foldoc'])
     net_w = Corpus(['manufacturing', 'fb_uc']) + net_gt
+    net_w2 = Corpus(['slashdot-threads', 'actor-collaboration','prosper-loans', 'munmun_digg_reply', 'moreno_names' ])
     net_all = net_old + net_gt + net_large
 
     #
@@ -54,7 +66,7 @@ class Levy(ExpDesign):
         K             = 10,
         hyper         = 'auto',
         homo = 0,
-        testset_ratio = 10,
+        testset_ratio = 20,
 
 
         # Sampling
@@ -117,7 +129,7 @@ class Levy(ExpDesign):
 
 
     # Corrected zero sampling
-    eta2_base = ExpGroup(warm, testset_ratio=20, _refdir="eta2", corpus=net_w)
+    eta2_base = ExpGroup(warm, testset_ratio=20, _refdir='roc5', corpus=net_w) # roc5§roc5_N
     eta2_sbm = ExpGroup(eta2_base, model=['sbm_gt', 'wsbm_gt', 'rescal_als'],
                         zeros_set_prob=None, zeros_set_len=None, delta=None,
                         _csv_typo='time_it _entropy _K _roc _wsim _pr')
@@ -133,31 +145,24 @@ class Levy(ExpDesign):
     eta1_w50 = ExpGroup(eta2_base, model="iwmmsb_scvb3", zeros_set_prob=1/2, zeros_set_len=50, delta=[[1, 1]])
     eta2_w50 = ExpGroup(eta2_base, model="iwmmsb_scvb3", zeros_set_prob=1/2, zeros_set_len=50, delta=[[0.5, 10]])
 
-    eta101_w50 = ExpGroup(eta2_base, model="iwmmsb_scvb3", zeros_set_prob=1/2, zeros_set_len=50, delta=[[10, 0.1]])
-    etas10_w50 = ExpGroup(eta2_base, model="iwmmsb_scvb3", zeros_set_prob=1/2, zeros_set_len=50, delta=[[5, 1]])
-    etas2_w50 = ExpGroup(eta2_base, model="iwmmsb_scvb3", zeros_set_prob=1/2, zeros_set_len=50, delta=[[0.5*100, 100/(20)]])
+    eta2a_w = ExpGroup(eta2_base, model="iwmmsb_scvb3_auto", zeros_set_prob=1/2, zeros_set_len=10, delta='auto', _model="ml.iwmmsb_scvb3")
+    eta2a_w50 = ExpGroup(eta2_base, model="iwmmsb_scvb3_auto", zeros_set_prob=1/2, zeros_set_len=50, delta='auto', _model="ml.iwmmsb_scvb3")
 
+    eta4_full = ExpGroup([eta2_b50, eta2_w50, eta2a_w50]) # weighte are squared
 
-    eta2 = ExpGroup([eta2_b, eta2_w], _refdir='roc1') # repeat 0 1 2 tstratio=20 have 2*n zeros in testset.
-    eta4 = ExpGroup([eta2_b50, eta2_w50], _refdir='roc4') # weighte are squared
-    eta42 = ExpGroup([eta2_b50, eta2_w50], _refdir='roc4', zeros_set_len=[10, 50]) # weighte are squared
-    # roc5, weight times 10.
+    roc_visu_sbm = ExpGroup(sbm_base, corpus=net_w, testset_ratio=20, model=['sbm_gt', 'wsbm_gt'], _refdir='roc5')
+    roc_visu_sbm_full = ExpGroup(sbm_base, corpus=net_w, testset_ratio=20, model=['rescal_als', 'sbm_gt', 'wsbm_gt'], _refdir='roc5')
+    roc_visu_full = ExpGroup([eta4_full, roc_visu_sbm_full])
+    roc_visu_final10 = ExpGroup([eta2_b, eta2_w, eta2a_w, roc_visu_sbm])
+    roc_visu_final50 = ExpGroup([eta2_b50, eta2_w50, eta2a_w50, roc_visu_sbm])
+    roc_visu_final = roc_visu_final50
 
-    roc1 = ExpGroup([eta2, sbm_base], _refdir='roc3', corpus=net_w, testset_ratio=[10,20])
-    roc2_noise = ExpGroup([eta2, sbm_base], _refdir='roc2_noise', noise=10, corpus=net_w, testset_ratio=10)
+    roc_w = ExpGroup([eta0_w, eta1_w, eta2_w, eta0_w50, eta1_w50, eta2_w50]) # squared weight
+    roc_b = ExpGroup(eta2_base, model="immsb_scvb3", zeros_set_prob=1/2, zeros_set_len=[10, 50], delta='auto')
 
-    roc1_visu_sbm = ExpGroup(sbm_base, corpus=net_w, testset_ratio=20, model=['sbm_gt', 'wsbm_gt'])
-    roc1_visu_sbm_full = ExpGroup(sbm_base, corpus=net_w, testset_ratio=20, model=['rescal_als', 'sbm_gt', 'wsbm_gt'])
-    roc1_visu = ExpGroup([eta2, roc1_visu_sbm], _refdir='roc4')
-    roc4_visu = ExpGroup([eta4, roc1_visu_sbm], _refdir='roc4')
-    roc4_visu_full = ExpGroup([eta4, roc1_visu_sbm_full], _refdir='roc4')
-    roc4_visu_final = ExpGroup([eta2_b50, eta2_w, roc1_visu_sbm], _refdir='roc4')
+    eta2a_w50_toremove = ExpGroup(eta2a_w50, _repeat='0')
+    conv_w = ExpGroup([eta0_w50, eta1_w50, eta2_w50, eta2a_w50_toremove])
 
-    roc4_w = ExpGroup([eta0_w, eta1_w, eta2_w, eta0_w50, eta1_w50, eta2_w50], _refdir='roc4') # squared weight
-    roc4_b = ExpGroup(eta2_base, model="immsb_scvb3", zeros_set_prob=1/2, zeros_set_len=[10, 50], delta='auto', _refdir='roc4')
-
-
-    roc2_w = ExpGroup([eta2_w, eta3_w], _refdir='roc3', zeros_set_len=[5,10])
     gap = ExpGroup([eta2_w50], _refdir='gap_hyper', delta='auto', testset_ratio=20, corpus=net_w,
                    c0=[0.1,1,10], r0=[0.1,1,10],
                    ce=[0.1,1,10], eps=[1e-3, 1e-6],

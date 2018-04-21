@@ -106,7 +106,7 @@ class ModelManager(object):
         _model = Model.get(self.expe.model)
         if not _model:
             self.log.error('Model Unknown : %s' % (self.expe.model))
-            raise NotImplementedError()
+            raise NotImplementedError(self.expe.model)
 
         # @Improve: * initialize all model with expe
         #           * fit with frontend, transform with frontend (as sklearn do)

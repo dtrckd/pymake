@@ -17,8 +17,14 @@ Plot utility :
 ----------------
 """
 
-
 class Plot(ExpeFormat):
+
+    # Documentation !
+    _default_expe = dict(
+        _label = lambda expe: '%s %s' % (expe._alias[expe.model], expe.delta) if expe.model in expe._alias else False,
+        legend_size=10,
+        _csv_sample = 2,
+    )
 
     def _preprocess(self):
         pass
@@ -119,8 +125,17 @@ class Plot(ExpeFormat):
         else:
             x = range(len(values))
 
+        if expe.get('_csv_sample'):
+            s = int(expe['_csv_sample'])
+            x = x[::s]
+            values = values[::s]
+
+        if expe.get('_label'):
+            label = expe['_label'](expe)
+            description = label if label else description
+
         ax.plot(x[burnin:], values, label=description, marker=frame.markers.next())
-        ax.legend(loc=expe.get('fig_legend',1), prop={'size':5})
+        ax.legend(loc=expe.get('fig_legend',1), prop={'size':expe.get('legend_size',5)})
 
         #if self.is_last_expe() and expe.get('fig_xaxis'):
         #    for frame in self.get_figs():
@@ -144,8 +159,8 @@ class Plot(ExpeFormat):
         if not data:
             self.log.warning('No data for expe : %s' % self.output_path)
 
-        if data and z in data and not (expe.model.endswith('_gt') and z == '_roc'):
-        #if data and z in data:
+        #if data and z in data and not (expe.model.endswith('_gt') and z == '_roc'):
+        if data and z in data:
             # Extract from saved measure (.inf file).
             if 'min' in args:
                 data = self._to_masked(data[z]).min()
