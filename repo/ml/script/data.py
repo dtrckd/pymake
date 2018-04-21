@@ -1,3 +1,4 @@
+import os
 from pymake import ExpeFormat
 
 from collections import OrderedDict
@@ -70,7 +71,7 @@ class Data(ExpeFormat):
              ''')
         pass
 
-    def move(self, *args):
+    def move(self, *args, copy=False):
         import glob
         import shutil
         assert(len(args)>0)
@@ -88,16 +89,37 @@ class Data(ExpeFormat):
         if self.is_first_expe():
             self.log.info('Moving files for request: %s' % args)
             self.D.mesg = []
+            self.D.num_expe = 0
+            self.D.num_total = 0
+
+        self.D.num_total += 1
+
+        textm = 'copying' if copy  else 'moving'
+        cwd = os.getenv('PWD')
+        pwd_len = len(cwd)
 
         for ofn in glob.glob(opath+'.*'):
             ext = ofn[len(opath):]
             nfn = npath + ext
-            self.D.mesg.append("`%s' -> `%s'" % (ofn, nfn))
-            shutil.move(ofn, nfn)
+            self.D.mesg.append("%s `%s' -> `%s'" % (textm, './'+ofn[pwd_len+1:], './'+nfn[pwd_len+1:]))
+
+            if expe.get('force'):
+                if copy is True:
+                    shutil.copyfile(ofn, nfn)
+                else:
+                    shutil.move(ofn, nfn)
+
+                self.D.num_expe +=1
 
         if self.is_last_expe():
-            self.log.debug('\n'.join(self.D.mesg))
-            self.log.info('%d files moved.' % len(self.D.mesg))
+            if not expe.get('force'):
+                print('*** Simulation ***')
+            textm = 'copied' if copy else 'moved'
+            self.log.debug('\n'.join(self.D.mesg)+'\n')
+            self.log.info('%d/%d expe %s (%d files).' % (self.D.num_expe, self.D.num_total, textm, len(self.D.mesg)))
 
 
+    def copy(self, *args):
+
+        self.move(*args, copy=True)
 
