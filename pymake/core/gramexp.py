@@ -596,6 +596,10 @@ class GramExp(object):
                 else:
                     fmt_expe[k] = v
 
+        # Special rule to rewirte the output_path
+        if '_model' in expe and 'model' in expe:
+            fmt_expe['model'] = expe['_model']
+
         return fmt_expe
 
 

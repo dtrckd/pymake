@@ -188,7 +188,7 @@ class Spec(BaseObject):
             exp = getattr(expdesign, expe_name)
         except AttributeError as e:
             lgg.error("Seems that a spec `%s' has been removed : %s" % (expe_name, e))
-            lgg.error("Fatal Error: unable to load spec:  try `pymake update' or try again.")
+            lgg.error("Fatal Error: unable to load spec:  try `pmk update' or try again.")
             exit(2)
 
         return exp, expdesign
@@ -550,7 +550,7 @@ class ExpTensorV2(BaseObject):
         while consume_expe < size_expe:
             o = _spec[consume_expe]
             if isinstance(o, tuple):
-                # _type => expdesign
+                #_type => expdesign
                 name, o, _type = o
 
             if isinstance(o, ExpGroup):
@@ -563,6 +563,9 @@ class ExpTensorV2(BaseObject):
             else:
                 o['_name_expe'] = name
                 o['_expe_hash'] = hash_objects(dict((k,v) for k,v in o.items() if k not in private_keywords))
+                if hasattr(_type, '_alias'):
+                    o['_alias'] = getattr(_type, '_alias')
+
                 exp.append(o)
                 gt._ds_.append(_type)
                 consume_expe += 1

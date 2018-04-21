@@ -9,7 +9,8 @@ from .drivers import OnlineDatasetDriver
 
 try:
     import graph_tool as gt
-    from graph_tool import stats, clustering, inference, spectral, topology, generation, search, draw
+    from graph_tool import stats, clustering, inference, spectral, topology, generation, search
+    from graph_tool import draw
 except Exception as e:
     print('Error while importing graph-tool: %s' % e)
 

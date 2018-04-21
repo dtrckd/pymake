@@ -431,8 +431,8 @@ class ExpeFormat(object):
                             for zpos, z in enumerate(_z):
                                 Meas = self.specname(self.gramexp.get_set(y))
 
-                                fop = np.max if 'max' in discr_args else np.mean
-                                fop = np.min if 'min' in discr_args else fop
+                                fop = np.max if 'rmax' in discr_args else np.mean
+                                fop = np.min if 'rmin' in discr_args else fop
 
                                 # Mean and standard deviation
                                 table = array[:,:,:,zpos]
