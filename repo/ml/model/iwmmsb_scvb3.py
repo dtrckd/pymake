@@ -231,7 +231,6 @@ class iwmmsb_scvb3(SVB):
                 ##print('Gamma %s, %s' % (self.c0*self.r0, 1/(self.c0 - N*np.log(1-pk))))
                 a = np.ones(self.N_phi.shape)*(self.c0_r0 -1)
                 a[self.N_Y < 1] += 1
-                a = np.ones(self.N_phi.shape)*(self.c0_r0)
                 _pk = 1-pk
                 _pk[_pk < 1e-100] = 1e-100
                 b = 1/(self.c0 - (self.N_phi)*np.log(_pk))

@@ -7,7 +7,7 @@ scipy
 networkx 
 nltk
 matplotlib
-pandas
+#pandas
 #plotly ?
 #pystan ?
 #pymc ?
