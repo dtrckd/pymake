@@ -57,8 +57,9 @@ class Net(ExpeFormat):
 
         if self.is_last_expe():
             tablefmt = 'latex' if fmt == 'tex' else fmt
+            precision = '.5f'
             print(colored('\nStats Table :', 'green'))
             Meas_ = self.D.Meas_
-            print(self.tabulate(Table, headers=Meas_, tablefmt=tablefmt, floatfmt='.4f'))
+            print(self.tabulate(Table, headers=Meas_, tablefmt=tablefmt, floatfmt=precision))
 
 

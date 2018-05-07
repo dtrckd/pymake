@@ -151,22 +151,56 @@ class Plot(ExpeFormat):
     @ExpeFormat.expe_repeat
     @ExpeFormat.table()
     def tab(self, array, floc, x, y, z, *args):
-        ''' Plot table according to parameter `x:y:z[-z2](param)'
-            if args is given, use for filename discrimination `key1[/key2]...'
+        ''' Plot table according to the syntax:
+            * `x:y:Z [args1/args2]'
+
+            Z value syntax
+            -------------
+            The third value of the triplet is the value to print in the table. There is sepcial syntac options:
+            * If several value are seperate by a '-', then for each one a table will be print out.
+            * is Z is of the forme Z= a@b. Then the value of the tab is of the form data[a][data[b].argmax()].
+                It takes the value b according to the max value of a.
+
+            Special Axis
+            ------------
+            is x or y can have the special keywords reserved values
+            * _spec: each column of the table will be attached to each different expSpace in the grobal ExpTensorsV2.
+
+            args* syntax
+            ------------
+            If args is given, it'll be used for filename discrimination `key1[/key2]...'
+            Args can contain special keyworkd:
+            * tex: will format the table in latex
+            * max/min: change the defualt value to take in the .inf file (default is max)
+            * rmax/rmin: is repeat is given, it will take the min/max value of the repeats (default is mean)
         '''
         expe = self.expe
         data = self.load_some()
         if not data:
             self.log.warning('No data for expe : %s' % self.output_path)
+            data = {}
 
-        #if data and z in data and not (expe.model.endswith('_gt') and z == '_roc'):
-        if data and z in data:
+        # To remove
+        #if z in data and not (expe.model.endswith('_gt') and z == '_roc'):
+        if z in data:
             # Extract from saved measure (.inf file).
             if 'min' in args:
-                data = self._to_masked(data[z]).min()
+                value = self._to_masked(data[z]).min()
             else:
-                data = self._to_masked(data[z]).max()
-            #data = self._to_masked(data[z][-1])
+                value = self._to_masked(data[z]).max()
+            #value = self._to_masked(data[z][-1])
+
+        elif '@' in z:
+            # Take the  argmax/argmin of first part to extract the second
+            ag, vl = z.split('@')
+
+            if 'min' in args:
+                value = self._to_masked(data[ag]).argmin()
+            else:
+                value = self._to_masked(data[ag]).argmax()
+
+            value = data[vl][value]
+
         else:
             # Compute it directly from the model.
             self.model = ModelManager.from_expe(self.expe, load=True)
@@ -176,15 +210,15 @@ class Plot(ExpeFormat):
                 model = self.model
 
             if hasattr(model, 'compute_'+z.lstrip('_')):
-                data = getattr(model, 'compute_'+z.lstrip('_'))(**expe)
+                value = getattr(model, 'compute_'+z.lstrip('_'))(**expe)
             elif hasattr(self, 'get_'+z.lstrip('_')):
-                data = getattr(self, 'get_'+z.lstrip('_'))()[-1]
+                value = getattr(self, 'get_'+z.lstrip('_'))()[-1]
             else:
                 self.log.error('attribute unknown: %s' % z)
                 return
 
         loc = floc(expe[x], expe[y], z)
-        array[loc] = data
+        array[loc] = value
         return
 
 

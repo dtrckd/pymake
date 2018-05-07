@@ -13,6 +13,8 @@ class Levy(ExpDesign):
               'ml.iwmmsb_scvb3_auto' : 'gb-WMMSB',
               'ml.immsb_scvb3' : 'MMSB',
               'link-dynamic-simplewiki': 'wiki-link',
+              'munmun_digg_reply': 'digg-reply',
+              'slashdot-threads': 'slashdot',
              }
 
     net_old = Corpus(['manufacturing', 'fb_uc','blogs', 'emaileu', 'propro', 'euroroad', 'generator7', 'generator12', 'generator10', 'generator4'])
@@ -21,7 +23,10 @@ class Levy(ExpDesign):
     net_test = Corpus(['manufacturing', 'fb_uc', 'netscience'])
     net_large = Corpus(['link-dynamic-simplewiki', 'enron', 'foldoc'])
     net_w = Corpus(['manufacturing', 'fb_uc']) + net_gt
-    net_w2 = Corpus(['slashdot-threads', 'actor-collaboration','prosper-loans', 'munmun_digg_reply', 'moreno_names' ])
+    # 'actor-collaboration' # Too big?
+    net_w2 = Corpus(['slashdot-threads','prosper-loans', 'munmun_digg_reply', 'moreno_names' ])
+    # manufacturing
+    net_final = Corpus(['fb_uc', 'manufacturing','hep-th', 'link-dynamic-simplewiki', 'enron', 'slashdot-threads', 'prosper-loans', 'munmun_digg_reply', 'moreno_names', 'astro-ph'])
     net_all = net_old + net_gt + net_large
 
     #
@@ -67,6 +72,7 @@ class Levy(ExpDesign):
         hyper         = 'auto',
         homo = 0,
         testset_ratio = 20,
+        validset_ratio = 10,
 
 
         # Sampling
@@ -157,15 +163,42 @@ class Levy(ExpDesign):
     roc_visu_final50 = ExpGroup([eta2_b50, eta2_w50, eta2a_w50, roc_visu_sbm])
     roc_visu_final = roc_visu_final50
 
+
+    roc_visu_final2 = ExpGroup([eta2_b50, eta2_w50, eta2a_w50], _refdir="roc5v")
+    roc_visu_final2 = ExpGroup([roc_visu_final2, roc_visu_sbm])
+    roc_visu_final2_full = ExpGroup([roc_visu_final2, roc_visu_sbm_full])
+
+    roc_visu_final3 = ExpGroup([eta2_b50, eta1_w50, eta2a_w50], _refdir="roc5v")
+    roc_visu_final3 = ExpGroup([roc_visu_final3, roc_visu_sbm])
+
     roc_w = ExpGroup([eta0_w, eta1_w, eta2_w, eta0_w50, eta1_w50, eta2_w50]) # squared weight
     roc_b = ExpGroup(eta2_base, model="immsb_scvb3", zeros_set_prob=1/2, zeros_set_len=[10, 50], delta='auto')
 
-    eta2a_w50_toremove = ExpGroup(eta2a_w50, _repeat='0')
-    conv_w = ExpGroup([eta0_w50, eta1_w50, eta2_w50, eta2a_w50_toremove])
+    conv_w = ExpGroup([eta0_w50, eta1_w50, eta2_w50, eta2a_w50])
 
-    gap = ExpGroup([eta2_w50], _refdir='gap_hyper', delta='auto', testset_ratio=20, corpus=net_w,
-                   c0=[0.1,1,10], r0=[0.1,1,10],
-                   ce=[0.1,1,10], eps=[1e-3, 1e-6],
+    param1 = ExpGroup(eta2a_w50,  c0=40, r0=0.05)
+    param2 = ExpGroup(eta2a_w50,  c0=[20, 40], r0=0.1)
+    param3 = ExpGroup(eta2a_w50,  c0=[10, 20, 40], r0=0.2)
+    param4 = ExpGroup(eta2a_w50,  c0=[5, 10, 20, 40], r0=0.5)
+    gap = ExpGroup([param1,param2,param3,param4], _refdir='gap_hyper', testset_ratio=20, corpus=net_w,
+                   ce=[10, 100], eps=[1e-6],
                    _format='{corpus}_{model}_{N}_{K}_{hyper}_{homo}_{testset_ratio}_{chunk}_{chi_a}-{tau_a}-{kappa_a}_{chi_b}-{tau_b}-{kappa_b}_{delta}_{zeros_set_len}_{zeros_set_prob}-{c0}-{r0}-{ce}-{eps}',
                   )
+
+
+    param1_s = ExpGroup(param1,  c0=40, ce=100)
+    param2_s = ExpGroup(param2,  c0=20,  ce=10)
+    param3_s = ExpGroup(param3,  c0=40,  ce=10)
+    param4_s = ExpGroup(param4,  c0=20,  ce=100)
+    gap_mem = ExpGroup([param1_s, param2_s, param3_s, param4_s], _refdir='gap_hyper', testset_ratio=20, corpus=net_w,
+                       eps=[1e-6],
+                   _format='{corpus}_{model}_{N}_{K}_{hyper}_{homo}_{testset_ratio}_{chunk}_{chi_a}-{tau_a}-{kappa_a}_{chi_b}-{tau_b}-{kappa_b}_{delta}_{zeros_set_len}_{zeros_set_prob}-{c0}-{r0}-{ce}-{eps}',
+                  )
+
+    gap_visu = ExpGroup([eta2a_w50], _refdir='gap_hyper', testset_ratio=20, corpus=net_w,
+                    ce=[10], eps=[1e-5, 1e-6, 1e-7],
+                    c0=20, r0=0.1,
+                    _format='{corpus}_{model}_{N}_{K}_{hyper}_{homo}_{testset_ratio}_{chunk}_{chi_a}-{tau_a}-{kappa_a}_{chi_b}-{tau_b}-{kappa_b}_{delta}_{zeros_set_len}_{zeros_set_prob}-{c0}-{r0}-{ce}-{eps}',
+                  )
+
 

@@ -59,6 +59,26 @@ class Fit(ExpeFormat):
         else:
             self.log.info("Expe `%s' already fitted, passing..." % self._it)
 
+    def fit_incomplete(self, ext='inf'):
+
+        is_fitted = self.gramexp.make_output_path(self.expe, ext=ext, status='f')
+        _file = self.expe['_output_path'] +'.' + ext
+        try:
+            if not is_fitted:
+                flag = False
+            else:
+                flag = list(filter(None,open(_file).read().split('\n')))[-1].split()[-1]
+
+            is_incomplete = flag != 'terminated'
+        except FileNotFoundError as e:
+            is_incomplete = True
+
+        if is_incomplete:
+            self.fitw()
+            #print(self.output_path)
+        else:
+            self.log.info("Expe `%s' completed, passing..." % self._it)
+
 
 if __name__ == '__main__':
     GramExp.zymake().pymake(Fit)

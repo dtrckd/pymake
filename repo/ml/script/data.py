@@ -60,6 +60,35 @@ class Data(ExpeFormat):
             print (self.tabulate(table, headers='keys', tablefmt='simple', floatfmt='.3f'))
 
 
+    # @need an expe
+    def incomplete(self, ext='inf'):
+        ''' Show not terminated expe. '''
+        if self.is_first_expe():
+            self.D.n_exp_total = self.expe_size
+            self.D.n_exp_missing = 0
+
+        is_fitted = self.gramexp.make_output_path(self.expe, ext=ext, status='f')
+        _file = self.expe['_output_path'] +'.' + ext
+        try:
+            if not is_fitted:
+                flag = False
+            else:
+                flag = list(filter(None,open(_file).read().split('\n')))[-1].split()[-1]
+
+            is_incomplete = flag != 'terminated'
+        except FileNotFoundError as e:
+            is_incomplete = True
+
+        if is_incomplete:
+            self.D.n_exp_missing += 1
+            self.log.debug(self.expe['_output_path'])
+
+
+        if self.is_last_expe():
+            table = OrderedDict([('incomplete', [self.D.n_exp_missing]),
+                                 ('total', [self.D.n_exp_total]),
+                                ])
+            print (self.tabulate(table, headers='keys', tablefmt='simple', floatfmt='.3f'))
 
     def topo(self):
         print('''' Todo Topo:
@@ -98,6 +127,7 @@ class Data(ExpeFormat):
         cwd = os.getenv('PWD')
         pwd_len = len(cwd)
 
+        flag = False
         for ofn in glob.glob(opath+'.*'):
             ext = ofn[len(opath):]
             nfn = npath + ext
@@ -108,12 +138,14 @@ class Data(ExpeFormat):
                     shutil.copyfile(ofn, nfn)
                 else:
                     shutil.move(ofn, nfn)
+                flag = True
 
-                self.D.num_expe +=1
+        if flag:
+            self.D.num_expe +=1
 
         if self.is_last_expe():
             if not expe.get('force'):
-                print('*** Simulation ***')
+                print('*** Simulation (need force option.) ***')
             textm = 'copied' if copy else 'moved'
             self.log.debug('\n'.join(self.D.mesg)+'\n')
             self.log.info('%d/%d expe %s (%d files).' % (self.D.num_expe, self.D.num_total, textm, len(self.D.mesg)))

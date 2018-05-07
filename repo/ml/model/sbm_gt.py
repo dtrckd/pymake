@@ -81,8 +81,12 @@ class SbmBase(ModelBase):
 
         phi = self._state.get_matrix().A
 
+        nr = self._state.get_nr()
+        norm = np.outer(nr.a, nr.a)
+
         if not getattr(self, '_weighted', False):
-            phi = phi / phi.sum()
+            #phi = phi / phi.sum()
+            phi = phi / norm
 
         self._theta, self._phi = theta, phi
 
@@ -97,7 +101,7 @@ class SbmBase(ModelBase):
         qijs = []
         for i,j, xij in self.data_test:
             #try:
-                # Too long !
+            #   # Too long !
             #    pij = np.exp(self._state.get_edges_prob([(i,j),]))
             #except AttributeError:
             #    # If recomputed with fig :roc...
@@ -186,6 +190,8 @@ class SbmBase(ModelBase):
         self.log.info("Fitting `%s' model with spec: %s" % (type(self), str(spec)))
         self._state = fit_fun(g, **spec)
 
+        #inference.mcmc_equilibrate(self._state)
+
         self.compute_measures()
         if self.expe.get('_write'):
             self.write_current_state(self)
@@ -239,14 +245,19 @@ class WSBM_gt(SbmBase):
         trsh = treshold
         weights = np.squeeze(self.data_test[:,2].T)
 
-        phi = phi / phi.sum()
+        nr = self._state.get_nr()
+        norm = np.outer(nr.a, nr.a)
+        phi = phi / norm
+        #phi = phi / phi.sum()
+
         probas = []
         for i,j, xij in self.data_test:
             pij =  theta[i].dot(phi).dot(theta[j])
             probas.append( pij )
 
         probas = ma.masked_invalid(probas)
-        #probas = 1 - sp.stats.poisson.cdf(trsh, pij)
+        #probas = 1 - sp.stats.poisson.pmf(0, probas)
+        #probas = pij
 
         y_true = weights.astype(bool)*1
         self._y_true = y_true

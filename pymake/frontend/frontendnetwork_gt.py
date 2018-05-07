@@ -431,16 +431,34 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
     def getN(self):
         return self.num_nodes()
 
+    def get_validset_ratio(self):
+
+        if 'validset_ratio' in self.expe:
+            validset_ratio = self.expe['validset_ratio']
+            if validset_ratio >= 1:
+                validset_ratio = float(validset_ratio) / 100
+            elif 0 <= validset_ratio < 1:
+                validset_ratio = float(validset_ratio)
+        else:
+            validset_ratio = 0
+
+        return validset_ratio
+
     def get_testset_ratio(self):
 
-        testset_ratio = self.expe.get('testset_ratio')
-
-        if testset_ratio >= 1:
-            testset_ratio = float(testset_ratio) / 100
-        elif 0 <= testset_ratio < 1:
-            testset_ratio = float(testset_ratio)
+        if 'testset_ratio' in self.expe:
+            testset_ratio = self.expe['testset_ratio']
+            if testset_ratio >= 1:
+                testset_ratio = float(testset_ratio) / 100
+            elif 0 <= testset_ratio < 1:
+                testset_ratio = float(testset_ratio)
         else:
-            testset_ratio = None
+            testset_ratio = 0
+
+        validset_ratio = self.get_validset_ratio()
+
+        # Validation ratio is a ratio took on the remaining data (eta_ratio...)
+        testset_ratio = testset_ratio * (1 + validset_ratio)
 
         return testset_ratio
 

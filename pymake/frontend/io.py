@@ -141,7 +141,11 @@ def is_empty_file(filen):
     if not os.path.isfile(filen) or os.stat(filen).st_size == 0:
         return True
 
-    with open(filen, 'rb') as f: first_line = f.readline()
+    try:
+        with open(filen, 'r') as f: first_line = f.readline()
+    except UnicodeDecodeError:
+        first_line = '...'
+
     if first_line[0] in ('#', '%') and sum(1 for line in open(filen)) <= 1:
         # empy file
         return True
@@ -197,7 +201,8 @@ class PackageWalker(object):
         shrink_module_name = True,
     )
 
-    # Search also in the current repo.
+    # Search in the project and current repo. Awesome !
+    sys.path.append(os.getenv('PWD')+'/.')
     sys.path.append(os.getenv('PWD')+'/..')
 
     def __init__(self, module_name, **kwargs):

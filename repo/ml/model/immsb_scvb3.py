@@ -23,10 +23,22 @@ class immsb_scvb3(SVB):
 
         # Save the testdata
         if hasattr(self.frontend, 'data_test'):
-            self.data_test = frontend.data_test_w
+            data_test = frontend.data_test_w
+            self._data_test = data_test
+
+            N = frontend.num_nodes()
+            valid_ratio = frontend.get_validset_ratio() *2 # Because links + non_links...
+            n_valid = np.random.choice(len(data_test), int(np.round(N*valid_ratio / (1+valid_ratio))), replace=False)
+            n_test = np.arange(len(data_test))
+            n_test[n_valid] = -1
+            n_test = n_test[n_test>=0]
+            self.data_test = data_test[n_test]
+            self.data_valid = data_test[n_valid]
+            self._n_test = n_test
+            self._n_valid = n_valid
 
             # For fast computation of bernoulli pmf.
-            self._w_a = self.data_test[:,2].T.astype(int)
+            self._w_a = self._data_test[:,2].T.astype(int)
             self._w_a[self._w_a > 0] = 1
             self._w_a[self._w_a == 0] = -1
             self._w_b = np.zeros(self._w_a.shape, dtype=int)
@@ -50,7 +62,7 @@ class immsb_scvb3(SVB):
         # Eta init
         self._eta = []
         self._eta_limit = 1e-3
-        self._eta_control = -1
+        self._eta_control = np.nan
         self._eta_count_init = 25
         self._eta_count = self._eta_count_init
 
@@ -210,7 +222,7 @@ class immsb_scvb3(SVB):
         #targets = self.data_test[:,1].T
         #qijs = np.diag(theta[sources].dot(phi).dot(theta[targets].T))
 
-        qijs = np.array([ theta[i].dot(phi).dot(theta[j]) for i,j,xij in self.data_test])
+        qijs = np.array([ theta[i].dot(phi).dot(theta[j]) for i,j,_ in self._data_test])
 
         #qijs = ma.masked_invalid(qijs)
         return qijs
@@ -230,11 +242,13 @@ class immsb_scvb3(SVB):
             pij = self.likelihood(theta, phi)
 
         ll = pij * self._w_a + self._w_b
+        ll = ll[self._n_valid]
 
         #ll[ll<=1e-300] = 1e-300
         # Log-likelihood
         ll = np.log(ll).sum()
         # Perplexity is 2**H(X).
+        self._eta.append(ll)
         return ll
 
     def compute_elbo(self, theta=None, phi=None, **kws):
@@ -251,15 +265,17 @@ class immsb_scvb3(SVB):
                 theta, phi = self._reduce_latent()
             pij = self.likelihood(theta, phi)
 
-        weights = np.squeeze(self.data_test[:,2].T)
-
+        weights = np.squeeze(self._data_test[:,2].T)
         y_true = weights.astype(bool)*1
+
+        y_true = y_true[self._n_test]
+        pij = pij[self._n_test]
+
         self._probas = pij
         self._y_true = y_true
 
         fpr, tpr, thresholds = roc_curve(y_true, pij)
         roc = auc(fpr, tpr)
-        self._eta.append(roc)
         return roc
 
     def compute_pr(self, *args, **kwargs):
@@ -414,14 +430,14 @@ class immsb_scvb3(SVB):
 
                     if self.expe.get('_write'):
                         self.write_current_state(self)
-                        if mnb_num % 2000 == 0:
+                        if mnb_num % 4000 == 0:
                             self.save(silent=True)
                             sys.stdout.flush()
 
 
     def _check_eta(self):
 
-        if self._eta_control > 0:
+        if self._eta_control is not np.nan:
             self._eta_count -=1
             if self._eta_count == 0:
                 if self._eta[-1] - self._eta_control < self._eta_limit:
@@ -429,7 +445,7 @@ class immsb_scvb3(SVB):
                     return True
                 else:
                     self._eta_count = self._eta_count_init
-                    self._eta_control = -1
+                    self._eta_control = np.nan
                     self._eta = [self._eta[-1]]
         elif len(self._eta) > 10:
             if self._eta[-1] - self._eta[0] < self._eta_limit:

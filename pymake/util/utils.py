@@ -144,8 +144,8 @@ def drop_zeros(a_list):
     #return [i for i in a_list if i>0]
     return filter(lambda x: x != 0, a_list)
 
-import networkx as nx
 def nxG(y):
+    import networkx as nx
     if type(y) is np.ndarray:
         if (y == y.T).all():
             # Undirected Graph

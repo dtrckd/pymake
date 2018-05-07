@@ -402,17 +402,30 @@ class GramExp(object):
 
     def get_set(self, key, default=[]):
         ''' Return the (ordered) set of values of expVector of that {key}. '''
-        try:
-            return sorted(set(self._tensors.get_all(key, default)))
-        except TypeError:
-            self.log.warning('Unshashable value in tensor for key: %s' % key)
+
+        # Manage special Values
+        if key == '_spec':
+            raise NotImplementedError
+            ss =  sorted(self.get_nounique_keys())
+            list_of_identifier = []
+            for tensor in self._tensors:
+                local_identifier = []
+                for k in ss:
+                    local_identifier.append(k)
+
+                list_of_identifier.append('-'.join(sorted(filter(None,local_identifier))))
+                _set = list_of_identifier
+
+        else:
             _set = set()
             for v in self._tensors.get_all(key, default):
                 if isinstance(v, (list, set, dict)):
+                    self.log.debug('Unshashable value in tensor for key: %s' % key)
                     _set.add(str(v))
                 else:
                     _set.add(v)
-            return sorted(_set, key=lambda x: (x is None, x))
+
+        return sorted(_set, key=lambda x: (x is None, x))
 
 
     def get_list(self, key, default=[]):

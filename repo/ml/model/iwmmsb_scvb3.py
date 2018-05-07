@@ -24,11 +24,17 @@ class iwmmsb_scvb3(SVB):
         self.frontend = frontend
 
         # Save the testdata
-        self._max_w = 10
         if hasattr(self.frontend, 'data_test'):
-            self.data_test = frontend.data_test_w
-            self._max_w = self.data_test[:,2].max()
-            self._min_w = self.data_test[:,2].min() or 1
+            data_test = frontend.data_test_w
+
+            N = frontend.num_nodes()
+            valid_ratio = frontend.get_validset_ratio() *2 # Because links + non_links...
+            n_valid = np.random.choice(len(data_test), int(np.round(N*valid_ratio / (1+valid_ratio))), replace=False)
+            n_test = np.arange(len(data_test))
+            n_test[n_valid] = -1
+            n_test = n_test[n_test>=0]
+            self.data_test = data_test[n_test]
+            self.data_valid = data_test[n_valid]
 
         # Data statistics
         _len = {}
@@ -48,7 +54,7 @@ class iwmmsb_scvb3(SVB):
         # Eta init
         self._eta = []
         self._eta_limit = 1e-3
-        self._eta_control = -1
+        self._eta_control = np.nan
         self._eta_count_init = 25
         self._eta_count = self._eta_count_init
 
@@ -72,15 +78,16 @@ class iwmmsb_scvb3(SVB):
             K = self._K
             N = self._len['N']
             self._hyper_phi = 'auto'
-            #self.c0 = 1
-            #self.r0 = 1
-            #self.ce = 1
-            #self.eps = 1e-3
 
-            self.c0 = float(self.expe.get('c0', 10)) #weights mean
-            self.r0 = float(self.expe.get('r0', 0.2))
-            self.ce = float(self.expe.get('ce', 10))
-            self.eps = float(self.expe.get('eps', 1e-6))
+            #weights = np.squeeze(self.data_test[:,2].T)
+            #mean = weights.mean()
+            #var = weights.var()
+            #density = frontend.density()
+                                                          # roc5v | roc6v
+            self.c0 = float(self.expe.get('c0', 20))      # 20      5
+            self.r0 = float(self.expe.get('r0', 0.1))     # 0.5     0.5
+            self.ce = float(self.expe.get('ce', 10))     # 200     100
+            self.eps = float(self.expe.get('eps', 1e-6))  # 1e-6    1e-6
 
             self.c0_r0 = self.c0*self.r0
             self.ce_eps = self.ce*self.eps
@@ -228,9 +235,8 @@ class iwmmsb_scvb3(SVB):
                 pk = 1 / (qk+1)
 
                 # Way 1
-                ##print('Gamma %s, %s' % (self.c0*self.r0, 1/(self.c0 - N*np.log(1-pk))))
                 a = np.ones(self.N_phi.shape)*(self.c0_r0 -1)
-                a[self.N_Y < 1] += 1
+                a[self.N_Y < 1.461] += 1
                 _pk = 1-pk
                 _pk[_pk < 1e-100] = 1e-100
                 b = 1/(self.c0 - (self.N_phi)*np.log(_pk))
@@ -244,11 +250,8 @@ class iwmmsb_scvb3(SVB):
                 pk = np.random.beta(c, d)
                 pk[pk < 1e-100] = 1e-100
 
-
-                #print('Beta %s, %s' % (self.ce*self.eps + self.N_Y, self.ce*(1-self.eps) + N*rk))
                 self.hyper_phi = [rk, (1-pk)/pk]
 
-                # No Residu, in CGS? since p(F, Phi|Z, Y) = q(F,Phi|Z)
                 #self._residu = np.array([sp.stats.gamma.pdf(rk, self.c0*self.r0, scale=1/self.c0), sp.stats.beta.pdf(pk, self.ce*self.eps, self.ce*(1-self.eps)) ])
 
         kernel = self._kernel[xij]
@@ -299,10 +302,9 @@ class iwmmsb_scvb3(SVB):
         if phi is None:
             phi = self._phi
 
-
         #_likelihood = defaultdict2(lambda x : sp.stats.poisson.pmf(x, phi))
         _likelihood = defaultdict2(lambda x:sp.stats.nbinom.pmf(x, self._k, 1-self._p))
-        qijs = np.array([ theta[i].dot(_likelihood[xij]).dot(theta[j]) for i,j,xij in self.data_test])
+        qijs = np.array([ theta[i].dot(_likelihood[xij]).dot(theta[j]) for i,j,xij in self.data_valid])
 
         self._likelihood = _likelihood
         #qijs = ma.masked_invalid(qijs)
@@ -330,6 +332,8 @@ class iwmmsb_scvb3(SVB):
         # Log-likelihood
         ll = np.log(ll).sum()
         # Perplexity is 2**H(X).
+        #
+        self._eta.append(ll)
         return ll
 
     def compute_elbo(self, theta=None, phi=None, **kws):
@@ -366,14 +370,13 @@ class iwmmsb_scvb3(SVB):
 
         trsh = trsh if trsh>=0 else 1
 
-        self._probas = np.array([ 1 - sum([theta[i].dot(self._likelihood[v]).dot(theta[j]) for v in range(trsh)]) for i,j,_ in self.data_test])
+        self._probas = np.array([1 - sum([theta[i].dot(self._likelihood[v]).dot(theta[j]) for v in range(trsh)]) for i,j,_ in self.data_test])
 
         y_true = weights.astype(bool)*1
         self._y_true = y_true
 
         fpr, tpr, thresholds = roc_curve(y_true, self._probas)
         roc = auc(fpr, tpr)
-        self._eta.append(roc)
         return roc
 
     def compute_pr(self, *args, **kwargs):
@@ -583,14 +586,14 @@ class iwmmsb_scvb3(SVB):
 
                     if self.expe.get('_write'):
                         self.write_current_state(self)
-                        if mnb_num % 2000 == 0:
+                        if mnb_num % 4000 == 0:
                             self.save(silent=True)
                             sys.stdout.flush()
 
 
     def _check_eta(self):
 
-        if self._eta_control > 0:
+        if self._eta_control is not np.nan:
             self._eta_count -=1
             if self._eta_count == 0:
                 if self._eta[-1] - self._eta_control < self._eta_limit:
@@ -598,7 +601,7 @@ class iwmmsb_scvb3(SVB):
                     return True
                 else:
                     self._eta_count = self._eta_count_init
-                    self._eta_control = -1
+                    self._eta_control = np.nan
                     self._eta = [self._eta[-1]]
         elif len(self._eta) > 10:
             if self._eta[-1] - self._eta[0] < self._eta_limit:

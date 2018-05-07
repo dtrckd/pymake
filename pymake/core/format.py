@@ -2,11 +2,12 @@ import os
 import re
 from copy import copy
 import traceback
-import numpy as np
 from decorator import decorator
 from functools import wraps
 from itertools import product
 import logging
+from collections import OrderedDict
+import numpy as np
 
 from pymake import ExpSpace
 from pymake.util.utils import colored, basestring, make_path, get_pymake_settings, hash_objects
@@ -206,6 +207,20 @@ class ExpeFormat(object):
             plt.show(block=expe._no_block_plot)
         return kernel
 
+    @staticmethod
+    def expe_repeat(fun):
+
+        def wrapper(self, *args, **kwargs):
+
+            repeats = self.get_expset('_repeat')
+            if len(repeats)>1:
+                kwargs['repeat'] = True
+
+            res = fun(self, *args, **kwargs)
+
+            return res
+        return wrapper
+
 
     @staticmethod
     def raw_plot(*groups, **_kwargs):
@@ -377,7 +392,14 @@ class ExpeFormat(object):
                 else:
                     x, y, z = args[1].split(':')
                     if len(args) > 2:
-                        discr_args = args[2].split('/')
+                        if ',' in args[2]:
+                            split_sep = '|'
+                            discr_args = args[2].split(',')
+                        else:
+                            split_sep = '/'
+                            discr_args = args[2].split('/')
+
+                        kwargs['split_sep'] = split_sep
 
                 if discr_args:
                     groups = discr_args
@@ -388,23 +410,39 @@ class ExpeFormat(object):
                     groups = None
                     ggroup = None
 
-                _z = z.split('-')
-
-                # self.is_first_expe
                 if not hasattr(self.gramexp, '_tables'):
-                    tables = dict()
+                # self.is_first_expe
+
+                    tablefmt_ext = dict(simple='md', latex='tex')
+                    tablefmt = 'latex' if 'tex' in discr_args else 'simple'
+
+                    tables = OrderedDict()
                     if groups:
                         gset = product(*filter(None, [self.gramexp.get_set(g) for g in groups]))
                     else:
                         gset = [None]
 
-                    for g in gset:
+                    for g in sorted(gset):
                         gg = '-'.join(sorted(map(str,g))) if g else None
                         tables[gg] = ExpSpace()
+                        _z = z.split('-')
                         array, floc = self.gramexp.get_array_loc(x, y, _z, repeat=kwargs.get('repeat'))
                         tables[gg].name = gg
                         tables[gg].array = array
                         tables[gg].floc = floc
+                        tables[gg].x = x
+                        tables[gg].y = y
+                        tables[gg].z = _z
+                        tables[gg].headers = self.specname(self.gramexp.get_set(y))
+                        tables[gg].column = self.specname(self.gramexp.get_set(x))
+                        tables[gg].floatfmt = '.3f'
+                        tables[gg].tablefmt = tablefmt
+                        tables[gg].ext = tablefmt_ext[tablefmt]
+                        tables[gg].args = discr_args
+                        tables[gg].kwargs = kwargs
+                        tables[gg].base = '_'.join((fun.__name__,
+                                                str(self.expe[x]),
+                                                str(self.expe[y]))),
 
                     self.gramexp._tables = tables
 
@@ -416,48 +454,19 @@ class ExpeFormat(object):
                 else:
                     array = frame.array
 
-
-                for z in _z:
+                for z in frame.z:
                     kernel = fun(self, array, floc, x, y, z, *discr_args)
 
                 if self._it == self.expe_size -1:
-                    #tablefmt = 'latex' # 'simple'
-                    tablefmt = 'latex' if 'tex' in discr_args else 'simple'
-                    if kwargs.get('repeat'):
-                        #for _model, table in self.gramexp.tables.items():
-                        for ggroup in list(self.gramexp._tables):
-                            _table = self.gramexp._tables.pop(ggroup)
-                            array = _table.array
-                            for zpos, z in enumerate(_z):
-                                Meas = self.specname(self.gramexp.get_set(y))
+                    tables = []
 
-                                fop = np.max if 'rmax' in discr_args else np.mean
-                                fop = np.min if 'rmin' in discr_args else fop
+                    self.aggregate_tables(**kwargs)
+                    self.decompose_tables(**kwargs)
 
-                                # Mean and standard deviation
-                                table = array[:,:,:,zpos]
-                                mtable = self.highlight_table(np.around(fop(table, 0), decimals=3))
-                                vtable = np.around(table.std(0), decimals=3)
-                                table_mean = np.char.array(mtable).astype("|S42")
-                                table_std = np.char.array(vtable).astype("|S42")
-                                arr = table_mean + b' pm ' + table_std
-
-                                self.log_table(x, y, z, arr, Meas, fun, ggroup, discr_args, tablefmt=tablefmt)
-
-                    else:
-                        for ggroup in list(self.gramexp._tables):
-                            _table = self.gramexp._tables.pop(ggroup)
-                            array = _table.array
-                            for zpos, z in enumerate(_z):
-                                Meas = self.specname(self.gramexp.get_set(y))
-                                arr = self.highlight_table(array[:,:,zpos])
-
-                                self.log_table(x, y, z, arr, Meas, fun, ggroup, discr_args, tablefmt=tablefmt)
-
+                    self.log_tables(**kwargs)
 
                     if self.expe._write:
-                        tablefmt_ext = dict(simple='md', latex='tex')
-                        self.write_frames(self.gramexp._tables, ext=tablefmt_ext[tablefmt])
+                        self.write_frames(self.gramexp._tables)
 
                 return kernel
             return wrapper
@@ -465,39 +474,74 @@ class ExpeFormat(object):
         return decorator
 
 
-    @staticmethod
-    def expe_repeat(fun):
+    def aggregate_tables(self, **kwargs):
+        ''' Group table if separator is "|" '''
 
-        def wrapper(self, *args, **kwargs):
+        split_sep = kwargs.get('split_sep')
 
-            repeats = self.get_expset('_repeat')
-            if len(repeats)>1:
-                kwargs['repeat'] = True
+        if split_sep == '|':
+            titles = list(self.gramexp._tables.keys())
+            tables = list(self.gramexp._tables.values())
+            title = '|'.join(titles)
 
-            res = fun(self, *args, **kwargs)
+            # Assume all columns are the same.
+            t0 = tables[0]
+            headers = len(titles) * t0.headers
+            rp = 1 if 'repeat' in kwargs else 0
+            new_array = np.concatenate([tt.array for tt in tables], 1+rp)
+            t0.array = new_array
+            t0.headers = headers
 
-            return res
-
-        return wrapper
-
-    def log_table(self, x, y, z, arr, headers, fun, ggroup, discr_args, tablefmt='simple', floatfmt='.3f'):
-        table = arr.astype(str)
-        table = np.column_stack((self.specname(self.gramexp.get_set(x)), table))
-        Table = tabulate(table, headers=headers, tablefmt=tablefmt, floatfmt=floatfmt)
-
-        gg = z +'-'+ ggroup if ggroup else z
-        self.gramexp._tables[gg] = ExpSpace({'table': Table,
-                                             'base':'_'.join((fun.__name__,
-                                                              str(self.expe[x]),
-                                                              str(self.expe[y]))),
-                                             'args':discr_args,
-                                             #'args':self.gramexp.get_nounique_keys(x, y),
-                                            })
-
-        print(colored('\n%s Table:'%(gg), 'green'))
-        print(Table)
+            self.gramexp._tables.clear()
+            self.gramexp._tables[title] = t0
 
 
+    def decompose_tables(self, **kwargs):
+
+        if kwargs.get('repeat'):
+            for ggroup in list(self.gramexp._tables):
+                _table = self.gramexp._tables.pop(ggroup)
+                array = _table.array
+                for zpos, z in enumerate(_table.z):
+
+                    fop = np.max if 'rmax' in _table.args else np.mean
+                    fop = np.min if 'rmin' in _table.args else fop
+
+                    # Mean and standard deviation
+                    table = array[:,:,:,zpos]
+                    mtable = self.highlight_table(np.around(fop(table, 0), decimals=3))
+                    vtable = np.around(table.std(0), decimals=3)
+                    table_mean = np.char.array(mtable).astype("|S42")
+                    table_std = np.char.array(vtable).astype("|S42")
+                    arr = table_mean + b' pm ' + table_std
+
+                    new_table = _table.copy()
+                    new_table.array = arr
+                    ngg = z +'-'+ ggroup if ggroup else z
+                    self.gramexp._tables[ngg] = new_table
+
+        else:
+            for ggroup in list(self.gramexp._tables):
+                _table = self.gramexp._tables.pop(ggroup)
+                array = _table.array
+                for zpos, z in enumerate(_table.z):
+                    arr = self.highlight_table(array[:,:,zpos])
+
+                    new_table = _table.copy()
+                    new_table.array = arr
+                    ngg = z +'-'+ ggroup if ggroup else z
+                    self.gramexp._tables[ngg] = new_table
+
+    def log_tables(self, **kwargs):
+
+        for _title, _table in self.gramexp._tables.items():
+
+            arr = _table.array.astype(str)
+            table = np.column_stack((_table.column, arr))
+            Table = tabulate(table, headers=_table.headers, tablefmt=_table.tablefmt, floatfmt=_table.floatfmt)
+
+            print(colored('\n%s Table:'%(_title), 'green'))
+            print(Table)
 
     @staticmethod
     def _file_part(group, sep='_'):
@@ -516,6 +560,79 @@ class ExpeFormat(object):
             table[i, col] = colored(table[i, col], 'magenta')
 
         return table
+
+
+    def write_frames(self, frames, base='', suffix='', args=''):
+        expe = self.formatName(self.expe)
+
+        if isinstance(frames, str):
+            frames = [frames]
+
+        if type(frames) is list:
+            if base:
+                base = self.specname(base)
+            if args:
+                s = '_'.join(['%s'] * len(args))
+                args = s % tuple(map(lambda x:expe.get(x, x), args))
+            for i, f in enumerate(frames):
+                idi = str(i) if len(frames) > 1 else None
+                fn = self._file_part([base, args, suffix, idi])
+                fn = self.full_fig_path(fn)
+                self._kernel_write(f, fn)
+        elif issubclass(type(frames), dict):
+            for c, f in frames.items():
+                base = f.get('base') or base
+                args = f.get('args') or args
+                if base:
+                    base = self.specname(base)
+                if args:
+                    s = '_'.join(['%s'] * len(args))
+                    args = s % tuple(map(lambda x:expe.get(x, x), args))
+                fn = self._file_part([self.specname(c), base, args, suffix])
+                fn = self.full_fig_path(fn)
+                self._kernel_write(f, fn, title=c)
+        else:
+            print('Error : type of Frame unknow, passing: %s' % type(frame))
+
+
+    def _kernel_write(self, frame, fn, title=None):
+
+        ext = frame.get('ext')
+
+        if isinstance(frame, dict):
+            if 'fig' in frame:
+                ext = ext or 'pdf'
+                fn = fn +'.'+ ext
+                print('Writing frame: %s' % fn)
+                #frame.fig.tight_layout() # works better in parameter
+                frame.fig.savefig(fn, bbox_inches='tight') # pad_inches=-1
+            elif '_table' in frame:
+                ext = ext or 'md'
+                fn = fn +'.'+ ext
+                print('Writing frame: %s' % fn)
+                caption = '\caption{{{title}}}\n'
+
+                arr = frame.array.astype(str)
+                table = np.dstack((frame.column, arr))
+                Table = tabulate(table, headers=frame.headers, tablefmt=frame.tablefmt, floatfmt=frame.floatfmt)
+
+                with open(fn, 'w') as _f:
+                    if  title:
+                        _f.write(caption.format(title=title))
+                    _f.write(Table+'\n')
+
+        elif isinstance(frame, str):
+            ext = ext or 'md'
+            fn = fn +'.'+ ext
+            print('Writing frame: %s' % fn)
+            with open(fn, 'w') as _f:
+                _f.write(frame)
+        else:
+            # assume figure
+            ext = ext or 'pdf'
+            fn = fn +'.'+ ext
+            print('Writing frame: %s' % fn)
+            frame.savefig(fn, bbox_inches='tight')
 
     def specname(self, n):
         #return self._expdesign._name(n).lower().replace(' ', '')
@@ -537,70 +654,6 @@ class ExpeFormat(object):
             setattr(expe, k, nn)
         return expe
 
-
-    def write_frames(self, frames, base='', suffix='', ext=None, args=''):
-        expe = self.formatName(self.expe)
-
-        if isinstance(frames, str):
-            frames = [frames]
-
-        if type(frames) is list:
-            if base:
-                base = self.specname(base)
-            if args:
-                s = '_'.join(['%s'] * len(args))
-                args = s % tuple(map(lambda x:expe.get(x, x), args))
-            for i, f in enumerate(frames):
-                idi = str(i) if len(frames) > 1 else None
-                fn = self._file_part([base, args, suffix, idi])
-                fn = self.full_fig_path(fn)
-                self._kernel_write(f, fn, ext=ext)
-        elif issubclass(type(frames), dict):
-            for c, f in frames.items():
-                base = f.get('base') or base
-                args = f.get('args') or args
-                if base:
-                    base = self.specname(base)
-                if args:
-                    s = '_'.join(['%s'] * len(args))
-                    args = s % tuple(map(lambda x:expe.get(x, x), args))
-                fn = self._file_part([self.specname(c), base, args, suffix])
-                fn = self.full_fig_path(fn)
-                self._kernel_write(f, fn, ext=ext, title=c)
-        else:
-            print('Error : type of Frame unknow, passing: %s' % type(frame))
-
-
-    def _kernel_write(self, frame, fn, title=None, ext=None):
-        if isinstance(frame, dict):
-            if 'fig' in frame:
-                ext = ext or 'pdf'
-                fn = fn +'.'+ ext
-                print('Writing frame: %s' % fn)
-                #frame.fig.tight_layout() # works better in parameter
-                frame.fig.savefig(fn, bbox_inches='tight') # pad_inches=-1
-            elif 'table' in frame:
-                ext = ext or 'md'
-                fn = fn +'.'+ ext
-                print('Writing frame: %s' % fn)
-                caption = '\caption{{{title}}}\n'
-                with open(fn, 'w') as _f:
-                    if  title:
-                        _f.write(caption.format(title=title))
-                    _f.write(frame.table+'\n')
-
-        elif isinstance(frame, str):
-            ext = ext or 'md'
-            fn = fn +'.'+ ext
-            print('Writing frame: %s' % fn)
-            with open(fn, 'w') as _f:
-                _f.write(frame)
-        else:
-            # assume figure
-            ext = ext or 'pdf'
-            fn = fn +'.'+ ext
-            print('Writing frame: %s' % fn)
-            frame.savefig(fn, bbox_inches='tight')
 
 
 
@@ -745,6 +798,9 @@ class ExpeFormat(object):
         ''' Write remaining data and close the file. '''
         if hasattr(self, '_samples') and self._samples:
             self._write_some(self._fitit_f, None)
+
+        end_line = '# terminated\n'
+        self._fitit_f.write(end_line.encode('utf8'))
 
         if hasattr(self, '_fitit_f'):
             self._fitit_f.close()

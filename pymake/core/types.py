@@ -95,6 +95,8 @@ class ExpSpace(dict):
             for k, v in kwargs.items():
                 self[k] = v
 
+    def copy(self):
+        return type(self)(self)
     def __copy__(self):
         return self.__class__(**self)
     def __deepcopy__(self, memo):
@@ -358,6 +360,7 @@ class Model(ExpVector):
         docir = ix.getfirst(model_name, field='surname')
         if docir:
             mn = importlib.import_module(docir['module'])
+            #mn = importlib.import_module(docir['module'], package=local_package)
             _model = getattr(mn, docir['name'], None)
         return _model
 
@@ -397,7 +400,7 @@ class ExpTensor(OrderedDict, BaseObject):
 
     @classmethod
     def from_expe(cls, conf=None, expe=None, parser=None):
-        ''' Return the tensor who is an Orderedict of iterable.
+        ''' Return the tensor who is an OrderedDict of iterable.
             Assume conf is an exp. Non list value will be listified.
 
             Parameters
