@@ -16,7 +16,8 @@ from pymake.util.ascii_code import X11_colors, plt_colors
 u_colors = Cycle(list(zip(*plt_colors))[1])
 _markers = Cycle(['*', '+','x', 'o', '.', '1', 'p', '<', '>', 's'])
 _colors = Cycle(['r', 'g','b','y','c','m','k'])
-_linestyle = Cycle(['solid' , 'dashed', 'dashdot', 'dotted'])
+_linestyle = Cycle([ '--', '-.', ':'])
+#_linestyle = Cycle(['solid' , 'dashed', 'dashdot', 'dotted'])
 
 import logging
 lgg = logging.getLogger('root')

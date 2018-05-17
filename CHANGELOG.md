@@ -1,5 +1,12 @@
-# (towards) 0.5
+# (towards) 0.7
 
+# 0.6
+
+* solve local import in pymake repo (import from the root repo)
+* process script : pmk -x killall # kill all pmk process.
+* improve "plot tab" action and syntax (repeat automatic detection, value selection, etc)
+
+# 0.5
 * graph-tool driver integration completed + wmms model.
 * improve frontend and model baseclasse, toward templating.
 * fix print format for returns of action-scripts in sandbox.

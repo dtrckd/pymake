@@ -84,9 +84,9 @@ class iwmmsb_scvb3(SVB):
             #var = weights.var()
             #density = frontend.density()
                                                           # roc5v | roc6v
-            self.c0 = float(self.expe.get('c0', 20))      # 20      5
-            self.r0 = float(self.expe.get('r0', 0.1))     # 0.5     0.5
-            self.ce = float(self.expe.get('ce', 10))     # 200     100
+            self.c0 = float(self.expe.get('c0', 10))      # 20      5
+            self.r0 = float(self.expe.get('r0', 1))     # 0.5     0.5
+            self.ce = float(self.expe.get('ce', 100))     # 200     100
             self.eps = float(self.expe.get('eps', 1e-6))  # 1e-6    1e-6
 
             self.c0_r0 = self.c0*self.r0
@@ -95,16 +95,16 @@ class iwmmsb_scvb3(SVB):
 
             rk = np.ones((K,K)) * self.r0
             pk = np.ones((K,K)) * self.eps
-            self.hyper_phi = np.array([rk, (1-pk)/pk])
+            self.hyper_phi = np.array([rk, pk, pk])
 
             self.log.info('Optimizing hyper enabled.')
             #self.hyper_phi = np.array([1,1])
         elif shift:
             a = 10
             b = shift
-            self.hyper_phi = np.array([a,b])
+            self.hyper_phi = np.array([a,b,b])
         elif len(hyper_phi) == 2:
-            self.hyper_phi = np.asarray(hyper_phi)
+            self.hyper_phi = np.asarray(list(hyper_phi)+[hyper_phi[1]])
             self._hyper_phi = 'fix'
         else:
             raise ValueError('hyper parmeter hyper_phi dont understood: %s' % hyper_phi)
@@ -203,7 +203,7 @@ class iwmmsb_scvb3(SVB):
         self._theta = (theta.T / theta.sum(axis=1)).T
 
         self._k = self.N_Y + self.hyper_phi[0]
-        self._p = (self.N_phi + self.hyper_phi[1] + 1)**-1
+        self._p = self.hyper_phi[2] /( self.hyper_phi[2] * self.N_phi + 1)
         #self._phi = lambda x:sp.stats.nbinom.pmf(x, k, 1-p)
         self._phi = self._k*self._p / (1-self._p)
 
@@ -224,33 +224,36 @@ class iwmmsb_scvb3(SVB):
 
         if update_kernel:
             k = self.N_Y + self.hyper_phi[0]
-            p = (self.N_phi + self.hyper_phi[1] + 1)**-1
+            p = self.hyper_phi[2] /( self.hyper_phi[2] * self.N_phi + 1)
             # @debug: Some invalie values here sometime !!
             self._kernel = defaultdict2(lambda x:sp.stats.nbinom.pmf(x, k, 1-p))
 
             if self._hyper_phi == 'auto':
                 N = len(self.pik)
                 rk = self.hyper_phi[0]
-                qk = self.hyper_phi[1]
-                pk = 1 / (qk+1)
+                pk = self.hyper_phi[1]
 
                 # Way 1
-                a = np.ones(self.N_phi.shape)*(self.c0_r0 -1)
-                a[self.N_Y < 1.461] += 1
+                #a = np.ones(self.N_phi.shape)*(self.c0_r0 -1)
+                #a[self.N_Y < 1.461] += 1
+
+                # Way 2
+                a = self.c0_r0 + self.N_Y
+
                 _pk = 1-pk
                 _pk[_pk < 1e-100] = 1e-100
                 b = 1/(self.c0 - (self.N_phi)*np.log(_pk))
-                rk = np.random.gamma(a, b)
-                #rk = a*b
+                #rk = np.random.gamma(a, b)
+                rk = a*b
 
                 c = self.ce_eps + self.N_Y
                 d = self.ce_minus_eps + rk*self.N_phi
 
-                #pk = c/(c+d)
                 pk = np.random.beta(c, d)
+                e_pk = c/(c+d)
                 pk[pk < 1e-100] = 1e-100
 
-                self.hyper_phi = [rk, (1-pk)/pk]
+                self.hyper_phi = [rk, pk, e_pk]
 
                 #self._residu = np.array([sp.stats.gamma.pdf(rk, self.c0*self.r0, scale=1/self.c0), sp.stats.beta.pdf(pk, self.ce*self.eps, self.ce*(1-self.eps)) ])
 
@@ -265,7 +268,7 @@ class iwmmsb_scvb3(SVB):
         return lognormalize(outer_kk.ravel())
 
     def _optimize_hyper(self):
-        n, t = self.hyper_phi
+        n, t, t = self.hyper_phi
         K = self.N_theta_left.shape[1]
 
         phi_mean = np.triu(self._phi) if self._is_symmetric else self._phi
@@ -288,7 +291,7 @@ class iwmmsb_scvb3(SVB):
         dig = lambda x: np.log(x) - sp.special.digamma(x) -s
         n = float(sp.optimize.minimize(dig, x0(s)).x)
 
-        self.hyper_phi = np.array([n,t])
+        self.hyper_phi = np.array([n,t,t])
 
     def get_mean_phi(self):
         return  self._k*self._p / (1-self._p)

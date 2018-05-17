@@ -29,6 +29,48 @@ class Plot(ExpeFormat):
     def _preprocess(self):
         pass
 
+    def _extract_data(self, z, data, *args):
+
+        value = None
+
+        if z in data:
+            # Extract from saved measure (.inf file).
+            if 'min' in args:
+                value = self._to_masked(data[z]).min()
+            else:
+                value = self._to_masked(data[z]).max()
+            #value = self._to_masked(data[z][-1])
+
+        elif '@' in z:
+            # Take the  argmax/argmin of first part to extract the second
+            ag, vl = z.split('@')
+
+            if 'min' in args:
+                value = self._to_masked(data[ag]).argmin()
+            else:
+                value = self._to_masked(data[ag]).argmax()
+
+            value = data[vl][value]
+
+        else:
+            # Compute it directly from the model.
+            self.model = ModelManager.from_expe(self.expe, load=True)
+            if not self.model:
+                return
+            else:
+                model = self.model
+
+            if hasattr(model, 'compute_'+z.lstrip('_')):
+                value = getattr(model, 'compute_'+z.lstrip('_'))(**self.expe)
+            elif hasattr(self, 'get_'+z.lstrip('_')):
+                value = getattr(self, 'get_'+z.lstrip('_'))()[-1]
+            else:
+                self.log.error('attribute unknown: %s' % z)
+                return
+
+        return value
+
+
     @ExpeFormat.raw_plot('corpus')
     def __call__(self, frame,  attribute='_entropy'):
         ''' Plot figure group by :corpus:.
@@ -180,45 +222,12 @@ class Plot(ExpeFormat):
             self.log.warning('No data for expe : %s' % self.output_path)
             data = {}
 
-        # To remove
-        #if z in data and not (expe.model.endswith('_gt') and z == '_roc'):
-        if z in data:
-            # Extract from saved measure (.inf file).
-            if 'min' in args:
-                value = self._to_masked(data[z]).min()
-            else:
-                value = self._to_masked(data[z]).max()
-            #value = self._to_masked(data[z][-1])
+        value = self._extract_data(z, data)
 
-        elif '@' in z:
-            # Take the  argmax/argmin of first part to extract the second
-            ag, vl = z.split('@')
+        if value:
+            loc = floc(expe[x], expe[y], z)
+            array[loc] = value
 
-            if 'min' in args:
-                value = self._to_masked(data[ag]).argmin()
-            else:
-                value = self._to_masked(data[ag]).argmax()
-
-            value = data[vl][value]
-
-        else:
-            # Compute it directly from the model.
-            self.model = ModelManager.from_expe(self.expe, load=True)
-            if not self.model:
-                return
-            else:
-                model = self.model
-
-            if hasattr(model, 'compute_'+z.lstrip('_')):
-                value = getattr(model, 'compute_'+z.lstrip('_'))(**expe)
-            elif hasattr(self, 'get_'+z.lstrip('_')):
-                value = getattr(self, 'get_'+z.lstrip('_'))()[-1]
-            else:
-                self.log.error('attribute unknown: %s' % z)
-                return
-
-        loc = floc(expe[x], expe[y], z)
-        array[loc] = value
         return
 
 
@@ -229,13 +238,122 @@ class Plot(ExpeFormat):
     #
 
 
-
     def get_perplexity(self, data):
         entropy = self._to_masked(data['_entropy'])
         nnz = self.model._data_test.shape[0]
         return 2 ** (-entropy / nnz)
 
+    #
+    #
+    # Specidic
+    #
+
+    def roc_evolution2(self, *args, _type='errorbar'):
+        ''' AUC difference between two models against testset_ratio
+            * _type : learnset/testset
+            * _type2 : max/min/mean
+            * _ratio : ration of the traning set to predict. If 100 _predictall will be true
+
+        '''
+        expe = self.expe
+        if self.is_first_expe():
+            D = self.D
+            axis = ['_repeat', 'training_ratio', 'corpus', 'model']
+            z = ['_entropy@_roc']
+            #z = ['_entropy@_wsim']
+            D.array, D.floc = self.gramexp.get_array_loc_n(axis, z)
+            D.z = z
+            D.axis = axis
+
+        data = self.load_some()
+        if not data:
+            self.log.warning('No data for expe : %s' % self.output_path)
+            return
+
+        array = self.D.array
+        floc = self.D.floc
+        z = self.D.z
+
+        # Building tensor
+        for _z in z:
+
+            pos = floc(expe, _z)
+            value = self._extract_data(_z, data, *args)
+            value = float(self._to_masked(value))
+
+            if value:
+
+                #if 'wsbm_gt' in self.expe.model and '_wsim' in _z:
+                #    value /= 1000
+
+                array[pos] = value
+
+        if self.is_last_expe():
+            # Plotting
+
+            #Meas = self.specname(self.get_expset('training_ratio'))
+            #corpuses = self.specname(self.get_expset('corpus'))
+            #models = self.specname(self.get_expset('model'))
+            Meas = self.get_expset('training_ratio')
+            corpuses = self.get_expset('corpus')
+            models = self.get_expset('model')
+
+            axe1 = self.D.axis.index('corpus')
+            axe2 = self.D.axis.index('model')
+
+            figs = {}
+
+            for corpus in corpuses:
+
+                self.markers.reset()
+                self.linestyles.reset()
+                fig = plt.figure()
+                ax = fig.gca()
+
+                jitter = np.linspace(-1, 1, len(Meas))
+
+                for ii, model in enumerate(models):
+                    idx1 = corpuses.index(corpus)
+                    idx2 = models.index(model)
+                    table = array[:, :, idx1, idx2]
+                    _mean = table.mean(0)
+                    _std = table.std(0)
+                    xaxis = np.array(list(map(int, Meas))) + jitter[ii]
+                    if _type == 'errorbar':
+                        ax.errorbar(xaxis , _mean, yerr=_std,
+                                     fmt=self.markers.next(), ls=self.linestyles.next(),
+                                     label=self.specname(model))
+                    elif _type == 'boxplot':
+                        for meu, meas in enumerate(Meas):
+                            bplot = table[:, meu,]
+                            w = 0.2
+                            eps = 0.01
+                            ax.boxplot(bplot,  widths=w,
+                                       positions=[meu],
+                                       #positions=[meas],
+                                       #positions=[int(meas)+(meu+eps)*w],
+                                       whis='range' )
+
+
+
+                if _type == 'errorbar':
+                    ax.legend(loc='lower right',prop={'size':7})
+                    ymin = array.min()
+                    ymin = 0.45
+                    ax.set_ylim(ymin)
+                else:
+                    ax.set_xticklabels(Meas)
+                    #ticks = list(map(int, Meas))
+                    ticks = list(range(1, len(Meas)))
+                    ax.set_xticks(ticks)
+
+                ax.set_title(self.specname(corpus))
+                figs[corpus] = {'fig':fig, 'base': self.D.z[0]+'_evo'}
+
+            if expe._write:
+                self.write_frames(figs)
 
 
 if __name__ == '__main__':
     GramExp.generate().pymake(Plot)
+

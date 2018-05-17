@@ -605,16 +605,16 @@ class ExpeFormat(object):
                 fn = fn +'.'+ ext
                 print('Writing frame: %s' % fn)
                 #frame.fig.tight_layout() # works better in parameter
-                frame.fig.savefig(fn, bbox_inches='tight') # pad_inches=-1
+                frame['fig'].savefig(fn, bbox_inches='tight') # pad_inches=-1
             elif '_table' in frame:
                 ext = ext or 'md'
                 fn = fn +'.'+ ext
                 print('Writing frame: %s' % fn)
                 caption = '\caption{{{title}}}\n'
 
-                arr = frame.array.astype(str)
-                table = np.dstack((frame.column, arr))
-                Table = tabulate(table, headers=frame.headers, tablefmt=frame.tablefmt, floatfmt=frame.floatfmt)
+                arr = frame['array'].astype(str)
+                table = np.dstack((frame['column'], arr))
+                Table = tabulate(table, headers=frame['headers'], tablefmt=frame['tablefmt'], floatfmt=frame['floatfmt'])
 
                 with open(fn, 'w') as _f:
                     if  title:
@@ -705,8 +705,10 @@ class ExpeFormat(object):
         ''' system postprocess '''
 
         if self.expe.get('_write'):
-            self.clear_fitfile()
+
             # @improve: In ModelManager ?
+            if hasattr(self, '_fitit_f'):
+                self.clear_fitfile()
             if hasattr(self, 'model') and hasattr(self.model, 'save'):
                 if hasattr(self.model, 'write_current_state'):
                     self.model.save()

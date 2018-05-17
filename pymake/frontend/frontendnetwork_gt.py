@@ -435,23 +435,27 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
 
         if 'validset_ratio' in self.expe:
             validset_ratio = self.expe['validset_ratio']
-            if validset_ratio >= 1:
-                validset_ratio = float(validset_ratio) / 100
-            elif 0 <= validset_ratio < 1:
-                validset_ratio = float(validset_ratio)
+            validset_ratio = float(validset_ratio) / 100
         else:
             validset_ratio = 0
 
         return validset_ratio
 
+    def get_training_ratio(self):
+
+        if 'training_ratio' in self.expe:
+            training_ratio = self.expe['training_ratio']
+            training_ratio = float(training_ratio) / 100
+        else:
+            training_ratio = 0
+
+        return training_ratio
+
     def get_testset_ratio(self):
 
         if 'testset_ratio' in self.expe:
             testset_ratio = self.expe['testset_ratio']
-            if testset_ratio >= 1:
-                testset_ratio = float(testset_ratio) / 100
-            elif 0 <= testset_ratio < 1:
-                testset_ratio = float(testset_ratio)
+            testset_ratio = float(testset_ratio) / 100
         else:
             testset_ratio = 0
 
@@ -620,7 +624,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         #validset = lil_matrix((N,N))
         testset = lil_matrix((N,N), dtype=bool)
         n = int(E * testset_ratio) # number of edge
-        nz = int(n *float(self.expe.get('zeros_ratio', 1)))  # number if non-links
+        nz = int(n *float(self.expe.get('zeros_ratio', 1)))  # number of non-links
 
         edges = g.get_edges().astype(int)
         i, j = edges[:, 0:2].T
@@ -715,6 +719,22 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         self.data_test = testset
         self.data_test_w = data_test_w
 
+        training_ratio = self.get_training_ratio()
+        if training_ratio > 0 and training_ratio < 1:
+            # remove edges
+            self.data.set_fast_edge_removal()
+
+            edges = self.data.get_edges()
+            weights = self.data.ep['weights']
+            n_extra = len(edges) - training_ratio*len(edges)
+
+            edges_to_remove = np.random.choice(len(edges), int(n_extra), replace=False)
+            for pos in edges_to_remove:
+                i,j = edges[pos, :2]
+                e = g.edge(i,j)
+                g.remove_edge(e)
+
+            self.data.set_fast_edge_removal(fast=False)
         return
 
     def _check(self):
@@ -887,7 +907,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
                 if N-len(out_e) > 0 and len(out_e) > 0:
 
                     node_info = {'vertex':node, 'direction':0}
-                    yield str(set_index), node_info, symmetric_scale*mask[node, 0]
+                    yield str(set_index), node_info, 1/symmetric_scale*set_len*mask[node, 0]
                     # Sample from non-links
 
                     zero_samples = np.arange(N)
@@ -921,7 +941,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
                 in_e = neigs[node][1]
                 if N-len(in_e) > 0 and len(in_e) > 0:
                     node_info = {'vertex':node, 'direction':1}
-                    yield str(set_index), node_info, symmetric_scale*mask[node, 1]
+                    yield str(set_index), node_info, 1/symmetric_scale*set_len*mask[node, 1]
 
                     zero_samples = np.arange(N)
                     if len(in_e) > 0:
@@ -957,7 +977,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
                     continue
 
                 node_info = {'vertex':node, 'direction':0}
-                yield str(set_index), node_info, symmetric_scale*N
+                yield str(set_index), node_info, 1/symmetric_scale*N*set_len
 
                 for target in neigs[node][0]:
                     yield node, target, weights[node, target]
@@ -967,7 +987,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
                     continue
 
                 node_info = {'vertex':node, 'direction':1}
-                yield str(set_index), node_info, symmetric_scale*N
+                yield str(set_index), node_info, 1/symmetric_scale*N*set_len
 
                 for target in neigs[node][1]:
                     yield target, node, weights[target, node]

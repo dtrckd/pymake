@@ -1,7 +1,9 @@
 # WIP
 
-Same syntax for plot and tab !!!! (fig should be able to select x and y to. => write the kernel decoratro, and then upper decoratro, for fig/table,  repeat/3D! etc..
-
+* Same syntax for plot and tab !!!! (fig should be able to select x and y to. => write the kernel decoratro, and then upper decoratro, for fig/table,  repeat/3D! etc..
+* modula script deployment and fetch (think about it)
+* make automatic method injection instead of heritage ?
+    * or better documentation for models for exmapl => automatic save.
  @next ?
 --------
 * web server (Flask) | Gui (Electron), UI modules? ipython builder helper

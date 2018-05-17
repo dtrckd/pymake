@@ -5,6 +5,10 @@ from pymake import GramExp
 
 ''' A Command line controler of Pymake '''
 
+## Search in the project and current repo. Awesome !
+import sys, os
+sys.path.insert(0, os.getenv('PWD')+'/.')
+sys.path.insert(0, os.getenv('PWD')+'/..')
 
 
 def main():

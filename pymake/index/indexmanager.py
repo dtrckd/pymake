@@ -75,7 +75,7 @@ class IndexManager(object):
         index_path = self.get_index_path(name)
         return ws.index.open_dir(index_path)
 
-    def get_index(self, name=None):
+    def get_index(self, name=None, donttryerror=False):
         name = name or self._default_index
         if name in self._ix:
             return self._ix[name]
@@ -83,9 +83,13 @@ class IndexManager(object):
             try:
                return  self.load_index(name)
             except Exception as e:
-                print('Whoos index i/o error %s' % e)
-                print('removing to clean the index (removing data/ir_index folder)')
-                exit(2)
+                if donttryerror:
+                    raise e
+                else:
+                    self.log.warning('Indexing file corrupted, re-indexing...')
+                    self.build_indexes()
+                    return self.get_index(name, donttryerror=True)
+
         else:
             return self.clean_index(name)
 
@@ -286,21 +290,31 @@ class IndexManager(object):
 
     # @debug : online searcher
     # @debug : get a list of terms (mongo projection equivalent ?!)
-    def query(self, field=None, index=None, terms=False):
+    def query(self, field=None, index=None, terms=False, donttryerror=False):
         ''' return all object that have the field entry set '''
         index = index or self._default_index
         ix = self.get_index(index)
         field = field or ix.schema.stored_names()[0]
 
         query = ws.query.Every(field)
-        with ix.searcher() as searcher:
-            results = searcher.search(query, limit=None)
-            if terms is False:
-                results = [r[field] for r in results]
-            elif isinstance(terms, str):
-                results = dict((o[field], o[terms]) for o in results)
+        try:
+            with ix.searcher() as searcher:
+                results = searcher.search(query, limit=None)
+                if terms is False:
+                    results = [r[field] for r in results]
+                elif isinstance(terms, str):
+                    results = dict((o[field], o[terms]) for o in results)
+                else:
+                    results = [dict(r) for r in results]
+        except FileNotFoundError as e:
+            if donttryerror:
+                raise e
             else:
-                results = [dict(r) for r in results]
+                self.log.warning('Indexing file corrupted, re-indexing...')
+                self.build_indexes()
+
+                return self.query(field, index, tems, donttryerror=True)
+
 
         return results
 

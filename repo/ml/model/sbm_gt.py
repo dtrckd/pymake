@@ -267,6 +267,26 @@ class WSBM_gt(SbmBase):
         roc = auc(fpr, tpr)
         return roc
 
+    def compute_wsim(self, theta=None, phi=None, **kws):
+        if 'likelihood' in kws:
+            pij = kws['likelihood']
+        else:
+            if theta is None:
+                theta, phi = self._reduce_latent()
+            pij = self.likelihood(theta, phi)
+
+        weights = self.data_test[:,2].T
+
+        nr = self._state.get_nr()
+
+        ws = np.array([ theta[i].dot(phi).dot(theta[j]) for i,j,w in self.data_test if w > 0])
+
+        # l1 norm
+        wd = weights[weights>0]
+        nnz = len(wd)
+        mean_dist = np.abs(ws - wd).sum() / nnz
+        return mean_dist
+
 class WSBM2_gt(SbmBase):
     # graph_tool work in progress for weithed networds...
     _default_spec = dict(deg_corr=False, overlap=False, layers=False)

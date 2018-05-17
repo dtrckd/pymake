@@ -872,6 +872,10 @@ class GenNetwork(ExpeFormat):
         adjshow(mat, algo)
         plt.colorbar()
 
+
+
+
+
 if __name__ == '__main__':
 
     GramExp.generate(usage=USAGE).pymake(GenNetwork)

@@ -125,8 +125,8 @@ _Gram = [
                           action='store_true',
                           help='Write Fitted Model On disk.'),
 
-    '--seed', dict(
-        nargs='?', const=True, type=int,
+    '--seed', dict(dest='_seed',
+        nargs='?', const=True,
         help='set seed value. If no seed specified but flag given, it will save/load the current state.'),
 
     '--cores', dict(dest='_cores',

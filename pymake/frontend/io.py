@@ -201,9 +201,10 @@ class PackageWalker(object):
         shrink_module_name = True,
     )
 
-    # Search in the project and current repo. Awesome !
-    sys.path.append(os.getenv('PWD')+'/.')
-    sys.path.append(os.getenv('PWD')+'/..')
+    #@Warning: Need to be activate earlier
+    ## Search in the project and current repo. Awesome !
+    #sys.path.insert(0, os.getenv('PWD')+'/.')
+    #sys.path.insert(0, os.getenv('PWD')+'/..')
 
     def __init__(self, module_name, **kwargs):
         [setattr(self, k, kwargs.get(k, v)) for k,v in self._default_attr.items()]

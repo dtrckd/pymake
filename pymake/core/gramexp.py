@@ -9,7 +9,7 @@ import subprocess
 import shlex
 import inspect, traceback, importlib
 import pkg_resources
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from functools import reduce, wraps
 from copy import deepcopy
 import numpy as np
@@ -475,6 +475,48 @@ class GramExp(object):
         return array, floc
 
 
+    def get_array_loc_n(self, keys, params):
+        ''' Construct an nd sink array.
+            Return the zeros valued array of dimensions given by x and y {keys} dimension
+        '''
+
+        loc = OrderedDict()
+
+        for key in keys:
+
+            d1 = dict()
+            for i, v in enumerate(self.get_set(key)):
+                d1[v] = i
+            loc[key] = d1
+
+        d2 = dict()
+        for i, v in enumerate(params):
+            d2[v] = i
+        loc['_param_'] = d2
+
+        def floc(expe, z):
+            _special = ['_param_']
+            pos = []
+            for k in loc:
+                if k in expe:
+                    v = expe[k]
+                elif k in _special:
+                    continue
+                else:
+                    self.log.warning('indice unknown in floc.')
+                    v = None
+
+                pos.append(loc[k][v])
+
+            pos.append(loc['_param_'][z])
+            return tuple(pos)
+
+        shape = [len(loc[d]) for d in loc]
+
+
+        array = np.ma.array(np.empty(shape)*np.nan, mask=True)
+        return array, floc
+
     def __len__(self):
         #return reduce(operator.mul, [len(v) for v in self._tensors.values()], 1)
         return len(self.lod)
@@ -632,7 +674,15 @@ class GramExp(object):
         if gram is None:
             gram = _gram._Gram
         else:
-            gram = importlib.import_module(gram)
+            try:
+                gram = importlib.import_module(gram)
+            except ModuleNotFoundError as e:
+                pr = get_pymake_settings('gramarg').split('.')[0]
+                #@imporve priority shoiuld ne on : local project !
+                cls.log.warning("Project name `%s' seems to already exists in your PYTHONPATH. Project's name should not conflict with existing ones." % pr)
+                cls.log.warning("Please change the name of your project/repo")
+                cls.log.warning('exiting.')
+                exit(38)
             gram = next( (getattr(gram, _list) for _list in dir(gram) if isinstance(getattr(gram, _list), list)), None)
 
         grammar = []
@@ -1035,14 +1085,36 @@ class GramExp(object):
             * set in/out filesystem path
         '''
 
-        _seed = expe.get('seed')
+        _seed = expe.get('_seed')
 
         if _seed is None:
             seed0 = random.randint(0, 2**128)
             seed1 = np.random.randint(0, 2**32, 10)
             seed = [seed0, seed1]
-        elif type(_seed) is int:
+        elif str.isdigit(_seed):
+            _seed = int(_seed)
             seed = [_seed, _seed]
+
+        elif type(_seed) is str:
+            if _seed in expe:
+                _seed = expe[_seed]
+
+            seed = []
+            for c in list(_seed):
+                seed.append(str(ord(c)))
+
+            if '_repeat' in expe:
+                if type(expe['_repeat']) is int:
+                    seed.append(str(expe['_repeat']))
+                else:
+                    for c in list(expe['_repeat']):
+                        seed.append(str(ord(c)))
+
+            seed = ''.join( [chr(int(i)) for i in list(''.join(seed))] )
+            seed = int((hash_objects(seed)), 32) % 2**32
+            seed = [seed, seed]
+            # Makes it on 32 bit...
+
         elif _seed is True:
             # Load state
             seed = None

@@ -820,7 +820,6 @@ class ExpTensorV2(BaseObject):
                 n_duplicate += 1
             _hash.append(o)
 
-
         if n_duplicate > 0 and not skip_check:
             lgg.warning('Duplicate experience: %d' % (n_duplicate))
             ask_sure_exit('Continue [y/n]?')
