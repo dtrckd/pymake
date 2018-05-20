@@ -176,8 +176,17 @@ class Plot(ExpeFormat):
             label = expe['_label'](expe)
             description = label if label else description
 
+
+        #fr = self.load_frontend()
+        #E = fr.num_edges()
+        #N = fr.num_nodes()
+        #m = self._zeros_set_len
+        #pop =
+
+
         ax.plot(x[burnin:], values, label=description, marker=frame.markers.next())
         ax.legend(loc=expe.get('fig_legend',1), prop={'size':expe.get('legend_size',5)})
+
 
         #if self.is_last_expe() and expe.get('fig_xaxis'):
         #    for frame in self.get_figs():
@@ -306,6 +315,7 @@ class Plot(ExpeFormat):
             for corpus in corpuses:
 
                 self.markers.reset()
+                self.colors.reset()
                 self.linestyles.reset()
                 fig = plt.figure()
                 ax = fig.gca()
@@ -318,11 +328,17 @@ class Plot(ExpeFormat):
                     table = array[:, :, idx1, idx2]
                     _mean = table.mean(0)
                     _std = table.std(0)
-                    xaxis = np.array(list(map(int, Meas))) + jitter[ii]
+                    xaxis = np.array(list(map(int, Meas))) #+ jitter[ii]
                     if _type == 'errorbar':
-                        ax.errorbar(xaxis , _mean, yerr=_std,
-                                     fmt=self.markers.next(), ls=self.linestyles.next(),
-                                     label=self.specname(model))
+                        ls = self.linestyles.next()
+                        _std[_std> 0.15] = 0.15
+                        _std[_std< -0.15] = -0.15
+                        eb = ax.errorbar(xaxis , _mean, yerr=_std,
+                                         fmt=self.markers.next(), ls=ls,
+                                         #errorevery=3,
+                                         #c=self.colors.next(),
+                                         label=self.specname(model))
+                        eb[-1][0].set_linestyle(ls)
                     elif _type == 'boxplot':
                         for meu, meas in enumerate(Meas):
                             bplot = table[:, meu,]
@@ -334,10 +350,8 @@ class Plot(ExpeFormat):
                                        #positions=[int(meas)+(meu+eps)*w],
                                        whis='range' )
 
-
-
                 if _type == 'errorbar':
-                    ax.legend(loc='lower right',prop={'size':7})
+                    ax.legend(loc='lower right',prop={'size':8})
                     ymin = array.min()
                     ymin = 0.45
                     ax.set_ylim(ymin)
@@ -347,7 +361,9 @@ class Plot(ExpeFormat):
                     ticks = list(range(1, len(Meas)))
                     ax.set_xticks(ticks)
 
-                ax.set_title(self.specname(corpus))
+                ax.set_title(self.specname(corpus), fontsize=20)
+                ax.set_xlabel('percentage of the training edges')
+                ax.set_ylabel('AUC-ROC')
                 figs[corpus] = {'fig':fig, 'base': self.D.z[0]+'_evo'}
 
             if expe._write:

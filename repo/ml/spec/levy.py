@@ -10,7 +10,7 @@ class Levy(ExpDesign):
     #rocw4: new likelihood + samling r/p and
 
     _alias = {'ml.iwmmsb_scvb3' : 'WMMSB',
-              'ml.iwmmsb_scvb3_auto' : 'bg-WMMSB',
+              'ml.iwmmsb_scvb3_auto' : 'WMMSB-bg',
               'ml.immsb_scvb3' : 'MMSB',
               'ml.sbm_gt' : 'SBM',
               'ml.wsbm_gt' : 'WSBM',
@@ -91,6 +91,9 @@ class Levy(ExpDesign):
 
         fig_xaxis = [('_observed_pt', 'visited edges')],
         fig_legend = 4,
+        legend_size = 12,
+        #ticks_size = 20,
+        title_size = 20,
 
         driver = 'gt', # graph-tool driver
 
@@ -175,12 +178,12 @@ class Levy(ExpDesign):
     roc_visu_final3 = ExpGroup([eta2_b50, eta1_w50, eta2a_w50], _refdir="roc5v")
     roc_visu_final3 = ExpGroup([roc_visu_final3, roc_visu_sbm])
 
-    online_roc = ExpGroup(roc_visu_final3 , training_ratio=[ 1, 5,10,20,30,50,100], _refdir='online1w', corpus=net_final,
+    online_roc = ExpGroup(roc_visu_final3 , training_ratio=[1, 5,10,20,30, 50, 100], _refdir='online1w', corpus=net_final,
                           _seed='corpus', testset_ratio=20,
                           _format='{corpus}_{model}_{N}_{K}_{hyper}_{homo}_{testset_ratio}_{chunk}_{chi_a}-{tau_a}-{kappa_a}_{chi_b}-{tau_b}-{kappa_b}_{delta}_{zeros_set_len}_{zeros_set_prob}--{training_ratio}',
                          )
 
-    online_roc_ = ExpGroup([eta2_b50, eta2a_w50, roc_visu_sbm] , training_ratio=[ 1, 5,10,20,30,50,100], _refdir='online1w', corpus=net_final,
+    online_roc_ = ExpGroup([eta2_b50, eta2a_w50, roc_visu_sbm] , training_ratio=[1, 5,10,20,30,50,100], _refdir='online1w', corpus=net_final,
                           _seed='corpus', testset_ratio=20,
                           _format='{corpus}_{model}_{N}_{K}_{hyper}_{homo}_{testset_ratio}_{chunk}_{chi_a}-{tau_a}-{kappa_a}_{chi_b}-{tau_b}-{kappa_b}_{delta}_{zeros_set_len}_{zeros_set_prob}--{training_ratio}',
                          )
@@ -214,7 +217,7 @@ class Levy(ExpDesign):
     roc_w = ExpGroup([eta0_w, eta1_w, eta2_w, eta0_w50, eta1_w50, eta2_w50]) # squared weight
     roc_b = ExpGroup(eta2_base, model="immsb_scvb3", zeros_set_prob=1/2, zeros_set_len=[10, 50], delta='auto')
 
-    conv_w = ExpGroup([eta0_w50, eta1_w50, eta2_w50, eta2a_w50])
+    conv_w = ExpGroup([eta0_w50, eta1_w50, eta2_w50, eta2a_w50], corpus=['astro-ph', 'enron', 'munmun_digg_reply'])
 
     param1 = ExpGroup(eta2a_w50,  c0=[0.5, 1,10, 100], r0=[0.1, 0.5, 1])
     gap = ExpGroup([param1], _refdir='gap_hyper', testset_ratio=20, corpus=net_w,

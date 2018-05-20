@@ -363,10 +363,17 @@ class ExpeFormat(object):
                 else:
                     frame.ax().set_ylabel(attribute)
 
+
+                if 'title_size' in self.expe:
+                    ts =  float(self.expe['title_size'])
+
                 if 'title' in frame:
-                    plt.suptitle(frame.title)
+                    plt.suptitle(frame.title, fontsize=ts)
                 else:
-                    frame.ax().set_title(title)
+                    frame.ax().set_title(title, fontsize=ts)
+
+                if 'ticks_size' in self.expe:
+                     plt.xticks(fontsize=float((self.expe['ticks_size'])))
 
                 # Save on last call
                 if self._it == self.expe_size -1:
