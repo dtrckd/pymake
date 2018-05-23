@@ -714,8 +714,7 @@ class ExpeFormat(object):
         if self.expe.get('_write'):
 
             # @improve: In ModelManager ?
-            if hasattr(self, '_fitit_f'):
-                self.clear_fitfile()
+            self.clear_fitfile()
             if hasattr(self, 'model') and hasattr(self.model, 'save'):
                 if hasattr(self.model, 'write_current_state'):
                     self.model.save()
@@ -792,7 +791,7 @@ class ExpeFormat(object):
         return 'None'
 
     def init_fitfile(self):
-        ''' Create the file to save the iterations state of a model.'''
+        ''' Create the file to save the iterations state of a model. '''
         self._samples = []
         os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
         self.fname_i = self.output_path + '.inf'
@@ -805,14 +804,17 @@ class ExpeFormat(object):
 
     def clear_fitfile(self):
         ''' Write remaining data and close the file. '''
+
+        if not hasattr(self, '_fitit_f'):
+            return
+
         if hasattr(self, '_samples') and self._samples:
             self._write_some(self._fitit_f, None)
 
         end_line = '# terminated\n'
         self._fitit_f.write(end_line.encode('utf8'))
 
-        if hasattr(self, '_fitit_f'):
-            self._fitit_f.close()
+        self._fitit_f.close()
 
 
     def load_some(self, filename=None, iter_max=None, comments=('#','%')):
