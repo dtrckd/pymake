@@ -90,6 +90,7 @@ class DataBase(object):
 
         N = self.expe.get('N')
         if N is not None and N != 'all':
+            N = int(N)
             self.log.debug('sampling dataset to N=%d ...' % N)
             self.sample(N)
 
