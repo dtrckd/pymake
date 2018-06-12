@@ -627,9 +627,16 @@ class ExpTensorV2(BaseObject):
 
     def get_all(self, key, default=[]):
         ''' Get all values associated to a given key. '''
+
         vec = []
-        for tensor in self._tensors:
-            vec.extend(tensor.get(key, []))
+
+        if hasattr(self, '_lod'):
+            for d in self._lod:
+                if key in d:
+                    vec.append(d[key])
+        else:
+            for tensor in self._tensors:
+                vec.extend(tensor.get(key, []))
 
         if not vec:
             return default

@@ -359,11 +359,12 @@ class BurstProcess(ExpeFormat):
 
 #
 #
+# Second phase ("temporal process")
 #
 #
 #
-#
-    @ExpeFormat.raw_plot('corpus')
+    @ExpeFormat.raw_plot()
+    #@ExpeFormat.raw_plot('corpus')
     def prop_process_me(self, frame, p=250):
         p = int(p)
         expe = self.expe
@@ -431,7 +432,8 @@ class BurstProcess(ExpeFormat):
         frame.title = expe.corpus + ' p=%s' % p
 
 
-    @ExpeFormat.raw_plot('corpus')
+    @ExpeFormat.raw_plot()
+    #@ExpeFormat.raw_plot('corpus')
     def prop_process_local_me(self, frame, p=250):
         p = int(p)
         expe = self.expe
@@ -524,4 +526,243 @@ class BurstProcess(ExpeFormat):
         ax.set_ylabel('Cumulative Sum')
         frame.title = expe.corpus + ' p=%s' % p
 
+
+
+    @ExpeFormat.raw_plot()
+    #@ExpeFormat.raw_plot('corpus')
+    def prop2_process_me(self, frame, p=90):
+        p = int(p)
+        expe = self.expe
+
+        # Force ONE epoch # bernoulli variance...
+        expe.epoch = 1
+        self._generate()
+
+        Y = self._Y
+        Theta = self._Theta
+        Phi = self._Phi
+
+        theta = Theta[0]
+        phi = Phi[0]
+
+        N = theta.shape[0]
+
+        likelihood = self.model.likelihood(theta, phi)
+        adj = sp.stats.bernoulli.rvs(likelihood)
+
+        n_to_zeros = int( N**2 * (1-p/100))
+        _idx = np.random.choice(np.arange(N**2), n_to_zeros, replace=False)
+        idx = np.unravel_index(_idx, (N,N))
+
+        adj_n = adj.copy()
+        adj_n[idx] = 0
+
+        g_n = nx.from_numpy_array(adj_n)
+        degree_n = dict(g_n.degree())
+        d_n, dc_n = degree_hist(degree_n, filter_zeros=False)
+
+        g = nx.from_numpy_array(adj)
+        degree = dict(g.degree())
+        d, dc = degree_hist(degree, filter_zeros=False)
+
+
+        x = d_n
+        y = []
+        burstiness = defaultdict(lambda:0)
+        normalize_deg = defaultdict(lambda:0)
+        # Compute p(d(N)>n+1 | p(p)=n)
+        for node, deg_n in degree_n.items():
+            if deg_n == 0:
+                continue
+
+            deg_N = degree[node]
+            if deg_N > deg_n:
+                burstiness[deg_n] += 1
+
+            normalize_deg[deg_n] +=1
+
+        # Normalize
+        for deg, total in normalize_deg.items():
+            burstiness[deg] = burstiness[deg] / total
+
+        for deg in x:
+            y.append(burstiness[deg])
+
+        ax = frame.ax()
+
+        w = 0.2
+        opacity = 0.8
+        y = np.array(y)
+        index = 0
+        ticks = []
+        ticks_label = []
+        c = self.colors.next()
+        for n, v in enumerate(y):
+            if v == 0:
+                continue
+            rects = ax.bar(index + w, v, w,
+                           alpha=opacity,
+                           label=None, color=c)
+            ticks.append(index)
+            ticks_label.append(x[n])
+            index += 1
+
+        ax.set_xticklabels(ticks_label)
+        ticks = np.array(ticks) + w
+        ax.set_xticks(ticks)
+        ax.xaxis.set_tick_params(labelsize=8)
+
+        ax.legend(loc=4,prop={'size':10})
+        ax.set_xlabel('n')
+        ax.set_ylabel('Probability of new links')
+        frame.title = '%s, %s,  p=%s' % (self.specname(expe.corpus),
+                                         self.specname(expe.model), p)
+
+    @ExpeFormat.raw_plot()
+    def prop2_process_local_me(self, frame, p=90):
+        p = int(p)
+        expe = self.expe
+
+        # Force ONE epoch # bernoulli variance...
+        expe.epoch = 1
+        self._generate()
+
+        Y = self._Y
+        Theta = self._Theta
+        Phi = self._Phi
+
+        theta = Theta[0]
+        phi = Phi[0]
+
+        N = theta.shape[0]
+        K = theta.shape[1]
+
+        ticks = []
+        ticks_label = []
+
+        nb_class = 0
+        for _k1 in range(K):
+            if 'ilfm' in expe.model:
+                K =1
+            for _k2 in range(K):
+                if 'ilfm' in expe.model:
+                    _k2 = _k1
+
+                if nb_class >= 4:
+                    break
+
+                n_to_zeros = int( N**2 * (1-p/100))
+
+                adj = self._local_likelihood(theta, phi, _k1, _k2)
+                #if adj.dtype == np.dtype(float):
+                #    adj = sp.stats.bernoulli.rvs(adj)
+
+                #    _id1 = np.arange(N**2).reshape((N,N))[adj==1]
+                #    _id0 = np.arange(N**2).reshape((N,N))[adj==0]
+                #    nn1 = len(_id1) // 3
+                #    nn0 = n_to_zeros - nn1
+                #    if nn1 > 0:
+                #        _idx1 = np.random.choice(_id1, nn1, replace=False)
+                #        _idx0 = np.random.choice(_id0, nn0, replace=False)
+                #        _idx = np.hstack((_idx0, _idx1))
+                #    else:
+                #        _idx = _id0
+
+                #    idx = np.unravel_index(_idx, (N,N))
+                _idx = np.random.choice(np.arange(N**2), n_to_zeros, replace=False)
+
+                idx = np.unravel_index(_idx, (N,N))
+
+                adj_n = adj.copy()
+                adj_n[idx] = 0
+
+                if 'ilfm' in expe.model:
+                    g_n = nx.from_numpy_array(adj_n)
+                    degree_n = dict(g_n.degree())
+                else:
+                    degree_n = dict((i,int(round(d))) for i,d in enumerate(adj_n.sum(1)))
+                d_n, dc_n = degree_hist(degree_n, filter_zeros=False)
+
+                if 'ilfm' in expe.model:
+                    g = nx.from_numpy_array(adj)
+                    degree = dict(g.degree())
+                else:
+                    degree = dict((i,int(round(d))) for i,d in enumerate(adj.sum(1)))
+                d, dc = degree_hist(degree, filter_zeros=False)
+
+                x = d_n
+
+                y = []
+                burstiness = defaultdict(lambda:0)
+                normalize_deg = defaultdict(lambda:0)
+                # Compute p(d(N)>n+1 | p(p)=n)
+                for node, deg_n in degree_n.items():
+                    if deg_n == 0:
+                        continue
+
+                    deg_N = degree[node]
+                    if deg_N > deg_n:
+                        burstiness[deg_n] += 1
+
+                    normalize_deg[deg_n] +=1
+
+                # Normalize
+                for deg, total in normalize_deg.items():
+                    burstiness[deg] = burstiness[deg] / total
+
+                for deg in x:
+                    y.append(burstiness[deg])
+
+                y = np.array(y)
+                if len(y[y>0]) <= 3:
+                    continue
+
+                ax = frame.ax()
+
+                w = 0.4
+                opacity = 0.8
+                y = np.array(y)
+                _index = 0
+                index = _index + len(ticks)*1.25
+                c = self.colors.next()
+                label = '%s K=%d' % (expe.model, _k1)
+                one_count = 0
+                first = True
+                for n, v in enumerate(y):
+                    if v == 0:
+                        continue
+                    if v == 1:
+                        one_count += 1
+                    else:
+                        one_count = 0
+
+                    if one_count >=4:
+                        break
+
+                    if first:
+                        label = 'classe %s' % nb_class
+                    else:
+                        label = None
+
+
+                    rects = ax.bar(index + w/2, v, w,
+                                   alpha=opacity,
+                                   label=label, color=c)
+                    ticks.append(index)
+                    ticks_label.append(x[n])
+                    index += 1
+                    first = False
+
+                nb_class +=1
+
+        ax.set_xticklabels(ticks_label)
+        ticks = np.array(ticks) + w
+        ax.set_xticks(ticks)
+        ax.xaxis.set_tick_params(labelsize=8)
+
+        ax.legend(loc=4,prop={'size':10})
+        ax.set_xlabel('n')
+        ax.set_ylabel('Probability of new links')
+        frame.title = '%s, %s,  p=%s' % (self.specname(expe.corpus),
+                                         self.specname(expe.model), p)
 

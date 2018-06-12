@@ -238,7 +238,10 @@ class ExpeFormat(object):
             def wrapper(*args, **kwargs):
                 import matplotlib.pyplot as plt
                 from pymake.plot import _linestyle, _markers
-                group = groups[0]
+                if len(groups) == 0:
+                    group = '_id_expe'
+                else:
+                    group = groups[0]
                 self = args[0]
                 expe = self.expe
                 discr_args = []
@@ -267,7 +270,9 @@ class ExpeFormat(object):
                 frame.base = '%s_%s' % (fun.__name__, title.replace(' ', '_'))
                 frame.args = discr_args
                 if 'title' in frame:
-                    plt.suptitle(frame.title)
+                    # if multipolot
+                    #plt.suptitle(frame.title)
+                    frame.ax().set_title(frame.title)
                 else:
                     frame.ax().set_title(title)
 
@@ -552,8 +557,7 @@ class ExpeFormat(object):
 
     @staticmethod
     def _file_part(group, sep='_'):
-        part = map(str, filter(None, group))
-        part = [e for e in part if e  != 'None']
+        part = [str(e) for e in group if (e != None and e != 'None')]
         part = sep.join(part)
         return part
 

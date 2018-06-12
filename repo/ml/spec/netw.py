@@ -24,8 +24,8 @@ class Netw(ExpDesign):
 
         #('generator4'     , 'Network4' ),
         ('generator4'     , 'Network2' ),
-        #('pmk.ilfm_cgs'     , 'ILFM' ),
-        #('pmk.immsb_cgs'     , 'IMMSB' ),
+        ('ml.ilfm_cgs'     , 'ILFM' ),
+        ('ml.immsb_cgs'     , 'IMMSB' ),
     ))
 
 
