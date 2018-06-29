@@ -4,7 +4,7 @@ from codecs import open
 from os import path
 
 #__version__ = subprocess.check_output(["git", "describe"]).strip()
-__version__ = '0.40.9'
+__version__ = '0.41.0'
 
 try:
     from Cython.Build import cythonize
@@ -57,5 +57,16 @@ setuptools.setup(
         'Intended Audience :: Science/Research',
         'Programming Language :: Python :: 3',
     ]
+
+    ### Trying to cythonize the project (could help create a binary)
+    #ext_modules=cythonize(
+    #    "bhp/*.py", "bhp/**/*.py",
+    #    #exclude=[
+    #    #    'tatsu/__init__.py',
+    #    #    'tatsu/codegen/__init__.py',
+    #    #    'tatsu/test/*.py'
+    #    #]
+    #),
+
 )
 

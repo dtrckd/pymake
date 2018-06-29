@@ -72,16 +72,16 @@ class MyLogFormatter(logging.Formatter):
         return result
 
 
-def setup_logger(level=logging.INFO, name='root'):
+def setup_logger(level=None, name='root'):
     #formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
+
+    if level is None:
+        level = 0
 
     if level == 1:
         level = logging.DEBUG
-    elif level == 2:
+    elif level >= 2:
         level = logging.VDEBUG
-    elif level == 3:
-        print ('what level of verbosity heeere ?')
-        exit(2)
     elif level == -1:
         level = logging.WARNING
     else:
@@ -205,7 +205,7 @@ class GramExp(object):
     _private_keywords = _reserved_keywords + _special_keywords
 
     _default_expe = {
-        '_verbose'   : logging.INFO,
+        #'_verbose'   : 0,
         '_write'     : False,
 
         '_ignore_format_unique' : False,
@@ -228,7 +228,7 @@ class GramExp(object):
 
     def __init__(self, conf, usage=None, parser=None, parseargs=True, expdesign=None):
         # @logger One logger by Expe ! # in preinit
-        setup_logger(level=conf.get('_verbose', logging.INFO))
+        setup_logger(level=conf.get('_verbose'))
 
         if conf is None:
             conf = {}
