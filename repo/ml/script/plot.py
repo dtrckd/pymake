@@ -20,11 +20,11 @@ Plot utility :
 class Plot(ExpeFormat):
 
     # Documentation !
-    _default_expe = dict(
-        _label = lambda expe: '%s %s' % (expe._alias[expe.model], expe.delta) if expe.model in expe._alias else False,
-        legend_size=10,
-        _csv_sample = 2,
-    )
+    #_default_expe = dict(
+    #    _label = lambda expe: '%s %s' % (expe._alias[expe.model], expe.delta) if expe.model in expe._alias else False,
+    #    legend_size=10,
+    #    _csv_sample = 2,
+    #)
 
     def _preprocess(self):
         pass

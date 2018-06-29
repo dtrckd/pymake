@@ -108,6 +108,24 @@ class ExpeFormat(object):
             ))
             self.log.info('-'*10)
 
+        self._set_csv_typo()
+
+    def _set_csv_typo(self):
+        csv_typo = self.expe.get('_csv_typo')
+        if csv_typo is None:
+            from pymake.frontend.manager import ModelManager
+            model = ModelManager.from_expe(self.expe)
+            csv_typo = getattr(model, '_csv_typo', None)
+            try:
+                from pymake.frontend.manager import ModelManager
+                model = ModelManager.from_expe(self.expe)
+                csv_typo = getattr(model, '_csv_typo', None)
+            except Exception as e:
+                self.log.debug('No csv_typo spec found...: %s' % e)
+                csv_typo = None
+
+        self._csv_typo = csv_typo
+
     def log_expe(self):
         expe = self.expe
         msg = '%s -- %s -- N=%s -- K=%s' % (self.specname(expe.get('corpus')),
@@ -371,6 +389,8 @@ class ExpeFormat(object):
 
                 if 'title_size' in self.expe:
                     ts =  float(self.expe['title_size'])
+                else:
+                    ts = 15
 
                 if 'title' in frame:
                     plt.suptitle(frame.title, fontsize=ts)
@@ -757,7 +777,7 @@ class ExpeFormat(object):
                 @todo use _fmt if given.
         '''
         line = []
-        for o in self.expe._csv_typo.split():
+        for o in self._csv_typo.split():
             if o.startswith('{'): # is a list
                 obj = o[1:-1]
                 brak_pt = obj.find('[')
@@ -803,7 +823,7 @@ class ExpeFormat(object):
             self.log.debug('No _csv_typo, for this model %s, no inference file...'%(self.expe.get('model')))
         else:
             self._fitit_f = open(self.fname_i, 'wb')
-            self._fitit_f.write(('#' + self.expe._csv_typo + '\n').encode('utf8'))
+            self._fitit_f.write(('#' + self._csv_typo + '\n').encode('utf8'))
 
 
     def clear_fitfile(self):
@@ -841,7 +861,7 @@ class ExpeFormat(object):
         data = [re.sub("\s\s+" , " ", x.strip()).split() for l,x in enumerate(data) if not x.startswith(comments)]
 
         # Grammar dude ?
-        col_typo = self.expe._csv_typo.split()
+        col_typo = self._csv_typo.split()
         array = []
         last_elt_size = None
         _pos_failed = set()

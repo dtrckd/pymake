@@ -10,9 +10,10 @@ from ml.model.hdp.mmsb import CGS, ZSamplerParametric
 class immsb_cgs(GibbsRun):
     def __init__(self, expe, frontend):
 
-        delta = expe.hyperparams.get('delta',1)
-        alpha = expe.hyperparams.get('alpha',1)
-        gmma = expe.hyperparams.get('gmma',1)
+        hyperparams = expe.get('hyperparams', {})
+        delta = hyperparams.get('delta',1)
+        alpha = hyperparams.get('alpha',1)
+        gmma = hyperparams.get('gmma',1)
 
         hyper = expe.hyper
         assortativity = expe.get('homo')
@@ -37,15 +38,16 @@ class immsb_cgs(GibbsRun):
 
 
         super().__init__(expe, frontend)
-        self.update_hyper(expe.hyperparams)
+        self.update_hyper(hyperparams)
 
 
 class mmsb_cgs(GibbsRun):
     def __init__(self, expe, frontend):
 
-        delta = expe.hyperparams.get('delta',1)
-        alpha = expe.hyperparams.get('alpha',1)
-        gmma = expe.hyperparams.get('gmma',1)
+        hyperparams = expe.get('hyperparams', {})
+        delta = hyperparams.get('delta',1)
+        alpha = hyperparams.get('alpha',1)
+        gmma = hyperparams.get('gmma',1)
 
         hyper = expe.hyper
         assortativity = expe.get('homo')
@@ -65,5 +67,5 @@ class mmsb_cgs(GibbsRun):
             likelihood._symmetric = None
 
         super().__init__(expe, frontend)
-        self.update_hyper(expe.hyperparams)
+        self.update_hyper(hyperparams)
 

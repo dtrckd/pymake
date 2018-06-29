@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+#import pyximport; pyximport.install()
 import sys
 from pymake import GramExp
 

@@ -1091,7 +1091,7 @@ class GramExp(object):
             seed0 = random.randint(0, 2**128)
             seed1 = np.random.randint(0, 2**32, 10)
             seed = [seed0, seed1]
-        elif str.isdigit(_seed):
+        elif type(_seed) is str and str.isdigit(_seed):
             _seed = int(_seed)
             seed = [_seed, _seed]
 
