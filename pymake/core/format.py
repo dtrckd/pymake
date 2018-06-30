@@ -113,16 +113,17 @@ class ExpeFormat(object):
     def _set_csv_typo(self):
         csv_typo = self.expe.get('_csv_typo')
         if csv_typo is None:
-            from pymake.frontend.manager import ModelManager
-            model = ModelManager.from_expe(self.expe)
-            csv_typo = getattr(model, '_csv_typo', None)
-            try:
+            if 'model' in self.expe:
                 from pymake.frontend.manager import ModelManager
                 model = ModelManager.from_expe(self.expe)
                 csv_typo = getattr(model, '_csv_typo', None)
-            except Exception as e:
-                self.log.debug('No csv_typo spec found...: %s' % e)
-                csv_typo = None
+                try:
+                    from pymake.frontend.manager import ModelManager
+                    model = ModelManager.from_expe(self.expe)
+                    csv_typo = getattr(model, '_csv_typo', None)
+                except Exception as e:
+                    self.log.debug('No csv_typo spec found...: %s' % e)
+                    csv_typo = None
 
         self._csv_typo = csv_typo
 
