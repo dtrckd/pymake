@@ -20,35 +20,45 @@ from tabulate import tabulate
 # Ugly, integrate.
 def _table_(tables, headers=[], max_line=10, max_row=30, name=''):
 
-    # tables is dict
     if isinstance(headers, str):
+        # tables is dict
         # Sort the dict
         ordered_keys = sorted(tables.keys())
         tables = OrderedDict([(k,tables[k]) for k in ordered_keys ])
 
+        _tables = []
+        cpt = 0
+        max_row = 10
+        for k, v in tables.items():
+            if cpt % max_row == 0:
+                t = OrderedDict()
+                _tables.append(t)
+            t[k] = v
+            cpt += 1
+
         sep = '# %s'%name +  '\n'+'='*20
         print(sep)
-        return tabulate(tables, headers=headers)
-
-
-    # tables is list
-    raw = []
-    for sec, table in enumerate(tables):
-        table = sorted(table, key=lambda x:x[0])
-        size = len(table)
-        if size == 0:
-            continue
-        col = int((size-0.1) // max_line)
-        junk = max_line % size
-        table += ['-']*junk
-        table = [table[j:max_line*(i+1)] for i,j in enumerate(range(0, size, max_line))]
-        table = np.char.array(table).astype('|S'+str(max_row))
-        fmt = 'simple'
-        raw.append(tabulate(table.T,
-                            headers=[headers[sec]]+['']*(col),
-                            tablefmt=fmt))
-    sep = '\n'+'='*20+'\n'
-    return sep[1:] + sep.join(raw)
+        tables = '\n\n'.join([str(tabulate(t, headers=headers)) for t in _tables])
+        return tables
+    else:
+        # tables is list
+        raw = []
+        for sec, table in enumerate(tables):
+            table = sorted(table, key=lambda x:x[0])
+            size = len(table)
+            if size == 0:
+                continue
+            col = int((size-0.1) // max_line)
+            junk = max_line % size
+            table += ['-']*junk
+            table = [table[j:max_line*(i+1)] for i,j in enumerate(range(0, size, max_line))]
+            table = np.char.array(table).astype('|S'+str(max_row))
+            fmt = 'simple'
+            raw.append(tabulate(table.T,
+                                headers=[headers[sec]]+['']*(col),
+                                tablefmt=fmt))
+        sep = '\n'+'='*20+'\n'
+        return sep[1:] + sep.join(raw)
 
 
 
@@ -168,6 +178,13 @@ class ExpGroup(list, BaseObject):
         return self.__class__([item for item in self if item not in other])
 
 class Spec(BaseObject):
+
+    @staticmethod
+    def find(spec, field='expe_name'):
+        ix = IX(default_index='spec')
+        spec = ix.getfirst(spec, field=field)
+        return spec
+
     @staticmethod
     def get(scriptname, *expe):
         ix = IX(default_index='spec')
@@ -247,10 +264,10 @@ class Script(BaseObject):
         return _res
 
     @staticmethod
-    def get(scriptname, arguments):
+    def get(scriptname, arguments, field='scriptsurname'):
 
         ix = IX(default_index='script')
-        topmethod = ix.getfirst(scriptname, field='scriptsurname')
+        topmethod = ix.getfirst(scriptname, field=field)
         if not topmethod:
             # get the first method that have this name
             topmethod = ix.getfirst(scriptname, field='method')

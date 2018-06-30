@@ -19,3 +19,5 @@ from pymake.core.format import ExpeFormat
 
 from pymake.core.gramexp import GramExp
 
+from pymake.util.utils import get_pymake_settings
+
