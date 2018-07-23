@@ -12,6 +12,5 @@ X11_colors = ["aliceblue" , "antiquewhite4" , "aquamarine4" , "azure4", "bisque3
 """ Matplotlib
 	ref: http://matplotlib.org/examples/color/named_colors.html
 """
-import six
 from matplotlib import colors
-plt_colors = list(six.iteritems(colors.cnames))
+plt_colors = [(k,v) for k,v in colors.cnames.items()]

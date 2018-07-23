@@ -1125,7 +1125,7 @@ class GramExp(object):
                 #np.random.set_state(seed_state)
             except FileNotFoundError as e:
                 self.log.error("Cannot initialize seed, %s file does not exist." % _seed_path)
-                sid = [np.random.randint(0, 2**64), np.random.randint(0, 2**32)]
+                sid = [np.random.randint(0, 2**63), np.random.randint(0, 2**32)]
                 self.save(sid, _seed_path, silent=True)
                 #self.save(np.random.get_state(), _seed_path, silent=True)
                 raise FileNotFoundError('%s file just created, try again !')
