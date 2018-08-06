@@ -76,6 +76,7 @@ class Levy(ExpDesign):
         testset_ratio = 20,
         validset_ratio = 10,
 
+
         # Sampling
         chunk         = 'stratify',
         sampling_coverage = 0.42,
@@ -87,7 +88,8 @@ class Levy(ExpDesign):
         zeros_set_len = 50,
 
         #delta = [[1, 1]],
-        delta = [[0.5, 10]],
+        #delta = [[0.5, 10]],
+        delta = 'auto',
 
         fig_xaxis = [('_observed_pt', 'visited edges')],
         fig_legend = 4,

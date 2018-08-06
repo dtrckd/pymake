@@ -88,6 +88,10 @@ class iwmmsb_scvb3(SVB):
             self.r0 = float(self.expe.get('r0', 1))     # 0.5     0.5
             self.ce = float(self.expe.get('ce', 100))     # 200     100
             self.eps = float(self.expe.get('eps', 1e-6))  # 1e-6    1e-6
+            #self.c0 = float(self.expe.get('c0', 10)) #weights mean
+            #self.r0 = float(self.expe.get('r0', 0.2))
+            #self.ce = float(self.expe.get('ce', 10))
+            #self.eps = float(self.expe.get('eps', 1e-6))
 
             self.c0_r0 = self.c0*self.r0
             self.ce_eps = self.ce*self.eps

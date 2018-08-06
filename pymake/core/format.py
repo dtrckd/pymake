@@ -629,7 +629,10 @@ class ExpeFormat(object):
 
     def _kernel_write(self, frame, fn, title=None):
 
-        ext = frame.get('ext')
+        if hasattr(frame, 'get'):
+            ext = frame.get('ext')
+        else:
+            ext = None
 
         if isinstance(frame, dict):
             if 'fig' in frame:

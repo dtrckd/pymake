@@ -219,6 +219,10 @@ def plot_degree_2(P, logscale=False, colors=False, line=False, ax=None, title=No
         else:
             break
 
+    #x = x[::2]
+    #y = y[::2]
+    #yerr = yerr[::2]
+
     c = next(_colors) if colors else 'b'
     m = next(_markers) if colors else 'o'
     l = '--' if line else None
@@ -243,7 +247,7 @@ def plot_degree_2(P, logscale=False, colors=False, line=False, ax=None, title=No
     if title:
         ax.set_title(title)
 
-    ax.set_xlim((min_d, max_d+10))
+    #ax.set_xlim((min_d, max_d+10))
     #ax.set_xlim(left=1)
     ax.set_ylim((.9,1e3))
     ax.set_xlabel('Degree'); ax.set_ylabel('Counts')

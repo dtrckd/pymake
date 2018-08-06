@@ -20,11 +20,11 @@ Plot utility :
 class Plot(ExpeFormat):
 
     # Documentation !
-    #_default_expe = dict(
-    #    _label = lambda expe: '%s %s' % (expe._alias[expe.model], expe.delta) if expe.model in expe._alias else False,
-    #    legend_size=10,
-    #    _csv_sample = 2,
-    #)
+    _default_expe = dict(
+        _label = lambda expe: '%s %s' % (expe._alias[expe.model], expe.delta) if expe.model in expe._alias else False,
+        legend_size=10,
+        _csv_sample = 2,
+    )
 
     def _preprocess(self):
         pass
@@ -186,7 +186,6 @@ class Plot(ExpeFormat):
 
         ax.plot(x[burnin:], values, label=description, marker=frame.markers.next())
         ax.legend(loc=expe.get('fig_legend',1), prop={'size':expe.get('legend_size',5)})
-
 
         #if self.is_last_expe() and expe.get('fig_xaxis'):
         #    for frame in self.get_figs():

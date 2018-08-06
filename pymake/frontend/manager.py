@@ -49,7 +49,7 @@ class FrontendManager(object):
                 _corpus = dict(data_type = dt_lut[c_ext])
             _corpus.update(data_format=c_ext)
         elif _corpus is False:
-            raise ValueError('Unknown Corpus `%s\'!' % corpus)
+            raise ValueError('Unknown Corpus `%s\'!' % c_name)
         elif _corpus is None:
             return None
 
