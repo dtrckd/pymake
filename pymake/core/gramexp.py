@@ -1094,7 +1094,6 @@ class GramExp(object):
         elif type(_seed) is str and str.isdigit(_seed):
             _seed = int(_seed)
             seed = [_seed, _seed]
-
         elif type(_seed) is str:
             if _seed in expe:
                 _seed = expe[_seed]

@@ -8,7 +8,7 @@ from pymake.util.utils import colored
 
 
 
-''' Build and Stats for Networds data '''
+''' Build and Stats for Text data '''
 
 
 class Text(ExpeFormat):

@@ -3,7 +3,7 @@ from pymake.util.utils import colored
 import textwrap
 from ..model.search_engine import extract_pdf, glob_path
 
-from subprocess import call
+from subprocess import call, Popen
 
 
 USAGE = """\
@@ -81,7 +81,7 @@ class IR(ExpeFormat):
         res = model.search(self.sem(query), limit=expe.number_results)
         self.format_results(res)
 
-    def open(self, query, hit=1):
+    def open(self, query, *hits):
         expe = self.expe
         model = self.load_model(expe)
 
@@ -89,12 +89,14 @@ class IR(ExpeFormat):
 
         res = model.search(self.sem(query), limit=expe.number_results)
 
-        for rank, _hit in enumerate(res):
-            if rank == int(hit)-1:
-                fpath = glob_path(_hit['fullpath'])
-                break
+        hits = list(map(lambda x: int(x)-1, hits))
 
-        call(['evince', fpath])
+        for rank, _hit in enumerate(res):
+            if rank in hits:
+                fpath = glob_path(_hit['fullpath'])
+                print("opening: %s" % fpath)
+                #call(['evince', fpath], timeout=0) # blocking
+                Popen(['evince', fpath]) # non-blocking
 
     def authors(self, *query):
         expe = self.expe

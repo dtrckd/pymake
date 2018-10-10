@@ -15,6 +15,3 @@ matplotlib
 #edward ?
 #opencv ?
 #python-pygraphviz ?
-#python-louvain ?
-#    // pip install hg+https://bitbucket.org/taynaud/python-louvain
-#    // hg clone https://bitbucket.org/taynaud/python-louvain

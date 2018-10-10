@@ -766,3 +766,48 @@ class BurstProcess(ExpeFormat):
         frame.title = '%s, %s,  p=%s' % (self.specname(expe.corpus),
                                          self.specname(expe.model), p)
 
+    @ExpeFormat.raw_plot()
+    def power_law_mm(self, frame, p=90):
+        p = int(p)
+        expe = self.expe
+
+        # Force ONE epoch # bernoulli variance...
+        expe.epoch = 1
+        self._generate()
+
+        Y = self._Y
+        Theta = self._Theta
+        Phi = self._Phi
+
+        theta = Theta[0]
+        phi = Phi[0]
+
+        N = theta.shape[0]
+        K = theta.shape[1]
+
+        ticks = []
+        ticks_label = []
+
+        alpha = np.exp(self.model.s.zsampler.log_alpha_beta)[:K]
+
+        for _i in range(N):
+
+            if _i >= 3:
+                break
+            plt.figure()
+
+            fi_params = (2*N + alpha.sum()) * theta[_i]
+
+            samples = np.random.dirichlet(fi_params, 1000)
+
+            for _k in range(K):
+                plt.hist(samples[:, _k], bins=100)
+
+
+            plt.ylim(0, 100)
+            plt.xlabel('f_i %d values'%_i)
+            plt.ylabel('count')
+
+
+
+

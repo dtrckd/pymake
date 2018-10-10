@@ -16,7 +16,7 @@ It can be represented as follows:
 <!-- Build Powerful CLI | Create Beautiful UI | Browse your Experiments  -->
 
 
-<!--  
+<!--
 
     * (future) Integration of datasets from [Zenodo](https://www.zenodo.org/)
     * (future) Integration of Data drivers for major type of data beiing:
@@ -158,27 +158,9 @@ Then you can list some information about pymake objects:
 ## FAQ [](#4)
 
 
-###### How to share memory between all expe/run in a sandbox (ExpeFormat)
+###### How to see the difference between two specs
 
-If the run/expe are launched sequentially (without `--cores` option), one can use a global container defined in the ExpeFormat sandbox classes in the variable `self.D`. Typically one would init variables at the first experience, process it, and at the final run, do some processing with that variable, as illustrated in the following example:
-
-```python
-class MyScripts(ExpeFormat):
-
-    def my_action(self):
-        if self.is_first_expe():
-            self.D.my_shared_var = 0
-
-        my_shared_var = self.D.my_shared_var
-        my_shared_var += 1
-
-        if self.is_last_expe():
-            print('Expe total: %d' % self.D.my_shared_var)
-```
-
-
-If the runs are parallelized (with `--cores` options), there is no current implemented way to do it although it is likely to be developed in the future.
-
+    pmk diff spec1 spec2
 
 ###### How to tune the command-line options
 
@@ -226,6 +208,29 @@ _gram = [
 ###### How to change a settings in a spec from command-line without specifying it in the grammarg file
 
 Pymake provide a magic command line argument to specify any field in an expe. Let's say you want to give the value `my_value` in the field `my_key` in your expe, then you can do `pmk [...] --pmk my_value=my_key`. You can chain as many key=value pairs like this.
+
+
+###### How to share memory between all expe/run in a sandbox (ExpeFormat)
+
+If a spec has several run/expe and if the run/expe are launched sequentially (without `--cores` option), then one can use a global container defined in the ExpeFormat sandbox classes in the variable `self.D`. Typically one would init variables at the first experience, process it, and at the final run, do some processing with that variable, as illustrated in the following example:
+
+```python
+class MyScripts(ExpeFormat):
+
+    def my_action(self):
+        if self.is_first_expe():
+            self.D.my_shared_var = 0
+
+        my_shared_var = self.D.my_shared_var
+        my_shared_var += 1
+
+        if self.is_last_expe():
+            print('Expe total: %d' % self.D.my_shared_var)
+```
+
+
+If the runs are parallelized (with `--cores` options), there is no current implemented way to do it although it is likely to be developed in the future.
+
 
 
 ###### How to virtually remove a spec term from the commandline
@@ -459,7 +464,7 @@ pmk_options = [pymake special options + project options];
 ```
 
 ### Command_name
-If 'expe_name' is empty and `-x` is given, pymake assumes `run` command. If 'expedesing_id is empty', then the parameters are empty unless the script defines a `_default_expe` expe settings. All settings undefined in a design but defined in the `_default_exp` will take this value.
+If 'expe_name' is empty and `-x` is given, pymake assumes `run` command. If no design spec is given, then the parameters are empty unless the script defines a `_default_expe` expe settings. All settings undefined in a design but defined in the `_default_expe` will take this value. Further, `_default_expe` can point to an existing spec in `spec/`; to do so use the following setting inside `_spec='my_expe_name'`.
 
 Remark: -l and -s (--simulate) options don't execute, they just show things up.
 
