@@ -1,12 +1,12 @@
 #-*-shell-script-*-
 
-shopt -s extglob 
+shopt -s extglob
 
 #have pmk &&
 _pmk()
 {
     # Automate variables init
-    local cur prev opts project 
+    local cur prev opts project
     local specs lists all_scripts sur_scripts dict_scripts
 
     COMPREPLY=()
@@ -69,7 +69,8 @@ _pmk()
                 ;;
             *)
                 # Parse gramarg ?
-                COMPREPLY=( $(compgen -W "$opts" -- $cur) )
+                #COMPREPLY=( $(compgen -W "$opts" -- $cur) )
+                COMPREPLY=( $(compgen -f -d -- $cur) ) # list and dir completion
                 return 0
                 ;;
         esac
