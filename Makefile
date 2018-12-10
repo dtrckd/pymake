@@ -7,7 +7,7 @@ pip3_version := $(shell pip3 --version 2>/dev/null)
 
 default: install_short
 
-docs: 
+docs:
 	pushd doc/
 	make
 	pushd
@@ -43,6 +43,9 @@ test:
 	pushd pymake
 	DISPLAY= python3 functest.py
 	popd
+
+msa:
+	ditaa wiki/msa.md wiki/msa.png
 
 
 clean: clean_cython

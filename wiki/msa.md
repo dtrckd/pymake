@@ -1,8 +1,3 @@
-<meta charset="utf-8" emacsmode="-*- markdown -*-">
-
-
-<!-- Ditaa Diagram! -->
-
 
             /---------+
             |Model    |
@@ -20,21 +15,14 @@
 |         |             |         |----------->|         |
 +---------+             +---------+  response  \---------/
     |                        |
-    |                        |      pmk [spec] -x action
+    |                        |
     +----=-----+  +----=-----+
       spec for |  | manipulate
                v  v
             /---------+
-            |Data     |
+            |Data     |         $ pmk [spec] -x action
             |      {s}|
             |         |
             +---------+
 
-
-
-<!-- Markdeep: -->
-<style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style>
-<!--<script src="markdeep.min.js"></script>-->
-<script src="https://casual-effects.com/markdeep/latest/markdeep.min.js"></script>
-<script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
 
