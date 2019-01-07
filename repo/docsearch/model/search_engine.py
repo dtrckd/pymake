@@ -63,11 +63,11 @@ class tfidf(IndexManager):
 
     _DATA_PATH = os.path.join(get_pymake_settings('project_data'), 'tfidf')
 
-    _SCHEMA   = {'document' : ws.fields.Schema(hash   = ws.fields.ID(stored = True, unique=True),
+    _SCHEMA   = {'document' : ws.fields.Schema(hash      = ws.fields.ID(stored = True, unique=True),
                                                shortpath = ws.fields.ID(stored = True, unique=True),
-                                               fullpath = ws.fields.ID(stored = True, unique=True),
-                                               title  = ws.fields.KEYWORD(stored = True),
-                                               authors = ws.fields.KEYWORD(stored = True), # names of the authors '||' separated
+                                               fullpath  = ws.fields.ID(stored = True, unique=True),
+                                               title     = ws.fields.KEYWORD(stored = True),
+                                               authors   = ws.fields.KEYWORD(stored = True), # names of the authors '||' separated
                                                references = ws.fields.KEYWORD(stored = True), # names of the references '||' separated
                                                date  = ws.fields.KEYWORD(stored = True), # date of publication (@todo: find it by cross reference !)
                                                content = ws.fields.TEXT),

@@ -27,8 +27,6 @@ class IR(ExpeFormat):
         expe = self.expe
         startchar, endchar = colored('splitme', 'bold').split('splitme')
 
-        #print('total matched: %d' % (len(results)))
-
         for rank, hit in enumerate(results):
             shortpath = hit['shortpath']
             fullpath = hit['fullpath']
@@ -45,6 +43,7 @@ class IR(ExpeFormat):
                     fragments = textwrap.fill(' '*4+fragments, width=84, subsequent_indent=' '*4)
                     print(fragments)
                     print()
+
 
     def format_stats(self, model):
         ''' Show index statistics '''
@@ -80,6 +79,8 @@ class IR(ExpeFormat):
 
         res = model.search(self.sem(query), limit=expe.number_results)
         self.format_results(res)
+
+        print('total matched: %d' % (model._last_total_match))
 
     def open(self, query, *hits):
         expe = self.expe

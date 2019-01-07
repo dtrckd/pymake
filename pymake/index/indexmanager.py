@@ -227,7 +227,6 @@ class IndexManager(object):
         multifield = ':' in query
         boost = '^' in query
 
-
         qp = QueryParser(fieldin, ix.schema, group=OrGroup)
 
         # Check the difference between the both, not sure ?
@@ -253,6 +252,7 @@ class IndexManager(object):
                 #results.fragmenter = ws.highlight.ContextFragmenter(maxchars=200, surround=43)
                 results.formatter = TerminalFormatter()
 
+                self._last_total_match = len(results)
                 for r in results:
                     yield r
 
