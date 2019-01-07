@@ -44,7 +44,7 @@ class Algo(object):
 try:
     import community as pylouvain
 except:
-    pass
+    print('ImportError, module pylouvain not found')
 
 class Louvain(Algo):
     # Ugh : structure ?

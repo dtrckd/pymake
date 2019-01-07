@@ -77,8 +77,13 @@ def draw_square(mat, value, topleft, l, L, w=0):
     mat[tl[0]+l-w:tl[0]+l, tl[1]:tl[1]+L] = value
     return mat
 
-def dilate(y):
-    mask = ndimage.generate_binary_structure(2, 2)
+def dilate(y, size=1):
+    dim = y.ndim
+    mask = ndimage.generate_binary_structure(dim, dim)
+    if size > 1:
+        for i in range(1, size):
+            mask = np.vstack((mask, mask[-1,:]))
+            mask = np.column_stack((mask, mask[:, -1]))
     y_f = ndimage.binary_dilation(y, structure=mask).astype(y.dtype)
     return y_f
 

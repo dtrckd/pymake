@@ -88,8 +88,11 @@ class ZipfNet(ExpeFormat):
             model = ModelManager.from_expe(expe, load=True)
             #clusters = model.get_clusters(K, skip=1)
             #clusters = model.get_communities(K)
-            clusters = Louvain.get_clusters(frontend.to_directed(), resolution=10)
-            if len(np.unique(clusters)) > 20 or False:
+            try:
+                clusters = Louvain.get_clusters(frontend.to_directed(), resolution=10)
+            except:
+                clusters = None
+            if len(np.unique(clusters)) > 20 or False or True:
                 self.log.info('Using Annealing clustering')
                 clusters = Annealing(frontend.data, iterations=200, C_init=5, grow_rate=0).search()
             else:
@@ -118,6 +121,13 @@ class ZipfNet(ExpeFormat):
 
         ### Plot Degree
         plot_degree_poly(data_r, ax=ax2)
+
+        ### Draw a more dilated adjancency matrix
+        #dlt = lambda x : dilate(x, 4) if x.sum()/x.shape[0]**2 < 0.1 else x
+        #plt.figure()
+        #data_r += (np.random.random(data_r.shape) > 0.9999)
+        #data_r = (data_r > 0).astype(int)
+        #adjshow(dlt((data_r)))
 
         if expe._write:
             self.write_frames([fig], suffix='dd')
