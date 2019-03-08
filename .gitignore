@@ -31,10 +31,10 @@ repo/*/data/lib/
 repo/*/data/lut/
 repo/*/data/*/results/
 repo/*/data/*/training/
-repo/*/data/reports/
-!repo/*/data/reports/Makefile
-!repo/*/data/reports/backsync.sh
-!repo/*/data/reports/filter.py
+repo/*/data/plot/
+!repo/*/data/plot/Makefile
+!repo/*/data/plot/backsync.sh
+!repo/*/data/plot/filter.py
 
 # Repo
 repo/ml/data/**/*.zip

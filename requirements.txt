@@ -4,10 +4,10 @@ Whoosh
 scikit-learn
 numpy
 scipy
-networkx 
+networkx
 nltk
 matplotlib
-#pandas
+pandas
 #plotly ?
 #pystan ?
 #pymc ?

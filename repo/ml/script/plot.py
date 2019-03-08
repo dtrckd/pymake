@@ -24,6 +24,7 @@ class Plot(ExpeFormat):
         _label = lambda expe: '%s %s' % (expe._alias[expe.model], expe.delta) if expe.model in expe._alias else False,
         legend_size=10,
         _csv_sample = 2,
+        fig_burnin = 0
     )
 
     def _preprocess(self):
@@ -144,7 +145,6 @@ class Plot(ExpeFormat):
 
         values = self._to_masked(values)
 
-        burnin = 0
         description = self.get_description()
 
         ax = frame.ax()
@@ -171,6 +171,7 @@ class Plot(ExpeFormat):
             s = int(expe['_csv_sample'])
             x = x[::s]
             values = values[::s]
+            self.log.warning('Subsampling data: _csv_sample=%s' % s)
 
         if expe.get('_label'):
             label = expe['_label'](expe)
@@ -183,8 +184,16 @@ class Plot(ExpeFormat):
         #m = self._zeros_set_len
         #pop =
 
+        if 'cumsum' in self.expe:
+            values = np.cumsum(values)
 
-        ax.plot(x[burnin:], values, label=description, marker=frame.markers.next())
+        if 'fig_burnin' in self.expe:
+            burnin = self.expe.fig_burnin
+            x = x[burnin:]
+            values = values[burnin:]
+
+
+        ax.plot(x, values, label=description, marker=frame.markers.next())
         ax.legend(loc=expe.get('fig_legend',1), prop={'size':expe.get('legend_size',5)})
 
         #if self.is_last_expe() and expe.get('fig_xaxis'):

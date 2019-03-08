@@ -345,8 +345,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         if '_force_save_data' in expe:
             save = expe._force_save_data
 
-
-        input_path = expe._input_path
+        input_path = cls.get_input_path(expe)
 
         data = None
         fn = cls._resolve_filename(expe)
@@ -719,6 +718,8 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         self.data_test = testset
         self.data_test_w = data_test_w
 
+        # if we learn with a training_ratio < 1
+        # we just ignore some random point.
         training_ratio = self.get_training_ratio()
         if training_ratio > 0 and training_ratio < 1:
             # remove edges

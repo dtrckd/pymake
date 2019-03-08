@@ -1,12 +1,13 @@
-# (towards) 0.7
+# (towards) 0.42
+* auto make input_path when loading a corpus from a frontend (graph-tool,.)
 
-# 0.6
+# 0.41.5
 
 * solve local import in pymake repo (import from the root repo)
 * process script : pmk -x killall # kill all pmk process.
 * improve "plot tab" action and syntax (repeat automatic detection, value selection, etc)
 
-# 0.5
+# 0.41
 * graph-tool driver integration completed + wmms model.
 * improve frontend and model baseclasse, toward templating.
 * fix print format for returns of action-scripts in sandbox.
@@ -16,7 +17,7 @@
 * return a exit status positive if an expe failed.
 * fix i/o auto compression filesystem.
 
-# 0.4 
+# 0.4
 
 * data path are simplified and trainind and results are now in {data}/.pymake/ .
 * Integration of ModelSkl for skleanr model like integration.

@@ -303,7 +303,9 @@ class GramExp(object):
                     d, expdesign = Spec.load(name, self._spec[name])
                     group.append((name, d, expdesign))
                 else:
-                    raise NotImplementedError('use a defined spec in _default_expe')
+                    # Assume dict/expspace
+                    group.append(('_expe', name, ExpDesign))
+                    #raise NotImplementedError('use a defined spec in _default_expe')
 
             conf['_spec'] = group
 
@@ -330,7 +332,7 @@ class GramExp(object):
 
 
     def io_format_check(self):
-        if len(self) > 1 and 'write' in self._conf:
+        if len(self) > 1 and '_write' in self._conf:
             self.check_format()
 
         # Clean pymake extra args:

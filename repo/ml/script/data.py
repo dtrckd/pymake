@@ -101,6 +101,13 @@ class Data(ExpeFormat):
         pass
 
     def move(self, *args, copy=False):
+        ''' move a experiences files (all extension)
+            (simulta by default. Use -f to force the operation)
+
+            *args are sequence of parameters to change in the filename with the syntax:
+                -x move foo=bar
+            which means that the paramters {foo} in the output_path will be modified with the value {bar}
+        '''
         import glob
         import shutil
         assert(len(args)>0)
@@ -152,6 +159,7 @@ class Data(ExpeFormat):
 
 
     def copy(self, *args):
+        ''' like move but copy files instead.'''
 
         self.move(*args, copy=True)
 

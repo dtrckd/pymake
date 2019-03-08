@@ -1,6 +1,8 @@
 import os
 import logging
 
+from pymake import GramExp
+
 
 
 class DataBase(object):
@@ -42,6 +44,16 @@ class DataBase(object):
     def _extract_data(cls):
         ''' Raw data parsing/extraction. '''
         raise NotImplementedError
+
+    @staticmethod
+    def get_input_path(expe):
+        if '_input_path' in expe:
+            return expe['_input_path']
+        else:
+            input_path =  GramExp.make_input_path(expe)
+            expe['_input_path'] = input_path
+            return input_path
+
 
     @classmethod
     def _resolve_filename(cls, expe):
