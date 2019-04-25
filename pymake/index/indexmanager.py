@@ -1,5 +1,6 @@
 import os, shutil, logging
-from pymake.util.utils import get_pymake_settings, colored
+from pymake import get_pymake_settings
+from pymake.util.utils import colored
 
 
 import whoosh as ws
@@ -20,8 +21,6 @@ class TerminalFormatter(ws.highlight.Formatter):
 
 
 class IndexManager(object):
-
-    _DATA_PATH = os.path.join(get_pymake_settings('project_data'), '.pmk')
 
     _SCHEMA   = {'model' : ws.fields.Schema(name      = ws.fields.ID(stored = True),
                                             surname   = ws.fields.ID(stored = True),
@@ -45,6 +44,8 @@ class IndexManager(object):
     log = logging.getLogger('root')
 
     def __init__(self, default_index='model'):
+        self._DATA_PATH = os.path.join(get_pymake_settings('project_data'), '.pmk')
+
         self._index_basename = 'ir_index'
         self._default_index = default_index
         self._ix = {} # Index store by key

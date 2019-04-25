@@ -10,6 +10,10 @@ else:
     plt.rc('font', size=__plot_font_size)  # controls default text sizes
 
 
+# Expose the settings getter function
+#from pymake.util.utils import get_pymake_settings
+from pymake.core import get_pymake_settings
+
 from pymake.core.types import Spec, Corpus, Model, Script, ExpSpace, ExpVector, ExpTensor, ExpDesign, ExpGroup
 from pymake.core.format import ExpeFormat
 
@@ -19,5 +23,4 @@ from pymake.core.format import ExpeFormat
 
 from pymake.core.gramexp import GramExp
 
-from pymake.util.utils import get_pymake_settings
 

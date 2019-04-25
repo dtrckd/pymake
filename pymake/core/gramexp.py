@@ -12,14 +12,16 @@ import pkg_resources
 from collections import defaultdict, OrderedDict
 from functools import reduce, wraps
 from copy import deepcopy
+import shelve
 import numpy as np
 
+from pymake.core import get_pymake_settings, reset_pymake_settings
 from pymake.core.types import ExpDesign, ExpTensor, ExpSpace, Model, Corpus, Script, Spec, ExpVector
 from pymake.core.types import ExpTensorV2 # @debug name integration
 from pymake.core.format import ExpeFormat
 
 from pymake.io import is_empty_file
-from pymake.util.utils import colored, basestring, get_pymake_settings, hash_objects, PmkTemplate
+from pymake.util.utils import colored, basestring, hash_objects, PmkTemplate
 
 
 
@@ -113,7 +115,6 @@ def setup_logger(level=None, name='root'):
     logging.Logger.vdebug = vdebug
 
     return logger
-
 
 
 class GramExp(object):
@@ -216,15 +217,12 @@ class GramExp(object):
     }
 
 
+    _env = None # should be set during bootstrap
     _base_name = '.pmk'
     _cfg_name = 'pmk.cfg'
+    _db_name = '.pmk-db'
     _pmk_error_file = '.pymake-errors'
-    _data_path = get_pymake_settings('project_data')
 
-    if os.path.isfile(os.path.join(os.getenv('PWD'), _cfg_name)):
-        _spec = Spec.get_all()
-    else:
-        _spec = {}
 
     def __init__(self, conf, usage=None, parser=None, parseargs=True, expdesign=None):
         # @logger One logger by Expe ! # in preinit
@@ -248,31 +246,34 @@ class GramExp(object):
 
         self.exp_setup(conf, expdesign)
 
+    @classmethod
+    def getenv(cls, a=None):
+        if a is None:
+            return cls._env
 
-    def exp_setup(self, conf, expdesign=None):
-        ''' work in self._tensors '''
+        _env = cls._env
+        return _env.get(a)
 
-        # Make main data structure
-        self._tensors = ExpTensorV2.from_conf(conf, private_keywords=self._private_keywords,
-                                              expdesign=expdesign)
+    @classmethod
+    def setenv(cls, env):
 
-        # Global settings (unique argument)
-        self._conf = self._tensors.get_conf()
+        cls._env = env
 
-        # Set expTensor init.
-        self._user_spec = conf.get('_spec', {})
+        if not cls.is_pymake_dir():
+            print('fatal: Not a pymake directory: %s not found.' % (cls._cfg_name))
+            exit(10)
 
-        # makes it contextual.
-        self._preprocess_exp()
+        db = shelve.open(os.path.join(os.getcwd(), cls._db_name))
+        db.update(env)
+        db.close()
 
-        # Make lod
-        skip_check = self._conf['_do'] in ['diff']
-        self.lod = self._tensors.make_lod(skip_check)
+        cls._data_path = get_pymake_settings('project_data')
 
-        indexs = self._conf.get('_run_indexs')
-        if indexs:
-            self._tensors.remake(indexs)
-            self._update()
+        if os.path.isfile(os.path.join(env.get('PWD'), cls._cfg_name)):
+            cls._spec = Spec.get_all()
+        else:
+            cls._spec = {}
+
 
     def _update(self):
         # Seems obsolete, _conf is not writtent in _tensors, right ?
@@ -323,6 +324,30 @@ class GramExp(object):
 
         self._tensors.set_default_all(default_expe)
 
+    def exp_setup(self, conf, expdesign=None):
+        ''' work in self._tensors '''
+
+        # Make main data structure
+        self._tensors = ExpTensorV2.from_conf(conf, private_keywords=self._private_keywords,
+                                              expdesign=expdesign)
+
+        # Global settings (unique argument)
+        self._conf = self._tensors.get_conf()
+
+        # Set expTensor init.
+        self._user_spec = conf.get('_spec', {})
+
+        # makes it contextual.
+        self._preprocess_exp()
+
+        # Make lod
+        skip_check = self._conf['_do'] in ['diff']
+        self.lod = self._tensors.make_lod(skip_check)
+
+        indexs = self._conf.get('_run_indexs')
+        if indexs:
+            self._tensors.remake(indexs)
+            self._update()
 
     def _preprocess_exp(self):
         #self._check_exp(self._tensors)
@@ -837,9 +862,6 @@ class GramExp(object):
 
         # Check erros in the command line
         if checksum != 0:
-            if (request.get('_do') or request.get('do_list')) and not GramExp.is_pymake_dir():
-                print('fatal: Not a pymake directory: %s not found.' % (cls._cfg_name))
-                exit(10)
 
             if  firsttime == True:
                 cls.log.warning('Spec not found, re-building Spec indexes...')
@@ -1385,7 +1407,7 @@ class GramExp(object):
 
     @classmethod
     def is_pymake_dir(cls):
-        pwd = os.getenv('PWD')
+        pwd = cls.getenv('PWD')
         return os.path.isfile(os.path.join(pwd, cls._cfg_name))
 
     def init_folders(self):
@@ -1396,7 +1418,7 @@ class GramExp(object):
             print('fatal: %s file already exists.' % (self._cfg_name))
             exit(11)
 
-        pwd = os.getenv('PWD')
+        pwd = self.getenv('PWD')
         cwd = os.path.dirname(__file__)
         folders = ['_current', 'spec', 'script', 'model']
         #open(join(pwd, '__init__.py'), 'a').close()
@@ -1503,7 +1525,9 @@ class GramExp(object):
     @classmethod
     def update_index(cls, *index_name):
         from pymake.index.indexmanager import IndexManager as IX
-        os.chdir(os.getenv('PWD'))
+
+        pwd = cls.getenv('PWD')
+        os.chdir(pwd)
 
         ## Update index
         if len(index_name) == 0:
@@ -1514,7 +1538,6 @@ class GramExp(object):
 
         ## Update bash_completion file
         home = os.path.expanduser('~')
-        pwd = os.getenv('PWD')
         cwd = os.path.dirname(__file__)
         pjt = os.path.basename(pwd)
 
@@ -1699,5 +1722,7 @@ class GramExp(object):
 
         exit_status = 0 if n_errors == 0 else 1
         return exit(exit_status)
+
+
 
 

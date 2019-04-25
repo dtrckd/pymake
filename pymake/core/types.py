@@ -4,7 +4,8 @@ import numpy as np
 from collections import OrderedDict, defaultdict
 from itertools import product
 
-from pymake.util.utils import get_dest_opt_filled, hash_objects, ask_sure_exit, get_pymake_settings, basestring
+from pymake import get_pymake_settings
+from pymake.util.utils import get_dest_opt_filled, hash_objects, ask_sure_exit, basestring
 from pymake.index.indexmanager import IndexManager as IX
 
 import logging

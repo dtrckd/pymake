@@ -1,18 +1,43 @@
 #!/usr/bin/python3
 #import pyximport; pyximport.install(pyimport = True)
-import sys
+import sys, os
 from pymake import GramExp
 
 
 ''' A Command line controler of Pymake '''
 
-## Search in the project and current repo. Awesome !
-import sys, os
-sys.path.insert(0, os.getenv('PWD')+'/.')
-sys.path.insert(0, os.getenv('PWD')+'/..')
+def bootstrap():
+
+    env = dict(os.environ)
+    pwd = env.get('PWD')
+    ## change directory if asked
+    if '-cd' in sys.argv:
+        i = sys.argv.index('-cd')
+        p = sys.argv[i+1]
+        os.chdir(p)
+
+        # Debug ?
+        sys.argv.pop(i+1)
+        sys.argv.pop(i)
+        pwd = os.path.join(pwd, p)
+        env['PWD'] = pwd
+    else:
+        # @debug this, I dont know whyiam in lib/package sometimes, annoying !
+        os.chdir(env.get('PWD'))
+
+
+    ## Search in the project and current repo. Awesome !
+    sys.path.insert(0, pwd + '/.')
+    sys.path.insert(0, pwd + '/..')
+
+    return env
+
 
 
 def main():
+
+    env = bootstrap()
+    GramExp.setenv(env)
 
     zymake = GramExp.zymake()
     zyvar = zymake._conf
@@ -26,10 +51,6 @@ def main():
     if zyvar['_do'] == 'init':
         zymake.init_folders()
         exit()
-    else:
-        if (zyvar['_do'] or zyvar.get('do_list')) and not GramExp.is_pymake_dir():
-            print('fatal: Not a pymake directory: %s not found.' % (GramExp._cfg_name))
-            exit(10)
 
     if zyvar['_do'] == 'update':
         zymake.update_index()

@@ -13,6 +13,7 @@
 ### Global Path for data storage
 project_data = $${project_data}
 project_figs = $${project_figs}
+project_db = $${project_db}
 
 ### Lookup Modules
 default_model = $${default_model}
@@ -33,9 +34,9 @@ gramarg = $${default_gramarg}
 # Used when `--net' options is used.
 
 # Config file of gnu-parallel for remote computing.
-loginfile = 
+loginfile =
 
 # Remote dir position for gnu-parallel
-remote_pwd = 
+remote_pwd =
 
 

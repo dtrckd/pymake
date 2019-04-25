@@ -9,8 +9,8 @@ import logging
 from collections import OrderedDict
 import numpy as np
 
-from pymake import ExpSpace
-from pymake.util.utils import colored, basestring, make_path, get_pymake_settings, hash_objects
+from pymake import ExpSpace, get_pymake_settings
+from pymake.util.utils import colored, basestring, make_path, hash_objects
 
 from tabulate import tabulate
 
@@ -74,9 +74,6 @@ class ExpeFormat(object):
         '''
 
         self._expdesign = expdesign
-
-        # @debug this, I dont know whyiam in lib/package sometimes, annoying !
-        os.chdir(os.getenv('PWD'))
 
         # Global
         self.expe_size = len(gramexp)
@@ -179,6 +176,9 @@ class ExpeFormat(object):
         path = get_pymake_settings('project_data')
         path = os.path.join(path, '')
         return path
+
+    def getenv(self, a=None):
+        return self.gramexp.getenv(a)
 
     def get_expset(self, param):
         return self.gramexp.get_set(param)

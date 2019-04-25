@@ -7,8 +7,7 @@ from itertools import groupby
 import zlib
 import numpy as np
 
-from pymake.util.utils import get_pymake_settings
-from pymake import ExpDesign, ExpeFormat
+from pymake import ExpDesign, ExpeFormat, get_pymake_settings
 
 import logging
 lgg = logging.getLogger('root')
@@ -201,11 +200,6 @@ class PackageWalker(object):
         shrink_module_name = True,
     )
 
-    #@Warning: Need to be activate earlier
-    ## Search in the project and current repo. Awesome !
-    #sys.path.insert(0, os.getenv('PWD')+'/.')
-    #sys.path.insert(0, os.getenv('PWD')+'/..')
-
     def __init__(self, module_name, **kwargs):
         [setattr(self, k, kwargs.get(k, v)) for k,v in self._default_attr.items()]
 
@@ -270,6 +264,7 @@ class PackageWalker(object):
         try:
             _packages = pyclbr.readmodule(submodule.__name__)
         except:
+            # @DEBUG : use shelve to get it
             sys.path.append(os.getenv('PWD'))
             #_packages = pyclbr.readmodule(submodule.__name__)
             _packages = pyclbr.readmodule('.'.join(submodule.__name__.split('.')[1:]))
@@ -295,6 +290,7 @@ class PackageWalker(object):
         try:
             _packages = pyclbr.readmodule(submodule.__name__)
         except:
+            # @DEBUG : use shelve to get it
             sys.path.append(os.getenv('PWD'))
             #_packages = pyclbr.readmodule(submodule.__name__)
             _packages = pyclbr.readmodule('.'.join(submodule.__name__.split('.')[1:]))
