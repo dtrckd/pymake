@@ -46,11 +46,20 @@ def main():
         # same as show !
         zymake.simulate()
 
+
     lines = None
     line_prefix = ''
     if zyvar['_do'] == 'init':
         zymake.init_folders()
         exit()
+    else:
+        if (zyvar['_do'] or zyvar.get('do_list')) and not GramExp.is_pymake_dir():
+            print('fatal: Not a pymake directory: %s not found.' % (GramExp._cfg_name))
+            try:
+                os.remove('.pmk-db.db')
+            except FileNotFoundError:
+                pass
+            exit(10)
 
     if zyvar['_do'] == 'update':
         zymake.update_index()

@@ -27,6 +27,7 @@ doc/html/
 doc/graph/
 
 # Data
+repo/*/.pmk-db.db
 repo/*/data/lib/
 repo/*/data/lut/
 repo/*/data/*/results/

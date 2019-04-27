@@ -22,11 +22,6 @@ except ImportError:
     colored = lambda *x : x[0]
 
 
-class PmkTemplate(Template):
-    delimiter = '$$'
-    #idpattern = r'[a-z][_a-z0-9]*'
-
-
 #from itertools import cycle
 class Cycle(object):
     def __init__(self, seq):

@@ -1,4 +1,10 @@
-# WIP
+DEBUG
+-----
+
+* overwrite the "version" action in argparser to remove the noisy .pmk-db.db created.
+
+WIP
+---
 
 * Same syntax for plot and tab !!!! (fig should be able to select x and y to. => write the kernel decoratro, and then upper decoratro, for fig/table,  repeat/3D! etc..
 * modula script deployment and fetch (think about it)
@@ -63,7 +69,7 @@ Debug
 * there is a random effect when doing checknetworks zipf. Class re-ordering is stochastik f. why ?!
 
 
-@purge: 
+@purge:
 * model/lda
 * clean and homogeneize, the communities analysis framework. There is redoncdancy, and non consistent call to modularity...
 * import models -> import pymake.models ?

@@ -15,13 +15,13 @@ from copy import deepcopy
 import shelve
 import numpy as np
 
-from pymake.core import get_pymake_settings, reset_pymake_settings
+from pymake.core import get_pymake_settings, reset_pymake_settings, PmkTemplate
 from pymake.core.types import ExpDesign, ExpTensor, ExpSpace, Model, Corpus, Script, Spec, ExpVector
 from pymake.core.types import ExpTensorV2 # @debug name integration
 from pymake.core.format import ExpeFormat
 
 from pymake.io import is_empty_file
-from pymake.util.utils import colored, basestring, hash_objects, PmkTemplate
+from pymake.util.utils import colored, basestring, hash_objects
 
 
 
@@ -258,10 +258,6 @@ class GramExp(object):
     def setenv(cls, env):
 
         cls._env = env
-
-        if not cls.is_pymake_dir():
-            print('fatal: Not a pymake directory: %s not found.' % (cls._cfg_name))
-            exit(10)
 
         db = shelve.open(os.path.join(os.getcwd(), cls._db_name))
         db.update(env)
@@ -862,6 +858,13 @@ class GramExp(object):
 
         # Check erros in the command line
         if checksum != 0:
+            if (request.get('_do') or request.get('do_list')) and not GramExp.is_pymake_dir():
+                print('fatal: Not a pymake directory: %s not found.' % (cls._cfg_name))
+                try:
+                    os.remove('.pmk-db.db')
+                except FileNotFoundError:
+                    pass
+                exit(10)
 
             if  firsttime == True:
                 cls.log.warning('Spec not found, re-building Spec indexes...')
@@ -1411,7 +1414,6 @@ class GramExp(object):
         return os.path.isfile(os.path.join(pwd, cls._cfg_name))
 
     def init_folders(self):
-        from pymake.util.utils import reset_pymake_settings
         join = os.path.join
 
         if self.is_pymake_dir():

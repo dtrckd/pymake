@@ -14,6 +14,11 @@ __default_config = defaultdict(lambda: '', dict(project_data = os.path.expanduse
                                                 default_corpus = '?')
                               )
 
+class PmkTemplate(Template):
+    delimiter = '$$'
+    #idpattern = r'[a-z][_a-z0-9]*'
+
+
 def parse_file_conf(fn, sep=':', comments=('#','%')):
     with open(fn) as f:
         parameters = f.read()
@@ -32,7 +37,7 @@ def parse_file_conf(fn, sep=':', comments=('#','%')):
                 pass
     return parameters
 
-def reset_pymake_settings(settings, default_config=__default_config, cfg_name='pmk.cfg'):
+def reset_pymake_settings(settings, default_config=__default_config, cfg_name='pmk.cfg', db_name='.pmk-db'):
     _settings = default_config.copy()
     _settings.update(settings)
     #ctnt = '\n'.join(('{0} = {1}'.format(k,v) for k,v in _settings.items()))
@@ -41,7 +46,15 @@ def reset_pymake_settings(settings, default_config=__default_config, cfg_name='p
         template = PmkTemplate(_f.read())
         ctnt = template.substitute(_settings)
 
-    cfg_file = os.path.join(en.get('PWD') , cfg_name)
+    try:
+        db = shelve.open(os.path.join(os.getcwd(), db_name))
+        dir = db['PWD']
+        db.close()
+    except Exception as e:
+        print("Bootstrap warning (%s) => PWD path not initialized ? key: %s" % (e, key))
+        dir = os.getenv('PWD')
+
+    cfg_file = os.path.join(dir, cfg_name)
     with open(cfg_file, 'wb') as _f:
         return _f.write(ctnt.encode('utf8'))
 

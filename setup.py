@@ -4,7 +4,7 @@ from codecs import open
 from os import path
 
 #__version__ = subprocess.check_output(["git", "describe"]).strip()
-__version__ = '0.42.0'
+__version__ = '0.42.1'
 
 try:
     from Cython.Build import cythonize
@@ -36,12 +36,12 @@ setuptools.setup(
     url='https://github.com/dtrckd/pymake',
     license='GPL',
     install_requires=install_requires,
-    entry_points = {
+    entry_points={
         'console_scripts': ['pmk=pymake.zymake:main'],
     },
     packages=packages,
     package_dir={'ml' : 'repo/ml'},
-    package_data = {'pymake' : ['pymake.cfg', 'template/*.template'], },
+    package_data={'pymake' : ['pmk.cfg', 'template/*.template']},
     include_package_data=True,
     keywords=['pymake', 'learning', 'model'],
     classifiers=[

@@ -1,4 +1,5 @@
-import sys, argparse
+import sys, os
+import argparse
 from functools import partial
 from pymake import ExpVector
 
@@ -18,6 +19,10 @@ class ExpArgumentParser(argparse.ArgumentParser):
         self.print_usage()
         print('error', message)
         #self.print_help()
+        try:
+            os.remove('.pmk-db.db')
+        except FileNotFoundError:
+            pass
         sys.exit(2)
 
 class VerboseAction(argparse.Action):
