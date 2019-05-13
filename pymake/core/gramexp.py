@@ -1529,7 +1529,7 @@ class GramExp(object):
         from pymake.index.indexmanager import IndexManager as IX
 
         pwd = cls.getenv('PWD')
-        os.chdir(pwd)
+        os.chdir(pwd) # not sure we still need this
 
         ## Update index
         if len(index_name) == 0:

@@ -1,6 +1,7 @@
 import sys, os, re
 import pickle, json
 import pkgutil, pyclbr, inspect, ast
+import traceback
 from importlib import import_module
 from collections import OrderedDict
 from itertools import groupby
@@ -218,6 +219,8 @@ class PackageWalker(object):
     def _get_packages(self, module_name,  _depth=0):
         ''' recursive call with regards to depth parameter '''
 
+        argv = sys.argv
+
         if self.prefix is True:
             prefix = module_name
         elif self.prefix is False:
@@ -230,6 +233,8 @@ class PackageWalker(object):
             module = import_module(module_name)
         except ImportError as e:
             lgg.warning('package unavailable (%s) : %s' % (e, module_name))
+            if '-v' in argv:
+                print(traceback.format_exc())
             return packages
 
         for loader, name, is_pkg in pkgutil.walk_packages(module.__path__):
@@ -242,6 +247,8 @@ class PackageWalker(object):
                 submodule = import_module(submodule_name)
             except ImportError as e:
                 lgg.debug('submodule unavailable (%s) : %s'%(e, submodule_name))
+                if '-v' in argv:
+                    print(traceback.format_exc())
                 self._unavailable_modules.append(submodule_name)
                 if 'algo' in str(e):
                     lgg.warning('Please report this error: pymake.io algo condition ?')
@@ -249,6 +256,8 @@ class PackageWalker(object):
                 continue
             except Exception as e:
                 lgg.critical('Module Error: %s' % e)
+                if '-v' in argv:
+                    print(traceback.format_exc())
                 continue
 
             spck = self.submodule_hook(submodule, prefix, name=name)

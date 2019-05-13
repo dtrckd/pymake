@@ -2,7 +2,6 @@ import os, shutil, logging
 from pymake import get_pymake_settings
 from pymake.util.utils import colored
 
-
 import whoosh as ws
 import whoosh.highlight
 from whoosh.qparser import QueryParser, OrGroup, AndGroup

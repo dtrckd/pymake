@@ -27,8 +27,11 @@ def bootstrap():
 
 
     ## Search in the project and current repo. Awesome !
-    sys.path.insert(0, pwd + '/.')
-    sys.path.insert(0, pwd + '/..')
+    # @Warning: can cause import conflict if folder/file name confilct with systemo module
+    #sys.path.insert(0, pwd + '/.')
+    #sys.path.insert(0, pwd + '/..')
+    sys.path.append(pwd + '/.')
+    sys.path.append(pwd + '/..')
 
     return env
 

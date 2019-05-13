@@ -65,6 +65,7 @@ def get_pymake_settings(key=None, default_config=__default_config, cfg_name='pmk
         db.close()
     except Exception as e:
         print("Bootstrap warning (%s) => PWD path not initialized ? key: %s" % (e, key))
+        #print("probably mismatch between the python working directory (%s) and the bash working directory (%s)" % (os.getcwd(), dir))
         dir = os.getenv('PWD')
 
     cfg_file = os.path.join(dir, cfg_name)

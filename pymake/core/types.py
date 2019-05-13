@@ -255,6 +255,12 @@ class Spec(BaseObject):
 class Script(BaseObject):
 
     @staticmethod
+    def find(script, field='method'):
+        ix = IX(default_index='script')
+        script = ix.getfirst(script, field=field)
+        return script
+
+    @staticmethod
     def get_all(_type='flat'):
         ix = IX(default_index='script')
 
