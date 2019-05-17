@@ -19,6 +19,7 @@ from pymake.core import get_pymake_settings, reset_pymake_settings, PmkTemplate
 from pymake.core.types import ExpDesign, ExpTensor, ExpSpace, Model, Corpus, Script, Spec, ExpVector
 from pymake.core.types import ExpTensorV2 # @debug name integration
 from pymake.core.format import ExpeFormat
+from pymake.exceptions import *
 
 from pymake.io import is_empty_file
 from pymake.util.utils import colored, basestring, hash_objects
@@ -225,6 +226,7 @@ class GramExp(object):
 
 
     def __init__(self, conf, usage=None, parser=None, parseargs=True, expdesign=None):
+
         # @logger One logger by Expe ! # in preinit
         setup_logger(level=conf.get('_verbose'))
 
@@ -283,6 +285,10 @@ class GramExp(object):
             return
         else:
             default_expe = expformat._default_expe
+
+        # check for for silent
+        if '_silent' in default_expe:
+            setup_logger(level=-1)
 
         # Use default _spec if no spec given
         _names = self.get_list('_name_expe')
@@ -848,7 +854,13 @@ class GramExp(object):
                             if v in ont_values:
                                 cls.log.critical('=> Warning: conflict between name of ExpDesign and Pymake commands')
                             do.remove(v)
-                            d, expdesign = Spec.load(v, cls._spec[v])
+                            try:
+                                d, expdesign = Spec.load(v, cls._spec[v])
+                            except IndexChangedError as e:
+                                cls.log.warning('Spec (%s) not found, re-building Spec indexes...' % (v) )
+                                cls.update_index('spec')
+                                cls._spec = Spec.get_all()
+                                return cls.zymake(firsttime=False)
                             expgroup.append((v,d, expdesign))
                         else:
                             request[ont] = v

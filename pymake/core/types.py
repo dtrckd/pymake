@@ -7,6 +7,7 @@ from itertools import product
 from pymake import get_pymake_settings
 from pymake.util.utils import get_dest_opt_filled, hash_objects, ask_sure_exit, basestring
 from pymake.index.indexmanager import IndexManager as IX
+from pymake.exceptions import *
 
 import logging
 lgg = logging.getLogger('root')
@@ -206,10 +207,8 @@ class Spec(BaseObject):
         try:
             expdesign = getattr(importlib.import_module(modula), modulb)
             exp = getattr(expdesign, expe_name)
-        except AttributeError as e:
-            lgg.error("Seems that a spec `%s' has been removed : %s" % (expe_name, e))
-            lgg.error("Fatal Error: unable to load spec:  try `pmk update' or try again.")
-            exit(2)
+        except (AttributeError, ModuleNotFoundError) as e:
+            raise IndexChangedError("Fatal Error: unable to load spec (%s:%s):  try `pmk update' or try again."% (expe_name, e))
 
         return exp, expdesign
 

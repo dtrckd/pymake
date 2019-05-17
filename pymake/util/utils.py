@@ -148,10 +148,9 @@ def retrieve_git_info():
     return {'git_branch':git_branch, 'git_hash':git_hash}
 
 def hash_objects(obj, algo='md5'):
-    """ Return a list of hash of the input object """
+    """ Return a hash of the input """
     hashalgo = getattr(hashlib, algo)
 
-    """ Return a hash of the input """
     if isinstance(obj, (np.ndarray, list, tuple)):
         # array of int
         hashed_obj = hashalgo(np.asarray(obj).tobytes()).hexdigest()
