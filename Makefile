@@ -5,12 +5,15 @@ PACKAGE := pmk
 # Assumes Python3
 pip3_version := $(shell pip3 --version 2>/dev/null)
 
+.PHONY: doc
+
 default: install_short
 
-docs:
-	pushd doc/
-	make
-	pushd
+doc:
+	#pushd doc/
+	#make
+	#pushd
+	pdoc -f --html --output-dir doc pymake
 
 install:
 	# Dependancy: python3-tk

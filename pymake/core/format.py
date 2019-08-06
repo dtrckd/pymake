@@ -53,22 +53,22 @@ class ExpeFormat(object):
 
             Methods
             -------
-            log_expe:
+            log_expe: none
                 overwrite the header message before each run.
-            is_first_expe:
+            is_first_expe: none
                 return true if the current run is the first.
-            is_last_expe:
+            is_last_expe: none
                 return true if the current run is the last.
-            load_frontend:
+            load_frontend: none
                 load the data frontend for the current expe.
-            load_model:
+            load_model: none
                 the model for the current expe.
 
             Decorator
             --------
-            plot:
+            plot: none
                 plot control on expe
-            table:
+            table: none
                 table control on expe
 
         '''

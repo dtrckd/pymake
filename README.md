@@ -1,5 +1,7 @@
 # PYMAKE
 
+<!--[![Documentation Status](https://readthedocs.org/projects/pmk/badge/?version=latest)](https://pmk.readthedocs.io/en/latest/?badge=latest)-->
+[![Documentation Status](https://readthedocs.org/projects/pmk/badge/?version=latest)](https://pymake.neocities.org/)
 [![Join the chat at https://gitter.im/pymake/Lobby](https://badges.gitter.im/pymake/Lobby.svg)](https://gitter.im/pymake/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Pymake (pmk) is a machine friendly environment for making reproducible research. It provides tools adapted to ease the creation, maintenance, tracking and sharing of experiments. It has two main paradigms:

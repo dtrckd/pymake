@@ -15,6 +15,7 @@ build/
 *.aux
 *.bb[lg]
 wiki/msa.md.png
+doc/pymake
 
 # Volatile project file
 .pymake-errors

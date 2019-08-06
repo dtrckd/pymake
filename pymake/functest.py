@@ -33,7 +33,11 @@ n_test = sum([len(tests) for tests in test_design])
 
 for repo, tests in test_design.items():
 
-    os.chdir(repo)
+    try:
+        os.chdir(repo)
+    except FileNotFoundError as e:
+        print('File error in functest (%s): %s' % (repo, e))
+        continue
 
     for test in tests:
 

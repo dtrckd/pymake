@@ -1,6 +1,7 @@
 from pymake.util.vocabulary import Vocabulary
-from pymake.util.utils import get_pymake_settings, hash_objects
+from pymake.util.utils import hash_objects
 from pymake.index.indexmanager import IndexManager
+from pymake import get_pymake_settings
 
 
 import os

@@ -292,26 +292,26 @@ class GramExp(object):
 
         # Use default _spec if no spec given
         _names = self.get_list('_name_expe')
-        if len(_names) == 1 and '_default_expe' in _names and '_spec' in default_expe:
-            names = default_expe['_spec']
-            names = [names] if isinstance(names, str) else names
+        if  '_spec' in default_expe and '_default_expe' in _names and len(_names) == 1:
+            specs = default_expe['_spec']
+            specs = [specs] if not isinstance(specs, list) else specs
             group = []
 
             # Sensitive
             conf = self._base_conf
             #conf['_do'] = [self._do]
 
-            for name in names:
-                if isinstance(name, str):
-                    d, expdesign = Spec.load(name, self._spec[name])
-                    group.append((name, d, expdesign))
+            for spec in specs:
+                if isinstance(spec, str):
+                    d, expdesign = Spec.load(spec, self._spec[spec])
+                    group.append((spec, d, expdesign))
                 else:
                     # Assume dict/expspace
-                    group.append(('_expe', name, ExpDesign))
-                    #raise NotImplementedError('use a defined spec in _default_expe')
+                    group.append(('anonymous_expe', spec, ExpDesign,))
 
             conf['_spec'] = group
 
+            # update the lookup script
             if 'script' in conf:
                 script = conf.pop('script')
                 _script, script_args = Script.get(script[0], script[1:])
@@ -709,8 +709,7 @@ class GramExp(object):
                 pr = get_pymake_settings('gramarg').split('.')[0]
                 #@imporve priority shoiuld ne on : local project !
                 cls.log.warning("Project name `%s' seems to already exists in your PYTHONPATH. Project's name should not conflict with existing ones." % pr)
-                cls.log.warning("Please change the name of your project/repo")
-                cls.log.warning('exiting.')
+                cls.log.warning("Please change the name of your project/repo.")
                 exit(38)
             gram = next( (getattr(gram, _list) for _list in dir(gram) if isinstance(getattr(gram, _list), list)), None)
 

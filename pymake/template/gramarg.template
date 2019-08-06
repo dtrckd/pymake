@@ -9,6 +9,8 @@ _gram = [
     #
     #'--key1',dict(help='simple option from command-line'),
 
+    #'--bool-opt', dict(action="store_true", dest="bool_opt", help='A boolean option. default: false'),
+
     # A multiple expes command-line option:
     #
     #'--key2',dict(

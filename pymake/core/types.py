@@ -582,7 +582,7 @@ class ExpTensorV2(BaseObject):
             if isinstance(o, ExpGroup):
                 size_expe += len(o) -1
                 _spec = _spec[:consume_expe] + o + _spec[consume_expe+1:]
-            elif isinstance(o, list):
+            elif isinstance(o, list): # ExpVector
                 exp.append(o)
                 gt._ds_.append(_type)
                 consume_expe += 1

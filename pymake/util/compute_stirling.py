@@ -4,14 +4,14 @@ import sys
 
 import numpy as np
 import pickle
-from scipy.misc import logsumexp
+from scipy.special import logsumexp
 try:
     from sympy.functions.combinatorial.numbers import stirling
     import sympy as sym
 except:
     pass
 
-from pymake.util.utils import get_pymake_settings
+from pymake import get_pymake_settings
 
 
 def load_stirling(style='npy'):
