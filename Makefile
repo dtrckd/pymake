@@ -33,6 +33,8 @@ push_pip:
 	#python3 setup.py register -r pypi
 	python3 setup.py sdist upload -r pypi
 
+push_doc: doc
+	neocities push doc/pymake
 
 uninstall:
 	pip3 uninstall $(PACKAGE)
