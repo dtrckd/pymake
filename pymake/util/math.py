@@ -6,8 +6,8 @@ import scipy as sp
 import networkx as nx
 from .utils import nxG
 
-import logging
-lgg = logging.getLogger('root')
+from pymake import logger
+lgg = logger
 
 ##########################
 ### Stochastic Process

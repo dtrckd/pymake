@@ -1,8 +1,6 @@
 import os
-import logging
-
 from pymake import GramExp
-
+from pymake import logger
 
 
 class DataBase(object):
@@ -22,7 +20,7 @@ class DataBase(object):
 
     """
 
-    log = logging.getLogger('root')
+    log = logger
 
     def __init__(self, expe):
         self.expe = expe

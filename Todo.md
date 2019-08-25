@@ -57,11 +57,16 @@ Model
 
 Corpus/Dataset
 --------------
-* check 'jbenet/data' !
-* expe_meas script ("*" specification obsolete ???? )
+* expe_meas script ("\*" specification obsolete ???? )
 * CorpusModules :load from package (sklearn) and disk (
 * Whoosh integration !!!
 * LDA on my own paper !
+* check
+    * 'jbenet/data' !
+    * quilt
+    * mlflow
+    * (Julia): https://github.com/JuliaDynamics/DrWatson.jl
+    * see also for more links; https://mg.readthedocs.io/reproducible_research.html
 
 
 Debug

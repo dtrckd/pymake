@@ -5,7 +5,7 @@ import traceback
 from decorator import decorator
 from functools import wraps
 from itertools import product
-import logging
+from loguru import logger
 from collections import OrderedDict
 import numpy as np
 
@@ -35,7 +35,7 @@ class ExpeFormat(object):
 
     '''
 
-    log = logging.getLogger('root')
+    log = logger
     _logfile = False # for external integration @deprcated ?
 
     def __init__(self, pt, expe, expdesign, gramexp):
@@ -46,7 +46,7 @@ class ExpeFormat(object):
             pt: int
                 Positional indicator for current run
             expe: ExpSpace
-                Current spec
+                Current spec (or equivalently accessible with `self.s`
             expdesign: ExpDesign
                 Current design class
             gramexp: Global pmk object
@@ -59,6 +59,10 @@ class ExpeFormat(object):
                 return true if the current run is the first.
             is_last_expe: none
                 return true if the current run is the last.
+            get_expe_len: int
+                the total number of expe
+            get_expe_it: int
+                the current expe iteration
             load_frontend: none
                 load the data frontend for the current expe.
             load_model: none
@@ -82,6 +86,7 @@ class ExpeFormat(object):
         # Local
         self.pt = pt
         self.expe = expe
+        self.s = expe
 
         # Plot utils
         from pymake.plot import _linestyle, _markers, _colors
@@ -130,6 +135,12 @@ class ExpeFormat(object):
                                             self.specname(expe.get('model')),
                                             expe.get('N'), expe.get('K'))
         return msg
+
+    def get_expe_len(self):
+        return self.expe_size
+
+    def get_expe_it(self):
+        return self._it
 
     def log_silent(self):
         if self.is_first_expe():
@@ -971,13 +982,13 @@ class ExpeFormat(object):
         return
 
     # frontend params is deprecated and will be removed soon...
-    def load_model(self, frontend=None, load=False):
+    def load_model(self, frontend=None, model=None, load=False):
         ''' :load: boolean. Load from **preprocess** file is true else
                             it is a raw loading.
         '''
         from pymake.frontend.manager import ModelManager
 
-        self.model = ModelManager.from_expe(self.expe, frontend=frontend, load=load)
+        self.model = ModelManager.from_expe(self.expe, frontend=frontend, model=model, load=load)
         if load is False:
             self.configure_model(self.model)
 

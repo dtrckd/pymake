@@ -21,6 +21,8 @@ from pymake.core.format import ExpeFormat
 #from pymake.frontend.io import SpecLoader
 #__spec = SpecLoader.get_atoms()
 
+from pymake.core.logformatter import logger, setup_logger
+
 from pymake.core.gramexp import GramExp
 
 

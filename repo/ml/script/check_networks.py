@@ -1,11 +1,11 @@
 import numpy as np
 from numpy import ma
 
-from pymake import ExpeFormat
+from pymake import ExpeFormat, logger
 from pymake.manager import ModelManager, FrontendManager
 
-import logging
-lgg = logging.getLogger('root')
+
+lgg = logger
 
 USAGE = """\
 ----------------

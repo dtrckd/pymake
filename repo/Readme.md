@@ -1,1 +1,1 @@
-This repo will diseapear when pmk will be able to manege packet/repo installation.
+This repo will diseapear when pmk will be able to list/install/pull/push repo.

@@ -2,7 +2,6 @@ import random
 import sys, os, re, uuid
 import argparse
 from datetime import datetime
-import logging
 import operator
 import fnmatch
 import subprocess
@@ -20,102 +19,14 @@ from pymake.core.types import ExpDesign, ExpTensor, ExpSpace, Model, Corpus, Scr
 from pymake.core.types import ExpTensorV2 # @debug name integration
 from pymake.core.format import ExpeFormat
 from pymake.exceptions import *
+from pymake.core.logformatter import logger, setup_logger
 
 from pymake.io import is_empty_file
 from pymake.util.utils import colored, basestring, hash_objects
 
 
 
-''' Grammar Expe '''
-
-
-
-# Custom formatter
-# From : https://stackoverflow.com/questions/14844970/modifying-logging-message-format-based-on-message-logging-level-in-python3
-class MyLogFormatter(logging.Formatter):
-
-    critical_fmt  = "====>>> CRITICAL: %(msg)s"
-    err_fmt  = "===>> ERROR: %(msg)s"
-    warn_fmt  = "==> Warning: %(msg)s"
-    #info_fmt = '%(module): %(msg)s'
-    #info_fmt = '%(levelno)d: %(msg)s'
-    default_fmt = '%(msg)s'
-
-    # Custom Log
-    VDEBUG_LEVEL_NUM = 9
-    logging.addLevelName(VDEBUG_LEVEL_NUM, "VDEBUG")
-    logging.VDEBUG = 9
-
-    def __init__(self, fmt=default_fmt):
-        super().__init__(fmt=fmt, datefmt=None, style='%')
-
-    def format(self, record):
-
-        # Save the original format configured by the user
-        # when the logger formatter was instantiated
-        format_orig = self._style._fmt
-
-        # Replace the original format with one customized by logging level
-        if record.levelno == logging.WARNING:
-            self._style._fmt = MyLogFormatter.warn_fmt
-        elif record.levelno == logging.ERROR:
-            self._style._fmt = MyLogFormatter.err_fmt
-        elif record.levelno == logging.CRITICAL:
-            self._style._fmt = MyLogFormatter.critical_fmt
-        else:
-            self._style._fmt = MyLogFormatter.default_fmt
-
-
-        # Call the original formatter class to do the grunt work
-        result = logging.Formatter.format(self, record)
-
-        # Restore the original format configured by the user
-        self._style._fmt = format_orig
-
-        return result
-
-
-def setup_logger(level=None, name='root'):
-    #formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s - %(module)s - %(message)s')
-
-    if level is None:
-        level = 0
-
-    if level == 1:
-        level = logging.DEBUG
-    elif level >= 2:
-        level = logging.VDEBUG
-    elif level == -1:
-        level = logging.WARNING
-    else:
-        # make a --silent option for juste error and critial log ?
-        level = logging.INFO
-
-    # Get logger
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-
-    # Format handler
-    handler = logging.StreamHandler(sys.stdout)
-    #handler.setFormatter(logging.Formatter(fmt=fmt))
-    handler.setFormatter(MyLogFormatter())
-
-    # Set Logger
-    logger.addHandler(handler)
-    # Prevent logging propagation of handler,
-    # who reults in logging things multiple times
-    logger.propagate = False
-
-
-    def vdebug(self, message, *args, **kws):
-        # Yes, logger takes its '*args' as 'args'.
-        if self.isEnabledFor(logging.VDEBUG):
-            self._log(logging.VDEBUG, message, args, **kws)
-
-    #logger.Logger.vdebug = vdebug
-    logging.Logger.vdebug = vdebug
-
-    return logger
+''' PMK Entry Class '''
 
 
 class GramExp(object):
@@ -177,7 +88,7 @@ class GramExp(object):
 
     '''
 
-    log = logging.getLogger('root')
+    log = logger
 
     _version = pkg_resources.get_distribution('pmk').version
 
@@ -570,8 +481,9 @@ class GramExp(object):
     @classmethod
     def make_output_path(cls, expe, ext=None, status=None, _null=None, _nonunique=None):
         """ Make a single output path from a expe/dict
-            @status: f finished
-            @type: pk, json or inference.
+            :ext: pk, json or inf(erence).
+            :status: f finished, .
+            :_null: keys to ignore
         """
         expe = defaultdict(lambda: None, expe)
 
@@ -597,7 +509,8 @@ class GramExp(object):
 
         if not expe['_format']:
             # or give a hash if write is False ?
-            cls.log.debug('No _format given, please set _format for output_path settings.')
+            if status is not None:
+                cls.log.debug('No _format given, please set _format for output_path settings.')
             nonunique = ['_name_expe', '_do']
             if _nonunique:
                 nonunique.extend(_nonunique)

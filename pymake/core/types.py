@@ -9,12 +9,33 @@ from pymake.util.utils import get_dest_opt_filled, hash_objects, ask_sure_exit, 
 from pymake.index.indexmanager import IndexManager as IX
 from pymake.exceptions import *
 
-import logging
-lgg = logging.getLogger('root')
+from pymake.core.logformatter import logger
+lgg = logger
 
 
 ''' Structure of Pymake Objects.
 '''
+
+
+
+# Typo/ID formatter / pymake.core.typo ?
+def resolve_model_name(m):
+    if not '.' in m:
+        # Set the model ref name
+        pkg = get_pymake_settings('default_model')
+        if len(pkg) > 8:
+            prefix = pkg[:3]
+            if '.' in pkg:
+                prefix  += ''.join(map(lambda x:x[0], pkg.split('.')[1:]))
+        else:
+            prefix = pkg.split('.')[0]
+
+        model_name = '%s.%s'%(prefix, m)
+    else:
+        model_name = m
+
+    return model_name
+
 
 
 from tabulate import tabulate
@@ -733,18 +754,8 @@ class ExpTensorV2(BaseObject):
         for tensor in self._tensors:
             models = tensor.get('model', [])
             for i, m in enumerate(models):
+                models[i] = resolve_model_name(m)
 
-                if not '.' in m:
-                    # Set the model ref name
-                    pkg = get_pymake_settings('default_model')
-                    if len(pkg) > 8:
-                        prefix = pkg[:3]
-                        if '.' in pkg:
-                            prefix  += ''.join(map(lambda x:x[0], pkg.split('.')[1:]))
-                    else:
-                        prefix = pkg.split('.')[0]
-
-                    models[i] = '%s.%s'%(prefix, m)
 
     def check_null(self):
         ''' Filter _null '''

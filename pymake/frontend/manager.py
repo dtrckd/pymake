@@ -9,8 +9,9 @@ from numpy import ma
 from .frontend import DataBase
 from pymake import Model, Corpus,  GramExp
 import pymake.io as io
+from pymake.core.types import resolve_model_name
 
-import logging
+from pymake import logger
 
 class FrontendManager(object):
     """ Utility Class who aims at mananing/Getting the datastructure at the higher level.
@@ -22,7 +23,7 @@ class FrontendManager(object):
               loaded and filtered (sampled...) according to expe.
     """
 
-    log = logging.getLogger('root')
+    log = logger
 
 
     @classmethod
@@ -80,7 +81,7 @@ class ModelManager(object):
         This class is more a wrapper or a **Meta-Model**.
     """
 
-    log = logging.getLogger('root')
+    log = logger
 
     def __init__(self, expe=None):
         self.expe = expe
@@ -96,17 +97,23 @@ class ModelManager(object):
         else:
             raise ValueError('Model type unkonwn: %s' % _type)
 
-    def _get_model(self, frontend=None):
+    def _get_model(self, frontend=None, model=None):
         ''' Get model with lookup in the following order :
             * pymake.model
-            * mla
-            * scikit-learn
+            * mla (todo)
+            * scikit-learn (see Sklearn wraper)
+
+            Params
+            ------
+            :frontend: Input data
+            :model: The name of the model. (self.expe.model if None)
         '''
 
-        _model = Model.get(self.expe.model)
+        model_name = self.expe.model if model is None else resolve_model_name(model)
+        _model = Model.get(model_name)
         if not _model:
-            self.log.error('Model Unknown : %s' % (self.expe.model))
-            raise NotImplementedError(self.expe.model)
+            self.log.error('Model Unknown : %s' % (model_name))
+            raise NotImplementedError(model_name)
 
         # @Improve: * initialize all model with expe
         #           * fit with frontend, transform with frontend (as sklearn do)
@@ -151,12 +158,12 @@ class ModelManager(object):
 
 
     @classmethod
-    def from_expe(cls, expe, frontend=None, load=False):
+    def from_expe(cls, expe, frontend=None, model=None, load=False):
     # frontend params is deprecated and will be removed soon...
 
         if load is False:
             mm = cls(expe)
-            model = mm._get_model(frontend)
+            model = mm._get_model(frontend=frontend, model=model)
         else:
             fn = expe._output_path
             model = cls._load_model(fn)

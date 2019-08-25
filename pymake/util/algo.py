@@ -8,8 +8,8 @@ import scipy as sp
 from .utils import *
 from .math import *
 
-import logging
-lgg = logging.getLogger('root')
+from pymake import logger
+lgg = logger
 
 # Optimize Algothim (cython, etc) ?
 # frontend -- data copy -- integration ?

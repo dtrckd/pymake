@@ -5,12 +5,12 @@ import re
 from time import time
 import pickle
 from copy import deepcopy
-import logging
 
 import numpy as np
 import scipy as sp
 
 import pymake.io as io
+from pymake import logger
 
 
 #import sppy
@@ -44,7 +44,7 @@ class ModelBase():
         'thinning' : 1,
     }
 
-    log = logging.getLogger('root')
+    log = logger
 
     def __init__(self, expe=None, frontend=None):
         """ Model Initialization strategy:

@@ -7,8 +7,8 @@ from pymake.plot import _markers, _colors, _linestyle
 
 import matplotlib.pyplot as plt
 
-import logging
-lgg = logging.getLogger('root')
+from loguru import logger
+lgg = logger
 
 
 USAGE = """\

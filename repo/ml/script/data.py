@@ -1,10 +1,7 @@
 import os
-from pymake import ExpeFormat
-
 from collections import OrderedDict
 
-import matplotlib.pyplot as plt
-from pymake.util.utils import colored
+from pymake import ExpeFormat
 
 
 

@@ -1,5 +1,6 @@
-import os, shutil, logging
+import os, shutil
 from pymake import get_pymake_settings
+from pymake.core.logformatter import logger
 from pymake.util.utils import colored
 
 import whoosh as ws
@@ -40,7 +41,7 @@ class IndexManager(object):
                                            content      = ws.fields.TEXT),
                 }
 
-    log = logging.getLogger('root')
+    log = logger
 
     def __init__(self, default_index='model'):
         self._DATA_PATH = os.path.join(get_pymake_settings('project_data'), '.pmk')

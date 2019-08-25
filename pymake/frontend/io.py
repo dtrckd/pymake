@@ -9,9 +9,8 @@ import zlib
 import numpy as np
 
 from pymake import ExpDesign, ExpeFormat, get_pymake_settings
-
-import logging
-lgg = logging.getLogger('root')
+from pymake import logger
+lgg = logger
 
 
 
@@ -120,7 +119,7 @@ def save(fn, data, ext='pk', silent=False, compress=None, driver=None,
             with open(fn, 'wb') as _f:
                 return _f.write(obj)
         else:
-            with open(fn, 'wb') as _f:
+            with open(fn, 'w') as _f:
                 return json.dump(data, _f, cls=PyEncoder)
     else:
         raise ValueError('File format unknown: %s' % ext)
@@ -219,8 +218,6 @@ class PackageWalker(object):
     def _get_packages(self, module_name,  _depth=0):
         ''' recursive call with regards to depth parameter '''
 
-        argv = sys.argv
-
         if self.prefix is True:
             prefix = module_name
         elif self.prefix is False:
@@ -232,8 +229,8 @@ class PackageWalker(object):
         try:
             module = import_module(module_name)
         except ImportError as e:
-            lgg.warning('package unavailable (%s) : %s' % (e, module_name))
-            if '-v' in argv:
+            lgg.warning('package unavailable (%s) (use -v for details): %s' % (e, module_name))
+            if '-v' in sys.argv or '-vv' in sys.argv:
                 print(traceback.format_exc())
             return packages
 
@@ -243,11 +240,12 @@ class PackageWalker(object):
                 next_depth = _depth + 1
                 packages.update(self._get_packages(submodule_name, next_depth))
                 continue
+
             try:
                 submodule = import_module(submodule_name)
             except ImportError as e:
-                lgg.debug('submodule unavailable (%s) : %s'%(e, submodule_name))
-                if '-v' in argv:
+                lgg.debug('submodule unavailable (%s) (use -v for details): %s'%(e, submodule_name))
+                if '-v' in sys.argv or '-vv' in sys.argv:
                     print(traceback.format_exc())
                 self._unavailable_modules.append(submodule_name)
                 if 'algo' in str(e):
@@ -255,8 +253,8 @@ class PackageWalker(object):
                     submodule = import_module(submodule_name)
                 continue
             except Exception as e:
-                lgg.critical('Module Error: %s' % e)
-                if '-v' in argv:
+                lgg.critical('Module Error (use -v for details): %s' % e)
+                if '-v' in sys.argv or '-vv' in sys.argv:
                     print(traceback.format_exc())
                 continue
 

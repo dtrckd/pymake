@@ -19,8 +19,8 @@ _colors = Cycle(['g','b','r','y','c','m','k'])
 _linestyle = Cycle([ '--', ':', '-.'])
 #_linestyle = Cycle(['solid' , 'dashed', 'dashdot', 'dotted'])
 
-import logging
-lgg = logging.getLogger('root')
+from pymake import logger
+lgg = logger
 
 
 def display(block=False):

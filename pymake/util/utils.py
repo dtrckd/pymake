@@ -1,7 +1,6 @@
 import sys, os
 from datetime import datetime
 from collections import defaultdict
-import logging
 import hashlib
 import json
 from string import Template
@@ -17,7 +16,8 @@ try:
     from terminal import colorize
     colored = lambda *x : str(colorize(x[0], x[1]))
 except ImportError:
-    lgg = logging.getLogger('root')
+    from pymake.core.logformatter import logger
+    lgg = logger
     lgg.debug("needs `terminal' module for colors printing")
     colored = lambda *x : x[0]
 

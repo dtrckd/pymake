@@ -1,6 +1,6 @@
 from numpy import ma
 import numpy as np
-import logging
+from pymake import logger
 
 try:
     import pandas as pd
@@ -14,7 +14,7 @@ class DatasetDriver(object):
     ''' Parse dataset file using pandas'''
 
     _comment = '%'
-    log = logging.getLogger('root')
+    log = logger
 
     # No pandas here....
     @classmethod
@@ -176,7 +176,7 @@ class OnlineDatasetDriver(object):
     ''' Parse dataset file using pandas'''
 
     _comment = '%'
-    log = logging.getLogger('root')
+    log = logger
 
     @classmethod
     def parse_tnet(cls, fn, sep=' '):
@@ -318,7 +318,7 @@ class RawDatasetDriver(object):
     ''' Parse dataset file using python loop (deprecated) '''
 
     _comment = '%'
-    log = logging.getLogger('root')
+    log = logger
 
     @classmethod
     def parse_tnet(cls, fn, sep=' '):
