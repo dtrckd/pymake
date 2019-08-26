@@ -175,6 +175,9 @@ _Gram = [
                                         action='store_true',
                                             help='dont check that if there is some outputpath overlaping due to lacking parameters in  _format.'),
 
+    '--shell', dict(dest='_shell', action='store_true',
+                   help="Launch a ipython shell at the end of the expe or if it failed."),
+
 
     #  Context-sensitive
     #

@@ -1114,7 +1114,6 @@ class GramExp(object):
         except (ValueError, TypeError) as e:
             self.log.warning('Script not found, re-building Scripts indexes...')
             self.update_index('script')
-            #self._spec = Spec.get_all()
             try:
                 res = Script.get(script[0], script[1:])
                 if not res:
@@ -1128,22 +1127,8 @@ class GramExp(object):
                 self.log.error('Script arguments error : %s -- %s' % (e, script))
                 exit(2)
 
-        # Raw search
-        #script_name = script[0]
-        #script_args = script[1:]
-        #Scripts = mloader.ScriptsLoader.get_packages()
-        #if not script_name in Scripts:
-        #    method_by_cls = mloader.ScriptsLoader.lookup_methods()
-        #    if script_name in sum(method_by_cls.values(), []):
-        #        # check if it is a method reference
-        #        script_args = [script_name] + script_args
-        #        script_name = next(k.lower() for (k,v) in method_by_cls.items() if script_name in v)
-        #    else:
-        #        raise ValueError('error: Unknown script: %s' % (script_name))
-
         if script_args:
             self._tensors.update_all(_do=script_args)
-        #self.pymake(sandbox=Scripts[script_name])
         self.pymake(sandbox=_script)
 
     def execute_parallel(self):
@@ -1642,6 +1627,40 @@ class GramExp(object):
             self.log.warning("There was %d errors, logged in `%s'" % (n_errors, self._pmk_error_file))
             with open(self._pmk_error_file, 'a') as _f:
                 _f.write(100*'='+'\n')
+
+            # Rolling size file
+            fsize = os.stat(self._pmk_error_file).st_size
+            if fsize / 1024 > 100:
+                with open(self._pmk_error_file, 'r') as _f: e = _f.read()
+                lines = e.split('\n')
+                go = False
+                with open(self._pmk_error_file, 'w') as _f:
+                    for i, l in enumerate(lines):
+                        if i > len(lines) * 0.9 and (go or len(l)>0 and l[0].startswith('=')):
+                            _f.write(l+'\n')
+                            go = True
+
+
+        if self._conf.get('_shell'):
+            import IPython
+            print('''PMK Global Variables:
+                  \r\t* sandbox: Unintialized ExpeFormat class
+                  \r\t* expbox: Initialized ExpeFormat class for current expe
+                  \r\t* pmk: The current script
+                  \r\t* pmk_source: Source of the current script | try exec(pmk_source)
+                  \r\t* args: Argument of the current script | try pmk(*args)
+                  \r\t* expe: spec of current expe ''')
+
+            pmk_source = inspect.getsource(pmk)
+            # Remove def statement
+            pmk_source = '\n'.join(pmk_source.split('\n')[1:])
+            # Replace self by expbox
+            pmk_source = pmk_source.replace('self', 'expbox')
+            # remove indentation
+            min_indent = min([re.search('\S', x).start() for x in pmk_source.split('\n') if x])
+            pmk_source = '\n'.join(x[min_indent:] for x in pmk_source.split('\n') if x)
+
+            IPython.embed(colors="neutral")
 
         sandbox._postprocess_(self)
         self.pushcmd2hist()
