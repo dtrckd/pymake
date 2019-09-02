@@ -1332,13 +1332,19 @@ class GramExp(object):
         pwd = self.getenv('PWD')
         cwd = os.path.dirname(__file__)
         folders = ['_current', 'spec', 'script', 'model']
-        #open(join(pwd, '__init__.py'), 'a').close()
-        spec = {'projectname':os.path.basename(pwd)}
+        conf_file = {'gramarg':'gramarg.py', 'gitignore':'.gitignore'}
+        pjname = re.sub('\W', '_', os.path.basename(pwd)) # module import wont work with special character (- +etc)
+        if pjname != os.path.basename(pwd):
+            self.log.critical('Pmk does not manage yet project name with special character.\nPlease rename your folder with use of "_"')
+            raise NotImplementedError('bad folder name: %s' % (os.path.basename(pwd)))
+
+        spec = {'projectname':pjname}
         print('Creating project: {projectname}'.format(**spec))
 
-        settings = {}
+        settings = {'default_gramarg':'.'.join((spec['projectname'], 'gramarg'))}
         for d in folders:
             if d in ['model', 'spec', 'script']:
+                # Copy folders and template files
                 os.makedirs(d, exist_ok=True)
                 with open(join(cwd,'..', 'template', '%s.template'%(d))) as _f:
                     template = PmkTemplate(_f.read())
@@ -1347,12 +1353,15 @@ class GramExp(object):
                     _f.write(template.substitute(spec))
                 settings.update({'default_%s'%(d):'.'.join((spec['projectname'], d))})
             elif d == '_current':
-                # Gramarg
-                with open(join(cwd,'..', 'template', 'gramarg.template')) as _f:
-                    template = PmkTemplate(_f.read())
-                with open(join(pwd, 'gramarg.py'), 'a') as _f:
-                    _f.write(template.substitute(spec))
-                settings.update({'default_gramarg':'.'.join((spec['projectname'], 'gramarg'))})
+                # Copy conf files
+                for temp_name, target in conf_file.items():
+                    with open(join(cwd,'..', 'template', temp_name+'.template')) as _f:
+                        template = PmkTemplate(_f.read())
+                    if os.path.exists(join(pwd, target)):
+                        self.log.warning("file `%s' already exists, passing." % (target))
+                    else:
+                        with open(join(pwd, target), 'a') as _f:
+                            _f.write(template.substitute(spec))
             else:
                 raise ValueError('Doh, Directory unknwow: %s' % d)
 
