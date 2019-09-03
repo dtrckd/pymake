@@ -3,6 +3,8 @@ from collections import defaultdict
 from string import Template
 import shelve
 
+from pymake.util.utils import make_path
+
 
 # Global settings
 __default_config = defaultdict(lambda: '', dict(project_data = os.path.expanduser('data/'),
