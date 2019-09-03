@@ -7,12 +7,16 @@ from functools import wraps
 from itertools import product
 from loguru import logger
 from collections import OrderedDict
+from tabulate import tabulate
+
 import numpy as np
+import scipy as sp
+import scipy.sparse as sparse
+import pandas as pd
 
 from pymake import ExpSpace, get_pymake_settings
 from pymake.util.utils import colored, basestring, make_path, hash_objects
 
-from tabulate import tabulate
 
 
 
@@ -67,6 +71,8 @@ class ExpeFormat(object):
                 load the data frontend for the current expe.
             load_model: none
                 the model for the current expe.
+            load_data: matrix
+                load data based on extension
 
             Decorator
             --------
@@ -182,6 +188,30 @@ class ExpeFormat(object):
                 spec[k] = self.expe[v]
 
         return spec
+
+    def load_data(self, fn):
+        ''' Load data in the data path folder defined in the pmk.cfg '''
+        path = get_pymake_settings('project_data')
+        path = os.path.join(path, fn)
+        f, ext = os.path.splitext(path)
+        if ext in ('.csv', '.txt'):
+            func = pd.read_csv
+            kwargs = {}
+        elif ext in ('.npy',):
+            func = sparse.load
+            kwargs = {}
+        elif ext in ('.npz',):
+            func = sparse.load_npz
+            kwargs = {}
+        else:
+            raise NotImplementedError('extension not known: %s' % ext)
+
+        self.log.info('Loading data: %s(%s, **%s)' % (func.__name__, path, kwargs))
+        data = func(path, **kwargs)
+        self.log.info('%s data shape: %s' % (fn, str(data.shape)))
+
+        return data
+
 
     def get_data_path(self):
         path = get_pymake_settings('project_data')
