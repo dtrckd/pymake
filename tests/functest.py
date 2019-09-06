@@ -25,11 +25,12 @@ test_design = {
         'pmk default_expe -x plot',
         'pmk default_expe -x plot fig corpus:_entropy',
         'pmk hist'],
-    '../docsearch': ['pmk -x search tree'],
+    '../repo/docsearch': ['pmk -x search tree'],
 }
 
 n_errors = 0
 n_test = sum([len(tests) for tests in test_design])
+origin = os.path.abspath(os.path.dirname(__file__))
 
 for repo, tests in test_design.items():
 
@@ -56,7 +57,10 @@ for repo, tests in test_design.items():
 
         if p.returncode != 0:
             n_errors += 1
-            print("test failed: %d,  %s" % (p.returncode, err))
+            print("test failed: %d,  %s for %s" % (p.returncode, err, "|".join((repo, tests)) ))
+
+
+    os.chdir(origin)
 
 print('Test Sucess: %d / %d' % (n_test-n_errors, n_test))
 

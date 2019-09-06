@@ -122,9 +122,6 @@ class Rescal_als(ModelBase):
 
 def rescal(X, K):
 
-    ## Set logging to INFO to see RESCAL information
-    #logging.basicConfig(level=logging.INFO)
-
     ## Load Matlab data and convert it to dense tensor format
     #T = loadmat('data/alyawarra.mat')['Rs']
     #X = [lil_matrix(T[:, :, k]) for k in range(T.shape[2])]

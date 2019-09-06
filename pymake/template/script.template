@@ -1,22 +1,14 @@
 from pymake import ExpeFormat
 
 
-
-USAGE = """\
-----------------
-Template Script :
-----------------
-"""
-
-
-
-class $${projectname}_script(ExpeFormat):
+class $${project_name}_script(ExpeFormat):
     
     def _preprocess(self):
-        ''' this method will be executed before each run.
-            Can be use to set some variable share by all script/actions.
-        '''
-        pass
+        ''' This method will be executed before each run.  '''
+
+        if self.is_first_expe():
+            # Ths will be executed only once, at the first expe
+            pass
 
 
     def tryme(self):

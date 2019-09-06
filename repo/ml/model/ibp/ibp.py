@@ -4,8 +4,9 @@ import numpy as np
 import scipy as sp
 import scipy.stats as stats
 import math
-import logging
-lgg = logging.getLogger('root')
+
+from pymake import logger
+lgg = logger
 
 """ This code was modified from the code
 originally written by Zhai Ke (kzhai@umd.edu)."""

@@ -2,8 +2,6 @@
 
 from time import time
 import itertools
-import logging
-lgg = logging.getLogger('root')
 
 import numpy as np
 import scipy as sp
@@ -15,6 +13,9 @@ sp_dot = csr_matrix.dot
 from .ibp import IBP
 from ml.model.modelbase import GibbsSampler
 from pymake.util.algo import *
+
+from pymake import logger
+lgg = logger
 
 # We will be taking log(0) = -Inf, so turn off this warning
 #np.seterr(divide='ignore')
@@ -418,7 +419,6 @@ class IBPGibbsSampling(IBP, GibbsSampler):
             sublinear = sorted(list(set(sublinear + list(np.where(Z[:, kj] > 0)[0]) )))
             if len(sublinear) > 0:
                 self.bilinear_matrix[np.ix_(sublinear, sublinear)] = self.logsigmoid( Z[sublinear].dot(W).dot(Z[sublinear].T), self._Y[np.ix_(sublinear, sublinear)] )
-                #self.bilinear_matrix[np.ix_(sublinear, sublinear)] = self.logsigmoid( sp_dot(Z[sublinear].dot(W), Z[sublinear].T), Y[np.ix_(sublinear, sublinear)] )
         else:
             # Check speed with sparse matrix here !
             self.bilinear_matrix = self.logsigmoid(Z.dot(W).dot(Z.T))

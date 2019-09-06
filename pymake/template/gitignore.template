@@ -1,6 +1,4 @@
 # Volatile project file
-.pmk-db.db
-.pymake-errors
 .pmk/
 
 # Build file

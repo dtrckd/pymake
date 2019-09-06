@@ -3,6 +3,7 @@
 tags
 *~
 *.session.vim
+.idea
 
 # Build
 __pycache__/

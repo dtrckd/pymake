@@ -5,7 +5,7 @@ from collections import OrderedDict, defaultdict
 from itertools import product
 
 from pymake import get_pymake_settings
-from pymake.util.utils import get_dest_opt_filled, hash_objects, ask_sure_exit, basestring
+from pymake.util.utils import get_dest_opt_filled, hash_objects, ask_sure_exit, basestring, colored
 from pymake.index.indexmanager import IndexManager as IX
 from pymake.exceptions import *
 
@@ -59,7 +59,7 @@ def _table_(tables, headers=[], max_line=10, max_row=30, name=''):
             t[k] = v
             cpt += 1
 
-        sep = '# %s'%name +  '\n'+'='*20
+        sep = '# %s' % (colored(name, 'bold') +  '\n'+'='*20)
         print(sep)
         tables = '\n\n'.join([str(tabulate(t, headers=headers)) for t in _tables])
         return tables
@@ -78,7 +78,7 @@ def _table_(tables, headers=[], max_line=10, max_row=30, name=''):
             table = np.char.array(table).astype('|S'+str(max_row))
             fmt = 'simple'
             raw.append(tabulate(table.T,
-                                headers=[headers[sec]]+['']*(col),
+                                headers=[colored(headers[sec], 'bold')]+['']*(col),
                                 tablefmt=fmt))
         sep = '\n'+'='*20+'\n'
         return sep[1:] + sep.join(raw)
@@ -86,7 +86,6 @@ def _table_(tables, headers=[], max_line=10, max_row=30, name=''):
 
 
 
-# Not sure this one is necessary, or not here
 class BaseObject(object):
     ''' Notes : Avoid method conflict by ALWAYS settings this class in last
                 at class definitions.
@@ -109,9 +108,9 @@ class BaseObject(object):
         return tabulate(self.items())
 
 class ExpSpace(dict):
-    """ A dictionnary with dot notation access.
+    ''' A dictionnary with dot notation access.
         Used for the **expe** settings stream.
-    """
+    '''
 
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__

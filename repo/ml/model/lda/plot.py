@@ -778,7 +778,6 @@ def beta_test(hook_dir='', **conf):
 
     lda = lda_gensim(load=True, K=K, bdir=bdir, model=model, alpha=alpha, n=n)
 
-    logging.basicConfig(format='%(levelname)s : %(message)s', level=logging.INFO)
     flda.print_topics()
     lda.print_topics()
 

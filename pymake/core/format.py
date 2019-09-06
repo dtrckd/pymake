@@ -189,30 +189,6 @@ class ExpeFormat(object):
 
         return spec
 
-    def load_data(self, fn):
-        ''' Load data in the data path folder defined in the pmk.cfg '''
-        path = get_pymake_settings('project_data')
-        path = os.path.join(path, fn)
-        f, ext = os.path.splitext(path)
-        if ext in ('.csv', '.txt'):
-            func = pd.read_csv
-            kwargs = {}
-        elif ext in ('.npy',):
-            func = sparse.load
-            kwargs = {}
-        elif ext in ('.npz',):
-            func = sparse.load_npz
-            kwargs = {}
-        else:
-            raise NotImplementedError('extension not known: %s' % ext)
-
-        self.log.info('Loading data: %s(%s, **%s)' % (func.__name__, path, kwargs))
-        data = func(path, **kwargs)
-        self.log.info('%s data shape: %s' % (fn, str(data.shape)))
-
-        return data
-
-
     def get_data_path(self):
         path = get_pymake_settings('project_data')
         path = os.path.join(path, '')
@@ -665,7 +641,7 @@ class ExpeFormat(object):
                 fn = self.full_fig_path(fn)
                 self._kernel_write(f, fn, title=c)
         else:
-            print('Error : type of Frame unknow, passing: %s' % type(frame))
+            self.log.error('Type of Frame unknow, passing: %s' % type(frame))
 
 
     def _kernel_write(self, frame, fn, title=None):
@@ -800,10 +776,6 @@ class ExpeFormat(object):
         ''' user defined postprocess '''
         # heere, do a decorator ?
         pass
-
-    def __call__(self):
-        raise NotImplementedError
-
 
     def _extract_csv_sample(self, model):
         ''' extract data in model from variable name declared in {self.scv_typo}.
@@ -1032,6 +1004,30 @@ class ExpeFormat(object):
 
         frontend = FrontendManager.load(self.expe)
         return frontend
+
+    def load_data(self, fn):
+        ''' Load data in the data path folder defined in the pmk.cfg '''
+        path = get_pymake_settings('project_data')
+        path = os.path.join(path, fn)
+        f, ext = os.path.splitext(path)
+        if ext in ('.csv', '.txt'):
+            func = pd.read_csv
+            kwargs = {}
+        elif ext in ('.npy',):
+            func = sparse.load
+            kwargs = {}
+        elif ext in ('.npz',):
+            func = sparse.load_npz
+            kwargs = {}
+        else:
+            raise NotImplementedError('extension not known: %s' % ext)
+
+        self.log.info('Loading data: %s(%s, **%s)' % (func.__name__, path, kwargs))
+        data = func(path, **kwargs)
+        self.log.info('%s data shape: %s' % (fn, str(data.shape)))
+
+        return data
+
 
 
 

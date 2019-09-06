@@ -44,7 +44,7 @@ class IndexManager(object):
     log = logger
 
     def __init__(self, default_index='model'):
-        self._DATA_PATH = os.path.join(get_pymake_settings('project_data'), '.pmk')
+        self._DATA_PATH = os.path.join(get_pymake_settings('PWD'), '.pmk')
 
         self._index_basename = 'ir_index'
         self._default_index = default_index
@@ -126,7 +126,7 @@ class IndexManager(object):
         else:
             schemas = [index_name]
 
-        for name  in schemas:
+        for name in schemas:
             func = 'update_' + name + '_index'
             builder = getattr(idx, func)
             builder()

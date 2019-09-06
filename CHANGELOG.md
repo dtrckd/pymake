@@ -1,5 +1,13 @@
-# (towards) 0.42
+#  0.43
 * auto make input_path when loading a corpus from a frontend (graph-tool,.)
+* add load_data method in expeFormat
+* add loguru log formating
+* fix pmk-db tempfile for environment managing
+* fix script homonimy with ExpeFormat module name and script
+* improve test exposition
+* use configparser and tempfile for env and settings management.
+* add notebook and data directory
+* add username and project name config keys
 
 # 0.41.5
 

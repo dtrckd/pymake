@@ -21,7 +21,7 @@ class Plot(ExpeFormat):
 
     # Documentation !
     _default_expe = dict(
-        _label = lambda expe: '%s %s' % (expe._alias[expe.model], expe.delta) if expe.model in expe._alias else False,
+        _label = lambda expe: '%s %s' % (expe._alias[expe.model], expe.get('delta')) if expe.model in expe._alias else False,
         legend_size=10,
         _csv_sample = 2,
         fig_burnin = 0
@@ -81,7 +81,7 @@ class Plot(ExpeFormat):
 
         data = self.load_some()
         if not data:
-            self.log.warning('No data for expe : %s' % self.output_path)
+            self.log.debug('No data for expe : %s' % self.output_path)
             return
 
         values = data[attribute]
@@ -109,7 +109,7 @@ class Plot(ExpeFormat):
 
         data = self.load_some()
         if not data:
-            self.log.warning('No data for expe : %s' % self.output_path)
+            self.log.debug('No data for expe : %s' % self.output_path)
             return
 
         values = data[attribute]
@@ -130,7 +130,7 @@ class Plot(ExpeFormat):
 
         data = self.load_some()
         if not data:
-            self.log.warning('No data for expe : %s' % self.output_path)
+            self.log.debug('No data for expe : %s' % self.output_path)
             return
 
         try:
@@ -236,7 +236,7 @@ class Plot(ExpeFormat):
         expe = self.expe
         data = self.load_some()
         if not data:
-            self.log.warning('No data for expe : %s' % self.output_path)
+            self.log.debug('No data for expe : %s' % self.output_path)
             data = {}
 
         value = self._extract_data(z, data)
@@ -284,7 +284,7 @@ class Plot(ExpeFormat):
 
         data = self.load_some()
         if not data:
-            self.log.warning('No data for expe : %s' % self.output_path)
+            self.log.debug('No data for expe : %s' % self.output_path)
             return
 
         array = self.D.array

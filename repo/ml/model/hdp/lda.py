@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import collections
-import logging
-lgg = logging.getLogger('root')
+from pymake import logger
+lgg = logger
 
 import numpy as np
 import scipy as sp

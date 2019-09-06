@@ -5,8 +5,8 @@ from scipy.special import gammaln
 from numpy.random import dirichlet, gamma, poisson, binomial, beta
 from pymake.util.math import lognormalize, categorical
 
-import logging
-lgg = logging.getLogger('root')
+from pymake import logger
+lgg = logger
 
 
 # lambda fail to find import if _stirling if not

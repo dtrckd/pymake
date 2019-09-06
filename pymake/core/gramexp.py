@@ -1,3 +1,4 @@
+import getpass
 import random
 import sys, os, re, uuid
 import argparse
@@ -14,7 +15,7 @@ from copy import deepcopy
 import shelve
 import numpy as np
 
-from pymake.core import get_pymake_settings, reset_pymake_settings, PmkTemplate
+from pymake.core import get_pymake_settings, PmkTemplate, get_db_file
 from pymake.core.types import ExpDesign, ExpTensor, ExpSpace, Model, Corpus, Script, Spec, ExpVector
 from pymake.core.types import ExpTensorV2 # @debug name integration
 from pymake.core.format import ExpeFormat
@@ -39,7 +40,8 @@ class GramExp(object):
 
         Methods
         -------
-        __init__ : conf choice in :
+        __init__ : conf choice in:
+
            * Expe -> One experiments
            * ExpTensor -> Design of experiments
            * Expe & spec in Expe -> Design of experiments with global value,
@@ -50,7 +52,8 @@ class GramExp(object):
         Notes
         -----
 
-        Design of Experiments can take three forms :
+        Design of Experiments can take three forms:
+
         1. command-line arguments (see self.parsearg).
             * use for parralization with Gnu parallel.
         2. Expe : Uniq experiments specificattion,
@@ -61,7 +64,9 @@ class GramExp(object):
            * @Todo pass rule to filter experiments...
 
         ### Expe Filtering
-        Expe can contains **special** keywords and value :
+
+        Expe can contains **special** keywords and value:
+
         * _bind rules : List of rules of constraintsi on the design.
             * Inclusif rules
                 + [a.b]  --- a(value) shoudld occur only with b(value), (ie 'lda.fast_init')
@@ -78,10 +83,12 @@ class GramExp(object):
           ouptuf of pymake to some script to parallelize.
 
         ### I/O Concerns
-        An experiment typically write three kind of files :
+
+        An experiment typically write three kind of files:
         Corpus are load/saved using Pickle format in:
+
         * bdir/corpus_name.pk
-        Models are load/saved using pickle/json/cvs in :
+        Models are load/saved using pickle/json/cvs in:
         * bdir/refdir/rep/model_name_parameters.pk   <--> ModelManager
         * bdir/refir/rep/model_name_parameters.json <--> DataBase
         * bdir/refdir/rep/model_name_parameters.inf  <--> ModelBase
@@ -91,12 +98,6 @@ class GramExp(object):
     log = logger
 
     _version = pkg_resources.get_distribution('pmk').version
-
-    _examples = '''Examples:
-        >> Text fitting
-        fit.py -k 6 -m ldafullbaye -p
-        >> Network fitting :
-        fit.py -m immsb -c alternate -n 100 -i 10'''
 
     _frontend_ext = ['gt', # graph-tool
                      'pk', # pickle
@@ -132,8 +133,9 @@ class GramExp(object):
     _env = None # should be set during bootstrap
     _base_name = '.pmk'
     _cfg_name = 'pmk.cfg'
-    _db_name = '.pmk-db'
-    _pmk_error_file = '.pymake-errors'
+    _db_name = 'pmk-db'
+    _pmk_error_file = 'pmk-errors'
+    _pmk_history = 'pmk-history'
 
 
     def __init__(self, conf, usage=None, parser=None, parseargs=True, expdesign=None):
@@ -160,34 +162,44 @@ class GramExp(object):
         self.exp_setup(conf, expdesign)
 
     @classmethod
-    def getenv(cls, a=None):
-        if a is None:
-            return cls._env
-
-        _env = cls._env
-        return _env.get(a)
+    def getenv(cls, k):
+        return cls._env.get(k)
 
     @classmethod
     def setenv(cls, env):
+        ''' Store a temp file to propagate pymake environement.'''
 
         cls._env = env
 
-        db = shelve.open(os.path.join(os.getcwd(), cls._db_name))
+        db = shelve.open(get_db_file(cls._db_name))
         db.update(env)
         db.close()
 
-        cls._data_path = get_pymake_settings('project_data')
+        if cls.is_pymake_dir():
+            cls._pmk_path = os.path.join(env.get('PWD'), cls._base_name)
 
-        if os.path.isfile(os.path.join(env.get('PWD'), cls._cfg_name)):
+            # User Data
+            cls._data_path = get_pymake_settings('project_data')
+            cls._project_name = get_pymake_settings('project_name')
+            cls._user_name = get_pymake_settings('username')
+
+            # Pmk data
+            cls._results_path = os.path.join(cls._pmk_path, 'results')
+
             cls._spec = Spec.get_all()
         else:
+            cls._pmk_path     = None
+            cls._data_path    = None
+            cls._results_path = None
+            cls._project_name = None
+            cls._user_name    = None
+
             cls._spec = {}
 
 
     def _update(self):
         # Seems obsolete, _conf is not writtent in _tensors, right ?
         self._conf = self._tensors._conf
-        #
         self.lod = self._tensors._lod
 
     def update_default_expe(self, expformat):
@@ -491,8 +503,6 @@ class GramExp(object):
         if _null:
             dict_format.update(dict((k,None) for k in _null))
 
-        basedir = os.path.join(cls._data_path, cls._base_name, 'results')
-
         hook = expe.get('_refdir', 'default')
         hook = hook.format(**dict_format)
 
@@ -504,19 +514,18 @@ class GramExp(object):
             else:
                 rep = rep.format(**dict_format)
 
-
         p = os.path.join(hook, rep)
 
         if not expe['_format']:
-            # or give a hash if write is False ?
+            # AUtomatic file path
             if status is not None:
                 cls.log.debug('No _format given, please set _format for output_path settings.')
-            nonunique = ['_name_expe', '_do']
+            nonunique = ['_name_expe']
             if _nonunique:
                 nonunique.extend(_nonunique)
 
             argnunique = []
-            for i in set(nonunique):
+            for i in sorted(set(nonunique)):
                 v = expe.get(i, 'oops')
                 if isinstance(v, list):
                     v = v[0]
@@ -526,7 +535,7 @@ class GramExp(object):
         else:
             t = expe['_format'].format(**dict_format)
 
-        filen = os.path.join(basedir, p, t)
+        filen = os.path.join(cls._results_path, p, t)
 
         if ext:
             filen = filen +'.'+ ext
@@ -557,7 +566,7 @@ class GramExp(object):
         if c.endswith(tuple('.'+ext for ext in cls._frontend_ext)):
             c = c[:-(1+len(c.split('.')[-1]))]
 
-        input_dir = os.path.join(cls._data_path, cls._base_name, 'training', c)
+        input_dir = os.path.join(cls._pmk_path, 'training', c)
 
         return input_dir
 
@@ -618,13 +627,14 @@ class GramExp(object):
         else:
             try:
                 gram = importlib.import_module(gram)
+                gram = next( (getattr(gram, _list) for _list in dir(gram) if isinstance(getattr(gram, _list), list)), None)
             except ModuleNotFoundError as e:
-                pr = get_pymake_settings('gramarg').split('.')[0]
-                #@imporve priority shoiuld ne on : local project !
-                cls.log.warning("Project name `%s' seems to already exists in your PYTHONPATH. Project's name should not conflict with existing ones." % pr)
-                cls.log.warning("Please change the name of your project/repo.")
+                prjt = cls._project_name
+                #@improve priority should be on : local project !
+                cls.log.warning("Project name `%s' seems to already exists in your PYTHONPATH.\n"
+                                "Project's name should not conflict with existing ones.\n"
+                                "Please change the name of your project's repo." % prjt)
                 exit(38)
-            gram = next( (getattr(gram, _list) for _list in dir(gram) if isinstance(getattr(gram, _list), list)), None)
 
         grammar = []
         args_ = []
@@ -648,14 +658,12 @@ class GramExp(object):
                     cls.log.debug(str(e)+err_mesg)
                 else:
                     cls.log.error(str(e)+err_mesg)
-                #exit(3)
+                    #exit(3)
 
 
     @classmethod
     def parseargsexpe(cls, usage=None, args=None, parser=None):
         description = 'Launch and Specify Simulations.'
-        if not usage:
-            usage = GramExp._examples
 
         if parser is None:
             parser = cls.get_parser(description, usage)
@@ -663,10 +671,14 @@ class GramExp(object):
 
         # Push pymake grmarg.
         cls.push_gramarg(parser)
-        # third-party
-        gramarg = get_pymake_settings('gramarg')
-        if gramarg:
+
+        # Third-party
+        try:
+            gramarg = get_pymake_settings('gramarg')
             cls.push_gramarg(parser, gramarg)
+        except AttributeError as e:
+            # no grammar or no pmk dir.
+            pass
 
         s = parser.parse_args(args=args)
 
@@ -764,7 +776,7 @@ class GramExp(object):
                     if v in words:
                         if ont == '_spec':
                             if v in ont_values:
-                                cls.log.critical('=> Warning: conflict between name of ExpDesign and Pymake commands')
+                                cls.log.critical('Conflict between name of ExpDesign and Pymake commands (Avoid that)')
                             do.remove(v)
                             try:
                                 d, expdesign = Spec.load(v, cls._spec[v])
@@ -783,11 +795,7 @@ class GramExp(object):
         # Check erros in the command line
         if checksum != 0:
             if (request.get('_do') or request.get('do_list')) and not GramExp.is_pymake_dir():
-                print('fatal: Not a pymake directory: %s not found.' % (cls._cfg_name))
-                try:
-                    os.remove('.pmk-db.db')
-                except FileNotFoundError:
-                    pass
+                cls.log.error('fatal: Not a pymake directory: %s not found.' % (cls._cfg_name))
                 exit(10)
 
             if  firsttime == True:
@@ -796,7 +804,7 @@ class GramExp(object):
                 cls._spec = Spec.get_all()
                 return cls.zymake(firsttime=False)
             else:
-                cls.log.error('==> Error : unknown argument: %s\n\nAvailable Exp : %s' % (do, list(cls._spec)))
+                cls.log.error('Unknown argument: %s\n\nAvailable Exp : %s' % (do, list(cls._spec)))
                 exit(10)
 
 
@@ -1099,7 +1107,7 @@ class GramExp(object):
 
 
     def execute(self):
-        ''' Execute Exp Sequentially '''
+        ''' Execute Exp Sequentially. '''
 
         if 'script' in self._conf:
             script = self._conf.pop('script')
@@ -1117,7 +1125,7 @@ class GramExp(object):
             try:
                 res = Script.get(script[0], script[1:])
                 if not res:
-                    print('error: Unknown script: %s' % (script[0]))
+                    self.log.error('Unknown script: %s' % (script[0]))
                     exit(404)
                 else:
                     _script, script_args = res
@@ -1132,6 +1140,7 @@ class GramExp(object):
         self.pymake(sandbox=_script)
 
     def execute_parallel(self):
+        ''' Run jobs in parallel. '''
 
         basecmd = sys.argv.copy()
         #try:
@@ -1188,7 +1197,7 @@ class GramExp(object):
         #self.subexecute2(cmd)
 
     def execute_parallel_net(self, nhosts=None):
-        ''' run X process by machine !
+        ''' Run X processes by machine !
             if :nhosts: (int) is given, limit the numner of remote machines.
         '''
 
@@ -1324,35 +1333,59 @@ class GramExp(object):
 
     def init_folders(self):
         join = os.path.join
+        pwd = self.getenv('PWD')
 
         if self.is_pymake_dir():
-            print('fatal: %s file already exists.' % (self._cfg_name))
+            self.log.error('%s file already exists.' % (self._cfg_name))
             exit(11)
+        elif os.path.isdir(join(pwd, self._base_name)):
+            self.log.warning('.pmk/ is present in the working directory.')
 
-        pwd = self.getenv('PWD')
-        cwd = os.path.dirname(__file__)
-        folders = ['_current', 'spec', 'script', 'model']
-        conf_file = {'gramarg':'gramarg.py', 'gitignore':'.gitignore'}
-        pjname = re.sub('\W', '_', os.path.basename(pwd)) # module import wont work with special character (- +etc)
-        if pjname != os.path.basename(pwd):
+        prjt = re.sub('\W', '_', os.path.basename(pwd)) # module import wont work with special character (- +etc)
+        if prjt != os.path.basename(pwd):
             self.log.critical('Pmk does not manage yet project name with special character.\nPlease rename your folder with use of "_"')
             raise NotImplementedError('bad folder name: %s' % (os.path.basename(pwd)))
 
-        spec = {'projectname':pjname}
-        print('Creating project: {projectname}'.format(**spec))
+        self.log.info('Creating project: %s' % (prjt) )
 
-        settings = {'default_gramarg':'.'.join((spec['projectname'], 'gramarg'))}
+        folders = ['spec', 'script', 'model', # User logics
+                   'data', 'notebook', # User IO folder
+                   'pmk_modules',
+                   '_config', ] # _config in last to get all updated config
+
+        conf_file = {'pmk.cfg':'pmk.cfg',
+                     'gramarg':'gramarg.py',
+                     'gitignore':'.gitignore'}
+
+        settings = {'project_name': prjt,
+                    'username': getpass.getuser(),
+                    'default_gramarg':'.'.join((prjt, 'gramarg')),
+                    'project_data': 'data/',
+                    'project_notebook': 'notebook/',
+                    'project_figs':'data/plot/figs',
+                   }
+
+
+        cwd = os.path.dirname(__file__)
         for d in folders:
-            if d in ['model', 'spec', 'script']:
+            if d != '_config' :
                 # Copy folders and template files
                 os.makedirs(d, exist_ok=True)
-                with open(join(cwd,'..', 'template', '%s.template'%(d))) as _f:
+                template_fn = join(cwd,'..', 'template', '%s.template'%(d))
+                if not os.path.isfile(template_fn):
+                    continue
+                with open(template_fn) as _f:
                     template = PmkTemplate(_f.read())
                 open(join(pwd, d,  '__init__.py'), 'a').close()
                 with open(join(pwd, d,  'template_%s.py'%(d)), 'a') as _f:
-                    _f.write(template.substitute(spec))
-                settings.update({'default_%s'%(d):'.'.join((spec['projectname'], d))})
-            elif d == '_current':
+                    try:
+                        _f.write(template.substitute(settings))
+                    except KeyError as e:
+                        print("The following key is missing in the config file `%s': %s" % (temp_name, e) )
+                        print('aborting...')
+                        exit(10)
+                settings.update({'default_%s'%(d):'.'.join((prjt, d))})
+            elif d == '_config':
                 # Copy conf files
                 for temp_name, target in conf_file.items():
                     with open(join(cwd,'..', 'template', temp_name+'.template')) as _f:
@@ -1361,20 +1394,20 @@ class GramExp(object):
                         self.log.warning("file `%s' already exists, passing." % (target))
                     else:
                         with open(join(pwd, target), 'a') as _f:
-                            _f.write(template.substitute(spec))
+                            try:
+                                _f.write(template.substitute(settings))
+                            except KeyError as e:
+                                print('The following key is missing in the config file %s: %s' % (temp_name, e) )
+                                print('aborting...')
+                                exit(10)
             else:
-                raise ValueError('Doh, Directory unknwow: %s' % d)
-
-
-        # Set and write pymake.cfg
-        reset_pymake_settings(settings)
+                raise ValueError('Unknown place to init: %s' % d)
 
         return self.update_index()
 
     def pushcmd2hist(self):
         from pymake.util.utils import tail
-        bdir = os.path.join(self._data_path, self._base_name)
-        fn = os.path.join(bdir, '.pymake-hist')
+        fn = os.path.join(self._pmk_path, self._pmk_history)
         if not os.path.isfile(fn):
             open(fn, 'a').close()
             return
@@ -1397,8 +1430,7 @@ class GramExp(object):
         else:
             n_lines = int(n)
 
-        bdir = self._data_path
-        fn = os.path.join(bdir, self._base_name, '.pymake-hist')
+        fn = os.path.join(self._pmk_path, self._pmk_history)
         if not os.path.isfile(fn):
             self.log.error('hist file does not exist.')
             return
@@ -1447,7 +1479,10 @@ class GramExp(object):
         from pymake.index.indexmanager import IndexManager as IX
 
         pwd = cls.getenv('PWD')
-        os.chdir(pwd) # not sure we still need this
+
+        # Not sure we still need this...
+        # (in case user chdir somewhere in its script..)
+        os.chdir(pwd)
 
         ## Update index
         if len(index_name) == 0:
@@ -1459,7 +1494,7 @@ class GramExp(object):
         ## Update bash_completion file
         home = os.path.expanduser('~')
         cwd = os.path.dirname(__file__)
-        pjt = os.path.basename(pwd)
+        prjt = os.path.basename(pwd)
 
         template = None
         completion_fn = os.path.join(home, '.bash_completion.d', 'pymake_completion')
@@ -1520,7 +1555,7 @@ class GramExp(object):
                     dict_scripts=$$dict_scripts
                '''
 
-        _match = '[[ "$project" == "%s" ]]' % (pjt)
+        _match = '[[ "$project" == "%s" ]]' % (prjt)
         back_pos = template.find(_match)
         if back_pos  >= 0:
             # Remove old lines
@@ -1544,7 +1579,7 @@ class GramExp(object):
         os.makedirs(os.path.join(home, '.bash_completion.d'), exist_ok=True)
         with open(completion_fn, 'w') as _f:
             template = PmkTemplate(template)
-            template = template.substitute(projectname=pjt, version=cls._version,
+            template = template.substitute(projectname=prjt, version=cls._version,
                                            specs=specs,
                                            all_scripts=all_scripts,
                                            sur_scripts=sur_scripts,
@@ -1585,6 +1620,7 @@ class GramExp(object):
 
             try:
                 expbox = sandbox(pt, expe, expdesign, self)
+                module_name = expbox.__module__.split('.')[-1].lower()
             except FileNotFoundError as e:
                 self.log.error('ignoring %s'%e)
                 continue
@@ -1601,9 +1637,15 @@ class GramExp(object):
                 # ExpFormat task ? decorator and autoamtic argument passing ....
                 do = expe._do
                 pmk = getattr(expbox, do[0])
-            else:
+            elif hasattr(expbox, module_name):
+                #assert(len(do) == 1)
+                do = [module_name]
+                pmk = getattr(expbox, module_name)
+            elif hasattr(expbox, '__call__'):
                 do = ['__call__']
                 pmk = expbox
+            else:
+                raise NotImplementedError('command unkown _do: %s ' % expe._do)
 
             # Launch handler
             args = do[1:]
@@ -1617,9 +1659,10 @@ class GramExp(object):
                 break
             except Exception as e:
                 n_errors += 1
-                self.log.critical(('Error during '+colored('%s', 'red')+' Expe no %d.') % (do, id_expe))
+                self.log.warning(('Error during '+colored('%s', 'red')+' Expe no %d.') % (do, id_expe))
                 traceback.print_exc()
-                with open(self._pmk_error_file, 'a') as _f:
+                ferrors = os.path.join(self._pmk_path, self._pmk_error_file)
+                with open(ferrors, 'a') as _f:
                     lines = []
                     lines.append('%s' % (datetime.now()))
                     lines.append('Error during %s Expe no %d' % (do, id_expe))
@@ -1633,17 +1676,17 @@ class GramExp(object):
             expbox._expe_postprocess()
 
         if n_errors > 0:
-            self.log.warning("There was %d errors, logged in `%s'" % (n_errors, self._pmk_error_file))
-            with open(self._pmk_error_file, 'a') as _f:
+            self.log.warning("There was %d errors, logged in `%s'" % (n_errors, ferrors))
+            with open(ferrors, 'a') as _f:
                 _f.write(100*'='+'\n')
 
             # Rolling size file
-            fsize = os.stat(self._pmk_error_file).st_size
+            fsize = os.stat(ferrors).st_size
             if fsize / 1024 > 100:
-                with open(self._pmk_error_file, 'r') as _f: e = _f.read()
+                with open(ferrors, 'r') as _f: e = _f.read()
                 lines = e.split('\n')
                 go = False
-                with open(self._pmk_error_file, 'w') as _f:
+                with open(ferrors, 'w') as _f:
                     for i, l in enumerate(lines):
                         if i > len(lines) * 0.9 and (go or len(l)>0 and l[0].startswith('=')):
                             _f.write(l+'\n')

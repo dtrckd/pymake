@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import logging
-lgg = logging.getLogger('root')
+from pymake import logger
+lgg = logger
 
 from ml.model.ibp.ilfm_gs import IBPGibbsSampling
 

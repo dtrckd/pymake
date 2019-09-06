@@ -2,8 +2,6 @@
 
 from time import time
 import itertools
-import logging
-lgg = logging.getLogger('root')
 
 import numpy as np
 from numpy import ma
@@ -16,6 +14,9 @@ from ml.model.modelbase import GibbsSampler
 from .hdp import MSampler, BetaSampler
 
 from pymake.util.math import lognormalize, categorical, sorted_perm, adj_to_degree, gem
+
+from pymake import logger
+lgg = logger
 
 # Implementation Mixed Membership Sochastic Blockmodel Stochastic
 
@@ -227,9 +228,9 @@ class ZSampler(object):
         self.update_matrix_shape()
 
         lgg.debug('Sample z...')
-        lgg.vdebug('#J \t #I \t  #topic')
+        lgg.trace('#J \t #I \t  #topic')
         for j, i in self.likelihood.data_iter(randomize=True):
-            lgg.vdebug( '%d \t %d \t %d' % ( j , i, self.doc_topic_counts.shape[1]-1))
+            lgg.trace( '%d \t %d \t %d' % ( j , i, self.doc_topic_counts.shape[1]-1))
             params = self.prob_zji(j, i, self._K + 1)
             sample_topic_raveled = categorical(params)
             k_j, k_i = np.unravel_index(sample_topic_raveled, (self._K+1, self._K+1))
@@ -405,9 +406,9 @@ class ZSamplerParametric(ZSampler):
 
     def sample(self):
         lgg.debug('Sample z...')
-        lgg.vdebug('#J \t #I \t #topic')
+        lgg.trace('#J \t #I \t #topic')
         for j, i in self.likelihood.data_iter(randomize=True):
-            lgg.vdebug( '%d \t %d \t %d' % (j , i, self.doc_topic_counts.shape[1]-1))
+            lgg.trace( '%d \t %d \t %d' % (j , i, self.doc_topic_counts.shape[1]-1))
             params = self.prob_zji(j, i, self.K)
             sample_topic_raveled = categorical(params)
             k_j, k_i = np.unravel_index(sample_topic_raveled, (self._K, self._K))

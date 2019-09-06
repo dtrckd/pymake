@@ -5,32 +5,37 @@
 ###########################
 
 #
-#  The project name/identifier is the name of the base directery.
-#  (the one who contains pymake.cfg)
+#  The project name/identifier is the name of the base directery by default.
 #
 
+[id]
+username = $${username}
+project_name = $${project_name}
+email =
+credential =
 
-### Global Path for data storage
+[storage]
 project_data = $${project_data}
+project_notebook = $${project_notebook}
 project_figs = $${project_figs}
-project_db = $${project_db}
 
-### Lookup Modules
+[module]
 default_model = $${default_model}
 default_spec = $${default_spec}
 default_script = $${default_script}
-default_corpus = ?
+default_corpus =
 
-### Third-Party Modules.
+# Third-Party Modules.
 #contrib_model = mla, sklearn.decomposition
+contrib_model =
 contrib_spec =
 contrib_script =
+contrib_corpus =
 
-### Project Settings Grammar.
-# Use to specify custom command line options whith pymake.
+# Specify custom command-line options whith pymake.
 gramarg = $${default_gramarg}
 
-### Remote Options and configurations
+[remote] 
 # Used when `--net' options is used.
 
 # Config file of gnu-parallel for remote computing.

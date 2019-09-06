@@ -46,7 +46,7 @@ build:
 	python3 setup.py build
 
 test:
-	pushd pymake
+	pushd tests
 	DISPLAY= python3 functest.py
 	popd
 

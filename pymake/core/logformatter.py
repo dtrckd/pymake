@@ -3,22 +3,29 @@ from loguru import logger
 
 class LogFormatter(object):
 
-    DEBUG = "<green>{time:HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan> - <level>{message}</level>"
+    SINK = "<green>{time:HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan> - <level>{message}</level>"
     INFO = "<level>{message}</level>"
 
-    def __init__(self):
+    DEBUG=SINK
+
+    def __init__(self, logger):
         self.padding = 0
 
         #fmt = "{time} | {level: <8} | {name}:{function}:{line}{extra[padding]} | {message}\n{exception}"
         #fmt = "<green>{time:YYYY-MM-DD at HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
 
-        self.fmt_debug = self.DEBUG
-
+        #self.fmt_vdebug = self.SINK
+        self.fmt_trace = self.SINK
+        self.fmt_debug = self.SINK
         self.fmt_info = self.INFO
+        self.fmt_success = self.SINK
+        self.fmt_warning = self.SINK
+        self.fmt_error = self.SINK
+        self.fmt_critical = self.SINK
 
-        self.fmt_warning = self.fmt_debug
-        self.fmt_error = self.fmt_debug
-        self.fmt_critical = self.fmt_debug
+        #self.extra_leval = ['vdebug']
+
+        self.logger = logger
 
 
     def format(self, record):
@@ -27,9 +34,14 @@ class LogFormatter(object):
         return fmt + '\n' # <- bug ?
 
 
+#def vdebug(_, message, *args, **kwargs):
+#    logger.opt(depth=1).log('vdebug', message, *args, **kwargs)
+
+
+
 def setup_logger(level=None):
 
-    logformatter = LogFormatter()
+    logformatter = LogFormatter(logger)
     level = 0 if level is None else level
 
     if level == -1: # --silent | -nv
@@ -37,13 +49,16 @@ def setup_logger(level=None):
     elif level == 1: # -v
         level = 'DEBUG'
     elif level >= 2: # -vv
-        level = 'VDEBUG'
+        #level = 'VDEBUG'
+        level = 'TRACE'
     else: # default
         level = 'INFO'
 
     logger.remove()
-
     logger.add(sys.stderr, level=level, colorize=True, format=logformatter.format)
+
+    #logger.level("vdebug", no=33, icon="🤖", color="<blue>")
+    #logger.__class__.vdebug = vdebug
 
 # For logging info prior calling setup_logger
 # @DEBUG case -v -1, -nv

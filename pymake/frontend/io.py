@@ -1,5 +1,6 @@
 import sys, os, re
 import pickle, json
+import shelve
 import pkgutil, pyclbr, inspect, ast
 import traceback
 from importlib import import_module
@@ -8,7 +9,8 @@ from itertools import groupby
 import zlib
 import numpy as np
 
-from pymake import ExpDesign, ExpeFormat, get_pymake_settings
+from pymake import ExpDesign, ExpeFormat
+from pymake import get_pymake_settings, get_db_file
 from pymake import logger
 lgg = logger
 
@@ -206,6 +208,9 @@ class PackageWalker(object):
         self._cls_browse = {}
         self._unavailable_modules = []
 
+        with shelve.open(get_db_file()) as env:
+            self._env = dict(env)
+
         ### Core function
         self.packages = self._get_packages(module_name)
 
@@ -271,8 +276,7 @@ class PackageWalker(object):
         try:
             _packages = pyclbr.readmodule(submodule.__name__)
         except:
-            # @DEBUG : use shelve to get it
-            sys.path.append(os.getenv('PWD'))
+            sys.path.append(self._env.get('PWD'))
             #_packages = pyclbr.readmodule(submodule.__name__)
             _packages = pyclbr.readmodule('.'.join(submodule.__name__.split('.')[1:]))
         self._cls_browse.update(_packages)
@@ -297,8 +301,7 @@ class PackageWalker(object):
         try:
             _packages = pyclbr.readmodule(submodule.__name__)
         except:
-            # @DEBUG : use shelve to get it
-            sys.path.append(os.getenv('PWD'))
+            sys.path.append(self._env.get('PWD'))
             #_packages = pyclbr.readmodule(submodule.__name__)
             _packages = pyclbr.readmodule('.'.join(submodule.__name__.split('.')[1:]))
         self._cls_browse.update(_packages)

@@ -7,6 +7,7 @@ from pymake import GramExp
 ''' A Command line controler of Pymake '''
 
 def bootstrap():
+    # Manage working directory
 
     env = dict(os.environ)
     pwd = env.get('PWD')
@@ -22,7 +23,7 @@ def bootstrap():
         pwd = os.path.join(pwd, p)
         env['PWD'] = pwd
     else:
-        # @debug this, I dont know whyiam in lib/package sometimes, annoying !
+        # @Warning: prevent other library from moving pymake CWD
         os.chdir(env.get('PWD'))
 
 
@@ -58,10 +59,6 @@ def main():
     else:
         if (zyvar['_do'] or zyvar.get('do_list')) and not GramExp.is_pymake_dir():
             print('fatal: Not a pymake directory: %s not found.' % (GramExp._cfg_name))
-            try:
-                os.remove('.pmk-db.db')
-            except FileNotFoundError:
-                pass
             exit(10)
 
     if zyvar['_do'] == 'update':

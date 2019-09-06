@@ -14,7 +14,6 @@ import scipy as sp
 #np.set_printoptions(threshold='nan')
 
 import os
-import logging
 import os.path
 
 sys.path.insert(1, './gensim')
@@ -144,10 +143,7 @@ if __name__ == '__main__':
 
     ##############
     ### Log Output
-    print
-    logging.basicConfig(format='%(levelname)s : %(message)s', level=logging.INFO)
     lda.print_topics(K)
-    print
 
     ##############
     ### Prediction
