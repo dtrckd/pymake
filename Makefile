@@ -34,8 +34,10 @@ push_pip:
 	python3 setup.py sdist upload -r pypi
 
 push_doc: doc
-	#export NEOCITIES_CREDENTIAL=$(cat ~/src/config/credentials/pymake.neocities)
-	#neocities push doc/pymake
+	cd doc/pymake
+	export NEOCITIES_KEY=$(shell cat ${HOME}/src/config/credentials/pymake.neocities)
+	neocities upload *
+	cd -
 
 uninstall:
 	pip3 uninstall $(PACKAGE)

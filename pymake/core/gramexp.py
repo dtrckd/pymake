@@ -718,18 +718,21 @@ class GramExp(object):
     @classmethod
     def zymake(cls, request={}, usage='', firsttime=True, expdesign=None):
         usage ='''\
-        ----------------
-        Communicate with the data :
-        ----------------
-         |   pmk update                                       : update the pymake index
-         |   pmk -l [spec(default)|model|script|topo]         : list available component
-         |   pmk show SPEC                                    : show one spec details (default if no arguments)
-         |   pmk run SPEC [--script [fun][*args]] ...         : execute tasks (default if -x is given)
-         |   pmk runpara SPEC [--script [fun][*args]] ...     : parallelize tasks (implicit if --cores is given)
-         |   pmk hist [-n n_lines]                            : show command history
-         |   pmk cmd SPEC ...                                 : Try to generate the command-line for each expe.
-         |   pmk path SPEC Filetype(pk|json|inf) [status] ... : show output_path of each expe.
-        ''' + '\n' + usage
+
+
+        Available Commands                        Alias                  Descr
+        ------------------                        ------                 -----
+        init                                                             init a pmk pymake repo.
+        update                                                           update the pymake index.
+        hist [-n n_lines]                                                show command history.
+        -l [spec(default)|model|script|topo]                             list available component.
+        show SPEC                                 pmk SPEC               show one spec details (default if no arguments).
+        run SPEC [--script [fun] [*args]]         pmk -x FUNC            execute tasks (default if -x is given).
+        runpara SPEC [--script [fun] [*args]]     pmk -x FUNC --cores N  parallelize tasks (implicit if --cores is given).
+        diff SPEC1 SPEC2                                                 show diff between two spec.
+        cmd SPEC                                                         try to generate the command-line for each expe.
+        path SPEC Filetype(pk|json|inf) [status]                         show output_path of each expe.
+        '''
 
         s, parser, expdesign_lkp = GramExp.parseargsexpe(usage)
         request.update(s)

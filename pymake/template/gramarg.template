@@ -13,11 +13,11 @@ _gram = [
     # A multiple expes command-line option:
     #
     #'--key2',dict(
-    #   dest='my_value1', action=exp_append),
+    #   dest='my_value1', nargs='*', action=exp_append),
 
     # A multiple expes command-line option with a given type (float here):
     #
     #'--key3',dict(
-    #   dest='my_value3', action=partial(exp_append, _t=float),
+    #   dest='my_value3', nargs='*', action=partial(exp_append, _t=float),
 
     ]

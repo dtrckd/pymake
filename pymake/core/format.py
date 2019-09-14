@@ -92,6 +92,7 @@ class ExpeFormat(object):
         # Local
         self.pt = pt
         self.expe = expe
+        self.spec = expe
         self.s = expe
 
         # Plot utils

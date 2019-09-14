@@ -95,5 +95,11 @@ _gram = [
     '-p', '--predictive', dict(dest='_mode',
                                action='store_const', const='predictive'),
 
+    '--fast', '--deactivate-measures', dict(dest='deactivate_measures',
+         action='store_true',
+         help='Do not compute measures (log-likelihood/entropy etc) during fitting to speed up the process.'),
+
+
+
 
 ]

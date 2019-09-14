@@ -210,9 +210,4 @@ _Gram = [
     '--type', '--data-format', dict(dest='_data_format',
          help='The type/format of data to use [b|w].'),
 
-    '--fast', '--deactivate-measures', dict(dest='deactivate_measures',
-         action='store_true',
-         help='Do not compute measures (log-likelihood/entropy etc) during fitting to speed up the process.'),
-
-
     ]

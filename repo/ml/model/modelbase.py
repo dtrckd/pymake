@@ -467,6 +467,7 @@ class ModelSkl(ModelBase):
         if not 'model' in self.__dict__:
             raise AttributeError
 
+        # or should it be hook_me ;)
         attr = attr.partition('__hack_me_')[-1]
         return getattr(self.model, attr)
 
