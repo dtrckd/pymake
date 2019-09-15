@@ -793,6 +793,10 @@ class ExpeFormat(object):
                     instead of duplicate the exception print in _fotmat_line_out.
 
                 @todo use _fmt if given.
+
+            Notes
+            -----
+            From version 0.42.3, model can either a model or Expeformet instance.
         '''
         line = []
         for o in self._csv_typo.split():
@@ -966,6 +970,30 @@ class ExpeFormat(object):
         ''' push the current state of a model in the output file. '''
         samples = self._extract_csv_sample(model)
         self._write_some(self._fitit_f, samples)
+
+    def dump_results(self, model, x_test, y_test=None):
+        ''' Push a measure results in a line of a csv_file. (see _csv_typo).
+
+            Notes
+            -----
+            Similar to write current state, but we lookup the measure asked (from `_scv_typo`)
+            in {self}, and run it we found it. Write_current_state support more complexe `_csv_typo`.
+        '''
+
+        self.log.info('dumping results...')
+        samples = []
+        for o in self._csv_typo.split():
+            fun = getattr(self, o)
+            if y_test is None:
+                sample = fun(model, x_test)
+            else:
+                sample = fun(model, x_test, y_test)
+
+            samples.append(str(sample))
+
+        self._write_some(self._fitit_f, samples)
+
+
 
 
     def configure_model(self, model):

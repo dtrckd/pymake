@@ -121,9 +121,7 @@ class GramExp(object):
     _default_expe = {
         #'_verbose'   : 0,
         '_write'     : False,
-
         '_ignore_format_unique' : False,
-
         '_force_load_data' : True, # if True, it will force the raw data parsing.
         '_force_save_data' : True, # if False, dont save corpus as pk/gt ont the filesystem.
         '_no_block_plot' : False,

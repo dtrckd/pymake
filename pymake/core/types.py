@@ -163,6 +163,131 @@ class ExpVector(list, BaseObject):
     def __sub__(self, other):
         return self.__class__([item for item in self if item not in other])
 
+class ExpTensor(OrderedDict, BaseObject):
+    ''' Represent a set of Experiences (**expe**). '''
+    def __init__(self,  *args, **kwargs):
+        OrderedDict.__init__(self, *args, **kwargs)
+        BaseObject.__init__(self)
+
+        self._size = 0
+
+    @classmethod
+    def from_expe(cls, conf=None, expe=None, parser=None):
+        ''' Return the tensor who is an OrderedDict of iterable.
+            Assume conf is an exp. Non list value will be listified.
+
+            Parameters
+            ----------
+            expe : (ExpDesign, ExpSpace or dict)
+                A design of experiment.
+        '''
+        _conf = conf.copy()
+        if expe is None:
+            expe = conf
+
+        if not issubclass(type(expe), (cls, ExpSpace, dict, ExpVector)):
+            raise ValueError('Expe not understood: %s' % type(expe))
+
+        if issubclass(type(expe), Corpus):
+            tensor = cls(corpus=expe)
+        elif issubclass(type(expe), Model):
+            tensor = cls(model=expe)
+        elif issubclass(type(expe), ExpVector):
+            tensor = cls((str(i),j) for i,j in enumerate(expe))
+        elif isinstance(expe, ExpTensor):
+            tensor = expe.copy()
+        elif isinstance(expe, (dict, ExpSpace)):
+            tensor = cls()
+            tensor.update_from_dict(expe)
+        else:
+            raise NotImplementedError('input type of ExpVector unknow %s' % (expe))
+
+        for k, v in tensor.items():
+            if not issubclass(type(v), (list, set, tuple)):
+                tensor[k] = [v]
+
+        if _conf:
+            tensor.update_from_dict(_conf, parser=parser)
+
+        return tensor
+
+    def update_from_dict(self, d, parser=None):
+        ''' Update a tensor from a dict
+
+            Parameters
+            ----------
+            d : dict
+                the dict that uptate the tensor
+            from_argv : bool
+                if True, the is assumed to come from an CLI argparser. if the following conds are true :
+                    * the settings in {d} are specified in the CLI (@check already filtererd in GramExp.parseargs)
+                    * the settings in {d} is not in the CLI, and not in self.
+
+            Notes
+            -----
+            SHould inherit _reserved keyword to prevent
+        '''
+
+        if parser is not None:
+            dests_filled = get_dest_opt_filled(parser)
+
+        for k, v in d.items():
+            if k in ['_id_expe']:
+                continue
+
+            if parser is not None:
+                if not k in dests_filled and k in self :
+                    continue
+
+            if issubclass(type(v), ExpVector):
+                self[k] = v
+            else:
+                self[k] = [v]
+
+    def get_size(self, virtual=False):
+        if virtual:
+            return  np.prod([len(x) for x in self.values()])
+        else:
+            return self._size
+
+
+    def push_dict(self, d):
+        ''' push one dict inside a exptensor.
+            It extend _bind rule to filter the tensor.
+        '''
+        tensor_len = np.prod([len(x) for x in self.values()])
+        if len(self) == 0:
+            self.update_from_dict(d)
+            return True
+
+        _need_bind = False
+        _up_dict = {}
+        for k, v in d.items():
+            if k in ['_id_expe']:
+                continue
+
+            vector = self.get(k, []).copy()
+            if v not in vector:
+                if len(vector) == 0:
+                    _need_bind = True
+                    #lgg.debug('setting to bind: (%s : %s)' % (k, v))
+                    break
+                vector.append(v)
+            _up_dict[k] = vector
+
+        if _need_bind:
+            #raise NotImplementedError('Need to push bind value to build a tensor from non-overlaping settings.')
+            return False
+        else:
+            self.update(_up_dict)
+            return True
+
+
+    def table(self, extra=[]):
+        return tabulate(extra+sorted(self.items(), key=lambda x:x[0]),
+                               headers=['Params','Values'])
+
+
 class ExpGroup(list, BaseObject):
     ''' A List of elements of an ExpTensor. '''
 
@@ -432,130 +557,6 @@ class Model(ExpVector):
         tables = cls.get_all(_type),
         return _table_(tables, headers=['Models'])
 
-
-class ExpTensor(OrderedDict, BaseObject):
-    ''' Represent a set of Experiences (**expe**). '''
-    def __init__(self,  *args, **kwargs):
-        OrderedDict.__init__(self, *args, **kwargs)
-        BaseObject.__init__(self)
-
-        self._size = 0
-
-    @classmethod
-    def from_expe(cls, conf=None, expe=None, parser=None):
-        ''' Return the tensor who is an OrderedDict of iterable.
-            Assume conf is an exp. Non list value will be listified.
-
-            Parameters
-            ----------
-            expe : (ExpDesign, ExpSpace or dict)
-                A design of experiment.
-        '''
-        _conf = conf.copy()
-        if expe is None:
-            expe = conf
-
-        if not issubclass(type(expe), (cls, ExpSpace, dict, ExpVector)):
-            raise ValueError('Expe not understood: %s' % type(expe))
-
-        if issubclass(type(expe), Corpus):
-            tensor = cls(corpus=expe)
-        elif issubclass(type(expe), Model):
-            tensor = cls(model=expe)
-        elif issubclass(type(expe), ExpVector):
-            tensor = cls((str(i),j) for i,j in enumerate(expe))
-        elif isinstance(expe, ExpTensor):
-            tensor = expe.copy()
-        elif isinstance(expe, (dict, ExpSpace)):
-            tensor = cls()
-            tensor.update_from_dict(expe)
-        else:
-            raise NotImplementedError('input type of ExpVector unknow %s' % (expe))
-
-        for k, v in tensor.items():
-            if not issubclass(type(v), (list, set, tuple)):
-                tensor[k] = [v]
-
-        if _conf:
-            tensor.update_from_dict(_conf, parser=parser)
-
-        return tensor
-
-    def update_from_dict(self, d, parser=None):
-        ''' Update a tensor from a dict
-
-            Parameters
-            ----------
-            d : dict
-                the dict that uptate the tensor
-            from_argv : bool
-                if True, the is assumed to come from an CLI argparser. if the following conds are true :
-                    * the settings in {d} are specified in the CLI (@check already filtererd in GramExp.parseargs)
-                    * the settings in {d} is not in the CLI, and not in self.
-
-            Notes
-            -----
-            SHould inherit _reserved keyword to prevent
-        '''
-
-        if parser is not None:
-            dests_filled = get_dest_opt_filled(parser)
-
-        for k, v in d.items():
-            if k in ['_id_expe']:
-                continue
-
-            if parser is not None:
-                if not k in dests_filled and k in self :
-                    continue
-
-            if issubclass(type(v), ExpVector):
-                self[k] = v
-            else:
-                self[k] = [v]
-
-    def get_size(self, virtual=False):
-        if virtual:
-            return  np.prod([len(x) for x in self.values()])
-        else:
-            return self._size
-
-
-    def push_dict(self, d):
-        ''' push one dict inside a exptensor.
-            It extend _bind rule to filter the tensor.
-        '''
-        tensor_len = np.prod([len(x) for x in self.values()])
-        if len(self) == 0:
-            self.update_from_dict(d)
-            return True
-
-        _need_bind = False
-        _up_dict = {}
-        for k, v in d.items():
-            if k in ['_id_expe']:
-                continue
-
-            vector = self.get(k, []).copy()
-            if v not in vector:
-                if len(vector) == 0:
-                    _need_bind = True
-                    #lgg.debug('setting to bind: (%s : %s)' % (k, v))
-                    break
-                vector.append(v)
-            _up_dict[k] = vector
-
-        if _need_bind:
-            #raise NotImplementedError('Need to push bind value to build a tensor from non-overlaping settings.')
-            return False
-        else:
-            self.update(_up_dict)
-            return True
-
-
-    def table(self, extra=[]):
-        return tabulate(extra+sorted(self.items(), key=lambda x:x[0]),
-                               headers=['Params','Values'])
 
 # @debug : Rename this class to ?
 class ExpTensorV2(BaseObject):

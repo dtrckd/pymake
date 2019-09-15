@@ -110,7 +110,26 @@ class ModelManager(object):
         '''
 
         model_name = self.expe.model if model is None else resolve_model_name(model)
-        _model = Model.get(model_name)
+
+        # @@@@Debug model and model ref name (resolve_model_name
+        # + implement dict value for model (or in list of model, in order to
+        #   1. ba able to describe params in a better way
+        #   2. propagate _default_spec from pymake
+        if isinstance(model_name, str):
+            _model = Model.get(model_name)
+        elif isinstance(model_name, list):
+            # Sklearn Pipeline
+            from pymake.ml import ModelSkl
+            modules = []
+            for m in model_name:
+                modules.append( Model.get(model_name).module )
+
+            model_name = '-'.join(model_name)
+            _model = type(model_name, (ModelSkl,), {'module':modules})
+
+        else:
+            raise ValueError('Type of model unknow: %s | %s' % (type(model_name), model_name))
+
         if not _model:
             self.log.error('Model Unknown : %s' % (model_name))
             raise NotImplementedError(model_name)

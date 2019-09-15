@@ -4,7 +4,7 @@ from codecs import open
 from os import path
 
 #__version__ = subprocess.check_output(["git", "describe"]).strip()
-__version__ = '0.43'
+__version__ = '0.42.3'
 
 try:
     from Cython.Build import cythonize

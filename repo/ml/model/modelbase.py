@@ -12,6 +12,8 @@ import scipy as sp
 import pymake.io as io
 from pymake import logger
 
+from sklearn.pipeline import make_pipeline
+
 
 #import sppy
 
@@ -55,6 +57,8 @@ class ModelBase():
 
         self.expe = expe
         self.frontend = frontend
+
+        self._name = self.__class__.__name__.lower()
 
         # change to semantic -> update value (t+1)
         self.samples = [] # actual sample
@@ -102,7 +106,7 @@ class ModelBase():
 
     # @Dense mmsb
     def data_iter(self, data=None, randomize=False):
-        ''' Iterate over various type of data :
+        ''' Iterate over various type of data:
             * ma.array (ignore masked
             * ndarray (todo ?)
             * What format for temporal/chunk/big data... ?
@@ -264,7 +268,7 @@ class ModelBase():
 
         fn = self.expe['_output_path']
         if not silent:
-            self.log.info('Snapshotting Model : %s' % fn)
+            self.log.info('Snapshotting Model: %s' % fn)
         else:
             sys.stdout.write('+')
 
@@ -279,7 +283,7 @@ class ModelBase():
             try:
                 setattr(result, k, deepcopy(v, memo))
             except Exception as e:
-                self.log.debug('can\'t copy %s : %s. Passing on: %s' % (k, v, e))
+                self.log.debug('can\'t copy %s: %s. Passing on: %s' % (k, v, e))
                 continue
         return result
 
@@ -409,7 +413,7 @@ class ModelBase():
 
 class ModelSkl(ModelBase):
 
-    '''
+    ''' Wrapper around scikit-learn models.
     Notes
     -----
     Model class need to be serialisable. Module object are not serialisable.
@@ -424,11 +428,29 @@ class ModelSkl(ModelBase):
             self.log.error('ModelSkl base class need a {module} name attribute. Exiting.')
             exit(42)
 
-        _module, _model = self._mm_from_str(self.module)
-        self._spec = self._spec_from_expe(_model)
+        sk_modules = []
+
+        if isinstance(self.module, str):
+            sk_modules = [self.module]
+        elif isinstance(self.module, list):
+            sk_modules = self.module
+        else:
+            raise ValueError('Slearn model type unknown: %s' % (type(self.module), self.module))
+
+        self._specs = []
+        self._models = []
+
+        for module in sk_modules:
+            _module, _model = self._mm_from_str(module)
+
+            spec = self._spec_from_expe(_model)
+            model = _model(**spec)
+
+            self._specs.append(spec)
+            self._models.append(model)
 
         # Init Sklearn model
-        self.model = _model(**self._spec)
+        self.model = make_pipeline(*self._models)
 
 
     @staticmethod
@@ -446,11 +468,19 @@ class ModelSkl(ModelBase):
         spec = dict()
         spec_map = getattr(self, 'spec_map', {})
         default_spec = getattr(self, '_default_spec', {})
+
+        model_spec = {}
+        for k, v in self.expe.items():
+            if k.find('__'):
+                model, param = k.split('__')
+                if model.lower() == self._name:
+                    model_spec[param] = v
+
         for k in model_params:
-            if k in list(self.expe)+list(spec_map):
+            if k in list(model_spec)+list(spec_map):
                 _k = spec_map.get(k, k)
-                if _k in self.expe:
-                    spec[k] = self.expe[_k]
+                if _k in model_spec:
+                    spec[k] = model_spec[_k]
             elif k in default_spec:
                 spec[k] = default_spec[k]
 
@@ -473,7 +503,7 @@ class ModelSkl(ModelBase):
 
     def fit(self, *args, **kwargs):
         fun =  self.__hack_me_fit
-        self.log.info("Fitting `%s' model with spec: %s" % (type(self), str(self._spec)))
+        self.log.info("Fitting `%s' model with spec: %s" % (type(self), str(self._specs)))
         return fun(*args, **kwargs)
 
     def transform(self, *args, **kwargs):
@@ -503,7 +533,7 @@ class ModelSkl(ModelBase):
 
 
 class GibbsSampler(ModelBase):
-    ''' Implemented method, except fit (other?) concerns MMM type models :
+    ''' Implemented method, except fit (other?) concerns MMM type models:
         * LDA like
         * MMSB like
 
@@ -743,7 +773,7 @@ class SVB(ModelBase):
             self._purge_minibatch()
 
         #if self.elbo_diff < self.limit_elbo_diff:
-        #    print('ELBO get stuck during data iteration : Sampling useless, return ?!')
+        #    print('ELBO get stuck during data iteration: Sampling useless, return ?!')
 
 
 
