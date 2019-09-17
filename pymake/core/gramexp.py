@@ -111,8 +111,8 @@ class GramExp(object):
 
     # Reserved by GramExp for expe identification
     _reserved_keywords = ['_spec', # for nested specification.
-                          '_id_expe', # unique (locally) expe identifier.
-                          '_name_expe', # exp name identifier, set before _default_expe
+                          '_expe_id', # unique (locally) expe identifier.
+                          '_expe_name', # exp name identifier, set before _default_expe
                           '_expe_hash', # Unique spec identifier.
                           '_pmk', # force to set some settings out of grammarg.
                          ]
@@ -212,7 +212,7 @@ class GramExp(object):
             setup_logger(level=-1)
 
         # Use default _spec if no spec given
-        _names = self.get_list('_name_expe')
+        _names = self.get_list('_expe_name')
         if  '_spec' in default_expe and '_default_expe' in _names and len(_names) == 1:
             specs = default_expe['_spec']
             specs = [specs] if not isinstance(specs, list) else specs
@@ -273,6 +273,9 @@ class GramExp(object):
             self._update()
 
     def _preprocess_exp(self):
+        ''' Purge/save pmk' preprocess options
+            And modify some attribute (model)
+        '''
         #self._check_exp(self._tensors)
         self._tensors.check_bind()
         self._tensors.check_model_typo()
@@ -341,7 +344,7 @@ class GramExp(object):
         for exp in tensor:
             # check reserved keyword are absent from exp
             for m in cls._reserved_keywords:
-                if m in exp and m != '_name_expe':
+                if m in exp and m != '_expe_name':
                     raise ValueError('%s is a reserved keyword of gramExp.' % m)
 
             # Format
@@ -518,7 +521,7 @@ class GramExp(object):
             # AUtomatic file path
             if status is not None:
                 cls.log.debug('No _format given, please set _format for output_path settings.')
-            nonunique = ['_name_expe']
+            nonunique = ['_expe_name']
             if _nonunique:
                 nonunique.extend(_nonunique)
 
@@ -576,18 +579,25 @@ class GramExp(object):
         # iteration over {expe} trow a 'RuntimeError: dictionary changed size during iteration',
         # maybe due to **expe pass in argument ?
 
-        id_str = 'expe' + str(expe['_id_expe'])
-        id_name = expe['_name_expe']
+        id_name = expe['_expe_name']
         id_hash = expe['_expe_hash']
 
         # Special aliase for _format
-        fmt_expe['_id'] = id_str
         fmt_expe['_name'] = id_name
         fmt_expe['_hash'] = id_hash
+        fmt_expe['_id'] = id_name +'#' + str(expe['_expe_id'])
+
+        # Special rule to rewrite the output_path
+        # @namesapce manage spec/Script/model namespace !
+        if '_model' in expe and 'model' in expe:
+            fmt_expe['model'] = expe['_model']
+
+        if isinstance(expe.get('model'), list):
+            fmt_expe['model'] = '-'.join(map(str.lower, expe['model']))
+
 
         for k, v in fmt_expe.items():
             if isinstance(v, (list, dict)):
-                #fmt_expe[k] = id_str # don't do that, no robust get back expe.
                 _hash = int((hash_objects(v)), 16) % 10**8
                 fmt_expe[k] = k + str(_hash) +'h'
             elif isinstance(v, float):
@@ -600,9 +610,6 @@ class GramExp(object):
                 else:
                     fmt_expe[k] = v
 
-        # Special rule to rewirte the output_path
-        if '_model' in expe and 'model' in expe:
-            fmt_expe['model'] = expe['_model']
 
         return fmt_expe
 

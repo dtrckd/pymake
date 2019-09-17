@@ -440,10 +440,13 @@ class ModelSkl(ModelBase):
         self._specs = []
         self._models = []
 
-        for module in sk_modules:
+        model_names = self._name.split('-')
+        assert(len(model_names) == len(sk_modules))
+
+        for model_name, module in zip(model_names, sk_modules):
             _module, _model = self._mm_from_str(module)
 
-            spec = self._spec_from_expe(_model)
+            spec = self._spec_from_expe(_model, model_name)
             model = _model(**spec)
 
             self._specs.append(spec)
@@ -461,8 +464,15 @@ class ModelSkl(ModelBase):
         _model = getattr(module, model_name)
         return module, _model
 
-    def _spec_from_expe(self, _model):
+    def _spec_from_expe(self, _model, model_name=None):
         ''' Set Sklearn parameters. '''
+
+        if model_name is None:
+            model_name = _model.__name__.split('.')[-1].lower()
+        else:
+            model_name = model_name.lower()
+            # @debug model resolve name !
+            model_name = model_name.split('.')[-1]
 
         model_params = list(inspect.signature(_model).parameters)
         spec = dict()
@@ -471,9 +481,9 @@ class ModelSkl(ModelBase):
 
         model_spec = {}
         for k, v in self.expe.items():
-            if k.find('__'):
+            if k.find('__') >= 0:
                 model, param = k.split('__')
-                if model.lower() == self._name:
+                if model.lower() == model_name:
                     model_spec[param] = v
 
         for k in model_params:

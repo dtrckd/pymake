@@ -103,9 +103,12 @@ def save(fn, data, ext='pk', silent=False, compress=None, driver=None,
     elif ext == 'pk':
         if compressed_pk:
             fn += '.gz'
-            obj = zlib.compress(pickle.dumps(data))
-            with open(fn, 'wb') as _f:
-                return _f.write(obj)
+            try:
+                obj = zlib.compress(pickle.dumps(data))
+                with open(fn, 'wb') as _f:
+                    return _f.write(obj)
+            except:
+                pass
         else:
             with open(fn, 'wb') as _f:
                 return pickle.dump(data, _f, protocol=pickle.HIGHEST_PROTOCOL)

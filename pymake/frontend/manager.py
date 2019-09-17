@@ -122,7 +122,11 @@ class ModelManager(object):
             from pymake.ml import ModelSkl
             modules = []
             for m in model_name:
-                modules.append( Model.get(model_name).module )
+                submodel = Model.get(m)
+                if not submodel:
+                    self.log.error('Model Unknown : %s' % (m))
+                    raise NotImplementedError(m)
+                modules.append( submodel.module )
 
             model_name = '-'.join(model_name)
             _model = type(model_name, (ModelSkl,), {'module':modules})

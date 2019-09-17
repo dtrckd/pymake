@@ -138,9 +138,12 @@ class ExpeFormat(object):
 
     def log_expe(self):
         expe = self.expe
-        msg = '%s -- %s -- N=%s -- K=%s' % (self.specname(expe.get('corpus')),
-                                            self.specname(expe.get('model')),
-                                            expe.get('N'), expe.get('K'))
+        keys = [('corpus', '%s'),
+                ('model', '%s'),
+                ('N', 'N=%s'),
+                ('K', 'K=%s')]
+        msg = [fmt%(self.specname(expe[x])) for x, fmt in keys if expe.get(x)]
+        msg = '--'.join(msg)
         return msg
 
     def get_expe_len(self):
@@ -276,7 +279,7 @@ class ExpeFormat(object):
                 import matplotlib.pyplot as plt
                 from pymake.plot import _linestyle, _markers
                 if len(groups) == 0:
-                    group = '_id_expe'
+                    group = '_expe_id'
                 else:
                     group = groups[0]
                 self = args[0]
@@ -980,7 +983,7 @@ class ExpeFormat(object):
             in {self}, and run it we found it. Write_current_state support more complexe `_csv_typo`.
         '''
 
-        self.log.info('dumping results...')
+        self.log.info('dumping results in: %s' % self._fitit_f)
         samples = []
         for o in self._csv_typo.split():
             fun = getattr(self, o)

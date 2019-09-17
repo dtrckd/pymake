@@ -20,21 +20,35 @@ lgg = logger
 
 # Typo/ID formatter / pymake.core.typo ?
 def resolve_model_name(m):
-    if not '.' in m:
-        # Set the model ref name
-        pkg = get_pymake_settings('default_model')
-        if len(pkg) > 8:
-            prefix = pkg[:3]
-            if '.' in pkg:
-                prefix  += ''.join(map(lambda x:x[0], pkg.split('.')[1:]))
+
+    if not isinstance(m, list):
+        m = [m]
+
+    model_names = []
+
+    for _m in m:
+
+        if not '.' in _m:
+            # Set the model ref name
+            pkg = get_pymake_settings('default_model')
+            if len(pkg) > 8:
+                prefix = pkg[:3]
+                if '.' in pkg:
+                    prefix  += ''.join(map(lambda x:x[0], pkg.split('.')[1:]))
+            else:
+                prefix = pkg.split('.')[0]
+
+            model_name = '%s.%s'%(prefix, _m)
         else:
-            prefix = pkg.split('.')[0]
+            model_name = _m
 
-        model_name = '%s.%s'%(prefix, m)
+        model_names.append(model_name.lower())
+
+    if len(model_names) < 2:
+        return '-'.join(model_names)
     else:
-        model_name = m
+        return model_names
 
-    return model_name
 
 
 
@@ -166,6 +180,11 @@ class ExpVector(list, BaseObject):
 class ExpTensor(OrderedDict, BaseObject):
     ''' Represent a set of Experiences (**expe**). '''
     def __init__(self,  *args, **kwargs):
+
+        if len(args) == 1 and isinstance(args[0], (ExpSpace, dict)):
+            self.update_from_dict(args[0])
+            args = args[1:]
+
         OrderedDict.__init__(self, *args, **kwargs)
         BaseObject.__init__(self)
 
@@ -232,7 +251,7 @@ class ExpTensor(OrderedDict, BaseObject):
             dests_filled = get_dest_opt_filled(parser)
 
         for k, v in d.items():
-            if k in ['_id_expe']:
+            if k in ['_expe_id']:
                 continue
 
             if parser is not None:
@@ -263,7 +282,7 @@ class ExpTensor(OrderedDict, BaseObject):
         _need_bind = False
         _up_dict = {}
         for k, v in d.items():
-            if k in ['_id_expe']:
+            if k in ['_expe_id']:
                 continue
 
             vector = self.get(k, []).copy()
@@ -585,7 +604,7 @@ class ExpTensorV2(BaseObject):
         if not _spec:
             if not expdesign:
                 expdesign = ExpDesign
-            conf['_name_expe'] = '_default_expe'
+            conf['_expe_name'] = '_default_expe'
             conf['_expe_hash'] = hash_objects(dict((k,v) for k,v in conf.items() if k not in private_keywords))
             gt._tensors.append(ExpTensor.from_expe(conf))
             gt._ds_.append(expdesign)
@@ -608,7 +627,7 @@ class ExpTensorV2(BaseObject):
                 gt._ds_.append(_type)
                 consume_expe += 1
             else:
-                o['_name_expe'] = name
+                o['_expe_name'] = name
                 o['_expe_hash'] = hash_objects(dict((k,v) for k,v in o.items() if k not in private_keywords))
                 if hasattr(_type, '_alias'):
                     o['_alias'] = getattr(_type, '_alias')
@@ -778,22 +797,48 @@ class ExpTensorV2(BaseObject):
         self._make_hash(skip_check)
         return self._lod
 
+    def _filter_models(self, tensor):
+        ''' Filter Model special params (`__` separated)'''
+
+        models = tensor['model']
+        tensors = []
+        for _m in models:
+            new_tensor = tensor.copy()
+            new_tensor.pop('model')
+            new_tensor['model'] = [_m]
+            _model = [_m] if isinstance(_m, str) else _m
+            # @debug model resolve name !
+            _model = list(map(lambda x:x.split('.')[-1], _model))
+            for key in tensor:
+                if key.find('__') >= 0:
+                    kmodel, param = key.split('__')
+                    if kmodel.lower() not in _model:
+                        new_tensor.pop(key)
+            tensors.append(new_tensor)
+
+        return tensors
+
     def _make_lod(self, tensor, _id):
         ''' 1. make dol to lod
             2. filter _bind rule
             3. add special parameter (expe_id)
         '''
-        if len(tensor) == 0:
-            lod =  []
-        else:
-            len_l = [len(l) for l in tensor.values()]
-            keys = sorted(tensor)
-            lod = [dict(zip(keys, prod)) for prod in product(*(tensor[key] for key in keys))]
+        lod =  []
+        if len(tensor) > 0:
 
-        # POSTFILTERING
-        # Bind Rules
+            if 'model' in tensor:
+                tensors = self._filter_models(tensor)
+            else:
+                tensors = [tensor]
+
+            for _t in tensors:
+                keys = sorted(_t)
+                lod.extend([dict(zip(keys, prod)) for prod in product(*(_t[key] for key in keys))])
+
+        # Filter Bind Rules
         idtoremove = []
         for expe_id, d in enumerate(lod):
+
             for rule in self._bind[_id]:
                 _bind = rule.split('.')
                 values = list(d.values())
@@ -845,7 +890,7 @@ class ExpTensorV2(BaseObject):
         # Add extra information in lod expes
         n_last_expe = sum([t._size for t in self._tensors[:_id]])
         for _id, expe in enumerate(lod):
-            expe['_id_expe'] = _id + n_last_expe
+            expe['_expe_id'] = _id + n_last_expe
 
         return lod
 
@@ -903,7 +948,7 @@ class ExpTensorV2(BaseObject):
         tables = []
         for id, group in enumerate(self._tensors):
             src = self._ds[id].__name__
-            spec = group.get('_name_expe', ['void'])[0]
+            spec = group.get('_expe_name', ['void'])[0]
             h = '=== %s > %s > %s expe ===' % (src, spec, group.get_size())
             tables.append(h)
             if self._bind:

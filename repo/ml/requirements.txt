@@ -1,6 +1,6 @@
 sympy
 nose
-loguru
+#pygraphviz ?
 #rescal # scikit-kge ?
 #python-louvain ?
 #    // pip install hg+https://bitbucket.org/taynaud/python-louvain

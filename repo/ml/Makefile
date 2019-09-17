@@ -6,6 +6,8 @@ default:  install
 install: fetch_data
 	pip3 install --user -r requirements.txt
 
+dep:
+	sudo apt-get install libgraphviz-dev
 
 fetch_data: net_data text_data lut
 

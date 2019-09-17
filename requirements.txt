@@ -2,17 +2,16 @@ loguru
 terminal
 tabulate
 Whoosh
-scikit-learn
 numpy
 scipy
+pandas
+matplotlib
+scikit-learn
 networkx
 nltk
-matplotlib
-pandas
 #plotly ?
 #pystan ?
 #pymc ?
 #gensim ?
 #edward ?
 #opencv ?
-#python-pygraphviz ?
