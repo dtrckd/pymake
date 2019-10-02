@@ -1,8 +1,0 @@
-sympy
-nose
-#pygraphviz ?
-#rescal # scikit-kge ?
-#python-louvain ?
-#    // pip install hg+https://bitbucket.org/taynaud/python-louvain
-#    // hg clone https://bitbucket.org/taynaud/python-louvain
-
