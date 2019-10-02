@@ -1,5 +1,4 @@
 import os
-from pymake import GramExp
 from pymake import logger
 
 
@@ -45,12 +44,7 @@ class DataBase(object):
 
     @staticmethod
     def get_input_path(expe):
-        if '_input_path' in expe:
-            return expe['_input_path']
-        else:
-            input_path =  GramExp.make_input_path(expe)
-            expe['_input_path'] = input_path
-            return input_path
+        return expe.get('_input_path')
 
 
     @classmethod

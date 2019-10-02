@@ -181,7 +181,12 @@ class ExpTensor(OrderedDict, BaseObject):
     ''' Represent a set of Experiences (**expe**). '''
     def __init__(self,  *args, **kwargs):
 
-        if len(args) == 1 and isinstance(args[0], (ExpSpace, dict)):
+        if len(args) == 1 and isinstance(args[0], (ExpTensor)):
+            kw = args[0].copy()
+            kw.update(kwargs)
+            kwargs = kw
+            args = args[1:]
+        elif len(args) == 1 and isinstance(args[0], (ExpSpace, dict)):
             self.update_from_dict(args[0])
             args = args[1:]
 
@@ -768,9 +773,21 @@ class ExpTensorV2(BaseObject):
 
             self._bind.append(_bind)
 
-    def check_model_typo(self):
-        ''' Assume default module is pymake '''
+    def check_format(self):
+        ''' check and fix some attribute format.
+
+            Notes
+            -----
+            Assume default module is pymake
+        '''
         for tensor in self._tensors:
+
+            if '_measures' in tensor:
+                measures = tensor['_measures']
+                if isinstance(measures, str):
+                    tensor['_measures'] = measures.split()
+
+            # Check models name
             models = tensor.get('model', [])
             for i, m in enumerate(models):
                 models[i] = resolve_model_name(m)

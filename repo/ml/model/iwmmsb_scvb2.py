@@ -340,7 +340,7 @@ class iwmmsb_scvb2(SVB):
         params = self._reduce_latent()
         self.time_it = (time() - begin_it)
 
-        for meas in self.expe._csv_typo.split():
+        for meas in self.expe._measures:
 
             if meas.lstrip('_') == 'entropy':
                 old_entropy = self._entropy

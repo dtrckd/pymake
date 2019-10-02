@@ -400,12 +400,27 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
     def edge(self, i,j):
         return self.data.edge(i,j)
 
+    def out_neighbors(self, i):
+        for e in self.data.vertex(i).out_neighbors():
+            yield int(e)
+
+    def in_neighbors(self, i):
+        for e in self.data.vertex(i).in_neighbors():
+            yield int(e)
+
+    def all_neighbors(self, i):
+        for e in self.data.vertex(i).all_neighbors():
+            yield int(e)
+
     def weight(self, i,j):
         w = self.data.ep['weights']
         if self.edge(i,j):
             return w[i,j]
         else:
             return 0
+
+    def weights(self):
+        return self.data.ep['weights'].a
 
     def label(self, v):
         l = self.data.vp['labels']
@@ -659,9 +674,9 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             nonlinks_set -= edge_set
             cpt+=1
 
-        self.log.debug('Number of iteration for sampling non-edges: %d' % cpt)
+        self.log.debug('Number of iterations for sampling non-edges: %d' % cpt)
         if cpt >= max_loop:
-            self.log.warning('Sampling tesset nonlinks failed:')
+            self.log.warning('Sampling testset nonlinks failed:')
             print('desires size: %d, obtained: %s' % (zeros_len, len(nonlinks_set)))
 
         jx = np.array(np.unravel_index(list(nonlinks_set), (N,N)))
@@ -726,7 +741,6 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             self.data.set_fast_edge_removal()
 
             edges = self.data.get_edges()
-            weights = self.data.ep['weights']
             n_extra = len(edges) - training_ratio*len(edges)
 
             edges_to_remove = np.random.choice(len(edges), int(n_extra), replace=False)
@@ -829,6 +843,12 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
 
         return g.set_fast_edge_removal(fast=False)
 
+    def iter_edges(self):
+        # too long :(
+        weights = self.data.ep['weights']
+        for i, j, ix in self.data.get_edges():
+            yield i, j, weights[i,j]
+
     def __iter__(self):
 
         # Get the sampling strategy:
@@ -889,11 +909,10 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         neigs = []
         mask_pos = []
         for v in range(N):
-            _out = np.array([int(_v) for _v in g.vertex(v).out_neighbors()])
-            _in = np.array([int(_v) for _v in g.vertex(v).in_neighbors()])
+            _out = np.asarray([(int(_v),weights[v, _v]) for _v in g.vertex(v).out_neighbors()])
+            _in  = np.asarray([(int(_v),weights[_v, v]) for _v in g.vertex(v).in_neighbors()])
             neigs.append([_out, _in])
             mask_pos.append( [list(range(self._zeros_set_len))]*2 )
-
 
         for _mnb in range(self.num_mnb()):
 
@@ -906,6 +925,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             if set_index == 0:
                 out_e = neigs[node][0]
                 if N-len(out_e) > 0 and len(out_e) > 0:
+                    out_e = neigs[node][0][:,0]
 
                     node_info = {'vertex':node, 'direction':0}
                     yield str(set_index), node_info, 1/symmetric_scale*set_len*mask[node, 0]
@@ -941,6 +961,8 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
 
                 in_e = neigs[node][1]
                 if N-len(in_e) > 0 and len(in_e) > 0:
+                    in_e = neigs[node][1][:,0]
+
                     node_info = {'vertex':node, 'direction':1}
                     yield str(set_index), node_info, 1/symmetric_scale*set_len*mask[node, 1]
 
@@ -980,8 +1002,8 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
                 node_info = {'vertex':node, 'direction':0}
                 yield str(set_index), node_info, 1/symmetric_scale*N*set_len
 
-                for target in neigs[node][0]:
-                    yield node, target, weights[node, target]
+                for target, w in neigs[node][0]:
+                    yield node, target, w
             elif set_index == 2:
                 # Sample from links
                 if len(neigs[node][1]) == 0:
@@ -990,8 +1012,8 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
                 node_info = {'vertex':node, 'direction':1}
                 yield str(set_index), node_info, 1/symmetric_scale*N*set_len
 
-                for target in neigs[node][1]:
-                    yield target, node, weights[target, node]
+                for target, w in neigs[node][1]:
+                    yield target, node, w
             else:
                 raise ValueError('Set index error: %s' % set_index)
 

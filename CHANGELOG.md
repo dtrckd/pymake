@@ -1,4 +1,10 @@
-#  0.43
+# 0.43
+* improve spec type. change cvs_typo to measures
+* import modelbase and improve model RandomGraphModel
+* add script integration (load_model, load_data, compute_measure, dump_results)
+* separate pmk cor eand repo
+
+#  0.42.3
 * auto make input_path when loading a corpus from a frontend (graph-tool,.)
 * add load_data method in expeFormat
 * add loguru log formating

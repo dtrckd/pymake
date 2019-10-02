@@ -1,35 +1,21 @@
 import numpy as np
 import scipy as sp
 
+from sklearn.metrics import roc_curve, auc, precision_recall_curve, average_precision_score
+from sklearn.metrics import mean_squared_error
+
 from scipy.io.matlab import loadmat
 from scipy.sparse import lil_matrix
+
+from ml.model import RandomGraphModel
+
 try:
     from rescal import rescal_als
 except ImportError as e:
     print('Import Error: %s' % e)
 
 
-from .modelbase import ModelBase
-
-class Rescal_als(ModelBase):
-
-    def _init_params(self, frontend):
-        frontend = self.frontend
-
-        # Save the testdata
-        self.data_test = frontend.data_test_w
-
-        # For fast computation of bernoulli pmf.
-        self._w_a = self.data_test[:,2].T.astype(int)
-        self._w_a[self._w_a > 0] = 1
-        self._w_a[self._w_a == 0] = -1
-        self._w_b = np.zeros(self._w_a.shape, dtype=int)
-        self._w_b[self._w_a == -1] = 1
-
-        self._K = self.expe.K
-
-    def _reduce_latent(self):
-        return self._theta, self._phi
+class Rescal_als(RandomGraphModel):
 
     def likelihood(self, theta=None, phi=None):
         if theta is None:
@@ -56,35 +42,13 @@ class Rescal_als(ModelBase):
 
         ll = pij * self._w_a + self._w_b
 
-        ll[ll<=1e-300] = 1e-300
-        # Log-likelihood
+        # Log-likelihood (Perplexity is 2**H(X).)
+        ll[ll<=1e-300] = 1e-200
         ll = np.log(ll).sum()
-        # Perplexity is 2**H(X).
+
         return ll
 
-    def compute_roc(self, theta=None, phi=None, **kws):
-        from sklearn.metrics import roc_curve, auc, precision_recall_curve
 
-        if 'likelihood' in kws:
-            pij = kws['likelihood']
-        else:
-            if theta is None:
-                theta, phi = self._reduce_latent()
-            pij = self.likelihood(theta, phi)
-
-        weights = np.squeeze(self.data_test[:,2].T)
-
-        y_true = weights.astype(bool)*1
-        self._probas = pij
-        self._y_true = y_true
-
-        fpr, tpr, thresholds = roc_curve(y_true, pij)
-        roc = auc(fpr, tpr)
-        return roc
-
-    def compute_pr(self, *args, **kwargs):
-        from sklearn.metrics import average_precision_score
-        return average_precision_score(self._y_true, self._probas)
 
     def compute_wsim(self, *args, **kws):
         return None
@@ -103,7 +67,6 @@ class Rescal_als(ModelBase):
         y = frontend.adj()
         data = [y]
 
-        self.log.info("Fitting `%s' model" % (type(self)))
         A, R, fit, itr, exectimes = rescal_als(data, K, init='nvecs', lambda_A=10, lambda_R=10)
 
         self._theta = A

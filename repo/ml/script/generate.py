@@ -684,71 +684,71 @@ class GenNetwork(ExpeFormat):
                 print(t1)
                 print(t2)
 
-    @ExpeFormat.raw_plot('corpus', 'testset_ratio')
-    def roc(self, frame,  _type='testset', _ratio=100):
-        ''' AUC/ROC test report '''
-        from sklearn.metrics import roc_curve, auc, precision_recall_curve
-        expe = self.expe
-        model = self.model
-        data = self.frontend.data
-        _ratio = int(_ratio)
-        _predictall = (_ratio >= 100) or (_ratio < 0)
-        if not hasattr(expe, 'testset_ratio'):
-            setattr(expe, 'testset_ratio', 20)
+    #@ExpeFormat.raw_plot('corpus', 'testset_ratio')
+    #def roc(self, frame,  _type='testset', _ratio=100):
+    #    ''' AUC/ROC test report '''
+    #    from sklearn.metrics import roc_curve, auc, precision_recall_curve
+    #    expe = self.expe
+    #    model = self.model
+    #    data = self.frontend.data
+    #    _ratio = int(_ratio)
+    #    _predictall = (_ratio >= 100) or (_ratio < 0)
+    #    if not hasattr(expe, 'testset_ratio'):
+    #        setattr(expe, 'testset_ratio', 20)
 
-        ax = frame.ax()
+    #    ax = frame.ax()
 
-        if _type == 'testset':
-            y_true, probas = model.mask_probas(data)
-            if not _predictall:
-                # take 20% of the size of the training set
-                n_d =int( _ratio/100 * data.size * (1 - expe.testset_ratio/100) / (1 - _ratio/100))
-                y_true = y_true[:n_d]
-                probas = probas[:n_d]
-            else:
+    #    if _type == 'testset':
+    #        y_true, probas = model.mask_probas(data)
+    #        if not _predictall:
+    #            # take 20% of the size of the training set
+    #            n_d =int( _ratio/100 * data.size * (1 - expe.testset_ratio/100) / (1 - _ratio/100))
+    #            y_true = y_true[:n_d]
+    #            probas = probas[:n_d]
+    #        else:
 
-                # Log Params statistics
-                theta, phi = model.get_params()
-                print('--- Params stats')
-                print('Theta: shape: %s' %(str(theta.shape)))
-                print('Theta: max: %s | min: %.4f | mean: %.4f | std: %.4f  ' % (theta.max(), theta.min(), theta.mean(), theta.std()))
-                try:
-                    print('Phi: shape: %s' %(str(phi.shape)))
-                    print('Phi: max: %.4f | min: %.4f | mean: %.4f | std: %.4f  ' % (phi.max(), phi.min(), phi.mean(), phi.std()))
-                except:
-                    pass
-                print('prediction:  links(1): %d | non-links(0): %d' % (y_true.sum(), (y_true==0).sum()))
-                print('Prediction: probas stat: mean: %.4f | std: %.4f' % (probas.mean(), probas.std()))
-                print('---')
+    #            # Log Params statistics
+    #            theta, phi = model.get_params()
+    #            print('--- Params stats')
+    #            print('Theta: shape: %s' %(str(theta.shape)))
+    #            print('Theta: max: %s | min: %.4f | mean: %.4f | std: %.4f  ' % (theta.max(), theta.min(), theta.mean(), theta.std()))
+    #            try:
+    #                print('Phi: shape: %s' %(str(phi.shape)))
+    #                print('Phi: max: %.4f | min: %.4f | mean: %.4f | std: %.4f  ' % (phi.max(), phi.min(), phi.mean(), phi.std()))
+    #            except:
+    #                pass
+    #            print('prediction:  links(1): %d | non-links(0): %d' % (y_true.sum(), (y_true==0).sum()))
+    #            print('Prediction: probas stat: mean: %.4f | std: %.4f' % (probas.mean(), probas.std()))
+    #            print('---')
 
-        elif _type == 'learnset':
-            n = int(data.size * _ratio)
-            mask_index = np.unravel_index(np.random.permutation(data.size)[:n], data.shape)
-            y_true = data[mask_index]
-            probas = model.likelihood()[mask_index]
+    #    elif _type == 'learnset':
+    #        n = int(data.size * _ratio)
+    #        mask_index = np.unravel_index(np.random.permutation(data.size)[:n], data.shape)
+    #        y_true = data[mask_index]
+    #        probas = model.likelihood()[mask_index]
 
-        try:
-            fpr, tpr, thresholds = roc_curve(y_true, probas)
-        except Exception as e:
-            print(e)
-            self.log.error('cant format expe : %s' % (self.output_path))
-            return
+    #    try:
+    #        fpr, tpr, thresholds = roc_curve(y_true, probas)
+    #    except Exception as e:
+    #        print(e)
+    #        self.log.error('cant format expe : %s' % (self.output_path))
+    #        return
 
-        roc_auc = auc(fpr, tpr)
-        description = '/'.join((expe._refdir, os.path.basename(self.output_path)))
-        #description = self.specname(expe.model)
-        ax.plot(fpr, tpr, label='ROC %s (area = %0.2f)' % (description, roc_auc), ls=frame.linestyle.next())
-        plt.legend(loc='upper right',prop={'size':5})
-        self.noplot = True
+    #    roc_auc = auc(fpr, tpr)
+    #    description = '/'.join((expe._refdir, os.path.basename(self.output_path)))
+    #    #description = self.specname(expe.model)
+    #    ax.plot(fpr, tpr, label='ROC %s (area = %0.2f)' % (description, roc_auc), ls=frame.linestyle.next())
+    #    plt.legend(loc='upper right',prop={'size':5})
+    #    self.noplot = True
 
-        #precision, recall, thresholds = precision_recall_curve( y_true, probas)
-        #plt.plot(precision, recall, label='PR curve; %s' % (expe.model ))
+    #    #precision, recall, thresholds = precision_recall_curve( y_true, probas)
+    #    #plt.plot(precision, recall, label='PR curve; %s' % (expe.model ))
 
-        if self._it == self.expe_size -1:
-            for c, f in self.gramexp._figs.items():
-                ax = f.fig.gca()
-                ax.plot([0, 1], [0, 1], linestyle='--', color='k', label='Luck')
-                ax.legend(loc="lower right", prop={'size':5})
+    #    if self._it == self.expe_size -1:
+    #        for c, f in self.gramexp._figs.items():
+    #            ax = f.fig.gca()
+    #            ax.plot([0, 1], [0, 1], linestyle='--', color='k', label='Luck')
+    #            ax.legend(loc="lower right", prop={'size':5})
 
     def roc_evolution(self, _type='testset', _type2='max', _ratio=20, _type3='errorbar'):
         ''' AUC difference between two models against testset_ratio

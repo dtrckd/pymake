@@ -1,13 +1,19 @@
-from time import time
 import sys
+from functools import lru_cache
 import numpy as np
 import scipy as sp
 from numpy import ma
 import scipy.stats
 
+from sklearn.metrics import roc_curve, auc, precision_recall_curve, average_precision_score
+from sklearn.metrics import mean_squared_error
+
 from pymake.util.utils import defaultdict2
 from pymake.util.math import lognormalize, categorical, sorted_perm, adj_to_degree, gem
-from ml.model.modelbase import SVB
+from ml.model import RandomGraphModel
+
+
+nbinom_pmf = sp.stats.nbinom.pmf
 
 #import warnings
 #warnings.filterwarnings('error')
@@ -15,8 +21,7 @@ from ml.model.modelbase import SVB
 ##np.seterr(all='print')
 
 
-
-class iwmmsb_scvb3(SVB):
+class iwmmsb_scvb3(RandomGraphModel):
 
     _purge = ['_kernel', '_lut_nbinom', '_likelihood']
 
@@ -41,19 +46,18 @@ class iwmmsb_scvb3(SVB):
         _len['K'] = self.expe.get('K')
         _len['N'] = frontend.num_nodes()
         _len['E'] = frontend.num_edges()
-        _len['nnz'] = frontend.num_nnz()
-        #_len['nnz_t'] = frontend.num_nnz_t()
         _len['dims'] = frontend.num_neighbors()
         _len['nnz_ones'] = frontend.num_edges()
         _len['nnzsum'] = frontend.num_nnzsum()
+        _len['nnz'] = frontend.num_nnz()
+        #_len['nnz_t'] = frontend.num_nnz_t()
         self._len = _len
 
-        self._K = self._len['K']
         self._is_symmetric = frontend.is_symmetric()
 
         # Eta init
         self._eta = []
-        self._eta_limit = 1e-3
+        self._eta_limit = self.expe.tol
         self._eta_control = np.nan
         self._eta_count_init = 25
         self._eta_count = self._eta_count_init
@@ -67,7 +71,6 @@ class iwmmsb_scvb3(SVB):
         self.hyper_phi = np.asarray(self.expe['delta'])
         hyper_phi = self.expe['delta']
 
-
         self._random_ss_init()
 
         shift = self.expe.get('shift_w')
@@ -75,7 +78,7 @@ class iwmmsb_scvb3(SVB):
         # Warn: Instable Part
         #
         if hyper_phi == 'auto':
-            K = self._K
+            K = self._len['K']
             N = self._len['N']
             self._hyper_phi = 'auto'
 
@@ -229,8 +232,12 @@ class iwmmsb_scvb3(SVB):
         if update_kernel:
             k = self.N_Y + self.hyper_phi[0]
             p = self.hyper_phi[2] /( self.hyper_phi[2] * self.N_phi + 1)
-            # @debug: Some invalie values here sometime !!
-            self._kernel = defaultdict2(lambda x:sp.stats.nbinom.pmf(x, k, 1-p))
+
+            @lru_cache(maxsize=1000, typed=False)
+            def _kernel(x):
+                return nbinom_pmf(x, k, 1-p)
+            self._kernel = _kernel
+
 
             if self._hyper_phi == 'auto':
                 N = len(self.pik)
@@ -261,7 +268,7 @@ class iwmmsb_scvb3(SVB):
 
                 #self._residu = np.array([sp.stats.gamma.pdf(rk, self.c0*self.r0, scale=1/self.c0), sp.stats.beta.pdf(pk, self.ce*self.eps, self.ce*(1-self.eps)) ])
 
-        kernel = self._kernel[xij]
+        kernel = self._kernel(xij)
 
         # debug: Underflow
         kernel[kernel<=1e-300] = 1e-100
@@ -303,61 +310,50 @@ class iwmmsb_scvb3(SVB):
     def get_var_phi(self):
         return self._k*self._p / (1-self._p)**2
 
-    def likelihood(self, theta=None, phi=None):
+    def likelihood(self, theta=None, phi=None, data='valid'):
+        """ Compute data likelihood (abrev. ll) with the given estimators
+            onthe given set of data.
+            :data: str
+                valid -> validation data
+                test -> test data
+        """
         if theta is None:
             theta = self._theta
         if phi is None:
             phi = self._phi
 
-        #_likelihood = defaultdict2(lambda x : sp.stats.poisson.pmf(x, phi))
-        _likelihood = defaultdict2(lambda x:sp.stats.nbinom.pmf(x, self._k, 1-self._p))
-        qijs = np.array([ theta[i].dot(_likelihood[xij]).dot(theta[j]) for i,j,xij in self.data_valid])
+        if data == 'valid':
+            data = self.data_valid
+        elif data == 'test':
+            data = self.data_valid
+
+        @lru_cache(maxsize=1000, typed=False)
+        def _likelihood(x):
+            return nbinom_pmf(x, self._k, 1-self._p)
+
+        qijs = np.array([ theta[i].dot(_likelihood(xij)).dot(theta[j]) for i,j,xij in data])
 
         self._likelihood = _likelihood
         #qijs = ma.masked_invalid(qijs)
         return qijs
 
-    def compute_entropy(self, theta=None, phi=None, **kws):
-        return self.compute_entropy_t(theta, phi, **kws)
-
-    def compute_entropy_t(self, theta=None, phi=None, **kws):
-        if not hasattr(self, 'data_test'):
-            return np.nan
-
-        if 'likelihood' in kws:
-            pij = kws['likelihood']
-        else:
-            if theta is None:
-                theta, phi = self._reduce_latent()
-            pij = self.likelihood(theta, phi)
-
-        #weights = self.data_test[:,2].T
-        #ll = sp.stats.poisson.pmf(weights, pij)
-        ll = pij
-
-        ll[ll<=1e-300] = 1e-100
-        # Log-likelihood
-        ll = np.log(ll).sum()
-        # Perplexity is 2**H(X).
-        #
+    def compute_entropy(self, *args, **kwargs):
+        ll = super().compute_entropy(*args, **kwargs)
         self._eta.append(ll)
         return ll
 
-    def compute_elbo(self, theta=None, phi=None, **kws):
-        # how to compute elbo for all possible links weights, mean?
-        return None
 
     def compute_roc(self, theta=None, phi=None, treshold=None, **kws):
-        from sklearn.metrics import roc_curve, auc, precision_recall_curve
-
-        if 'likelihood' in kws:
-            pij = kws['likelihood']
+        if 'data' in kws:
+            pp = kws['data']['pp']
+            data = kws['data']['d']
         else:
             if theta is None:
                 theta, phi = self._reduce_latent()
-            pij = self.likelihood(theta, phi)
+            pp = self.posterior(theta, phi)
+            data = self.data_test
 
-        weights = np.squeeze(self.data_test[:,2].T)
+        weights = np.squeeze(data[:,2].T)
 
         #treshold = treshold or 'mean_data'
 
@@ -377,62 +373,36 @@ class iwmmsb_scvb3(SVB):
 
         trsh = trsh if trsh>=0 else 1
 
-        self._probas = np.array([1 - sum([theta[i].dot(self._likelihood[v]).dot(theta[j]) for v in range(trsh)]) for i,j,_ in self.data_test])
+        pij = np.array([1 - sum([theta[i].dot(self._likelihood(v)).dot(theta[j]) for v in range(trsh)]) for i,j,_ in data])
 
         y_true = weights.astype(bool)*1
+
         self._y_true = y_true
+        self._probas = pij
 
         fpr, tpr, thresholds = roc_curve(y_true, self._probas)
         roc = auc(fpr, tpr)
         return roc
 
-    def compute_pr(self, *args, **kwargs):
-        from sklearn.metrics import average_precision_score
-        return average_precision_score(self._y_true, self._probas)
-
-    def mask_probas(self, *args):
-        # Copy of compute_roc
-        from sklearn.metrics import roc_curve, auc, precision_recall_curve
-
-        theta, phi = self._reduce_latent()
-
-        weights = self.data_test[:,2]
-
-        treshold = 'mean_model'
-        if treshold == 'mean_data':
-            mean = weights[weights>0].mean()
-            std = weights[weights>0].std()
-        if treshold == 'mean_model':
-            mean_, var_ = self.get_mean_phi(), self.get_var_phi()
-            mean = mean_.mean()
-            std = var_.mean()**0.5
-
-        #trsh = int(mean_w)
-        trsh = int(mean+std)
-
-        qijs = self.likelihood(theta, phi)
-        y_true = weights.astype(bool)*1
-        probas = 1 - sp.stats.poisson.cdf(trsh, qijs)
-
-        return y_true, probas
-
-
     def compute_wsim(self, theta=None, phi=None, **kws):
-        if 'likelihood' in kws:
-            pij = kws['likelihood']
+        if 'data' in kws:
+            pp = kws['data']['pp']
+            data = kws['data']['d']
         else:
             if theta is None:
                 theta, phi = self._reduce_latent()
-            pij = self.likelihood(theta, phi)
+            pp = self.posterior(theta, phi)
+            data = self.data_test
 
-        weights = self.data_test[:,2].T
+        wd = data[:,2].T
+        ws = pp
 
-        ws = np.array([ theta[i].dot(phi).dot(theta[j]) for i,j,w in self.data_test if w > 0])
+        ## l1 norm
+        #nnz = len(wd)
+        #mean_dist = np.abs(ws - wd).sum() / nnz
+        ## L2 norm
+        mean_dist = mean_squared_error(wd, ws)
 
-        # l1 norm
-        wd = weights[weights>0]
-        nnz = len(wd)
-        mean_dist = np.abs(ws - wd).sum() / nnz
         return mean_dist
 
 
@@ -471,8 +441,8 @@ class iwmmsb_scvb3(SVB):
         _qijs_w_sum = 0
         _norm = 0
 
-        self._entropy = self.compute_entropy()
-        print( '__init__ Entropy: %f' % self._entropy)
+        self.measures['entropy'] = (self.compute_entropy(), np.inf)
+        print( '__init__ Entropy: %f' % self.measures['entropy'][0])
         for _it, obj in enumerate(frontend):
 
             source, target, weight = obj
@@ -541,7 +511,6 @@ class iwmmsb_scvb3(SVB):
                 if vertex is None:
                     # Enter here only once !%!
                     mnb_total = frontend.num_mnb()
-                    self.begin_it = time()
 
                     set_pos = _set_pos
                     vertex = _vertex
@@ -578,7 +547,7 @@ class iwmmsb_scvb3(SVB):
                 mnb_num += 1
 
                 if mnb_num % (self.expe['zeros_set_len']*5) == 0:
-                    prop_edge = observed_pt / self._len['nnz']
+                    prop_edge = observed_pt / self._len['N']**2
                     self._observed_pt = observed_pt
                     self.compute_measures()
 
@@ -586,16 +555,17 @@ class iwmmsb_scvb3(SVB):
                     self.log.info('it %d | prop edge: %.2f | mnb %d/%d, %s, Entropy: %f,  diff: %f' % (_it, prop_edge,
                                                                                                        mnb_num, mnb_total,
                                                                                                        '/'.join((self.expe.model, self.expe.corpus)),
-                                                                                                       self._entropy, self.entropy_diff))
-
-                    if self._check_eta():
-                        break
+                                                                                                       self.measures['entropy'][0], self.measures['entropy'][1]))
 
                     if self.expe.get('_write'):
                         self.write_current_state(self)
                         if mnb_num % 4000 == 0:
                             self.save(silent=True)
                             sys.stdout.flush()
+
+                    if self._check_eta():
+                        break
+
 
 
     def _check_eta(self):

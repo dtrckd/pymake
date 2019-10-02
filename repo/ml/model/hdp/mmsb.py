@@ -525,7 +525,7 @@ class GibbsRun(GibbsSampler):
     __abstractmethods__ = 'model'
     def __init__(self, expe, frontend):
         self.comm = dict() # Empty dict to store communities and blockmodel structure
-        self._csv_typo = '_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
+        self._measures = ['_iteration', 'time_it', '_entropy', '_entropy_t', '_K', '_alpha', '_gmma', 'alpha_mean', 'delta_mean', 'alpha_var', 'delta_var']
         #self._fmt = '%d %.4f %.8f %.8f %d %.8f %.8f %.4f %.4f %.4f %.4f'
         GibbsSampler.__init__(self, expe, frontend)
 

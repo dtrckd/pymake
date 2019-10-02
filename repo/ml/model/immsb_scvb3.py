@@ -1,12 +1,14 @@
-from time import time
 import sys
 import numpy as np
 import scipy as sp
 from numpy import ma
 import scipy.stats
 
+from sklearn.metrics import roc_curve, auc, precision_recall_curve, average_precision_score
+from sklearn.metrics import mean_squared_error
+
 from pymake.util.math import lognormalize, categorical, sorted_perm, adj_to_degree, gem
-from ml.model.modelbase import SVB
+from ml.model import RandomGraphModel
 
 #import warnings
 #warnings.filterwarnings('error')
@@ -14,7 +16,8 @@ from ml.model.modelbase import SVB
 ##np.seterr(all='print')
 
 
-class immsb_scvb3(SVB):
+
+class immsb_scvb3(RandomGraphModel):
 
     _purge = ['_kernel', '_lut_nbinom']
 
@@ -24,7 +27,6 @@ class immsb_scvb3(SVB):
         # Save the testdata
         if hasattr(self.frontend, 'data_test'):
             data_test = frontend.data_test_w
-            self._data_test = data_test
 
             N = frontend.num_nodes()
             valid_ratio = frontend.get_validset_ratio() *2 # Because links + non_links...
@@ -34,11 +36,9 @@ class immsb_scvb3(SVB):
             n_test = n_test[n_test>=0]
             self.data_test = data_test[n_test]
             self.data_valid = data_test[n_valid]
-            self._n_test = n_test
-            self._n_valid = n_valid
 
             # For fast computation of bernoulli pmf.
-            self._w_a = self._data_test[:,2].T.astype(int)
+            self._w_a = self.data_valid[:,2].T.astype(int)
             self._w_a[self._w_a > 0] = 1
             self._w_a[self._w_a == 0] = -1
             self._w_b = np.zeros(self._w_a.shape, dtype=int)
@@ -49,19 +49,18 @@ class immsb_scvb3(SVB):
         _len['K'] = self.expe.get('K')
         _len['N'] = frontend.num_nodes()
         _len['E'] = frontend.num_edges()
-        _len['nnz'] = frontend.num_nnz()
-        #_len['nnz_t'] = frontend.num_nnz_t()
         _len['dims'] = frontend.num_neighbors()
         _len['nnz_ones'] = frontend.num_edges()
         _len['nnzsum'] = frontend.num_nnzsum()
+        _len['nnz'] = frontend.num_nnz()
+        #_len['nnz_t'] = frontend.num_nnz_t()
         self._len = _len
 
-        self._K = self._len['K']
         self._is_symmetric = frontend.is_symmetric()
 
         # Eta init
         self._eta = []
-        self._eta_limit = 1e-3
+        self._eta_limit = self.expe.tol
         self._eta_control = np.nan
         self._eta_count_init = 25
         self._eta_count = self._eta_count_init
@@ -210,91 +209,13 @@ class immsb_scvb3(SVB):
 
         return lognormalize(outer_kk.ravel())
 
-
-    def likelihood(self, theta=None, phi=None):
-        if theta is None:
-            theta = self._theta
-        if phi is None:
-            phi = self._phi
-
-        # -- -- /too much memory
-        #sources = self.data_test[:,0].T
-        #targets = self.data_test[:,1].T
-        #qijs = np.diag(theta[sources].dot(phi).dot(theta[targets].T))
-
-        qijs = np.array([ theta[i].dot(phi).dot(theta[j]) for i,j,_ in self._data_test])
-
-        #qijs = ma.masked_invalid(qijs)
-        return qijs
-
-    def compute_entropy(self, theta=None, phi=None, **kws):
-        return self.compute_entropy_t(theta, phi)
-
-    def compute_entropy_t(self, theta=None, phi=None, **kws):
-        if not hasattr(self, 'data_test'):
-            return np.nan
-
-        if 'likelihood' in kws:
-            pij = kws['likelihood']
-        else:
-            if theta is None:
-                theta, phi = self._reduce_latent()
-            pij = self.likelihood(theta, phi)
-
-        ll = pij * self._w_a + self._w_b
-        ll = ll[self._n_valid]
-
-        #ll[ll<=1e-300] = 1e-300
-        # Log-likelihood
-        ll = np.log(ll).sum()
-        # Perplexity is 2**H(X).
+    def compute_entropy(self, *args, **kwargs):
+        ll = super().compute_entropy(*args, **kwargs)
         self._eta.append(ll)
         return ll
 
-    def compute_elbo(self, theta=None, phi=None, **kws):
-        # how to compute elbo for all possible links weights, mean?
-        return None
-
-    def compute_roc(self, theta=None, phi=None, **kws):
-        from sklearn.metrics import roc_curve, auc, precision_recall_curve
-
-        if 'likelihood' in kws:
-            pij = kws['likelihood']
-        else:
-            if theta is None:
-                theta, phi = self._reduce_latent()
-            pij = self.likelihood(theta, phi)
-
-        weights = np.squeeze(self._data_test[:,2].T)
-        y_true = weights.astype(bool)*1
-
-        y_true = y_true[self._n_test]
-        pij = pij[self._n_test]
-
-        self._probas = pij
-        self._y_true = y_true
-
-        fpr, tpr, thresholds = roc_curve(y_true, pij)
-        roc = auc(fpr, tpr)
-        return roc
-
-    def compute_pr(self, *args, **kwargs):
-        from sklearn.metrics import average_precision_score
-        return average_precision_score(self._y_true, self._probas)
-
-    def mask_probas(self, *args):
-        # Copy of compute_roc
-        from sklearn.metrics import roc_curve, auc, precision_recall_curve
-
-        theta, phi = self._reduce_latent()
-
-        y_true = weights.astype(bool)*1
-        probas = self.likelihood(theta, phi)
-
-        return y_true, probas
-
     def compute_wsim(self, *args, **kws):
-        return
+        return np.inf
 
 
     def fit(self, frontend):
@@ -314,8 +235,8 @@ class immsb_scvb3(SVB):
         _qijs_sum = 0
         _norm = 0
 
-        self._entropy = self.compute_entropy()
-        print( '__init__ Entropy: %f' % self._entropy)
+        self.measures['entropy'] = (self.compute_entropy(), np.inf)
+        print( '__init__ Entropy: %f' % self.measures['entropy'][0])
         for _it, obj in enumerate(frontend):
 
             source, target, weight = obj
@@ -385,7 +306,6 @@ class immsb_scvb3(SVB):
                 if vertex is None:
                     # Enter here only once !%!
                     mnb_total = frontend.num_mnb()
-                    self.begin_it = time()
 
                     set_pos = _set_pos
                     vertex = _vertex
@@ -415,7 +335,7 @@ class immsb_scvb3(SVB):
                 mnb_num += 1
 
                 if mnb_num % (self.expe['zeros_set_len']*5) == 0:
-                    prop_edge = observed_pt / self._len['nnz']
+                    prop_edge = observed_pt / self._len['N']**2
                     self._observed_pt = observed_pt
                     self.compute_measures()
 
@@ -423,16 +343,18 @@ class immsb_scvb3(SVB):
                     self.log.info('it %d | prop edge: %.2f | mnb %d/%d, %s, Entropy: %f,  diff: %f' % (_it, prop_edge,
                                                                                                        mnb_num, mnb_total,
                                                                                                        '/'.join((self.expe.model, self.expe.corpus)),
-                                                                                                       self._entropy, self.entropy_diff))
-
-                    if self._check_eta():
-                        break
+                                                                                                       self.measures['entropy'][0],
+                                                                                                       self.measures['entropy'][1]))
 
                     if self.expe.get('_write'):
                         self.write_current_state(self)
                         if mnb_num % 4000 == 0:
                             self.save(silent=True)
                             sys.stdout.flush()
+
+                    if self._check_eta():
+                        break
+
 
 
     def _check_eta(self):

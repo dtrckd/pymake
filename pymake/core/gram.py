@@ -134,6 +134,9 @@ _Gram = [
         nargs='?', const=True,
         help='set seed value. If no seed specified but flag given, it will save/load the current state.'),
 
+    '--profile', dict(dest='_profile', action='store_true',
+                      help='profile a given script and output a .prof file.'),
+
     '--cores', dict(dest='_cores',
                     type=int,
                     help='number of cores to run with runpara command.'),

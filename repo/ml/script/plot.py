@@ -5,6 +5,9 @@ from pymake import GramExp, ExpeFormat
 from pymake.frontend.manager import ModelManager, FrontendManager
 from pymake.plot import _markers, _colors, _linestyle
 
+from sklearn.metrics import roc_curve, auc, precision_recall_curve, average_precision_score
+from sklearn.metrics import mean_squared_error
+
 import matplotlib.pyplot as plt
 
 from loguru import logger
@@ -61,10 +64,10 @@ class Plot(ExpeFormat):
             else:
                 model = self.model
 
-            if hasattr(model, 'compute_'+z.lstrip('_')):
-                value = getattr(model, 'compute_'+z.lstrip('_'))(**self.expe)
-            elif hasattr(self, 'get_'+z.lstrip('_')):
-                value = getattr(self, 'get_'+z.lstrip('_'))()[-1]
+            if hasattr(model, 'compute_'+z):
+                value = getattr(model, 'compute_'+z)(**self.expe)
+            elif hasattr(self, 'get_'+z):
+                value = getattr(self, 'get_'+z)()[-1]
             else:
                 self.log.error('attribute unknown: %s' % z)
                 return
@@ -136,7 +139,7 @@ class Plot(ExpeFormat):
         try:
             values = data[attribute]
         except KeyError as e:
-            func_name = 'get_'+attribute.lstrip('_')
+            func_name = 'get_'+attribute
             if hasattr(self, func_name):
                 values = getattr(self, func_name)(data)
             else:
@@ -151,12 +154,18 @@ class Plot(ExpeFormat):
 
         if expe.get('fig_xaxis'):
             xaxis = expe['fig_xaxis']
+            print(xaxis)
             if isinstance(xaxis, (tuple, list)):
                 xaxis_name = xaxis[0]
                 xaxis_surname = xaxis[1]
             else:
                 xaxis_name = xaxis_surname = xaxis
-            x = np.array(data[xaxis_name], dtype=int)
+
+            try:
+                x = np.array(data[xaxis_name], dtype=int)
+            except ValueError as e:
+                x = np.array(data[xaxis_name], dtype=float)
+
             xmax = frame.get('xmax',[])
             xmin = frame.get('xmin',[])
             xmax.append(max(x))
@@ -259,6 +268,35 @@ class Plot(ExpeFormat):
         entropy = self._to_masked(data['_entropy'])
         nnz = self.model._data_test.shape[0]
         return 2 ** (-entropy / nnz)
+
+    def roc(self):
+        ''' Receiver Operating Curve. '''
+        model = self.load_model(load=True)
+
+        y_true, probas = model.get_ytrue_probas()
+        fpr, tpr, thresholds = roc_curve(y_true, probas)
+
+        roc_auc = auc(fpr, tpr)
+        description = self.get_description()
+
+        plt.plot(fpr, tpr, label='%s | auc=%0.2f' % (description, roc_auc))
+
+        if self._it == self.expe_size -1:
+            plt.plot([0, 1], [0, 1], linestyle='--', color='k', label='Luck')
+            plt.legend(loc="lower right", prop={'size':self.s.get('legend_size',5)})
+
+    def prc(self):
+        ''' Precision/Recall Curve. '''
+        model = self.load_model(load=True)
+
+        y_true, probas = model.get_ytrue_probas()
+        precision, recall, _ = precision_recall_curve(y_true, probas)
+
+        avg_precision = average_precision_score(y_true, probas)
+        description = self.get_description()
+
+        plt.plot(recall, precision, label='%s | precision=%0.2f' % (description, avg_precision))
+
 
     #
     #

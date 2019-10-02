@@ -1,17 +1,13 @@
 import sys, os
 import inspect
 
-# Model Manager Utilities
 import numpy as np
 from numpy import ma
 
-# Frontend Manager Utilities
-from .frontend import DataBase
-from pymake import Model, Corpus,  GramExp
-import pymake.io as io
+from pymake import Model, Corpus
 from pymake.core.types import resolve_model_name
 
-from pymake import logger
+from pymake.core.logformatter import logger
 
 class FrontendManager(object):
     """ Utility Class who aims at mananing/Getting the datastructure at the higher level.
@@ -24,6 +20,11 @@ class FrontendManager(object):
     """
 
     log = logger
+
+    _frontend_ext = ['gt', # graph-tool
+                     'pk', # pickle
+                    ]
+    #_model_ext = @Todo: dense(numpy/pk.gz) or sparse => gt...?
 
 
     @classmethod
@@ -42,7 +43,7 @@ class FrontendManager(object):
             c_ext = None
 
         _corpus = Corpus.get(c_name)
-        if c_ext in GramExp._frontend_ext:
+        if c_ext in cls._frontend_ext:
             # graph-tool object
             # @Todo: Corpus integration!
             if not _corpus:
@@ -97,6 +98,29 @@ class ModelManager(object):
         else:
             raise ValueError('Model type unkonwn: %s' % _type)
 
+    @staticmethod
+    def model_walker(bdir, fmt='list'):
+        models_files = []
+        if fmt == 'list':
+            ### Easy formating
+            for root, dirnames, filenames in os.walk(bdir):
+                for filename in fnmatch.filter(filenames, '*.pk'):
+                    models_files.append(os.path.join(root, filename))
+            return models_files
+        else:
+            ### More Complex formating
+            tree = {'json': [],
+                    'pk': [],
+                    'inference': [] }
+            for filename in fnmatch.filter(filenames, '*.pk'):
+                if filename.startswith(('dico.','vocab.')):
+                    dico_files.append(os.path.join(root, filename))
+                else:
+                    corpus_files.append(os.path.join(root, filename))
+            raise NotImplementedError()
+        return tree
+
+
     def _get_model(self, frontend=None, model=None):
         ''' Get model with lookup in the following order :
             * pymake.model
@@ -119,7 +143,8 @@ class ModelManager(object):
             _model = Model.get(model_name)
         elif isinstance(model_name, list):
             # Sklearn Pipeline
-            from pymake.ml import ModelSkl
+            # # @debug cant be pickled like this !
+            from pymake.model import ModelSkl
             modules = []
             for m in model_name:
                 submodel = Model.get(m)
@@ -150,6 +175,7 @@ class ModelManager(object):
 
     @classmethod
     def _load_model(cls, fn):
+        import pymake.io as io
 
         _fn = io.resolve_filename(fn)
         if not os.path.isfile(_fn):
@@ -159,7 +185,7 @@ class ModelManager(object):
         if not os.path.isfile(_fn) or os.stat(_fn).st_size == 0:
             cls.log.error('No file for this model : %s' %_fn)
             cls.log.debug('The following are available :')
-            for f in GramExp.model_walker(os.path.dirname(_fn), fmt='list'):
+            for f in self.model_walker(os.path.dirname(_fn), fmt='list'):
                 cls.log.debug(f)
             return
 
@@ -173,7 +199,7 @@ class ModelManager(object):
     def update_expe(expe, model):
         ''' Configure some pymake settings if present in model. '''
 
-        pmk_settings = ['_csv_typo', '_fmt']
+        pmk_settings = ['_measures', '_fmt']
 
         for _set in pmk_settings:
             if getattr(model, _set, None) and not expe.get(_set):

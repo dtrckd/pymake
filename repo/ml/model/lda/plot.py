@@ -41,7 +41,7 @@ def tag_from_csv(c):
     return ylabel, label
 
 def csv_row(s):
-    #csv_typo = '# mean_eta, var_eta, mean_alpha, var_alpha, log_perplexity'
+    #measures = '# mean_eta, var_eta, mean_alpha, var_alpha, log_perplexity'
     if s == 'mean eta':
         row = 0
     elif s == 'var eta':

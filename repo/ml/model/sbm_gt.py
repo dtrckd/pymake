@@ -4,42 +4,16 @@ import scipy as sp
 from numpy import ma
 import scipy.stats
 
-from .modelbase import ModelBase
+from sklearn.metrics import roc_curve, auc, precision_recall_curve, average_precision_score
+from sklearn.metrics import mean_squared_error
+
+from ml.model import RandomGraphModel
 
 import graph_tool as gt
 from graph_tool import inference
 
 
-class SbmBase(ModelBase):
-    __abstractmethods__ = 'model'
-
-    def _init_params(self, frontend):
-        frontend = self.frontend
-
-        # Save the testdata
-        self.data_test = frontend.data_test_w
-
-        # For fast computation of bernoulli pmf.
-        self._w_a = self.data_test[:,2].T.astype(int)
-        self._w_a[self._w_a > 0] = 1
-        self._w_a[self._w_a == 0] = -1
-        self._w_b = np.zeros(self._w_a.shape, dtype=int)
-        self._w_b[self._w_a == -1] = 1
-
-        _len = {}
-        _len['K'] = self.expe.get('K')
-        _len['N'] = frontend.num_nodes()
-        _len['E'] = frontend.num_edges()
-        _len['nnz'] = frontend.num_nnz()
-        #_len['nnz_t'] = frontend.num_nnz_t()
-        _len['dims'] = frontend.num_neighbors()
-        _len['nnz_ones'] = frontend.num_edges()
-        _len['nnzsum'] = frontend.num_nnzsum()
-        self._len = _len
-
-        self._K = self._len['K']
-        self._is_symmetric = frontend.is_symmetric()
-
+class SbmBase(RandomGraphModel):
 
     def _equilibrate(self):
         K = self.expe.K
@@ -124,36 +98,13 @@ class SbmBase(ModelBase):
 
         ll = pij * self._w_a + self._w_b
 
-        ll[ll<=1e-300] = 1e-300
-        # Log-likelihood
+        # Log-likelihood (Perplexity is 2**H(X).)
+        ll[ll<=1e-300] = 1e-200
         ll = np.log(ll).sum()
-        # Perplexity is 2**H(X).
-        return ll
+
         #return self._state.entropy()
+        return ll
 
-    def compute_roc(self, theta=None, phi=None, **kws):
-        from sklearn.metrics import roc_curve, auc, precision_recall_curve
-
-        if 'likelihood' in kws:
-            pij = kws['likelihood']
-        else:
-            if theta is None:
-                theta, phi = self._reduce_latent()
-            pij = self.likelihood(theta, phi)
-
-        weights = np.squeeze(self.data_test[:,2].T)
-
-        y_true = weights.astype(bool)*1
-        self._probas = pij
-        self._y_true = y_true
-
-        fpr, tpr, thresholds = roc_curve(y_true, pij)
-        roc = auc(fpr, tpr)
-        return roc
-
-    def compute_pr(self, *args, **kwargs):
-        from sklearn.metrics import average_precision_score
-        return average_precision_score(self._y_true, self._probas)
 
     def compute_wsim(self, *args, **kws):
         return None
@@ -187,7 +138,6 @@ class SbmBase(ModelBase):
         fit_fun = inference.minimize_blockmodel_dl
         spec = self._spec_from_expe(fit_fun)
 
-        self.log.info("Fitting `%s' model with spec: %s" % (type(self), str(spec)))
         self._state = fit_fun(g, **spec)
 
         #inference.mcmc_equilibrate(self._state)
@@ -233,8 +183,6 @@ class WSBM_gt(SbmBase):
         #return self._state.entropy()
 
     def compute_roc(self, theta=None, phi=None, treshold=1, **kws):
-        from sklearn.metrics import roc_curve, auc, precision_recall_curve
-
         if 'likelihood' in kws:
             pij = kws['likelihood']
         else:

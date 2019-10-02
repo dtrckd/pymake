@@ -98,7 +98,7 @@ class Netw(ExpDesign):
         ('iterations', [25, 150]),
         ('testset_ratio', [40, 60, 80]),
         ('_format', '{model}_{corpus}_{K}_{hyper}_{homo}_{N}_{testset_ratio}'),
-        ('_csv_typo', '_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'),
+        ('_measures', '_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'),
 
     ))
 
@@ -116,7 +116,7 @@ class Netw(ExpDesign):
         ('iterations', [25, 150]),
         ('testset_ratio', 20),
         ('_format', '{model}_{iterations}_{corpus}_{K}_{hyper}_{homo}_{N}_{testset_ratio}'),
-        #('_csv_typo', '_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'),
+        #('_measures', '_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'),
 
     ))
 
@@ -203,7 +203,7 @@ class Netw(ExpDesign):
         ('homo'         , 0)         ,
         #('_repeat'      , '*')       ,
         ('_bind'    , ['immsb_cgs.auto', 'ilfm_cgs.fix']),
-        ('_csv_typo ', ('_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var',)),
+        ('_measures ', ('_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var',)),
     ))
 
 
@@ -219,7 +219,7 @@ class Netw(ExpDesign):
         ('hyper'  , ('fix',)),
         ('homo'   , (0,)),
         ('_repeat'   , (6, 7, 8, 9)),
-        ('_csv_typo ', ('_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var',)),
+        ('_measures ', ('_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var',)),
 
     ))
     EXPE_ALL_ICDM_IMMSB = ExpTensor((
@@ -232,7 +232,7 @@ class Netw(ExpDesign):
         ('hyper'  , ('auto',)),
         ('homo'   , (0,)),
         ('_repeat'   , (6, 7, 8, 9)),
-        ('_csv_typo ', ('_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var',)),
+        ('_measures ', ('_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var',)),
     ))
 
 
@@ -250,7 +250,7 @@ class Netw(ExpDesign):
         ('hyper_prior', ('1 2 3 4', '20 2 10 2')),
         ('_repeat'   , (0, 1, 2, 4, 5)),
         ('_bind'    , ['immsb_cgs.auto', 'ilfm_cgs.fix']),
-        ('_csv_typo ', ('_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var',)),
+        ('_measures ', ('_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var',)),
     ))
 
     EXPE_REAL_V2_IBP = ExpTensor((
@@ -263,7 +263,7 @@ class Netw(ExpDesign):
         ('homo'   , (0,)),
         ('N'      , ('all',)),
         ('_repeat'   , list(range(5))),
-        ('_csv_typo ', ('_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var',)),
+        ('_measures ', ('_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var',)),
     ))
 
     EXPE_REAL_V2_IMMSB = ExpTensor((
@@ -276,7 +276,7 @@ class Netw(ExpDesign):
         ('homo'   , (0,)),
         ('N'      , ('all',)),
         ('_repeat'   , list(range(5))),
-        ('_csv_typo ', ('_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var',)),
+        ('_measures ', ('_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var',)),
     ))
 
     RAGNRK = ExpTensor(
@@ -289,7 +289,7 @@ class Netw(ExpDesign):
         homo   = [0],
         N      = [10],
         _repeat = list(range(2)),
-        _csv_typo = '_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
+        _measures = '_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
     )
 
 
@@ -305,7 +305,7 @@ class Netw(ExpDesign):
         iterations  = 10,
         homo = 0,
         _format = '{model}_{corpus}_{K}_{hyper}_{homo}_{N}',
-        #_csv_typo = '_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
+        #_measures = '_iteration time_it _entropy _entropy_t _K _alpha _gmma alpha_mean delta_mean alpha_var delta_var'
     )
 
     debug = ExpTensor(
@@ -320,7 +320,7 @@ class Netw(ExpDesign):
         iterations  = 3,
         homo = 0,
         _format = '{model}_{corpus}_{K}_{hyper}_{homo}_{N}',
-        _csv_typo = '_iteration time_it _entropy _entropy_t _K'
+        _measures = '_iteration time_it _entropy _entropy_t _K'
     )
 
 

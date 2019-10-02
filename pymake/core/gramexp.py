@@ -3,6 +3,7 @@ import random
 import sys, os, re, uuid
 import argparse
 from datetime import datetime
+import cProfile as profile
 import operator
 import fnmatch
 import subprocess
@@ -24,6 +25,8 @@ from pymake.core.logformatter import logger, setup_logger
 
 from pymake.io import is_empty_file
 from pymake.util.utils import colored, basestring, hash_objects
+
+from pymake.frontend.manager import FrontendManager
 
 
 
@@ -96,18 +99,12 @@ class GramExp(object):
     '''
 
     log = logger
-
     _version = pkg_resources.get_distribution('pmk').version
-
-    _frontend_ext = ['gt', # graph-tool
-                     'pk', # pickle
-                    ]
-    #_model_ext = @Todo: dense(numpy/pk.gz) or sparse => gt...?
 
     # has special semantics on **output_path**.
     _special_keywords = [ '_refdir', '_repeat',
-                         '_format', '_csv_typo',
-                        ] # output_path => pmk-basedire/{base_type}/{refdir}/{repeat}/${format}:${csv_typo}
+                         '_format', '_measures',
+                        ] # output_path => pmk-basedire/{base_type}/{refdir}/{repeat}/${format}
 
     # Reserved by GramExp for expe identification
     _reserved_keywords = ['_spec', # for nested specification.
@@ -277,8 +274,8 @@ class GramExp(object):
             And modify some attribute (model)
         '''
         #self._check_exp(self._tensors)
+        self._tensors.check_format()
         self._tensors.check_bind()
-        self._tensors.check_model_typo()
         self._tensors.check_null()
 
 
@@ -521,12 +518,16 @@ class GramExp(object):
             # AUtomatic file path
             if status is not None:
                 cls.log.debug('No _format given, please set _format for output_path settings.')
-            nonunique = ['_expe_name']
-            if _nonunique:
-                nonunique.extend(_nonunique)
+            nonunique = ['_expe_name', '_expe_hash']
+            #if _nonunique:
+            #    nonunique.extend(_nonunique)
 
             argnunique = []
             for i in sorted(set(nonunique)):
+                if i in ('_repeat', '_refdir'):
+                    # ignore thos keys for default format.
+                    continue
+
                 v = expe.get(i, 'oops')
                 if isinstance(v, list):
                     v = v[0]
@@ -564,7 +565,7 @@ class GramExp(object):
             c = c.replace('generator', 'Graph')
             c = c.replace('graph', 'Graph')
             c = 'generator/' + c
-        if c.endswith(tuple('.'+ext for ext in cls._frontend_ext)):
+        if c.endswith(tuple('.'+ext for ext in FrontendManager._frontend_ext)):
             c = c[:-(1+len(c.split('.')[-1]))]
 
         input_dir = os.path.join(cls._pmk_path, 'training', c)
@@ -1015,30 +1016,6 @@ class GramExp(object):
     def save(*args, **kwargs):
         from pymake.io import save
         return save(*args, **kwargs)
-
-
-    @staticmethod
-    def model_walker(bdir, fmt='list'):
-        models_files = []
-        if fmt == 'list':
-            ### Easy formating
-            for root, dirnames, filenames in os.walk(bdir):
-                for filename in fnmatch.filter(filenames, '*.pk'):
-                    models_files.append(os.path.join(root, filename))
-            return models_files
-        else:
-            ### More Complex formating
-            tree = { 'json': [],
-                    'pk': [],
-                    'inference': [] }
-            for filename in fnmatch.filter(filenames, '*.pk'):
-                if filename.startswith(('dico.','vocab.')):
-                    dico_files.append(os.path.join(root, filename))
-                else:
-                    corpus_files.append(os.path.join(root, filename))
-            raise NotImplementedError()
-        return tree
-
 
     @staticmethod
     def get_cls_name(cls):
@@ -1658,7 +1635,15 @@ class GramExp(object):
             # Launch handler
             args = do[1:]
             try:
-                res = pmk(*args)
+
+                if self._conf.get('_profile'):
+                    fn_profile = expe.get('_expe_name') + '.profile'
+                    profile.runctx('pmk(*args)', globals(), locals(),
+                                   sort='cumtime', filename=fn_profile)
+                    res = None
+                else:
+                    res = pmk(*args)
+
                 if res is not None:
                     print(res)
             except KeyboardInterrupt:

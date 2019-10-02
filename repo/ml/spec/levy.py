@@ -38,33 +38,6 @@ class Levy(ExpDesign):
     # * Inference ? Gamma Process ?
     # * Sparsity ?
 
-    wmmsb = ExpTensor (
-        corpus        = ['BA'],
-        model         = 'iwmmsb_scvb',
-        N             = 'all',
-        chunk         = 'adaptative_1',
-        K             = 6,
-        iterations    = 3,
-        hyper         = 'auto',
-        testset_ratio = 20,
-
-        delta = [[2,2]],
-
-        chi_a=10, tau_a=100, kappa_a=0.6,
-        chi_b=10, tau_b=500, kappa_b=0.9,
-
-        homo = 0,
-        mask = 'unbalanced',
-
-        _data_format = 'w',
-        _data_type    = 'networks',
-        _refdir       = 'debug_scvb' ,
-        _format='{corpus}_{model}_{N}_{K}_{iterations}_{hyper}_{homo}_{mask}_{testset_ratio}_{chunk}_{chi_a}-{tau_a}-{kappa_a}_{chi_b}-{tau_b}-{kappa_b}',
-        _csv_typo     = '_iteration time_it _entropy _entropy_t _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b _elbo _roc _pr'
-    )
-    noelw3 = ExpGroup(wmmsb, N='all', chunk=['adaptative_0.1', 'adaptative_1'], corpus=net_old, mask=['unbalanced'], _refdir='noel3')
-
-
 
     warm = ExpTensor(
         corpus        = ['manufacturing'],
@@ -102,7 +75,7 @@ class Levy(ExpDesign):
         _data_type    = 'networks',
         _refdir       = 'debug_scvb3',
         _format='{corpus}_{model}_{N}_{K}_{hyper}_{homo}_{testset_ratio}_{chunk}_{chi_a}-{tau_a}-{kappa_a}_{chi_b}-{tau_b}-{kappa_b}_{delta}_{zeros_set_len}_{zeros_set_prob}',
-        _csv_typo     = '_observed_pt time_it _entropy _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b _roc _wsim _pr',
+        _measures     = '_observed_pt time_it _entropy _K _chi_a _tau_a _kappa_a _chi_b _tau_b _kappa_b _roc _wsim _pr',
     )
 
     # Sparse sampling
@@ -116,7 +89,7 @@ class Levy(ExpDesign):
 
     sbm_base = ExpGroup(warm, model=['sbm_gt', 'wsbm_gt', 'rescal_als'],
                         zeros_set_prob=None, zeros_set_len=None, delta=None,
-                        _csv_typo='time_it _entropy _K _roc _wsim _pr')
+                        _measures='time_it _entropy _K _roc _wsim _pr')
     wsbm2_base = ExpGroup(sbm_base, model = ['wsm_g', 'wsbm2_gt'])
     wsbm_base = ExpGroup(sbm_base, model = ['wsbm_gt'])
 
@@ -145,7 +118,7 @@ class Levy(ExpDesign):
     eta2_base = ExpGroup(warm, testset_ratio=20, _refdir='roc5', corpus=net_w) # roc5§roc5_N
     eta2_sbm = ExpGroup(eta2_base, model=['sbm_gt', 'wsbm_gt', 'rescal_als'],
                         zeros_set_prob=None, zeros_set_len=None, delta=None,
-                        _csv_typo='time_it _entropy _K _roc _wsim _pr')
+                        _measures='time_it _entropy _K _roc _wsim _pr')
 
     eta2_b = ExpGroup(eta2_base, model="immsb_scvb3", zeros_set_prob=1/2, zeros_set_len=10, delta='auto')
     eta2_b10 = eta2_b

@@ -405,7 +405,7 @@ class ModelsLoader(PackageWalker):
 
 class CorpusLoader(PackageWalker):
     def submodule_hook(self, *args, **kwargs):
-        raise NotImplemented('todo :scikit-learn loohup')
+        raise NotImplemented('todo :scikit-learn lookup')
 
     #@classmethod
     #def get_atoms(cls_type=None):

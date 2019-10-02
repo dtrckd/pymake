@@ -16,6 +16,11 @@ lgg = logger
 def lognormalize(x):
     return np.exp(x - np.logaddexp.reduce(x))
 
+def expnormalize(x):
+    b = x.max()
+    y = np.exp(x - b)
+    return y / y.sum()
+
 def categorical(params):
     return np.where(np.random.multinomial(1, params) == 1)[0]
 

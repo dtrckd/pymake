@@ -17,11 +17,12 @@ import pandas as pd
 from pymake import ExpSpace, get_pymake_settings
 from pymake.util.utils import colored, basestring, make_path, hash_objects
 
+from pymake.frontend.manager import ModelManager
+from pymake.frontend.manager import FrontendManager
 
 
 
-''' Sanbox Base class for expe execution.
-'''
+''' Sanbox Base class for expe execution.  '''
 
 
 
@@ -117,24 +118,17 @@ class ExpeFormat(object):
             ))
             self.log.info('-'*10)
 
-        self._set_csv_typo()
+        self._set_measures()
 
-    def _set_csv_typo(self):
-        csv_typo = self.expe.get('_csv_typo')
-        if csv_typo is None:
+    def _set_measures(self):
+        measures = self.expe.get('_measures')
+        if measures is None:
             if 'model' in self.expe:
-                from pymake.frontend.manager import ModelManager
+                #from pymake.frontend.manager import ModelManager
                 model = ModelManager.from_expe(self.expe)
-                csv_typo = getattr(model, '_csv_typo', None)
-                try:
-                    from pymake.frontend.manager import ModelManager
-                    model = ModelManager.from_expe(self.expe)
-                    csv_typo = getattr(model, '_csv_typo', None)
-                except Exception as e:
-                    self.log.debug('No csv_typo spec found...: %s' % e)
-                    csv_typo = None
+                measures = getattr(model, '_measures', None)
 
-        self._csv_typo = csv_typo
+        self._measures = measures
 
     def log_expe(self):
         expe = self.expe
@@ -390,8 +384,7 @@ class ExpeFormat(object):
                     title = s % ctitle
                 else:
                     title = ' '.join(self.gramexp.get_nounique_keys())
-                    if not title:
-                        title = '%s %s' % tuple(map(lambda x:self.expe.get(x, x), ['corpus', 'model']))
+                    title = '%s %s' % tuple(map(lambda x:self.expe.get(x, x), ['corpus', 'model']))
 
                 frame.base = '%s_%s' % (fun.__name__, attribute)
                 frame.args = discr_args
@@ -764,8 +757,10 @@ class ExpeFormat(object):
 
             # @improve: In ModelManager ?
             self.clear_fitfile()
-            if hasattr(self, 'model') and hasattr(self.model, 'save'):
-                if hasattr(self.model, 'write_current_state'):
+            if hasattr(self, 'model') and hasattr(self.model, 'write_current_state'):
+                self.model.compute_measures()
+                self.model.write_current_state(self.model)
+                if hasattr(self.model, 'save'):
                     self.model.save()
 
         if hasattr(self, '_postprocess'):
@@ -802,7 +797,11 @@ class ExpeFormat(object):
             From version 0.42.3, model can either a model or Expeformet instance.
         '''
         line = []
-        for o in self._csv_typo.split():
+        for o in self._measures:
+
+            if '@' in o:
+                o = o.split('@')[0]
+
             if o.startswith('{'): # is a list
                 obj = o[1:-1]
                 brak_pt = obj.find('[')
@@ -819,8 +818,17 @@ class ExpeFormat(object):
                     except (KeyError, AttributeError) as e:
                         values = self.format_error(model, o)
             else: # is atomic ie can be converted to string.
-                try: values = str(getattr(model, o))
-                except (KeyError, AttributeError) as e: values = self.format_error(model, o)
+                try:
+                    values = str(getattr(model, o))
+                except (KeyError, AttributeError) as e:
+                    try:
+                        values = getattr(model, 'measures')
+                        values = str(values[o][0]) if isinstance(values[o], (tuple, list)) else str(values[o])
+                    except (KeyError, AttributeError) as e:
+                        try:
+                            values = str(getattr(model, '_'+o))
+                        except (KeyError, AttributeError) as e:
+                            values = self.format_error(model, o)
 
 
             if isinstance(values, list):
@@ -844,11 +852,11 @@ class ExpeFormat(object):
         self._samples = []
         os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
         self.fname_i = self.output_path + '.inf'
-        if not '_csv_typo' in self.expe:
-            self.log.debug('No _csv_typo, for this model %s, no inference file...'%(self.expe.get('model')))
+        if not '_measures' in self.expe:
+            self.log.debug('No _measures, for this model %s, so no inference file...'%(self.expe.get('model')))
         else:
             self._fitit_f = open(self.fname_i, 'wb')
-            self._fitit_f.write(('#' + self._csv_typo + '\n').encode('utf8'))
+            self._fitit_f.write(('#' + ' '.join(self._measures) + '\n').encode('utf8'))
 
 
     def clear_fitfile(self):
@@ -868,7 +876,7 @@ class ExpeFormat(object):
 
     def load_some(self, filename=None, iter_max=None, comments=('#','%')):
         ''' Load data from file according that each line
-            respect the format in {self._csv_typo}.
+            respect the format in {_measures}.
         '''
         if filename is None:
             filename = self.output_path + '.inf'
@@ -886,7 +894,8 @@ class ExpeFormat(object):
         data = [re.sub("\s\s+" , " ", x.strip()).split() for l,x in enumerate(data) if not x.startswith(comments)]
 
         # Grammar dude ?
-        col_typo = self._csv_typo.split()
+        col_typo = [a.split('@')[0] for a in self._measures]
+
         array = []
         last_elt_size = None
         _pos_failed = set()
@@ -946,7 +955,7 @@ class ExpeFormat(object):
 
     def _write_some(self, _f, samples, buff=20):
         ''' Write data with buffer manager
-            * lines are formatted as {self.csv_typo}
+            * lines are formatted as {_measures}
             * output file is {self._f}
         '''
         #fmt = self.fmt
@@ -975,18 +984,22 @@ class ExpeFormat(object):
         self._write_some(self._fitit_f, samples)
 
     def dump_results(self, model, x_test, y_test=None):
-        ''' Push a measure results in a line of a csv_file. (see _csv_typo).
+        ''' Push a measure results in a line of a csv_file. (see _measures).
 
             Notes
             -----
             Similar to write current state, but we lookup the measure asked (from `_scv_typo`)
-            in {self}, and run it we found it. Write_current_state support more complexe `_csv_typo`.
+            in {self}, and run it we found it. Write_current_state support more complexe `_measures`.
         '''
 
         self.log.info('dumping results in: %s' % self._fitit_f)
         samples = []
-        for o in self._csv_typo.split():
-            fun = getattr(self, o)
+        for o in self._measures:
+            try:
+                fun = getattr(self, o)
+            except AttributeError as e:
+                fun = getattr(self, '_'+o)
+
             if y_test is None:
                 sample = fun(model, x_test)
             else:
@@ -1020,9 +1033,12 @@ class ExpeFormat(object):
         ''' :load: boolean. Load from **preprocess** file is true else
                             it is a raw loading.
         '''
-        from pymake.frontend.manager import ModelManager
+        #from pymake.frontend.manager import ModelManager
 
-        self.model = ModelManager.from_expe(self.expe, frontend=frontend, model=model, load=load)
+        self.model = ModelManager.from_expe(self.expe,
+                                            frontend=frontend,
+                                            model=model,
+                                            load=load)
         if load is False:
             self.configure_model(self.model)
 
@@ -1032,7 +1048,7 @@ class ExpeFormat(object):
         ''' See -nld and -sld option for control over load/save status
             of frontend data.
         '''
-        from pymake.frontend.manager import FrontendManager
+        #from pymake.frontend.manager import FrontendManager
 
         frontend = FrontendManager.load(self.expe)
         return frontend
