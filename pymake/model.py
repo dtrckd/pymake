@@ -5,6 +5,7 @@ from importlib import import_module
 from copy import deepcopy
 from collections import defaultdict, OrderedDict
 
+#import warnings
 import numpy as np
 import scipy as sp
 
@@ -27,8 +28,10 @@ class ModelBase(object):
         '_write' : False,
         '_measures' : [],
         '_fmt' : [], # unused...
+        'snapshot_freq': 50,
+
+        # @deprecated => use model skl to wrap all model !
         'iterations' : 3,
-        'snapshot_freq': 42,
         'burnin' :  5, # (inverse burnin, last sample to keep
         'thinning' : 1,
     }
@@ -54,7 +57,7 @@ class ModelBase(object):
         for k, v in self.default_settings.items():
             self._set_default_settings(k, expe, v)
 
-        self._typo_kws = self._extract_typo_kws()
+        #self._typo_kws = self._extract_typo_kws() # <as used for precomputation, may be reused ...
         self._meas_kws = self._extract_meas_kws()
         self.measures = {}
         self._measure_cpt = 0
@@ -197,42 +200,23 @@ class ModelBase(object):
 
         params = self._reduce_latent()
 
-        # Measures preprocessing
-        # @ml model dependancy here
-        precomp = {}
-        for data in self._typo_kws.get('data', []):
-
-            if data == 'valid':
-                ll = self.likelihood(*params, data=data)
-                pp = None
-            elif data == 'test':
-                ll = None
-                pp = self.posterior(*params, data=data)
-            else:
-                raise ValueError
-
-            key = 'data_' + data
-            precomp[key] = {'d': getattr(self, key),
-                            'll': ll,
-                            'pp': pp, }
-
         for meas, kws in self._meas_kws.items():
-
-            if 'data' in kws:
-                # @ml model dependancy here
-                kws = kws.copy()
-                v = kws['data']
-                key = '_'.join(('data',v))
-                if key in precomp:
-                    # @ml model dependency
-                    kws['data'] = precomp[key]
 
             if 'measure_freq' in kws:
                 if self._measure_cpt % kws['measure_freq'] != 0:
                     continue
 
-            if hasattr(self, 'compute_'+meas):
-                _meas = getattr(self, 'compute_'+meas)(*params, **kws)
+            # lstrip('_') is a usefull hack for identical measure with diferent parameter...
+            if hasattr(self, 'compute_'+meas.lstrip('_')):
+                _meas = getattr(self, 'compute_'+meas.lstrip('_'))(*params, **kws)
+                ##with np.errstate(all='raise'):
+                #with warnings.catch_warnings():
+                #    warnings.filterwarnings('error')
+                #    try:
+                #        _meas = getattr(self, 'compute_'+meas.lstrip('_'))(*params, **kws)
+                #    except (Warning, ValueError) as e:
+                #        self.log.warning(e)
+                #        _meas = np.nan
             else:
                 # Assume already computed
                 _meas = getattr(self, meas) # raise exception if not here.
@@ -327,7 +311,8 @@ class ModelBase(object):
         if not silent:
             self.log.info('Snapshotting Model: %s' % fn)
         else:
-            sys.stdout.write('+')
+            print('+', end='')
+            sys.stdout.flush()
 
         io.save(fn, model, silent=True)
 
@@ -440,7 +425,6 @@ class ModelBase(object):
                     #
                     if _it > 0 and _it % self.snapshot_freq == 0:
                         self.save(silent=True)
-                        sys.stdout.flush()
         '''
         raise NotImplementedError
 

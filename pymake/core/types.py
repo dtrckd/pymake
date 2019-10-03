@@ -1,8 +1,10 @@
 from copy import copy, deepcopy
 import traceback,  importlib
-import numpy as np
 from collections import OrderedDict, defaultdict
 from itertools import product
+
+from numpy import char
+from numpy import prod
 
 from pymake import get_pymake_settings
 from pymake.util.utils import get_dest_opt_filled, hash_objects, ask_sure_exit, basestring, colored
@@ -89,7 +91,7 @@ def _table_(tables, headers=[], max_line=10, max_row=30, name=''):
             junk = max_line % size
             table += ['-']*junk
             table = [table[j:max_line*(i+1)] for i,j in enumerate(range(0, size, max_line))]
-            table = np.char.array(table).astype('|S'+str(max_row))
+            table = char.array(table).astype('|S'+str(max_row))
             fmt = 'simple'
             raw.append(tabulate(table.T,
                                 headers=[colored(headers[sec], 'bold')]+['']*(col),
@@ -270,7 +272,7 @@ class ExpTensor(OrderedDict, BaseObject):
 
     def get_size(self, virtual=False):
         if virtual:
-            return  np.prod([len(x) for x in self.values()])
+            return  prod([len(x) for x in self.values()])
         else:
             return self._size
 
@@ -279,7 +281,7 @@ class ExpTensor(OrderedDict, BaseObject):
         ''' push one dict inside a exptensor.
             It extend _bind rule to filter the tensor.
         '''
-        tensor_len = np.prod([len(x) for x in self.values()])
+        tensor_len = prod([len(x) for x in self.values()])
         if len(self) == 0:
             self.update_from_dict(d)
             return True

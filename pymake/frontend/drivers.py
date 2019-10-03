@@ -2,12 +2,6 @@ from numpy import ma
 import numpy as np
 from pymake import logger
 
-try:
-    import pandas as pd
-except Exception as e:
-    print('Error while importing pandas: %s' % e)
-
-
 
 class DatasetDriver(object):
 
@@ -84,6 +78,7 @@ class DatasetDriver(object):
     @classmethod
     def parse_dancer(cls, fn, sep=';'):
         """ Parse Network data depending on type/extension """
+        import pandas as pd
         cls.log.debug('opening file: %s' % fn)
 
         data = pd.read_csv(fn, sep=sep, names=['n', 'feat', 'cluster' ], comment=cls._comment)
@@ -110,6 +105,7 @@ class DatasetDriver(object):
     @classmethod
     def parse_dat(cls, fn, sep="\s+"):
         """ Parse Network data depending on type/extension """
+        import pandas as pd
         cls.log.debug('opening file: %s' % fn)
 
         def _row_len(fn):

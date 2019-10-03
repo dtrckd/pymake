@@ -10,12 +10,10 @@ from collections import OrderedDict
 from tabulate import tabulate
 
 import numpy as np
-import scipy as sp
 import scipy.sparse as sparse
-import pandas as pd
 
 from pymake import ExpSpace, get_pymake_settings
-from pymake.util.utils import colored, basestring, make_path, hash_objects
+from pymake.util.utils import colored, basestring, make_path
 
 from pymake.frontend.manager import ModelManager
 from pymake.frontend.manager import FrontendManager
@@ -137,7 +135,7 @@ class ExpeFormat(object):
                 ('N', 'N=%s'),
                 ('K', 'K=%s')]
         msg = [fmt%(self.specname(expe[x])) for x, fmt in keys if expe.get(x)]
-        msg = '--'.join(msg)
+        msg = ' -- '.join(msg)
         return msg
 
     def get_expe_len(self):
@@ -844,7 +842,6 @@ class ExpeFormat(object):
         self.log.critical("expe setting ${_format} is probably wrong !")
         self.log.error("model `%s' do not contains one of object: %s" % (str(model), o))
         print('Continue...')
-        #os._exit(2)
         return 'None'
 
     def init_fitfile(self):
@@ -911,9 +908,6 @@ class ExpeFormat(object):
                 try:
                     o = col_typo[true_pos]
                 except:
-                    #print(col_typo)
-                    #print(data_line)
-                    #print(true_pos)
                     if true_pos not in _pos_failed:
                         self.log.warning('No value found for pos: %d' % true_pos)
                         _pos_failed.add(true_pos)
@@ -1059,6 +1053,7 @@ class ExpeFormat(object):
         path = os.path.join(path, fn)
         f, ext = os.path.splitext(path)
         if ext in ('.csv', '.txt'):
+            import pandas as pd
             func = pd.read_csv
             kwargs = {}
         elif ext in ('.npy',):

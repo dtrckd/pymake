@@ -3,8 +3,7 @@ import setuptools
 from codecs import open
 from os import path
 
-#__version__ = subprocess.check_output(["git", "describe"]).strip()
-__version__ = '0.42.3'
+from pymake import __version__
 
 try:
     from Cython.Build import cythonize
@@ -24,7 +23,7 @@ install_requires = list(filter(None, install_requires))
 
 # Packages
 packages = setuptools.find_packages()
-packages += ['repo/ml'] +  ['repo/ml/'+p for p in setuptools.find_packages('repo/ml/')]
+#packages += ['repo/ml'] +  ['repo/ml/'+p for p in setuptools.find_packages('repo/ml/')]
 
 
 setuptools.setup(
@@ -40,7 +39,7 @@ setuptools.setup(
         'console_scripts': ['pmk=pymake.zymake:main'],
     },
     packages=packages,
-    package_dir={'ml' : 'repo/ml'},
+    #package_dir={'ml' : 'repo/ml'},
     package_data={'pymake' : ['pmk.cfg', 'template/*.template']},
     include_package_data=True,
     keywords=['pymake', 'learning', 'model'],

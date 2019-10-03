@@ -6,21 +6,11 @@ import json
 from string import Template
 
 import numpy as np
-import scipy as sp
 
 from builtins import input
 basestring = (str, bytes)
 
-
-try:
-    from terminal import colorize
-    colored = lambda *x : str(colorize(x[0], x[1]))
-except ImportError:
-    from pymake.core.logformatter import logger
-    lgg = logger
-    lgg.debug("needs `terminal' module for colors printing")
-    colored = lambda *x : x[0]
-
+from .colors import colored
 
 #from itertools import cycle
 class Cycle(object):

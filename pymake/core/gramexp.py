@@ -5,16 +5,17 @@ import argparse
 from datetime import datetime
 import cProfile as profile
 import operator
-import fnmatch
 import subprocess
 import shlex
 import inspect, traceback, importlib
-import pkg_resources
 from collections import defaultdict, OrderedDict
 from functools import reduce, wraps
 from copy import deepcopy
 import shelve
-import numpy as np
+
+from math import ceil
+from numpy.random import seed as npseed
+from numpy.random import randint as nprandint
 
 from pymake.core import get_pymake_settings, PmkTemplate, get_db_file
 from pymake.core.types import ExpDesign, ExpTensor, ExpSpace, Model, Corpus, Script, Spec, ExpVector
@@ -27,6 +28,8 @@ from pymake.io import is_empty_file
 from pymake.util.utils import colored, basestring, hash_objects
 
 from pymake.frontend.manager import FrontendManager
+
+from pymake import __version__
 
 
 
@@ -99,7 +102,6 @@ class GramExp(object):
     '''
 
     log = logger
-    _version = pkg_resources.get_distribution('pmk').version
 
     # has special semantics on **output_path**.
     _special_keywords = [ '_refdir', '_repeat',
@@ -397,6 +399,7 @@ class GramExp(object):
         ''' Construct an 2d sink array.
             Return the zeros valued array of dimensions given by x and y {keys} dimension
         '''
+        import numpy as np
 
         loc = []
 
@@ -429,6 +432,7 @@ class GramExp(object):
         ''' Construct an nd sink array.
             Return the zeros valued array of dimensions given by x and y {keys} dimension
         '''
+        import numpy as np
 
         loc = OrderedDict()
 
@@ -621,7 +625,7 @@ class GramExp(object):
         import pymake.core.gram as _gram
         parser = _gram.ExpArgumentParser(description=description, epilog=usage,
                                         formatter_class=argparse.RawDescriptionHelpFormatter)
-        parser.add_argument('-V', '--version', action='version', version='%(prog)s '+ cls._version)
+        parser.add_argument('-V', '--version', action='version', version='%(prog)s '+ __version__)
 
         return parser
 
@@ -1033,7 +1037,7 @@ class GramExp(object):
 
         if _seed is None:
             seed0 = random.randint(0, 2**128)
-            seed1 = np.random.randint(0, 2**32, 10)
+            seed1 = nprandint(0, 2**32, 10)
             seed = [seed0, seed1]
         elif type(_seed) is str and str.isdigit(_seed):
             _seed = int(_seed)
@@ -1064,20 +1068,19 @@ class GramExp(object):
             try:
                 self._seed = self.load(_seed_path)
                 random.seed(self._seed[0])
-                np.random.seed(self._seed[1])
+                npseed(self._seed[1])
                 #np.random.set_state(seed_state)
             except FileNotFoundError as e:
                 self.log.error("Cannot initialize seed, %s file does not exist." % _seed_path)
-                sid = [np.random.randint(0, 2**63), np.random.randint(0, 2**32)]
+                sid = [nprandint(0, 2**63), nprandint(0, 2**32)]
                 self.save(_seed_path, sid, silent=True)
-                #self.save(_seed_path, np.random.get_state() silent=True)
                 raise FileNotFoundError('%s file just created, try again !')
 
         if seed:
             # if no seed is given, it's impossible to get a seed from numpy
             # https://stackoverflow.com/questions/32172054/how-can-i-retrieve-the-current-seed-of-numpys-random-number-generator
             random.seed(seed[0])
-            np.random.seed(seed[1])
+            npseed(seed[1])
 
             # Save state
             self.save(_seed_path, seed, silent=True)
@@ -1221,7 +1224,7 @@ class GramExp(object):
 
         if cmdlines is None:
             indexs = list(map(str, indexs))
-            chunk = int(np.ceil(len(indexs) / len(remotes)))
+            chunk = int(ceil(len(indexs) / len(remotes)))
             indexs = [indexs[i:i+chunk] for i in range(0, len(indexs), chunk)]
 
             # Creates a list of commands that pick each index
@@ -1494,7 +1497,7 @@ class GramExp(object):
                 template = None
             else:
                 _ver = _ver.groups()[0]
-                if _ver != cls._version:
+                if _ver != __version__:
                     template = None
 
         if template is None:
@@ -1564,7 +1567,7 @@ class GramExp(object):
         os.makedirs(os.path.join(home, '.bash_completion.d'), exist_ok=True)
         with open(completion_fn, 'w') as _f:
             template = PmkTemplate(template)
-            template = template.substitute(projectname=prjt, version=cls._version,
+            template = template.substitute(projectname=prjt, version=__version__,
                                            specs=specs,
                                            all_scripts=all_scripts,
                                            sur_scripts=sur_scripts,
@@ -1635,6 +1638,18 @@ class GramExp(object):
             # Launch handler
             args = do[1:]
             try:
+                ##############################################################
+                # Matplotlib Global Settings
+                ##############################################################
+                if not os.environ.get('DISPLAY'):
+                    # Plot in nil/void
+                    import matplotlib; matplotlib.use('Agg')
+                    logger.debug("==> Warning : Unable to load DISPLAY, try : `export DISPLAY=:0.0'")
+                else:
+                    # Plot config
+                    import matplotlib.pyplot as plt
+                    plt.rc('font', size=14)  # controls default text sizes
+                ##############################################################
 
                 if self._conf.get('_profile'):
                     fn_profile = expe.get('_expe_name') + '.profile'

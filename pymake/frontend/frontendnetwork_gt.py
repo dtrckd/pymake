@@ -329,6 +329,9 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
 
     @classmethod
     def _save_data(cls, fn, data):
+        if not hasattr(data, 'save'):
+            cls.log.debug('data as no attribut save: %s' % fn)
+            return
         driver = data.save
         return super()._save_data(fn, None, driver=driver)
 

@@ -1,8 +1,6 @@
 import sys, os
 import inspect
-
-import numpy as np
-from numpy import ma
+import fnmatch
 
 from pymake import Model, Corpus
 from pymake.core.types import resolve_model_name
@@ -185,7 +183,7 @@ class ModelManager(object):
         if not os.path.isfile(_fn) or os.stat(_fn).st_size == 0:
             cls.log.error('No file for this model : %s' %_fn)
             cls.log.debug('The following are available :')
-            for f in self.model_walker(os.path.dirname(_fn), fmt='list'):
+            for f in cls.model_walker(os.path.dirname(_fn), fmt='list'):
                 cls.log.debug(f)
             return
 
