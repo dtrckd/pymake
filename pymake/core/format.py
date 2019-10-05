@@ -213,7 +213,7 @@ class ExpeFormat(object):
 
     def get_description(self, full=False):
         if full:
-            return '/'.join((self.expe._refdir, os.path.basename(self.output_path)))
+            return '/'.join((self.expe.get('_refdir',''), os.path.basename(self.output_path)))
         else:
             return os.path.basename(self.output_path)
 
@@ -344,6 +344,12 @@ class ExpeFormat(object):
                     if len(args) > 2:
                         discr_args = args[2].split('/')
 
+                if '@' in attribute:
+                    attribute, opts = attribute.split('@')
+                    repeatkey = opts[0]
+                else:
+                    repeatkey = None
+
                 if groups:
                     groups = groups.split('/')
                     self._groups = groups
@@ -366,6 +372,11 @@ class ExpeFormat(object):
                         figs[gg].fig = plt.figure()
                         figs[gg].linestyle = _linestyle.copy()
                         figs[gg].markers = _markers.copy()
+                        if repeatkey:
+                            figs[gg].is_errorbar = True
+                            figs[gg].repeatkey = repeatkey
+                        else:
+                            figs[gg].is_errorbar = False
 
                     self.gramexp._figs = figs
 

@@ -1190,7 +1190,7 @@ class GramExp(object):
         '''
 
         NDL = get_pymake_settings('loginfile')
-        workdir = get_pymake_settings('remote_pwd')
+        workdir = get_pymake_settings('ssh_remote')
         remotes = list(filter(None, [s for s in open(NDL).read().split('\n') if not s.startswith(('#', '%'))]))
 
         basecmd = sys.argv.copy()
