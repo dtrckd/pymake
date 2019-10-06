@@ -14,6 +14,7 @@ import scipy.sparse as sparse
 
 from pymake import ExpSpace, get_pymake_settings
 from pymake.util.utils import colored, basestring, make_path
+# from terminal import colored
 
 from pymake.frontend.manager import ModelManager
 from pymake.frontend.manager import FrontendManager
@@ -341,6 +342,7 @@ class ExpeFormat(object):
                     else:
                         attribute = groups.pop(-1)
                         groups = groups[0]
+
                     if len(args) > 2:
                         discr_args = args[2].split('/')
 
@@ -567,9 +569,9 @@ class ExpeFormat(object):
                     table = array[:,:,:,zpos]
                     mtable = self.highlight_table(np.around(fop(table, 0), decimals=3))
                     vtable = np.around(table.std(0), decimals=3)
-                    table_mean = np.char.array(mtable).astype("|S42")
-                    table_std = np.char.array(vtable).astype("|S42")
-                    arr = table_mean + b' pm ' + table_std
+                    mtable = np.char.array(mtable).astype("|S42")
+                    vtable = np.char.array(vtable).astype("|S42")
+                    arr = mtable + b' \pm ' + vtable
 
                     new_table = _table.copy()
                     new_table.array = arr

@@ -1,5 +1,4 @@
 loguru
-terminal
 tabulate
 Whoosh
 numpy

@@ -65,8 +65,8 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             elif 'value' in data.ep:
                 weights = data.ep['value'].copy()
                 #w.a = (2**0.5)**w.a # exponentiate
-                #weights.a = np.round((weights.a+1)**2) # squared
-                weights.a = np.round(weights.a *10) # assume ten authors by paper for (collaboration networks)
+                #weights.a = np.ceil((weights.a+1)**2) # squared
+                weights.a = np.ceil(weights.a *10) # assume ten authors by paper for (collaboration networks)
                 data.ep['weights'] = weights.copy('int')
             else:
                 weights = data.new_ep("int")
@@ -197,7 +197,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         # If nolabels remove that property
         n_label = 0
         for v in range(g.num_vertices()):
-            if g.vp['labels']:
+            if g.vp['labels'][v]:
                 n_label += 1
                 break
 
@@ -247,7 +247,6 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
                     ix = np.where(edges[:,2]==_ix)[0][0]
                     i, j = edges[ix, :2]
                     weights[i,j] += len(g.edge(i,j, all_edges=True))
-
 
                 del g.ep['weight']
             elif w.a.max() == 1 and w.a.min() == -1:
@@ -302,7 +301,6 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         else:
             # Assume unweighted network
             weights.a = 1
-
 
         # Remove parallel edges
         #gt.stats.remove_parallel_edges(g) # dont't resize .a !
@@ -601,7 +599,6 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         ids = np.random.randint(0, self.data.num_vertices(), n_to_remove)
         self.data.remove_vertex(ids)
         self.data.shrink_to_fit()
-
 
 
     #

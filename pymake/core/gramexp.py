@@ -247,7 +247,13 @@ class GramExp(object):
         self._tensors.set_default_all(default_expe)
 
     def exp_setup(self, conf, expdesign=None):
-        ''' work in self._tensors '''
+        ''' work in self._tensors
+
+            Notes
+            -----
+            See alsor exp_init for expe individual initialization (seed, path, etc)
+
+        '''
 
         # Make main data structure
         self._tensors = ExpTensorV2.from_conf(conf, private_keywords=self._private_keywords,
@@ -1088,6 +1094,7 @@ class GramExp(object):
             self._seed = seed
 
         # Init I/O settings
+        # @debug: do this in expsetup !
         expe['_output_path'] = self.make_output_path(expe, _null=self._tensors._null, _nonunique=self.get_nounique_keys())
         expe['_input_path'] = self.make_input_path(expe)
 
