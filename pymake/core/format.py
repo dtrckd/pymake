@@ -731,7 +731,7 @@ class ExpeFormat(object):
         gramexp.update_default_expe(cls)
 
         # Put a valid expe a the end.
-        gramexp.reorder_firstnonvalid()
+        #gramexp.reorder_firstnonvalid()
 
         if not gramexp._conf.get('simulate'):
             cls.log.info(gramexp.exptable())
@@ -883,6 +883,15 @@ class ExpeFormat(object):
 
         self._fitit_f.close()
 
+    def _csv_sample(self, attribute):
+        ''' return the parameter {measure_freq} for the measure :attribute:. '''
+        _sample = None
+        attrs = [x.split('@')[0] for x in self._measures]
+        if attribute in attrs:
+            kwargs = dict(x.split('=') for x in self._measures[attrs.index(attribute)].split('@')[1].split('&'))
+            _sample = kwargs.get('measure_freq')
+
+        return _sample
 
     def load_some(self, filename=None, iter_max=None, comments=('#','%')):
         ''' Load data from file according that each line

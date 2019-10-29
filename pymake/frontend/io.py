@@ -142,6 +142,7 @@ def is_empty_file(filen):
     if os.path.exists(filen+'.gz'):
         filen = filen+'.gz'
 
+    # don't exists or empty
     if not os.path.isfile(filen) or os.stat(filen).st_size == 0:
         return True
 
@@ -151,7 +152,7 @@ def is_empty_file(filen):
         first_line = '...'
 
     if first_line[0] in ('#', '%') and sum(1 for line in open(filen)) <= 1:
-        # empy file
+        # empy file (only first commented line)
         return True
     else:
        return False

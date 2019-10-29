@@ -927,12 +927,12 @@ class GramExp(object):
             commands.append(command)
         return commands
 
-    def reorder_firstnonvalid(self, ext='pk'):
-        for i, e in enumerate(self.lod):
-            if not self.make_output_path(e, ext, status='f', _null=self._tensors._null, _nonunique=self.get_nounique_keys()):
-                self.lod[0], self.lod[i] = self.lod[i], self.lod[0]
-                break
-        return
+    #def reorder_firstnonvalid(self, ext='pk'):
+    #    for i, e in enumerate(self.lod):
+    #        if not self.make_output_path(e, ext, status='f', _null=self._tensors._null, _nonunique=self.get_nounique_keys()):
+    #            self.lod[0], self.lod[i] = self.lod[i], self.lod[0]
+    #            break
+    #    return
 
     def exptable(self):
         return self._tensors.table()
