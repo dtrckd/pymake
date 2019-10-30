@@ -229,7 +229,11 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         cls.log.info('Cleaning konect graph %s...' % expe.corpus)
 
         g = data
-        edges = g.get_edges()
+        try: # 2.29 breaks comptibility
+            edges = g.get_edges([g.edge_index])
+        except TypeError as e:
+            edges = g.get_edges()
+
         y = gt.spectral.adjacency(g)
         parallel = gt.stats.label_parallel_edges(g, mark_only=True)
 
@@ -640,8 +644,8 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         n = int(E * testset_ratio) # number of edge
         nz = int(n *float(self.expe.get('zeros_ratio', 1)))  # number of non-links
 
-        edges = g.get_edges().astype(int)
-        i, j = edges[:, 0:2].T
+        edges = g.get_edges().astype(int)[:, :2]
+        i, j = edges.T
 
         # Sampling edges
         ix = np.random.choice(E, n, replace=False)
@@ -846,7 +850,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
     def iter_edges(self):
         # too long :(
         weights = self.data.ep['weights']
-        for i, j, ix in self.data.get_edges():
+        for i, j in self.data.get_edges()[:, :2]:
             yield i, j, weights[i,j]
 
     def __iter__(self):
