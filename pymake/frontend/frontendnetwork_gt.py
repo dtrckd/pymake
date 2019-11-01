@@ -374,11 +374,12 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             if not data:
                 try:
                     from urllib.error import HTTPError
+                    from tarfile import ReadError
                     # Load from graph-tool Konnect site
                     data = gt.collection.konect_data[expe.corpus]
                     data = cls._clean_data_konect(expe, data)
                     os.makedirs(os.path.join(input_path), exist_ok=True)
-                except HTTPError:
+                except (HTTPError, OSError, ReadError) as e:
                     pass
                 except Exception as e:
                     cls.log.error("Error in loading corpus `%s': %s" % (expe.corpus, e))
@@ -423,8 +424,8 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         weights = g.ep['weights']
         neigs = []
         for v in range(N):
-            _out = np.asarray([(int(_v),weights[v, _v]) for _v in g.vertex(v).out_neighbors()])
-            _in  = np.asarray([(int(_v),weights[_v, v]) for _v in g.vertex(v).in_neighbors()])
+            _out = np.asarray([(int(_v),weights[g.edge(v, _v)]) for _v in g.vertex(v).out_neighbors()])
+            _in  = np.asarray([(int(_v),weights[g.edge(_v, v)]) for _v in g.vertex(v).in_neighbors()])
             neigs.append([_out, _in])
         return neigs
 
