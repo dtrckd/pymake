@@ -250,12 +250,12 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
                 for _ix in np.where(parallel.a == 0)[0]:
                     ix = np.where(edges[:,2]==_ix)[0][0]
                     i, j = edges[ix, :2]
-                    weights[i,j] += len(g.edge(i,j, all_edges=True))
+                    weights[g.edge(i,j)] += len(g.edge(i,j, all_edges=True))
 
                 del g.ep['weight']
             elif w.a.max() == 1 and w.a.min() == -1:
                 for i,j, ix in edges:
-                    weights[i,j] += w[i,j]
+                    weights[g.edge(i,j)] += w[g.edge(i,j)]
 
                 if weights.a.min() < 0:
                     # Remove negative edges
@@ -301,7 +301,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             for _ix in np.where(parallel.a == 0)[0]:
                 ix = np.where(edges[:,2]==_ix)[0][0]
                 i, j = edges[ix][:2]
-                weights[i,j] += len(g.edge(i,j, all_edges=True))
+                weights[edge(i,j)] += len(g.edge(i,j, all_edges=True))
         else:
             # Assume unweighted network
             weights.a = 1
@@ -401,6 +401,32 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
     #
     # Get Properties
     #
+    def get_edges(self):
+        ''' Returns a Nx3 matrix where each lines represents
+            the source node, the target node, and the weighted edges
+            (one for binary networks)
+        '''
+
+        g = self.data
+        weights = g.ep['weights']
+        #edges = self.data.get_edges()
+        try: # 2.29 breaks comptibility
+            edges = g.get_edges([g.edge_index])
+        except TypeError as e:
+            edges = g.get_edges()
+        edges[:,2] = np.array([weights.a[ix] for i,j,ix in edges])
+        return edges
+
+    def get_neigs(self):
+        g = self.data
+        N = g.num_vertices()
+        weights = g.ep['weights']
+        neigs = []
+        for v in range(N):
+            _out = np.asarray([(int(_v),weights[v, _v]) for _v in g.vertex(v).out_neighbors()])
+            _in  = np.asarray([(int(_v),weights[_v, v]) for _v in g.vertex(v).in_neighbors()])
+            neigs.append([_out, _in])
+        return neigs
 
     def edge(self, i,j):
         return self.data.edge(i,j)
@@ -419,8 +445,9 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
 
     def weight(self, i,j):
         w = self.data.ep['weights']
-        if self.edge(i,j):
-            return w[i,j]
+        e = self.edge(i,j)
+        if e:
+            return w[e]
         else:
             return 0
 
@@ -729,7 +756,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
             testset_filter.a = 1
             self.log.info('Looping to set the testset edge eproperties (graph-tool)...')
             for i, j in ix.T:
-                testset_filter[i,j] = 0
+                testset_filter[g.edge(i,j)] = 0
             g.set_edge_filter(testset_filter)
 
         self._links_testset = ix
@@ -823,10 +850,10 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         edges_to_remove = np.random.choice(E, int(ratio*E), replace=False)
         _removed = set()
         for pos in edges_to_remove:
-            i,j = edges[pos, :2]
-            w = weights[i,j]
+            i,j, ix = edges[pos]
+            w = weights.a[ix]
             if w > 1:
-                weights[i,j] = w-1
+                weights.a[ix] = w-1
             else:
                 e = g.edge(i,j)
                 _removed.add(e)
@@ -850,8 +877,9 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
     def iter_edges(self):
         # too long :(
         weights = self.data.ep['weights']
-        for i, j in self.data.get_edges()[:, :2]:
-            yield i, j, weights[i,j]
+        for i, j, ix in self.data.get_edges()[:]:
+            #yield i, j, weights[i,j]
+            yield i, j, weights.a[ix]
 
     def __iter__(self):
 
@@ -910,13 +938,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
 
         ### Build the array of neighbourhood for each nodes
         self.log.debug('Building the neighbourhood array...')
-        neigs = []
-        mask_pos = []
-        for v in range(N):
-            _out = np.asarray([(int(_v),weights[v, _v]) for _v in g.vertex(v).out_neighbors()])
-            _in  = np.asarray([(int(_v),weights[_v, v]) for _v in g.vertex(v).in_neighbors()])
-            neigs.append([_out, _in])
-            mask_pos.append( [list(range(self._zeros_set_len))]*2 )
+        neigs = self.get_neigs()
 
         for _mnb in range(self.num_mnb()):
 
@@ -945,18 +967,6 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
                     zero_samples = np.random.choice(zero_samples,
                                                      int(np.ceil(len(zero_samples)/mask[node, 0])),
                                                      replace=False)
-                    # Weaker results !
-                    #step = int(np.ceil(len(zero_samples)/mask[node, 0]))
-                    #if len(mask_pos[node][0]) == 0:
-                    #    continue
-                    #    zero_samples = np.random.choice(zero_samples,
-                    #                                    int(np.ceil(len(zero_samples)/mask[node, 0])),
-                    #                                    replace=False)
-                    #else:
-                    #    _p = np.random.choice(mask_pos[node][0],1).item()
-                    #    mask_pos[node][0].remove(_p)
-                    #    zero_samples = zero_samples[_p:_p+step]
-
                     if len(zero_samples) == 0:
                         continue
 
@@ -980,17 +990,6 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
                     zero_samples = np.random.choice(zero_samples,
                                                     int(np.ceil(len(zero_samples)/mask[node, 1])),
                                                     replace=False)
-                    # Weaker results !
-                    #step = int(np.ceil(len(zero_samples)/mask[node, 1]))
-                    #if len(mask_pos[node][1]) == 0:
-                    #    continue
-                    #    zero_samples = np.random.choice(zero_samples,
-                    #                                    int(np.ceil(len(zero_samples)/mask[node, 1])),
-                    #                                    replace=False)
-                    #else:
-                    #    _p = np.random.choice(mask_pos[node][1],1).item()
-                    #    mask_pos[node][1].remove(_p)
-                    #    zero_samples = zero_samples[_p:_p+step]
 
                     if len(zero_samples) == 0:
                         continue
@@ -1085,16 +1084,6 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
                     zero_samples = np.random.choice(zero_samples,
                                                      int(np.ceil(len(zero_samples)/mask[node, 0])),
                                                      replace=False)
-                    # Weaker results !
-                    #step = int(np.ceil(len(zero_samples)/mask[node, 0]))
-                    #if len(mask_pos[node][0]) == 0:
-                    #    zero_samples = np.random.choice(zero_samples,
-                    #                                    int(np.ceil(len(zero_samples)/mask[node, 0])),
-                    #                                    replace=False)
-                    #else:
-                    #    _p = np.random.choice(mask_pos[node][0],1).item()
-                    #    mask_pos[node][0].remove(_p)
-                    #    zero_samples = zero_samples[_p:_p+step]
 
                     if len(zero_samples) == 0:
                         continue
