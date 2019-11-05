@@ -560,6 +560,7 @@ class ExpeFormat(object):
             for ggroup in list(self.gramexp._tables):
                 _table = self.gramexp._tables.pop(ggroup)
                 array = _table.array
+                fmt = _table.tablefmt
                 for zpos, z in enumerate(_table.z):
 
                     fop = np.max if 'rmax' in _table.args else np.mean
@@ -567,11 +568,14 @@ class ExpeFormat(object):
 
                     # Mean and standard deviation
                     table = array[:,:,:,zpos]
-                    mtable = self.highlight_table(np.around(fop(table, 0), decimals=3))
-                    vtable = np.around(table.std(0), decimals=3)
+                    mtable = self.highlight_table(np.around(fop(table, 0), decimals=3), fmt=fmt, z=z)
+                    vtable = np.around(table.std(0), decimals=2)
                     mtable = np.char.array(mtable).astype("|S42")
                     vtable = np.char.array(vtable).astype("|S42")
-                    arr = mtable + b' \pm ' + vtable
+                    if fmt == 'latex':
+                        arr = mtable + b' $\pm$ ' + vtable
+                    else:
+                        arr = mtable + b' pm ' + vtable
 
                     new_table = _table.copy()
                     new_table.array = arr
@@ -582,8 +586,9 @@ class ExpeFormat(object):
             for ggroup in list(self.gramexp._tables):
                 _table = self.gramexp._tables.pop(ggroup)
                 array = _table.array
+                fmt = _table.tablefmt
                 for zpos, z in enumerate(_table.z):
-                    arr = self.highlight_table(array[:,:,zpos])
+                    arr = self.highlight_table(array[:,:,zpos], fmt=fmt, z=z)
 
                     new_table = _table.copy()
                     new_table.array = arr
@@ -607,14 +612,26 @@ class ExpeFormat(object):
         part = sep.join(part)
         return part
 
-    def highlight_table(self, array, highlight_dim=1):
+    def highlight_table(self, array, highlight_dim=1, fmt=None, **kwargs):
         hack_float = np.vectorize(lambda x : '{:.3f}'.format(float(x)))
         table = np.char.array(hack_float(array), itemsize=42)
-        # vectorize
-        for i, col in enumerate(array.argmax(1)):
-            table[i, col] = colored(table[i, col], 'bold')
-        for i, col in enumerate(array.argmin(1)):
-            table[i, col] = colored(table[i, col], 'magenta')
+
+        if fmt == 'latex':
+            _wrap = lambda x: '\\textbf{%s}'%x
+
+            # @debug @perso
+            if 'wsim' in kwargs.get('z', ''):
+                _fun = array.argmin
+            else:
+                _fun = array.argmax
+
+            for i, col in enumerate(_fun(1)):
+                table[i, col] = _wrap(table[i, col])
+        else:
+            for i, col in enumerate(array.argmax(1)):
+                table[i, col] = colored(table[i, col], 'bold')
+            for i, col in enumerate(array.argmin(1)):
+                table[i, col] = colored(table[i, col], 'magenta')
 
         return table
 
@@ -666,14 +683,13 @@ class ExpeFormat(object):
                 print('Writing frame: %s' % fn)
                 #frame.fig.tight_layout() # works better in parameter
                 frame['fig'].savefig(fn, bbox_inches='tight') # pad_inches=-1
-            elif '_table' in frame:
+            elif 'headers' in frame:
                 ext = ext or 'md'
                 fn = fn +'.'+ ext
                 print('Writing frame: %s' % fn)
                 caption = '\caption{{{title}}}\n'
-
                 arr = frame['array'].astype(str)
-                table = np.dstack((frame['column'], arr))
+                table = np.hstack((np.array([frame['column']]).T, arr))
                 Table = tabulate(table, headers=frame['headers'], tablefmt=frame['tablefmt'], floatfmt=frame['floatfmt'])
 
                 with open(fn, 'w') as _f:
