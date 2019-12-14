@@ -77,22 +77,12 @@ Perspectives:
 
     brew install parallel
 
-###### Install
+###### Manual Installation
 
 ```bash
 git clone https://github.com/dtrckd/pymake
 cd pymake && make
 ```
-
-#### Project Structure
-
-The repo contains two main directories:
-
-* pymake/ -- Code source of pymake,
-* [wiki/](https://github.com/dtrckd/pymake/tree/master/wiki) -- Extra documentation
-* [repo/](https://github.com/dtrckd/pymake/tree/master/repo) -- Poc projects that are structured with pymake,
-    * repo/docsearch: A search-engine in local file (pdf).
-    * repo/ml: Machine learning models and experiments.
 
 ## Glossary and Types
 
@@ -114,8 +104,8 @@ The repo contains two main directories:
 
 This is two exemple of project using Pymake : 
 
-* [Docsearch](https://github.com/dtrckd/docsearch) : Text search in your pdf documents.
-* [ml](https://github.com/dtrckd/ml) : Machine leanrings experiments.
+* [ml](https://github.com/dtrckd/ml) : Machine Learning models and experiments.
+* [Docsearch](https://github.com/dtrckd/docsearch) : self hosted search engine for your pdf documents.
 
 
 ## FAQ [](#4)
