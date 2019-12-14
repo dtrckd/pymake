@@ -102,7 +102,7 @@ cd pymake && make
 
 ## Examples [](#3)
 
-This is two exemple of project using Pymake : 
+Public projects that uses Pymake : 
 
 * [ml](https://github.com/dtrckd/ml) : Machine Learning models and experiments.
 * [Docsearch](https://github.com/dtrckd/docsearch) : self hosted search engine for your pdf documents.
