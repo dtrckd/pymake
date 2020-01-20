@@ -45,9 +45,9 @@ def get_dest_opt_filled(parser):
         set of string
     '''
 
-    opts_in = [opt for opt in sys.argv if opt.startswith('-') and opt not in ['-vv','-vvv']]
+    opts_in = [opt for opt in sys.argv if opt.startswith('-') and opt not in ['-vv', '-vvv']]
     opt2dest_dict = dict( (opt, act.dest) for act in parser._get_optional_actions() for opt in act.option_strings )
-    dests_in = set([opt2dest_dict[opt] for opt in opts_in])
+    dests_in = {opt2dest_dict[opt] for opt in opts_in}
     return dests_in
 
 # Assign new values to an array according to a map list
@@ -72,12 +72,12 @@ def map_class2cluster_from_confusion(confu, map=None, cpt=0, minmax='max'):
     else:
         obj_f = np.argmin
 
-    if len(confu) -1  == cpt:
+    if len(confu) -1 == cpt:
         # Recursive stop condition
         return sorted(map)
     if map is None:
         confu = confu.copy()
-        map = [ (i,i) for i in range(len(confu)) ]
+        map = [(i, i) for i in range(len(confu))]
         #map = np.array(map)
 
     #K = confu.shape[0]

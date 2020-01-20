@@ -876,7 +876,7 @@ class frontendNetwork_gt(DataBase, OnlineDatasetDriver):
         return g.set_fast_edge_removal(fast=False)
 
     def iter_edges(self):
-        # too long :(
+        # too long :(, see get_edges
         weights = self.data.ep['weights']
         for i, j, ix in self.data.get_edges()[:]:
             #yield i, j, weights[i,j]
