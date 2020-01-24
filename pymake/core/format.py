@@ -750,7 +750,9 @@ class ExpeFormat(object):
         #gramexp.reorder_firstnonvalid()
 
         if not gramexp._conf.get('simulate'):
-            cls.log.info(gramexp.exptable())
+            if gramexp._conf.get('_spec_splash') or gramexp._conf.get('_verbose') > 0:
+                cls.log.info(gramexp.exptable())
+
 
         # Global container shared by all expe
         # running in the sandbox.

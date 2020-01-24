@@ -118,12 +118,14 @@ class GramExp(object):
     _private_keywords = _reserved_keywords + _special_keywords
 
     _default_expe = {
-        #'_verbose'   : 0,
+        '_verbose'   : 0,
         '_write'     : False,
         '_ignore_format_unique' : False,
         '_force_load_data' : True, # if True, it will force the raw data parsing.
         '_force_save_data' : True, # if False, dont save corpus as pk/gt ont the filesystem.
         '_no_block_plot' : False,
+        '_expe_silent' : False,
+        '_spec_splash' : False,
     }
 
 
@@ -149,9 +151,6 @@ class GramExp(object):
         if parser is not None:
             # merge parser an parsargs ?
             self.argparser = parser
-
-        # It pollute the spec output...
-        #[conf.update({k:v}) for k,v in self._default_expe.items() if k not in conf]
 
         self._base_conf = conf
         #self._do = conf.get('_do')
@@ -244,7 +243,14 @@ class GramExp(object):
 
             self.exp_setup(conf)
 
+
+        # After expe is updated, set default value
+        # (It pollute the spec output...but don't hide things...)
+        [default_expe.update({k:v}) for k,v in self._default_expe.items() if k not in default_expe]
+
         self._tensors.set_default_all(default_expe)
+        self._conf = self._tensors.get_conf()
+
 
     def exp_setup(self, conf, expdesign=None):
         ''' work in self._tensors

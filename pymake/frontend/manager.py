@@ -102,7 +102,7 @@ class ModelManager(object):
         if fmt == 'list':
             ### Easy formating
             for root, dirnames, filenames in os.walk(bdir):
-                for filename in fnmatch.filter(filenames, '*.pk'):
+                for filename in fnmatch.filter(filenames, '*.pk*'):
                     models_files.append(os.path.join(root, filename))
             return models_files
         else:
@@ -182,9 +182,10 @@ class ModelManager(object):
 
         if not os.path.isfile(_fn) or os.stat(_fn).st_size == 0:
             cls.log.error('No file for this model : %s' %_fn)
-            cls.log.debug('The following are available :')
+
+            cls.log.trace('The following are available :')
             for f in cls.model_walker(os.path.dirname(_fn), fmt='list'):
-                cls.log.debug(f)
+                cls.log.trace(f)
             return
 
         cls.log.info('Loading Model: %s' % fn)

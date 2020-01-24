@@ -44,14 +44,18 @@ def setup_logger(level=None):
     logformatter = LogFormatter(logger)
     level = 0 if level is None else level
 
+
     if level == -1: # --silent | -nv
         level = 'WARNING'
+    elif level == 0:
+        # Default level
+        level = 'INFO'
     elif level == 1: # -v
         level = 'DEBUG'
     elif level >= 2: # -vv
-        #level = 'VDEBUG'
         level = 'TRACE'
-    else: # default
+        #level = 'VDEBUG'
+    else:
         level = 'INFO'
 
     logger.remove()
