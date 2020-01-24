@@ -603,7 +603,7 @@ class ExpeFormat(object):
             table = np.column_stack((_table.column, arr))
             Table = tabulate(table, headers=_table.headers, tablefmt=_table.tablefmt, floatfmt=_table.floatfmt)
 
-            print(colored('\n%s Table:'%(_title), 'green'))
+            self.log.info(colored('\n%s Table:'%(_title), 'green'))
             print(Table)
 
     @staticmethod
@@ -680,13 +680,13 @@ class ExpeFormat(object):
             if 'fig' in frame:
                 ext = ext or 'pdf'
                 fn = fn +'.'+ ext
-                print('Writing frame: %s' % fn)
+                self.log.info('Writing frame: %s' % fn)
                 #frame.fig.tight_layout() # works better in parameter
                 frame['fig'].savefig(fn, bbox_inches='tight') # pad_inches=-1
             elif 'headers' in frame:
                 ext = ext or 'md'
                 fn = fn +'.'+ ext
-                print('Writing frame: %s' % fn)
+                self.log.info('Writing frame: %s' % fn)
                 caption = '\caption{{{title}}}\n'
                 arr = frame['array'].astype(str)
                 table = np.hstack((np.array([frame['column']]).T, arr))
@@ -700,14 +700,14 @@ class ExpeFormat(object):
         elif isinstance(frame, str):
             ext = ext or 'md'
             fn = fn +'.'+ ext
-            print('Writing frame: %s' % fn)
+            self.log.info('Writing frame: %s' % fn)
             with open(fn, 'w') as _f:
                 _f.write(frame)
         else:
             # assume figure
             ext = ext or 'pdf'
             fn = fn +'.'+ ext
-            print('Writing frame: %s' % fn)
+            self.log.info('Writing frame: %s' % fn)
             frame.savefig(fn, bbox_inches='tight')
 
     def specname(self, n):
@@ -872,7 +872,7 @@ class ExpeFormat(object):
         print('\n')
         self.log.critical("expe setting ${_format} is probably wrong !")
         self.log.error("model `%s' do not contains one of object: %s" % (str(model), o))
-        print('Continue...')
+        self.log.info('Continue...')
         return 'None'
 
     def init_fitfile(self):
