@@ -7,6 +7,7 @@ from pymake.core.types import resolve_model_name
 
 from pymake.core.logformatter import logger
 
+
 class FrontendManager(object):
     """ Utility Class who aims at mananing/Getting the datastructure at the higher level.
 
@@ -24,10 +25,14 @@ class FrontendManager(object):
                     ]
     #_model_ext = @Todo: dense(numpy/pk.gz) or sparse => gt...?
 
-
     @classmethod
-    def load(cls, expe):
-        """ Return the frontend suited for the given expe"""
+    def load(cls, expe, skip_init=False):
+        """ Return the frontend suited for the given expe
+            @TODO: skip_init is not implemented
+
+        """
+        if skip_init:
+            cls.log.warning('skip init is not implemented')
 
         corpus_name = expe.get('corpus') or expe.get('random') or expe.get('concept')
         if expe.get('driver'):
@@ -45,8 +50,8 @@ class FrontendManager(object):
             # graph-tool object
             # @Todo: Corpus integration!
             if not _corpus:
-                dt_lut = {'gt':'network'}
-                _corpus = dict(data_type = dt_lut[c_ext])
+                dt_lut = {'gt': 'network'}
+                _corpus = dict(data_type=dt_lut[c_ext])
             _corpus.update(data_format=c_ext)
         elif _corpus is False:
             raise ValueError('Unknown Corpus `%s\'!' % c_name)
@@ -87,7 +92,7 @@ class ModelManager(object):
 
     def is_model(self, m, _type):
         if _type == 'pymake':
-             # __init__ method should be of type (expe, frontend, ...)
+            # __init__ method should be of type (expe, frontend, ...)
             pmk = inspect.signature(m).parameters.keys()
             score = []
             for wd in ('frontend', 'expe'):
@@ -109,15 +114,14 @@ class ModelManager(object):
             ### More Complex formating
             tree = {'json': [],
                     'pk': [],
-                    'inference': [] }
+                    'inference': []}
             for filename in fnmatch.filter(filenames, '*.pk'):
-                if filename.startswith(('dico.','vocab.')):
+                if filename.startswith(('dico.', 'vocab.')):
                     dico_files.append(os.path.join(root, filename))
                 else:
                     corpus_files.append(os.path.join(root, filename))
             raise NotImplementedError()
         return tree
-
 
     def _get_model(self, frontend=None, model=None):
         ''' Get model with lookup in the following order :
@@ -149,10 +153,10 @@ class ModelManager(object):
                 if not submodel:
                     self.log.error('Model Unknown : %s' % (m))
                     raise NotImplementedError(m)
-                modules.append( submodel.module )
+                modules.append(submodel.module)
 
             model_name = '-'.join(model_name)
-            _model = type(model_name, (ModelSkl,), {'module':modules})
+            _model = type(model_name, (ModelSkl,), {'module': modules})
 
         else:
             raise ValueError('Type of model unknow: %s | %s' % (type(model_name), model_name))
@@ -170,7 +174,6 @@ class ModelManager(object):
 
         return model
 
-
     @classmethod
     def _load_model(cls, fn):
         import pymake.io as io
@@ -181,7 +184,7 @@ class ModelManager(object):
             _fn += '.gz'
 
         if not os.path.isfile(_fn) or os.stat(_fn).st_size == 0:
-            cls.log.error('No file for this model : %s' %_fn)
+            cls.log.error('No file for this model : %s' % _fn)
 
             cls.log.trace('The following are available :')
             for f in cls.model_walker(os.path.dirname(_fn), fmt='list'):
@@ -193,7 +196,6 @@ class ModelManager(object):
 
         return model
 
-
     @staticmethod
     def update_expe(expe, model):
         ''' Configure some pymake settings if present in model. '''
@@ -204,10 +206,9 @@ class ModelManager(object):
             if getattr(model, _set, None) and not expe.get(_set):
                 expe[_set] = getattr(model, _set)
 
-
     @classmethod
     def from_expe(cls, expe, frontend=None, model=None, load=False):
-    # frontend params is deprecated and will be removed soon...
+        # frontend params is deprecated and will be removed soon...
 
         if load is False:
             mm = cls(expe)
@@ -219,5 +220,3 @@ class ModelManager(object):
         cls.update_expe(expe, model)
 
         return model
-
-

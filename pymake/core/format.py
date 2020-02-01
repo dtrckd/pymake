@@ -20,9 +20,7 @@ from pymake.frontend.manager import ModelManager
 from pymake.frontend.manager import FrontendManager
 
 
-
 ''' Sanbox Base class for expe execution.  '''
-
 
 
 ### Todo:
@@ -135,7 +133,7 @@ class ExpeFormat(object):
                 ('model', '%s'),
                 ('N', 'N=%s'),
                 ('K', 'K=%s')]
-        msg = [fmt%(self.specname(expe[x])) for x, fmt in keys if expe.get(x)]
+        msg = [fmt % (self.specname(expe[x])) for x, fmt in keys if expe.get(x)]
         msg = ' -- '.join(msg)
         return msg
 
@@ -150,13 +148,13 @@ class ExpeFormat(object):
             print()
 
         prefix = 'Computing'
-        n_it = self._it +1
+        n_it = self._it + 1
         n_total = self.expe_size
         # Normalize
         n_it_norm = 2*42 * n_it // n_total
 
-        progress= n_it_norm * '='  + (2*42-n_it_norm) * ' '
-        print('\r%s: [%s>] %s/%s' % (prefix, progress, n_it, n_total), end = '\r')
+        progress = n_it_norm * '=' + (2*42-n_it_norm) * ' '
+        print('\r%s: [%s>] %s/%s' % (prefix, progress, n_it, n_total), end='\r')
 
         if self.is_last_expe():
             print()
@@ -211,10 +209,9 @@ class ExpeFormat(object):
         frame = self.gramexp._figs[group]
         return frame
 
-
     def get_description(self, full=False):
         if full:
-            return '/'.join((self.expe.get('_refdir',''), os.path.basename(self.output_path)))
+            return '/'.join((self.expe.get('_refdir', ''), os.path.basename(self.output_path)))
         else:
             return os.path.basename(self.output_path)
 
@@ -246,14 +243,13 @@ class ExpeFormat(object):
         def wrapper(self, *args, **kwargs):
 
             repeats = self.get_expset('_repeat')
-            if len(repeats)>1:
+            if len(repeats) > 1:
                 kwargs['repeat'] = True
 
             res = fun(self, *args, **kwargs)
 
             return res
         return wrapper
-
 
     @staticmethod
     def raw_plot(*groups, **_kwargs):
@@ -310,7 +306,7 @@ class ExpeFormat(object):
                     frame.ax().set_title(title)
 
                 # Save on last call
-                if self._it == self.expe_size -1:
+                if self._it == self.expe_size - 1:
                     if expe._write:
                         self.write_frames(self.gramexp._figs)
 
@@ -368,7 +364,7 @@ class ExpeFormat(object):
                         gset = [None]
 
                     for g in gset:
-                        gg = '-'.join(sorted(map(str,g))) if g else None
+                        gg = '-'.join(sorted(map(str, g))) if g else None
                         figs[gg] = ExpSpace()
                         figs[gg].group = g
                         figs[gg].fig = plt.figure()
@@ -390,12 +386,12 @@ class ExpeFormat(object):
                 # Set title and filename
                 if groups and self.expe.get(groups[0]):
                     #title = ' '.join('{{{0}}}'.format(w) for w in groups).format(**self.specname(self.expe))
-                    ctitle = tuple(filter(None,map(lambda x:self.specname(self.expe.get(x, x)), groups)))
+                    ctitle = tuple(filter(None, map(lambda x: self.specname(self.expe.get(x, x)), groups)))
                     s = '_'.join(['%s'] * len(ctitle))
                     title = s % ctitle
                 else:
                     title = ' '.join(self.gramexp.get_nounique_keys())
-                    title = '%s %s' % tuple(map(lambda x:self.expe.get(x, x), ['corpus', 'model']))
+                    title = '%s %s' % tuple(map(lambda x: self.expe.get(x, x), ['corpus', 'model']))
 
                 frame.base = '%s_%s' % (fun.__name__, attribute)
                 frame.args = discr_args
@@ -412,9 +408,8 @@ class ExpeFormat(object):
                 else:
                     frame.ax().set_ylabel(attribute)
 
-
                 if 'title_size' in self.expe:
-                    ts =  float(self.expe['title_size'])
+                    ts = float(self.expe['title_size'])
                 else:
                     ts = 15
 
@@ -424,10 +419,10 @@ class ExpeFormat(object):
                     frame.ax().set_title(title, fontsize=ts)
 
                 if 'ticks_size' in self.expe:
-                     plt.xticks(fontsize=float((self.expe['ticks_size'])))
+                    plt.xticks(fontsize=float((self.expe['ticks_size'])))
 
                 # Save on last call
-                if self._it == self.expe_size -1:
+                if self._it == self.expe_size - 1:
                     if self.expe._write:
                         self.write_frames(self.gramexp._figs)
 
@@ -469,7 +464,7 @@ class ExpeFormat(object):
                     ggroup = None
 
                 if not hasattr(self.gramexp, '_tables'):
-                # self.is_first_expe
+                    # self.is_first_expe
 
                     tablefmt_ext = dict(simple='md', latex='tex')
                     tablefmt = 'latex' if 'tex' in discr_args else 'simple'
@@ -481,7 +476,7 @@ class ExpeFormat(object):
                         gset = [None]
 
                     for g in sorted(gset):
-                        gg = '-'.join(sorted(map(str,g))) if g else None
+                        gg = '-'.join(sorted(map(str, g))) if g else None
                         tables[gg] = ExpSpace()
                         _z = z.split('-')
                         array, floc = self.gramexp.get_array_loc(x, y, _z, repeat=kwargs.get('repeat'))
@@ -499,8 +494,8 @@ class ExpeFormat(object):
                         tables[gg].args = discr_args
                         tables[gg].kwargs = kwargs
                         tables[gg].base = '_'.join((fun.__name__,
-                                                str(self.expe[x]),
-                                                str(self.expe[y]))),
+                                                    str(self.expe[x]),
+                                                    str(self.expe[y]))),
 
                     self.gramexp._tables = tables
 
@@ -515,7 +510,7 @@ class ExpeFormat(object):
                 for z in frame.z:
                     kernel = fun(self, array, floc, x, y, z, *discr_args)
 
-                if self._it == self.expe_size -1:
+                if self._it == self.expe_size - 1:
                     tables = []
 
                     self.aggregate_tables(**kwargs)
@@ -530,7 +525,6 @@ class ExpeFormat(object):
             return wrapper
 
         return decorator
-
 
     def aggregate_tables(self, **kwargs):
         ''' Group table if separator is "|" '''
@@ -553,7 +547,6 @@ class ExpeFormat(object):
             self.gramexp._tables.clear()
             self.gramexp._tables[title] = t0
 
-
     def decompose_tables(self, **kwargs):
 
         if kwargs.get('repeat'):
@@ -567,7 +560,7 @@ class ExpeFormat(object):
                     fop = np.min if 'rmin' in _table.args else fop
 
                     # Mean and standard deviation
-                    table = array[:,:,:,zpos]
+                    table = array[:, :, :, zpos]
                     mtable = self.highlight_table(np.around(fop(table, 0), decimals=3), fmt=fmt, z=z)
                     vtable = np.around(table.std(0), decimals=2)
                     mtable = np.char.array(mtable).astype("|S42")
@@ -579,7 +572,7 @@ class ExpeFormat(object):
 
                     new_table = _table.copy()
                     new_table.array = arr
-                    ngg = z +'-'+ ggroup if ggroup else z
+                    ngg = z + '-' + ggroup if ggroup else z
                     self.gramexp._tables[ngg] = new_table
 
         else:
@@ -588,11 +581,11 @@ class ExpeFormat(object):
                 array = _table.array
                 fmt = _table.tablefmt
                 for zpos, z in enumerate(_table.z):
-                    arr = self.highlight_table(array[:,:,zpos], fmt=fmt, z=z)
+                    arr = self.highlight_table(array[:, :, zpos], fmt=fmt, z=z)
 
                     new_table = _table.copy()
                     new_table.array = arr
-                    ngg = z +'-'+ ggroup if ggroup else z
+                    ngg = z + '-' + ggroup if ggroup else z
                     self.gramexp._tables[ngg] = new_table
 
     def log_tables(self, **kwargs):
@@ -603,7 +596,7 @@ class ExpeFormat(object):
             table = np.column_stack((_table.column, arr))
             Table = tabulate(table, headers=_table.headers, tablefmt=_table.tablefmt, floatfmt=_table.floatfmt)
 
-            self.log.info(colored('\n%s Table:'%(_title), 'green'))
+            self.log.info(colored('\n%s Table:' % (_title), 'green'))
             print(Table)
 
     @staticmethod
@@ -613,11 +606,11 @@ class ExpeFormat(object):
         return part
 
     def highlight_table(self, array, highlight_dim=1, fmt=None, **kwargs):
-        hack_float = np.vectorize(lambda x : '{:.3f}'.format(float(x)))
+        hack_float = np.vectorize(lambda x: '{:.3f}'.format(float(x)))
         table = np.char.array(hack_float(array), itemsize=42)
 
         if fmt == 'latex':
-            _wrap = lambda x: '\\textbf{%s}'%x
+            _wrap = lambda x: '\\textbf{%s}' % x
 
             # @debug @perso
             if 'wsim' in kwargs.get('z', ''):
@@ -635,7 +628,6 @@ class ExpeFormat(object):
 
         return table
 
-
     def write_frames(self, frames, base='', suffix='', args=''):
         expe = self.formatName(self.expe)
 
@@ -647,7 +639,7 @@ class ExpeFormat(object):
                 base = self.specname(base)
             if args:
                 s = '_'.join(['%s'] * len(args))
-                args = s % tuple(map(lambda x:expe.get(x, x), args))
+                args = s % tuple(map(lambda x: expe.get(x, x), args))
             for i, f in enumerate(frames):
                 idi = str(i) if len(frames) > 1 else None
                 fn = self._file_part([base, args, suffix, idi])
@@ -661,13 +653,12 @@ class ExpeFormat(object):
                     base = self.specname(base)
                 if args:
                     s = '_'.join(['%s'] * len(args))
-                    args = s % tuple(map(lambda x:expe.get(x, x), args))
+                    args = s % tuple(map(lambda x: expe.get(x, x), args))
                 fn = self._file_part([self.specname(c), base, args, suffix])
                 fn = self.full_fig_path(fn)
                 self._kernel_write(f, fn, title=c)
         else:
             self.log.error('Type of Frame unknow, passing: %s' % type(frame))
-
 
     def _kernel_write(self, frame, fn, title=None):
 
@@ -679,34 +670,35 @@ class ExpeFormat(object):
         if isinstance(frame, dict):
             if 'fig' in frame:
                 ext = ext or 'pdf'
-                fn = fn +'.'+ ext
+                fn = fn + '.' + ext
                 self.log.info('Writing frame: %s' % fn)
                 #frame.fig.tight_layout() # works better in parameter
                 frame['fig'].savefig(fn, bbox_inches='tight') # pad_inches=-1
             elif 'headers' in frame:
                 ext = ext or 'md'
-                fn = fn +'.'+ ext
+                fn = fn + '.' + ext
                 self.log.info('Writing frame: %s' % fn)
                 caption = '\caption{{{title}}}\n'
                 arr = frame['array'].astype(str)
                 table = np.hstack((np.array([frame['column']]).T, arr))
-                Table = tabulate(table, headers=frame['headers'], tablefmt=frame['tablefmt'], floatfmt=frame['floatfmt'])
+                Table = tabulate(table, headers=frame['headers'],
+                                 tablefmt=frame['tablefmt'], floatfmt=frame['floatfmt'])
 
                 with open(fn, 'w') as _f:
-                    if  title:
+                    if title:
                         _f.write(caption.format(title=title))
                     _f.write(Table+'\n')
 
         elif isinstance(frame, str):
             ext = ext or 'md'
-            fn = fn +'.'+ ext
+            fn = fn + '.' + ext
             self.log.info('Writing frame: %s' % fn)
             with open(fn, 'w') as _f:
                 _f.write(frame)
         else:
             # assume figure
             ext = ext or 'pdf'
-            fn = fn +'.'+ ext
+            fn = fn + '.' + ext
             self.log.info('Writing frame: %s' % fn)
             frame.savefig(fn, bbox_inches='tight')
 
@@ -716,7 +708,7 @@ class ExpeFormat(object):
 
     def full_fig_path(self, fn):
         figs_path = get_pymake_settings('project_figs')
-        path = os.path.join(figs_path, self.expe.get('_refdir',''),  self.specname(fn))
+        path = os.path.join(figs_path, self.expe.get('_refdir', ''), self.specname(fn))
         make_path(path)
         return path
 
@@ -729,9 +721,6 @@ class ExpeFormat(object):
                 nn = v
             setattr(expe, k, nn)
         return expe
-
-
-
 
     @classmethod
     def _preprocess_(cls, gramexp):
@@ -752,7 +741,6 @@ class ExpeFormat(object):
         if not gramexp._conf.get('simulate'):
             if gramexp._conf.get('_spec_splash') or gramexp._conf.get('_verbose') > 0:
                 cls.log.info(gramexp.exptable())
-
 
         # Global container shared by all expe
         # running in the sandbox.
@@ -841,7 +829,7 @@ class ExpeFormat(object):
                     except (KeyError, AttributeError) as e:
                         values = self.format_error(model, o)
 
-                else : # assume list
+                else: # assume list
                     try:
                         values = [str(elt) for elt in getattr(model, obj)]
                     except (KeyError, AttributeError) as e:
@@ -858,7 +846,6 @@ class ExpeFormat(object):
                             values = str(getattr(model, '_'+o))
                         except (KeyError, AttributeError) as e:
                             values = self.format_error(model, o)
-
 
             if isinstance(values, list):
                 line.extend(values)
@@ -881,11 +868,10 @@ class ExpeFormat(object):
         os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
         self.fname_i = self.output_path + '.inf'
         if not '_measures' in self.expe:
-            self.log.debug('No _measures, for this model %s, so no inference file...'%(self.expe.get('model')))
+            self.log.debug('No _measures, for this model %s, so no inference file...' % (self.expe.get('model')))
         else:
             self._fitit_f = open(self.fname_i, 'wb')
             self._fitit_f.write(('#' + ' '.join(self._measures) + '\n').encode('utf8'))
-
 
     def clear_fitfile(self):
         ''' Write remaining data and close the file. '''
@@ -911,7 +897,7 @@ class ExpeFormat(object):
 
         return _sample
 
-    def load_some(self, filename=None, iter_max=None, comments=('#','%')):
+    def load_some(self, filename=None, iter_max=None, comments=('#', '%')):
         ''' Load data from file according that each line
             respect the format in {_measures}.
         '''
@@ -928,7 +914,7 @@ class ExpeFormat(object):
         if iter_max:
             data = data[:iter_max]
         # Ignore Comments
-        data = [re.sub("\s\s+" , " ", x.strip()).split() for l,x in enumerate(data) if not x.startswith(comments)]
+        data = [re.sub("\s\s+", " ", x.strip()).split() for l, x in enumerate(data) if not x.startswith(comments)]
 
         # Grammar dude ?
         col_typo = [a.split('@')[0] for a in self._measures]
@@ -963,7 +949,7 @@ class ExpeFormat(object):
                         newkey = '.'.join((obj, key))
                         values = data_line[pos:pos+last_elt_size]
                         line[newkey] = values
-                    else : # assume list
+                    else: # assume list
                         values = data_line[pos:pos+last_elt_size]
                         line[obj] = values
                     offset += last_elt_size-1
@@ -975,7 +961,6 @@ class ExpeFormat(object):
 
             array.append(line)
 
-
         # Format the array of dict to a dict by entry function of iterations
         data = {}
         for line in array:
@@ -986,7 +971,6 @@ class ExpeFormat(object):
 
         return data
 
-
     def _write_some(self, _f, samples, buff=20):
         ''' Write data with buffer manager
             * lines are formatted as {_measures}
@@ -995,7 +979,7 @@ class ExpeFormat(object):
         #fmt = self.fmt
 
         if samples is None:
-            buff=1
+            buff = 1
         else:
             self._samples.append(samples)
 
@@ -1010,7 +994,6 @@ class ExpeFormat(object):
 
             _f.flush()
             self._samples = []
-
 
     def write_current_state(self, model):
         ''' push the current state of a model in the output file. '''
@@ -1042,9 +1025,6 @@ class ExpeFormat(object):
             samples.append(str(sample))
 
         self._write_some(self._fitit_f, samples)
-
-
-
 
     def configure_model(self, model):
         ''' Configure Model:
@@ -1078,13 +1058,13 @@ class ExpeFormat(object):
 
         return self.model
 
-    def load_frontend(self):
+    def load_frontend(self, skip_init=False):
         ''' See -nld and -sld option for control over load/save status
             of frontend data.
         '''
         #from pymake.frontend.manager import FrontendManager
 
-        frontend = FrontendManager.load(self.expe)
+        frontend = FrontendManager.load(self.expe, skip_init=skip_init)
         return frontend
 
     def load_data(self, fn):
@@ -1110,7 +1090,3 @@ class ExpeFormat(object):
         self.log.info('%s data shape: %s' % (fn, str(data.shape)))
 
         return data
-
-
-
-
