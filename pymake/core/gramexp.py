@@ -32,7 +32,6 @@ from pymake.frontend.manager import FrontendManager
 from pymake import __version__
 
 
-
 ''' PMK Entry Class '''
 
 
@@ -104,7 +103,7 @@ class GramExp(object):
     log = logger
 
     # has special semantics on **output_path**.
-    _special_keywords = [ '_refdir', '_repeat',
+    _special_keywords = ['_refdir', '_repeat',
                          '_format', '_measures',
                         ] # output_path => pmk-basedire/{base_type}/{refdir}/{repeat}/${format}
 
@@ -118,16 +117,15 @@ class GramExp(object):
     _private_keywords = _reserved_keywords + _special_keywords
 
     _default_expe = {
-        '_verbose'   : 0,
-        '_write'     : False,
-        '_ignore_format_unique' : False,
-        '_force_load_data' : True, # if True, it will force the raw data parsing.
-        '_force_save_data' : True, # if False, dont save corpus as pk/gt ont the filesystem.
-        '_no_block_plot' : False,
-        '_expe_silent' : False,
-        '_spec_splash' : False,
+        '_verbose': 0,
+        '_write': False,
+        '_ignore_format_unique': False,
+        '_force_load_data': True, # if True, it will force the raw data parsing.
+        '_force_save_data': True, # if False, dont save corpus as pk/gt ont the filesystem.
+        '_no_block_plot': False,
+        '_expe_silent': False,
+        '_spec_splash': False,
     }
-
 
     _env = None # should be set during bootstrap
     _base_name = '.pmk'
@@ -135,7 +133,6 @@ class GramExp(object):
     _db_name = 'pmk-db'
     _pmk_error_file = 'pmk-errors'
     _pmk_history = 'pmk-history'
-
 
     def __init__(self, conf, usage=None, parser=None, parseargs=True, expdesign=None):
 
@@ -156,6 +153,13 @@ class GramExp(object):
         #self._do = conf.get('_do')
 
         self.exp_setup(conf, expdesign)
+
+        # @debug! Not DRY, see in self.set_default_expe
+        # After expe is updated, set default value
+        # (It pollute the spec output...but don't hide things...)
+        [conf.update({k: v}) for k, v in self._default_expe.items() if k not in conf]
+        self._tensors.set_default_all(conf)
+        self._conf = self._tensors.get_conf()
 
     @classmethod
     def getenv(cls, k):
@@ -184,14 +188,13 @@ class GramExp(object):
 
             cls._spec = Spec.get_all()
         else:
-            cls._pmk_path     = None
-            cls._data_path    = None
+            cls._pmk_path = None
+            cls._data_path = None
             cls._results_path = None
             cls._project_name = None
-            cls._user_name    = None
+            cls._user_name = None
 
             cls._spec = {}
-
 
     def _update(self):
         # Seems obsolete, _conf is not writtent in _tensors, right ?
@@ -211,7 +214,7 @@ class GramExp(object):
 
         # Use default _spec if no spec given
         _names = self.get_list('_expe_name')
-        if  '_spec' in default_expe and '_default_expe' in _names and len(_names) == 1:
+        if '_spec' in default_expe and '_default_expe' in _names and len(_names) == 1:
             specs = default_expe['_spec']
             specs = [specs] if not isinstance(specs, list) else specs
             group = []
@@ -243,14 +246,11 @@ class GramExp(object):
 
             self.exp_setup(conf)
 
-
         # After expe is updated, set default value
         # (It pollute the spec output...but don't hide things...)
-        [default_expe.update({k:v}) for k,v in self._default_expe.items() if k not in default_expe]
-
+        [default_expe.update({k: v}) for k, v in self._default_expe.items() if k not in default_expe]
         self._tensors.set_default_all(default_expe)
         self._conf = self._tensors.get_conf()
-
 
     def exp_setup(self, conf, expdesign=None):
         ''' work in self._tensors
@@ -292,7 +292,6 @@ class GramExp(object):
         self._tensors.check_bind()
         self._tensors.check_null()
 
-
     def io_format_check(self):
         if len(self) > 1 and '_write' in self._conf:
             self.check_format()
@@ -305,11 +304,10 @@ class GramExp(object):
                 if self._conf.get(_key[0]) is _key[1]:
                     keys_to_remove.append(_key[0])
             elif _key in self._conf:
-                    keys_to_remove.append(_key)
+                keys_to_remove.append(_key)
         # |
         for key in keys_to_remove:
             self._tensors.remove_all(key)
-
 
     def check_format(self):
         ''' Check if all expVector are distinguishable in _format.
@@ -335,7 +333,7 @@ class GramExp(object):
 
             if _format and hidden_key and self._conf.get('_ignore_format_unique') is not True and not '_id' in format_settings:
                 self.log.error('The following settings are not set in _format:')
-                print(' '+ '  '.join(hidden_key))
+                print(' ' + '  '.join(hidden_key))
                 print('Possible conflicts in experience results outputs.')
                 print('Please correct {_format} key to fit the experience settings.')
                 print('To force the runs, use:  --ignore-format-unique')
@@ -344,10 +342,8 @@ class GramExp(object):
 
         if self._conf.get('_ignore_format_unique') is True:
             _hash = int((hash_objects(tensor)), 16) % 10**8
-            _format = '{_name}-expe' + str(_hash) +'h'
+            _format = '{_name}-expe' + str(_hash) + 'h'
             self._tensors.update_all(_format=_format)
-
-
 
     @classmethod
     def _check_exp(cls, tensor):
@@ -370,14 +366,14 @@ class GramExp(object):
         # Manage special Values
         if key == '_spec':
             raise NotImplementedError
-            ss =  sorted(self.get_nounique_keys())
+            ss = sorted(self.get_nounique_keys())
             list_of_identifier = []
             for tensor in self._tensors:
                 local_identifier = []
                 for k in ss:
                     local_identifier.append(k)
 
-                list_of_identifier.append('-'.join(sorted(filter(None,local_identifier))))
+                list_of_identifier.append('-'.join(sorted(filter(None, local_identifier))))
                 _set = list_of_identifier
 
         else:
@@ -390,7 +386,6 @@ class GramExp(object):
                     _set.add(v)
 
         return sorted(_set, key=lambda x: (x is None, x))
-
 
     def get_list(self, key, default=[]):
         ''' Return the list of values of expVector of that {key}. '''
@@ -430,15 +425,14 @@ class GramExp(object):
             d3[k] = i
         loc.append(d3)
 
-        tr = lambda d,k:d[str(k)] if isinstance(k, (list, set, dict)) else d[k]
+        tr = lambda d, k: d[str(k)] if isinstance(k, (list, set, dict)) else d[k]
 
-        floc = lambda k1, k2, z:(tr(d1,k1), tr(d2,k2), d3[z])
+        floc = lambda k1, k2, z: (tr(d1, k1), tr(d2, k2), d3[z])
         shape = list(map(len, loc))
         if repeat:
             shape = [len(self.get_set('_repeat'))] + shape
         array = np.ma.array(np.empty(shape)*np.nan, mask=True)
         return array, floc
-
 
     def get_array_loc_n(self, keys, params):
         ''' Construct an nd sink array.
@@ -479,7 +473,6 @@ class GramExp(object):
 
         shape = [len(loc[d]) for d in loc]
 
-
         array = np.ma.array(np.empty(shape)*np.nan, mask=True)
         return array, floc
 
@@ -515,7 +508,7 @@ class GramExp(object):
 
         dict_format = cls.transcript_expe(expe)
         if _null:
-            dict_format.update(dict((k,None) for k in _null))
+            dict_format.update(dict((k, None) for k in _null))
 
         hook = expe.get('_refdir', 'default')
         hook = hook.format(**dict_format)
@@ -556,13 +549,13 @@ class GramExp(object):
         filen = os.path.join(cls._results_path, p, t)
 
         if ext:
-            filen = filen +'.'+ ext
+            filen = filen + '.' + ext
         elif status and not ext:
             # Assume pickle driver for models.
-            filen = filen +'.'+ 'pk'
+            filen = filen + '.' + 'pk'
 
         if status is 'f' and is_empty_file(filen):
-            return  None
+            return None
         else:
             return filen
 
@@ -602,7 +595,7 @@ class GramExp(object):
         # Special aliase for _format
         fmt_expe['_name'] = id_name
         fmt_expe['_hash'] = id_hash
-        fmt_expe['_id'] = id_name +'#' + str(expe['_expe_id'])
+        fmt_expe['_id'] = id_name + '#' + str(expe['_expe_id'])
 
         # Special rule to rewrite the output_path
         # @namesapce manage spec/Script/model namespace !
@@ -612,11 +605,10 @@ class GramExp(object):
         if isinstance(expe.get('model'), list):
             fmt_expe['model'] = '-'.join(map(str.lower, expe['model']))
 
-
         for k, v in fmt_expe.items():
             if isinstance(v, (list, dict)):
                 _hash = int((hash_objects(v)), 16) % 10**8
-                fmt_expe[k] = k + str(_hash) +'h'
+                fmt_expe[k] = k + str(_hash) + 'h'
             elif isinstance(v, float):
                 if 'e' in str(v):
                     fmt_expe[k] = str(v)
@@ -627,17 +619,14 @@ class GramExp(object):
                 else:
                     fmt_expe[k] = v
 
-
         return fmt_expe
-
-
 
     @classmethod
     def get_parser(cls, description=None, usage=None):
         import pymake.core.gram as _gram
         parser = _gram.ExpArgumentParser(description=description, epilog=usage,
-                                        formatter_class=argparse.RawDescriptionHelpFormatter)
-        parser.add_argument('-V', '--version', action='version', version='%(prog)s '+ __version__)
+                                         formatter_class=argparse.RawDescriptionHelpFormatter)
+        parser.add_argument('-V', '--version', action='version', version='%(prog)s ' + __version__)
 
         return parser
 
@@ -649,7 +638,8 @@ class GramExp(object):
         else:
             try:
                 gram = importlib.import_module(gram)
-                gram = next( (getattr(gram, _list) for _list in dir(gram) if isinstance(getattr(gram, _list), list)), None)
+                gram = next((getattr(gram, _list)
+                             for _list in dir(gram) if isinstance(getattr(gram, _list), list)), None)
             except ModuleNotFoundError as e:
                 prjt = cls._project_name
                 #@improve priority should be on : local project !
@@ -682,7 +672,6 @@ class GramExp(object):
                     cls.log.error(str(e)+err_mesg)
                     #exit(3)
 
-
     @classmethod
     def parseargsexpe(cls, usage=None, args=None, parser=None):
         description = 'Launch and Specify Simulations.'
@@ -705,7 +694,7 @@ class GramExp(object):
         s = parser.parse_args(args=args)
 
         # Assume None value are non-filled options
-        settings = dict((key,value) for key, value in vars(s).items() if value is not None)
+        settings = dict((key, value) for key, value in vars(s).items() if value is not None)
 
         # Purge default/unchanged settings
         for k in list(settings):
@@ -731,15 +720,17 @@ class GramExp(object):
             try:
                 v = int(v)
             except:
-                try: v = float(v)
-                except: pass
+                try:
+                    v = float(v)
+                except:
+                    pass
             opts[k] = v
 
         return opts
 
     @classmethod
     def zymake(cls, request={}, usage='', firsttime=True, expdesign=None):
-        usage ='''\
+        usage = '''\
 
 
         Available Commands                        Alias                  Descr
@@ -760,11 +751,11 @@ class GramExp(object):
         request.update(s)
 
         ontology = dict(
-            _do    = ['cmd', 'show', 'path', 'run', 'update', 'init', 'runpara', 'hist', 'diff'],
-            _spec   = list(cls._spec),
-            _ext = ['json', 'pk', 'inf']
+            _do=['cmd', 'show', 'path', 'run', 'update', 'init', 'runpara', 'hist', 'diff'],
+            _spec=list(cls._spec),
+            _ext=['json', 'pk', 'inf']
         )
-        ont_values = sum([w for k, w in ontology.items() if k != '_spec'] , [])
+        ont_values = sum([w for k, w in ontology.items() if k != '_spec'], [])
 
         # Init _do value.
         if not request.get('_do'):
@@ -783,7 +774,6 @@ class GramExp(object):
                 else:
                     runcmd = 'run'
                 request['_do'] = [runcmd] + do
-
 
         do = request.get('_do', [])
         checksum = len(do)
@@ -806,11 +796,11 @@ class GramExp(object):
                             try:
                                 d, expdesign = Spec.load(v, cls._spec[v])
                             except IndexChangedError as e:
-                                cls.log.warning('Spec (%s) not found, re-building Spec indexes...' % (v) )
+                                cls.log.warning('Spec (%s) not found, re-building Spec indexes...' % (v))
                                 cls.update_index('spec')
                                 cls._spec = Spec.get_all()
                                 return cls.zymake(firsttime=False)
-                            expgroup.append((v,d, expdesign))
+                            expgroup.append((v, d, expdesign))
                         else:
                             request[ont] = v
 
@@ -823,7 +813,7 @@ class GramExp(object):
                 cls.log.error('fatal: Not a pymake directory: %s not found.' % (cls._cfg_name))
                 exit(10)
 
-            if  firsttime == True:
+            if firsttime == True:
                 cls.log.warning('Spec not found, re-building Spec indexes...')
                 cls.update_index('spec')
                 cls._spec = Spec.get_all()
@@ -831,7 +821,6 @@ class GramExp(object):
             else:
                 cls.log.error('Unknown argument: %s\n\nAvailable Exp : %s' % (do, list(cls._spec)))
                 exit(10)
-
 
         # Setup the exp inputs
         if run_indexs:
@@ -843,10 +832,8 @@ class GramExp(object):
         if len(expgroup) > 0 and len(do) == 0:
             request['_do'] = 'show'
 
-
         expdesign = expdesign or expdesign_lkp
         return cls(request, usage=usage, parser=parser, parseargs=False, expdesign=expdesign)
-
 
     @classmethod
     def expVectorLookup(cls, request):
@@ -873,7 +860,6 @@ class GramExp(object):
                 request[k] = sub_request
 
         return expdesign
-
 
     @classmethod
     def exp_tabulate(cls, conf={}, usage=''):
@@ -920,7 +906,7 @@ class GramExp(object):
                         elif 'StoreFalse' in str(type(a)):
                             storetrue = False
                         else:
-                            raise ValueError('Check the Type of argparse for : %s'%e)
+                            raise ValueError('Check the Type of argparse for : %s' % e)
                         if storetrue and store:
                             command += [a.option_strings[0]]
                     else:
@@ -979,7 +965,7 @@ class GramExp(object):
 
     def simulate(self, halt=True, file=sys.stdout):
 
-        print('PYMAKE Exp: %d' % (len(self) ), file=file)
+        print('PYMAKE Exp: %d' % (len(self)), file=file)
         print('-'*30, file=file)
         print(self.exptable(), file=file)
         if halt:
@@ -989,7 +975,7 @@ class GramExp(object):
 
     @staticmethod
     def sign_nargs(fun):
-        return sum([y.default is inspect._empty for x,y in inspect.signature(fun).parameters.items() if x != 'self'])
+        return sum([y.default is inspect._empty for x, y in inspect.signature(fun).parameters.items() if x != 'self'])
 
     @staticmethod
     def tb_expeformat(sandbox):
@@ -998,7 +984,7 @@ class GramExp(object):
             if not callable(getattr(sandbox, m)) or m.startswith('__') or hasattr(ExpeFormat, m):
                 continue
             sgn = inspect.signature(getattr(sandbox, m))
-            d = [v for k,v in sgn.parameters.items() if k != 'self'] or []
+            d = [v for k, v in sgn.parameters.items() if k != 'self'] or []
             signatures.append((m, d))
         return signatures
 
@@ -1006,7 +992,7 @@ class GramExp(object):
     def functable(obj):
         ''' show method/doc associated to one class (in /scripts) '''
         lines = []
-        for m in  GramExp.tb_expeformat(obj):
+        for m in GramExp.tb_expeformat(obj):
             name = m[0]
             opts = []
             for o in m[1]:
@@ -1017,7 +1003,7 @@ class GramExp(object):
                     opts.append(o.name)
                 else:
                     # kwargs
-                    opts.append('%s [%s]'% (o.name, o.default))
+                    opts.append('%s [%s]' % (o.name, o.default))
             opts = ', '.join(opts)
             line = '  ' + name + ': ' + opts
             lines.append(line)
@@ -1037,7 +1023,6 @@ class GramExp(object):
     def get_cls_name(cls):
         clss = str(cls).split()[1]
         return clss.split('.')[-1].replace("'>", '')
-
 
     def expe_init(self, expe, _seed_path='/tmp/pmk.seed'):
         ''' Intialize an expe:
@@ -1069,7 +1054,7 @@ class GramExp(object):
                     for c in list(expe['_repeat']):
                         seed.append(str(ord(c)))
 
-            seed = ''.join( [chr(int(i)) for i in list(''.join(seed))] )
+            seed = ''.join([chr(int(i)) for i in list(''.join(seed))])
             seed = int((hash_objects(seed)), 32) % 2**32
             seed = [seed, seed]
             # Makes it on 32 bit...
@@ -1101,11 +1086,11 @@ class GramExp(object):
 
         # Init I/O settings
         # @debug: do this in expsetup !
-        expe['_output_path'] = self.make_output_path(expe, _null=self._tensors._null, _nonunique=self.get_nounique_keys())
+        expe['_output_path'] = self.make_output_path(
+            expe, _null=self._tensors._null, _nonunique=self.get_nounique_keys())
         expe['_input_path'] = self.make_input_path(expe)
 
         return self._seed
-
 
     def execute(self):
         ''' Execute Exp Sequentially. '''
@@ -1133,8 +1118,8 @@ class GramExp(object):
             except:
                 raise
         except IndexError as e:
-                self.log.error('Script arguments error : %s -- %s' % (e, script))
-                exit(2)
+            self.log.error('Script arguments error : %s -- %s' % (e, script))
+            exit(2)
 
         if script_args:
             self._tensors.update_all(_do=script_args)
@@ -1167,7 +1152,7 @@ class GramExp(object):
                 cmd = ' '.join(basecmd).replace('runpara', id_cmd, 1)
             else:
                 idx = basecmd.index(Target)
-                cmd = ' '.join(basecmd[:idx] + [Target + ' '+ id_cmd] + basecmd[idx+1:])
+                cmd = ' '.join(basecmd[:idx] + [Target + ' ' + id_cmd] + basecmd[idx+1:])
             cmdlines.append(cmd)
 
         n_cores = str(self._conf.get('_cores', 1))
@@ -1175,11 +1160,13 @@ class GramExp(object):
         # remove the --cores options
         for i, cmd in enumerate(cmdlines):
             cmd = cmd.split()
-            try: idx = cmd.index('--cores')
-            except: continue
-            cmd.pop(idx); cmd.pop(idx) # pop --cores int
+            try:
+                idx = cmd.index('--cores')
+            except:
+                continue
+            cmd.pop(idx)
+            cmd.pop(idx) # pop --cores int
             cmdlines[i] = ' '.join(cmd)
-
 
         if self._conf.get('simulate'):
             self.simulate()
@@ -1188,7 +1175,7 @@ class GramExp(object):
         #    print(r)
         #exit()
 
-        cmd = ['parallel', '-j', n_cores, '-u', '-C', "' '", '--eta', '--progress', ':::', '%s'%('\n'.join(cmdlines))]
+        cmd = ['parallel', '-j', n_cores, '-u', '-C', "' '", '--eta', '--progress', ':::', '%s' % ('\n'.join(cmdlines))]
 
         #stdout = subprocess.check_output(cmd)
         #print(stdout.decode())
@@ -1249,7 +1236,7 @@ class GramExp(object):
                     cmd = ' '.join(basecmd).replace('runpara', id_cmd, 1)
                 else:
                     idx = basecmd.index(Target)
-                    cmd = ' '.join(basecmd[:idx] + [Target + ' '+ id_cmd] + basecmd[idx+1:])
+                    cmd = ' '.join(basecmd[:idx] + [Target + ' ' + id_cmd] + basecmd[idx+1:])
 
                 cmdlines.append(cmd)
 
@@ -1276,14 +1263,13 @@ class GramExp(object):
         cmd = ['parallel', '-u', '-C', "' '", '--eta', '--progress',
                '--sshloginfile', NDL, '--workdir', workdir,
                '--env', 'OMP_NUM_THREADS', '--env', 'PYTHONPATH', '--env', 'PATH',
-               ':::', '%s'%('\n'.join(cmdlines))]
+               ':::', '%s' % ('\n'.join(cmdlines))]
 
         env = {'PYTHONPATH': '~/.local/lib/:',
                'PATH': '~/.local/bin:/usr/local/bin:/usr/bin:/bin:'}
 
         if self._conf.get('simulate'):
             self.simulate()
-
 
         #stdout = subprocess.check_output(cmd)
         #print(stdout.decode())
@@ -1324,7 +1310,7 @@ class GramExp(object):
         # get the figure
         code = ''
         nb['cells'] = [nbf.new_markdown_cell(text),
-                       nbf.new_code_cell(code) ]
+                       nbf.new_code_cell(code)]
         return
 
     @classmethod
@@ -1344,52 +1330,52 @@ class GramExp(object):
 
         prjt = re.sub('\W', '_', os.path.basename(pwd)) # module import wont work with special character (- +etc)
         if prjt != os.path.basename(pwd):
-            self.log.critical('Pmk does not manage yet project name with special character.\nPlease rename your folder with use of "_"')
+            self.log.critical(
+                'Pmk does not manage yet project name with special character.\nPlease rename your folder with use of "_"')
             raise NotImplementedError('bad folder name: %s' % (os.path.basename(pwd)))
 
-        self.log.info('Creating project: %s' % (prjt) )
+        self.log.info('Creating project: %s' % (prjt))
 
         folders = ['spec', 'script', 'model', # User logics
                    'data', 'notebook', # User IO folder
                    'pmk_modules',
                    '_config', ] # _config in last to get all updated config
 
-        conf_file = {'pmk.cfg':'pmk.cfg',
-                     'gramarg':'gramarg.py',
-                     'gitignore':'.gitignore'}
+        conf_file = {'pmk.cfg': 'pmk.cfg',
+                     'gramarg': 'gramarg.py',
+                     'gitignore': '.gitignore'}
 
         settings = {'project_name': prjt,
                     'username': getpass.getuser(),
-                    'default_gramarg':'.'.join((prjt, 'gramarg')),
+                    'default_gramarg': '.'.join((prjt, 'gramarg')),
                     'project_data': 'data/',
                     'project_notebook': 'notebook/',
-                    'project_figs':'data/plot/figs',
+                    'project_figs': 'data/plot/figs',
                    }
-
 
         cwd = os.path.dirname(__file__)
         for d in folders:
-            if d != '_config' :
+            if d != '_config':
                 # Copy folders and template files
                 os.makedirs(d, exist_ok=True)
-                template_fn = join(cwd,'..', 'template', '%s.template'%(d))
+                template_fn = join(cwd, '..', 'template', '%s.template' % (d))
                 if not os.path.isfile(template_fn):
                     continue
                 with open(template_fn) as _f:
                     template = PmkTemplate(_f.read())
-                open(join(pwd, d,  '__init__.py'), 'a').close()
-                with open(join(pwd, d,  'template_%s.py'%(d)), 'a') as _f:
+                open(join(pwd, d, '__init__.py'), 'a').close()
+                with open(join(pwd, d, 'template_%s.py' % (d)), 'a') as _f:
                     try:
                         _f.write(template.substitute(settings))
                     except KeyError as e:
-                        print("The following key is missing in the config file `%s': %s" % (temp_name, e) )
+                        print("The following key is missing in the config file `%s': %s" % (temp_name, e))
                         print('aborting...')
                         exit(10)
-                settings.update({'default_%s'%(d):'.'.join((prjt, d))})
+                settings.update({'default_%s' % (d): '.'.join((prjt, d))})
             elif d == '_config':
                 # Copy conf files
                 for temp_name, target in conf_file.items():
-                    with open(join(cwd,'..', 'template', temp_name+'.template')) as _f:
+                    with open(join(cwd, '..', 'template', temp_name+'.template')) as _f:
                         template = PmkTemplate(_f.read())
                     if os.path.exists(join(pwd, target)):
                         self.log.warning("file `%s' already exists, passing." % (target))
@@ -1398,7 +1384,7 @@ class GramExp(object):
                             try:
                                 _f.write(template.substitute(settings))
                             except KeyError as e:
-                                print('The following key is missing in the config file %s: %s' % (temp_name, e) )
+                                print('The following key is missing in the config file %s: %s' % (temp_name, e))
                                 print('aborting...')
                                 exit(10)
             else:
@@ -1421,7 +1407,6 @@ class GramExp(object):
         with open(fn, 'a') as _f:
             if not cmd in _tail:
                 return _f.write(cmd+'\n')
-
 
     def show_history(self):
         from pymake.util.utils import tail
@@ -1460,9 +1445,7 @@ class GramExp(object):
                 #except TypeError as e:
                 #    r = list(itertools.filterfalse(lambda x: x in v, s)) + list(itertools.filterfalse(lambda x: x in s, v))
 
-
                 diff_expe[k] = r
-
 
         for k in list(diff_expe):
             if len(diff_expe[k]) == 0:
@@ -1473,7 +1456,6 @@ class GramExp(object):
             print(tabulate(diff_expe.items()))
 
         exit()
-
 
     @classmethod
     def update_index(cls, *index_name):
@@ -1517,7 +1499,6 @@ class GramExp(object):
             with open(os.path.join(cwd, '..', 'template', 'pymake_completion.template')) as _f:
                 template = _f.read()
 
-
         # Get Specs
         specs = ' '.join(list(cls._spec))
 
@@ -1536,14 +1517,13 @@ class GramExp(object):
         # Create a Bash array of strings.
         dict_scripts = []
         for sur in sur_scripts:
-            dict_scripts.append('"'+ ' '.join(scripts[sur]) +'"')
+            dict_scripts.append('"' + ' '.join(scripts[sur]) + '"')
 
         # get Models
         models = None
 
         # get Corpus
         corpus = None
-
 
         all_scripts = ' '.join(all_scripts)
         sur_scripts = ' '.join(sur_scripts)
@@ -1558,7 +1538,7 @@ class GramExp(object):
 
         _match = '[[ "$project" == "%s" ]]' % (prjt)
         back_pos = template.find(_match)
-        if back_pos  >= 0:
+        if back_pos >= 0:
             # Remove old lines
             template = template.split('\n')
             pt = None
@@ -1568,14 +1548,14 @@ class GramExp(object):
                     break
             _hook = hook.strip().split('\n')
             n_lines = len(_hook)
-            template = template[:pt] +_hook+ template[pt+n_lines:]
+            template = template[:pt] + _hook + template[pt+n_lines:]
             template = '\n'.join(template)
         else:
             insert_pos = template.find('%%PMK')
             insert_pos = insert_pos - template[:insert_pos][::-1].find('\n')
             template = template[:insert_pos] +\
-                    hook +\
-                    template[insert_pos:]
+                hook +\
+                template[insert_pos:]
 
         os.makedirs(os.path.join(home, '.bash_completion.d'), exist_ok=True)
         with open(completion_fn, 'w') as _f:
@@ -1594,7 +1574,7 @@ class GramExp(object):
 
         if 'do_list' in self._conf:
             print('Available methods for %s: ' % (sandbox))
-            print(*self.functable(sandbox) , sep='\n')
+            print(*self.functable(sandbox), sep='\n')
             exit()
 
         # Default spec, expVector ?
@@ -1623,7 +1603,7 @@ class GramExp(object):
                 expbox = sandbox(pt, expe, expdesign, self)
                 module_name = expbox.__module__.split('.')[-1].lower()
             except FileNotFoundError as e:
-                self.log.error('ignoring %s'%e)
+                self.log.error('ignoring %s' % e)
                 continue
             except Exception as e:
                 print(('Error during '+colored('%s', 'red')+' Initialization.') % (str(sandbox)))
@@ -1656,7 +1636,8 @@ class GramExp(object):
                 ##############################################################
                 if not os.environ.get('DISPLAY'):
                     # Plot in nil/void
-                    import matplotlib; matplotlib.use('Agg')
+                    import matplotlib
+                    matplotlib.use('Agg')
                     logger.debug("==> Warning : Unable to load DISPLAY, try : `export DISPLAY=:0.0'")
                 else:
                     # Plot config
@@ -1704,15 +1685,15 @@ class GramExp(object):
             # Rolling size file
             fsize = os.stat(ferrors).st_size
             if fsize / 1024 > 100:
-                with open(ferrors, 'r') as _f: e = _f.read()
+                with open(ferrors, 'r') as _f:
+                    e = _f.read()
                 lines = e.split('\n')
                 go = False
                 with open(ferrors, 'w') as _f:
                     for i, l in enumerate(lines):
-                        if i > len(lines) * 0.9 and (go or len(l)>0 and l[0].startswith('=')):
+                        if i > len(lines) * 0.9 and (go or len(l) > 0 and l[0].startswith('=')):
                             _f.write(l+'\n')
                             go = True
-
 
         if self._conf.get('_shell'):
             import IPython
@@ -1740,7 +1721,3 @@ class GramExp(object):
 
         exit_status = 0 if n_errors == 0 else 1
         return exit(exit_status)
-
-
-
-
