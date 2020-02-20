@@ -403,7 +403,7 @@ class ExpeFormat(object):
                     frame.ax().set_xlabel('iterations')
 
                 if 'fig_yaxis' in frame or self.expe.get('fig_yaxis'):
-                    yaxis_name = frame.get('yaxis', expe.get('fig_yaxis'))
+                    yaxis_name = frame.get('yaxis', self.expe.get('fig_yaxis')).get(attribute, attribute)
                     frame.ax().set_ylabel(yaxis_name)
                 else:
                     frame.ax().set_ylabel(attribute)
