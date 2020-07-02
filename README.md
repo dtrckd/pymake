@@ -61,7 +61,7 @@ Perspectives:
 * Better documentation (or just a documentation, needs feedback!).
 
 
-## Installation [](#2)
+## Install [](#2)
 
 #### Short
 
@@ -84,6 +84,13 @@ git clone https://github.com/dtrckd/pymake
 cd pymake && make
 ```
 
+## Examples [](#3)
+
+Public projects that uses Pymake : 
+
+* [ml](https://github.com/dtrckd/ml) : Machine Learning models and experiments.
+* [Docsearch](https://github.com/dtrckd/docsearch) : self hosted search engine for your pdf documents.
+
 ## Glossary and Types
 
 * *run* or *expe*: It is the term that design one single experiment. it is related to an atomic, sequential code execution.
@@ -100,12 +107,6 @@ cd pymake && make
 * *gramarg*: It refers to a file, by default in gramarg.py, where you can tune the command line options of pmk by adding your onw. The command line option grammar is powered by the python module argparse.
 <!-- grammarg, -->
 
-## Examples [](#3)
-
-Public projects that uses Pymake : 
-
-* [ml](https://github.com/dtrckd/ml) : Machine Learning models and experiments.
-* [Docsearch](https://github.com/dtrckd/docsearch) : self hosted search engine for your pdf documents.
 
 
 ## FAQ [](#4)
