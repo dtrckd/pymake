@@ -1,4 +1,4 @@
-__version__ = '0.43.1'
+__version__ = '0.43.2'
 
 from pymake.core import get_pymake_settings, get_db_file
 from pymake.core.types import Spec, Corpus, Model, Script, ExpSpace, ExpVector, ExpTensor, ExpDesign, ExpGroup
