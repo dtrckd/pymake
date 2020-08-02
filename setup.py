@@ -1,9 +1,16 @@
 import sys
-import setuptools
 from codecs import open
 from os import path
+from setuptools import setup, find_packages
+from distutils.util import convert_path
 
-from pymake import __version__
+
+# Import Version
+main_ns = {}
+ver_path = convert_path('pymake/_version.py')
+with open(ver_path) as ver_file:
+    exec(ver_file.read(), main_ns)
+
 
 try:
     from Cython.Build import cythonize
@@ -22,13 +29,13 @@ install_requires = [x.strip() for x in all_reqs if not (x.strip().startswith(('#
 install_requires = list(filter(None, install_requires))
 
 # Packages
-packages = setuptools.find_packages()
-#packages += ['repo/ml'] +  ['repo/ml/'+p for p in setuptools.find_packages('repo/ml/')]
+packages = find_packages()
+#packages += ['repo/ml'] +  ['repo/ml/'+p for p in find_packages('repo/ml/')]
 
 
-setuptools.setup(
+setup(
     name='pmk',
-    version=__version__,
+    version=main_ns['__version__'],
     author='dtrckd',
     author_email='dtrckd@gmail.com',
     description='An experiment control system for reproducible research.',
@@ -40,7 +47,7 @@ setuptools.setup(
     },
     packages=packages,
     #package_dir={'ml' : 'repo/ml'},
-    package_data={'pymake' : ['pmk.cfg', 'template/*.template']},
+    package_data={'pymake': ['pmk.cfg', 'template/*.template']},
     include_package_data=True,
     keywords=['pymake', 'learning', 'model'],
     classifiers=[
@@ -68,4 +75,3 @@ setuptools.setup(
     #),
 
 )
-
