@@ -6,6 +6,7 @@ from pymake import GramExp
 
 ''' A Command line controler of Pymake '''
 
+
 def bootstrap():
     # Manage working directory
 
@@ -26,7 +27,6 @@ def bootstrap():
         # @Warning: prevent other library from moving pymake CWD
         os.chdir(env.get('PWD'))
 
-
     ## Search in the project and current repo. Awesome !
     # @Warning: can cause import conflict if folder/file name confilct with systemo module
     #sys.path.insert(0, pwd + '/.')
@@ -37,90 +37,90 @@ def bootstrap():
     return env
 
 
-
 def main():
 
     env = bootstrap()
     GramExp.setenv(env)
 
-    zymake = GramExp.zymake()
-    zyvar = zymake._conf
+    gexp = GramExp.zymake()
+    expe = gexp._conf
 
-    if zyvar.get('simulate') and ( not zyvar['_do'] in ['run', 'runpara', 'path'] or not zyvar.get('script')):
+    if expe.get('simulate') and (not expe['_do'] in ['run', 'runpara', 'path'] or not expe.get('script')):
         # same as show !
-        zymake.simulate()
-
+        gexp.simulate()
 
     lines = None
     line_prefix = ''
-    if zyvar['_do'] == 'init':
-        zymake.init_folders()
+    if expe['_do'] == 'init':
+        gexp.init_folders()
         exit()
     else:
-        if (zyvar['_do'] or zyvar.get('do_list')) and not GramExp.is_pymake_dir():
+        if (expe['_do'] or expe.get('do_list')) and not GramExp.is_pymake_dir():
             print('fatal: Not a pymake directory: %s not found.' % (GramExp._cfg_name))
             exit(10)
 
-    if zyvar['_do'] == 'update':
-        zymake.update_index()
-    elif zyvar['_do'] == 'show':
-        zymake.simulate()
-    elif zyvar['_do'] ==  'run':
-        lines = zymake.execute()
-    elif zyvar['_do'] == 'runpara':
-        is_distrib = zyvar.get('_net')
+    if expe['_do'] == 'update':
+        gexp.update_index()
+    elif expe['_do'] == 'show':
+        gexp.simulate()
+    elif expe['_do'] == 'doc':
+        lines = gexp.show_doc()
+    elif expe['_do'] == 'run':
+        lines = gexp.execute()
+    elif expe['_do'] == 'runpara':
+        is_distrib = expe.get('_net')
         if is_distrib:
             if is_distrib != True:
                 nhosts = int(is_distrib)
             else:
                 nhosts = None
-            lines = zymake.execute_parallel_net(nhosts)
+            lines = gexp.execute_parallel_net(nhosts)
         else:
-            lines = zymake.execute_parallel()
-        zymake.pushcmd2hist()
-    elif zyvar['_do'] == 'cmd':
-        lines = zymake.make_commandline()
-    elif zyvar['_do'] == 'path':
-        lines = zymake.make_path(ext=zyvar.get('_ext'), status=zyvar.get('_status'))
-    elif zyvar['_do'] == 'hist':
-        lines = zymake.show_history()
-    elif zyvar['_do'] == 'diff':
-        lines = zymake.show_diff()
-    elif zyvar['_do'] == 'notebook': # @Todo
-        lines = zymake.notebook()
+            lines = gexp.execute_parallel()
+        gexp.pushcmd2hist()
+    elif expe['_do'] == 'cmd':
+        lines = gexp.make_commandline()
+    elif expe['_do'] == 'path':
+        lines = gexp.make_path(ext=expe.get('_ext'), status=expe.get('_status'))
+    elif expe['_do'] == 'hist':
+        lines = gexp.show_history()
+    elif expe['_do'] == 'diff':
+        lines = gexp.show_diff()
+    elif expe['_do'] == 'notebook': # @Todo
+        lines = gexp.notebook()
     else: # list things
 
-        if not 'do_list' in zyvar and zyvar['_do']:
-            raise ValueError('Unknown command : %s' % zyvar['_do'])
+        if not 'do_list' in expe and expe['_do']:
+            raise ValueError('Unknown command : %s' % expe['_do'])
 
-        if 'spec' == zyvar.get('do_list'):
-            print (zymake.spectable())
-        elif 'model' == zyvar.get('do_list'):
-            print (zymake.modeltable())
-        elif 'script' == zyvar.get('do_list'):
-            print(zymake.scripttable())
-        elif 'model_topos' == zyvar.get('do_list'):
-            print (zymake.modeltable(_type='topos'))
-        elif 'spec_topo' ==  zyvar.get('do_list'):
-            print (zymake.spectable_topo())
-        elif 'topo' ==  zyvar.get('do_list'):
-            print (zymake.alltable_topo())
+        if 'spec' == expe.get('do_list'):
+            print(gexp.spectable())
+        elif 'model' == expe.get('do_list'):
+            print(gexp.modeltable())
+        elif 'script' == expe.get('do_list'):
+            print(gexp.scripttable())
+        elif 'model_topos' == expe.get('do_list'):
+            print(gexp.modeltable(_type='topos'))
+        elif 'spec_topo' == expe.get('do_list'):
+            print(gexp.spectable_topo())
+        elif 'topo' == expe.get('do_list'):
+            print(gexp.alltable_topo())
         else:
-            print(zymake.help_short())
-            if zyvar.get('do_list'):
-                print ('Unknow options %s ?' % zyvar.get('do_list'))
+            print(gexp.help_short())
+            if expe.get('do_list'):
+                print('Unknow options %s ?' % expe.get('do_list'))
         exit()
 
     if lines is None:
         # catch signal ?
         exit()
 
-    if 'script' in zyvar:
+    if 'script' in expe:
         lines = [' '.join((line_prefix, l)).strip() for l in lines]
 
-    zymake.simulate(halt=False, file=sys.stderr)
+    gexp.simulate(halt=False, file=sys.stderr)
     print('\n'.join(lines), file=sys.stdout)
+
 
 if __name__ == '__main__':
     main()
-

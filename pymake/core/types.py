@@ -1,5 +1,5 @@
 from copy import copy, deepcopy
-import traceback,  importlib
+import traceback, importlib
 from collections import OrderedDict, defaultdict
 from itertools import product
 
@@ -19,7 +19,6 @@ lgg = logger
 '''
 
 
-
 # Typo/ID formatter / pymake.core.typo ?
 def resolve_model_name(m):
 
@@ -36,11 +35,11 @@ def resolve_model_name(m):
             if len(pkg) > 8:
                 prefix = pkg[:3]
                 if '.' in pkg:
-                    prefix  += ''.join(map(lambda x:x[0], pkg.split('.')[1:]))
+                    prefix += ''.join(map(lambda x: x[0], pkg.split('.')[1:]))
             else:
                 prefix = pkg.split('.')[0]
 
-            model_name = '%s.%s'%(prefix, _m)
+            model_name = '%s.%s' % (prefix, _m)
         else:
             model_name = _m
 
@@ -52,18 +51,18 @@ def resolve_model_name(m):
         return model_names
 
 
-
-
 from tabulate import tabulate
 
 # Ugly, integrate.
+
+
 def _table_(tables, headers=[], max_line=10, max_row=30, name=''):
 
     if isinstance(headers, str):
         # tables is dict
         # Sort the dict
         ordered_keys = sorted(tables.keys())
-        tables = OrderedDict([(k,tables[k]) for k in ordered_keys ])
+        tables = OrderedDict([(k, tables[k]) for k in ordered_keys])
 
         _tables = []
         cpt = 0
@@ -75,7 +74,7 @@ def _table_(tables, headers=[], max_line=10, max_row=30, name=''):
             t[k] = v
             cpt += 1
 
-        sep = '# %s' % (colored(name, 'bold') +  '\n'+'='*20)
+        sep = '# %s' % (colored(name, 'bold') + '\n'+'='*20)
         print(sep)
         tables = '\n\n'.join([str(tabulate(t, headers=headers)) for t in _tables])
         return tables
@@ -83,14 +82,14 @@ def _table_(tables, headers=[], max_line=10, max_row=30, name=''):
         # tables is list
         raw = []
         for sec, table in enumerate(tables):
-            table = sorted(table, key=lambda x:x[0])
+            table = sorted(table, key=lambda x: x[0])
             size = len(table)
             if size == 0:
                 continue
             col = int((size-0.1) // max_line)
             junk = max_line % size
             table += ['-']*junk
-            table = [table[j:max_line*(i+1)] for i,j in enumerate(range(0, size, max_line))]
+            table = [table[j:max_line*(i+1)] for i, j in enumerate(range(0, size, max_line))]
             table = char.array(table).astype('|S'+str(max_row))
             fmt = 'simple'
             raw.append(tabulate(table.T,
@@ -100,15 +99,13 @@ def _table_(tables, headers=[], max_line=10, max_row=30, name=''):
         return sep[1:] + sep.join(raw)
 
 
-
-
 class BaseObject(object):
     ''' Notes : Avoid method conflict by ALWAYS settings this class in last
                 at class definitions.
     '''
 
     def __init__(self, *args, **kwargs):
-    #def __init__(self, name='BaseObject'):
+        #def __init__(self, name='BaseObject'):
         # Le ruban est infini...
         #if name is None:
         #    print(traceback.extract_stack()[-2])
@@ -119,9 +116,11 @@ class BaseObject(object):
     #def _name(self):
     #    return self.__name__
     def items(self):
-        return [(str(i), j) for i,j in enumerate(self)]
+        return [(str(i), j) for i, j in enumerate(self)]
+
     def table(self):
         return tabulate(self.items())
+
 
 class ExpSpace(dict):
     ''' A dictionnary with dot notation access.
@@ -145,8 +144,10 @@ class ExpSpace(dict):
 
     def copy(self):
         return type(self)(self)
+
     def __copy__(self):
         return self.__class__(**self)
+
     def __deepcopy__(self, memo):
         return self.copy()
 
@@ -168,20 +169,26 @@ class ExpSpace(dict):
     # For Piclking
     def __getstate__(self):
         return self
+
     def __setstate__(self, state):
         self.update(state)
         self.__dict__ = self
 
+
 class ExpVector(list, BaseObject):
     ''' A List of elements of an ExpTensor. '''
+
     def __add__(self, other):
         return self.__class__(list.__add__(self, other))
+
     def __sub__(self, other):
         return self.__class__([item for item in self if item not in other])
 
+
 class ExpTensor(OrderedDict, BaseObject):
     ''' Represent a set of Experiences (**expe**). '''
-    def __init__(self,  *args, **kwargs):
+
+    def __init__(self, *args, **kwargs):
 
         if len(args) == 1 and isinstance(args[0], (ExpTensor)):
             kw = args[0].copy()
@@ -219,7 +226,7 @@ class ExpTensor(OrderedDict, BaseObject):
         elif issubclass(type(expe), Model):
             tensor = cls(model=expe)
         elif issubclass(type(expe), ExpVector):
-            tensor = cls((str(i),j) for i,j in enumerate(expe))
+            tensor = cls((str(i), j) for i, j in enumerate(expe))
         elif isinstance(expe, ExpTensor):
             tensor = expe.copy()
         elif isinstance(expe, (dict, ExpSpace)):
@@ -262,7 +269,7 @@ class ExpTensor(OrderedDict, BaseObject):
                 continue
 
             if parser is not None:
-                if not k in dests_filled and k in self :
+                if not k in dests_filled and k in self:
                     continue
 
             if issubclass(type(v), ExpVector):
@@ -272,10 +279,9 @@ class ExpTensor(OrderedDict, BaseObject):
 
     def get_size(self, virtual=False):
         if virtual:
-            return  prod([len(x) for x in self.values()])
+            return prod([len(x) for x in self.values()])
         else:
             return self._size
-
 
     def push_dict(self, d):
         ''' push one dict inside a exptensor.
@@ -308,10 +314,9 @@ class ExpTensor(OrderedDict, BaseObject):
             self.update(_up_dict)
             return True
 
-
     def table(self, extra=[]):
-        return tabulate(extra+sorted(self.items(), key=lambda x:x[0]),
-                               headers=['Params','Values'])
+        return tabulate(extra+sorted(self.items(), key=lambda x: x[0]),
+                        headers=['Params', 'Values'])
 
 
 class ExpGroup(list, BaseObject):
@@ -347,8 +352,10 @@ class ExpGroup(list, BaseObject):
 
     def __add__(self, other):
         return self.__class__(list.__add__(self, other))
+
     def __sub__(self, other):
         return self.__class__([item for item in self if item not in other])
+
 
 class Spec(BaseObject):
 
@@ -373,16 +380,16 @@ class Spec(BaseObject):
     def load(expe_name, expe_module):
         # debug to load from module or expe_name !
 
-        p =  expe_module.split('.')
+        p = expe_module.split('.')
         modula, modulb = '.'.join(p[:-1]), p[-1]
         try:
             expdesign = getattr(importlib.import_module(modula), modulb)
             exp = getattr(expdesign, expe_name)
         except (AttributeError, ModuleNotFoundError) as e:
-            raise IndexChangedError("Fatal Error: unable to load spec (%s:%s):  try `pmk update' or try again."% (expe_name, e))
+            raise IndexChangedError(
+                "Fatal Error: unable to load spec (%s:%s):  try `pmk update' or try again." % (expe_name, e))
 
         return exp, expdesign
-
 
     @classmethod
     def table(cls):
@@ -392,7 +399,7 @@ class Spec(BaseObject):
             name = elt['module_name'].split('.')[-1]
             obj, _ = cls.load(elt['expe_name'], elt['module_name'])
             if isinstance(obj, (ExpSpace, ExpTensor, ExpGroup)):
-                expes = t.get(name, []) + [ elt['expe_name'] ]
+                expes = t.get(name, []) + [elt['expe_name']]
                 t[name] = sorted(expes)
         return _table_(t, headers='keys', name=cls.__name__)
 
@@ -407,7 +414,7 @@ class Spec(BaseObject):
                                ('Exp', (ExpSpace, ExpTensor, ExpGroup)),
                                ('Unknown', str)))
 
-        tables = [ [] for i in range(len(Headers))]
+        tables = [[] for i in range(len(Headers))]
 
         for expe_name, expe_module in _spec.items():
             expe, _ = cls.load(expe_name, expe_module)
@@ -417,9 +424,7 @@ class Spec(BaseObject):
                 pos = len(Headers) - 1
             tables[pos].append(expe_name)
 
-
         return _table_(tables, headers=list(Headers.keys()))
-
 
 
 class Script(BaseObject):
@@ -463,15 +468,15 @@ class Script(BaseObject):
 
         module = importlib.import_module(topmethod['module'])
         script = getattr(module, topmethod['scriptname'])
-        return script, arguments
+        return module, script, arguments
 
     @classmethod
     def table(cls):
         ix = IX(default_index='script')
         t = OrderedDict()
-        for elt in  ix.query(index='script', terms=True):
+        for elt in ix.query(index='script', terms=True):
             name = elt['scriptname']
-            methods = t.get(name, []) + [ elt['method'] ]
+            methods = t.get(name, []) + [elt['method']]
             t[name] = sorted(methods)
         return _table_(t, headers='keys', name=cls.__name__)
 
@@ -490,24 +495,35 @@ class Corpus(ExpVector):
     # IX integration needed..
 
     _corpus_data = [
-        dict(name='clique'        , data_type='network', data_source='random', directed=False),
-        dict(name='generator'     , data_type='network', data_source='random', directed=False, nodes=1000),
-        dict(name='graph'         , data_type='network', data_source='random'),
-        dict(name='alternate'     , data_type='network', data_source='random', directed=False),
-        dict(name='BA'            , data_type='network', data_source='random'),
-        dict(name='manufacturing' , data_type='network', data_source='web', directed=True, nodes=167, edges=5784, density=0.209, weighted=True),
-        dict(name='fb_uc'         , data_type='network', data_source='web', directed=True, nodes=1899, edges=22195, density=0.006, weighted=True),
-        dict(name='blogs'         , data_type='network', data_source='web', directed=True, nodes=1490, edges=19025, density=0.009, weighted=False),
-        dict(name='emaileu'       , data_type='network', data_source='web', directed=True, nodes=1005, edges=25571, density=0.025, weighted=False),
-        dict(name='propro'        , data_type='network', data_source='web', directed=False, nodes=2113, edges=1432, density=0.001, weighted=False),
-        dict(name='euroroad'      , data_type='network', data_source='web', directed=True, nodes=1177, edges=1432, density=0.001, weighted=False),
+        dict(name='clique', data_type='network', data_source='random', directed=False),
+        dict(name='generator', data_type='network', data_source='random', directed=False, nodes=1000),
+        dict(name='graph', data_type='network', data_source='random'),
+        dict(name='alternate', data_type='network', data_source='random', directed=False),
+        dict(name='BA', data_type='network', data_source='random'),
+        dict(name='manufacturing', data_type='network', data_source='web',
+             directed=True, nodes=167, edges=5784, density=0.209, weighted=True),
+        dict(name='fb_uc', data_type='network', data_source='web', directed=True,
+             nodes=1899, edges=22195, density=0.006, weighted=True),
+        dict(name='blogs', data_type='network', data_source='web', directed=True,
+             nodes=1490, edges=19025, density=0.009, weighted=False),
+        dict(name='emaileu', data_type='network', data_source='web', directed=True,
+             nodes=1005, edges=25571, density=0.025, weighted=False),
+        dict(name='propro', data_type='network', data_source='web', directed=False,
+             nodes=2113, edges=1432, density=0.001, weighted=False),
+        dict(name='euroroad', data_type='network', data_source='web',
+             directed=True, nodes=1177, edges=1432, density=0.001, weighted=False),
 
         # gt
-        dict(name='astro-ph',    data_type='network', data_source='gt', directed=False, nodes=16706, edges=121251, weighted=True),
-        dict(name='cond-mat',    data_type='network', data_source='gt', directed=False, nodes=16726, edges=47594 , weighted=True),
-        dict(name='hep-th',      data_type='network', data_source='gt', directed=False, nodes=8361,  edges=15751 , weighted=True),
-        dict(name='netscience',  data_type='network', data_source='gt', directed=False, nodes=1589,  edges=2742  , weighted=True),
-        dict(name='email-Enron', data_type='network', data_source='gt', directed=False, nodes=36692, edges=367662, weighted=False), # time weighted
+        dict(name='astro-ph', data_type='network', data_source='gt',
+             directed=False, nodes=16706, edges=121251, weighted=True),
+        dict(name='cond-mat', data_type='network', data_source='gt',
+             directed=False, nodes=16726, edges=47594, weighted=True),
+        dict(name='hep-th', data_type='network', data_source='gt',
+             directed=False, nodes=8361, edges=15751, weighted=True),
+        dict(name='netscience', data_type='network', data_source='gt',
+             directed=False, nodes=1589, edges=2742, weighted=True),
+        dict(name='email-Enron', data_type='network', data_source='gt', directed=False,
+             nodes=36692, edges=367662, weighted=False), # time weighted
 
         #dict(name='facebook'     ,  data_type='network', data_source='web', directed=True, nodes=None, edges=None, density=None, wheigted=None),
 
@@ -544,13 +560,14 @@ class Corpus(ExpVector):
     def get_all(cls):
         return cls._corpus_data
 
+
 class Model(ExpVector):
 
     @staticmethod
     def get(model_name):
         ix = IX(default_index='model')
 
-        _model =  None
+        _model = None
         docir = ix.getfirst(model_name, field='surname')
         if docir:
             mn = importlib.import_module(docir['module'])
@@ -572,7 +589,7 @@ class Model(ExpVector):
                     # means that len(surname.split('.')) > 1
                     names = elt['surname'].split('.')
                     topos = '.'.join(elt['category'].split())
-                    surname = '.'.join((names[0],  topos , names[1]))
+                    surname = '.'.join((names[0], topos, names[1]))
                 else:
                     surname = elt['surname']
                 res.append(surname)
@@ -587,6 +604,7 @@ class Model(ExpVector):
 # @debug : Rename this class to ?
 class ExpTensorV2(BaseObject):
     ''' Represent a set of Experiences (**expe**) of type ExpTensor... '''
+
     def __init__(self, private_keywords=[]):
         BaseObject.__init__(self)
         self._private_keywords = private_keywords
@@ -612,7 +630,7 @@ class ExpTensorV2(BaseObject):
             if not expdesign:
                 expdesign = ExpDesign
             conf['_expe_name'] = '_default_expe'
-            conf['_expe_hash'] = hash_objects(dict((k,v) for k,v in conf.items() if k not in private_keywords))
+            conf['_expe_hash'] = hash_objects(dict((k, v) for k, v in conf.items() if k not in private_keywords))
             gt._tensors.append(ExpTensor.from_expe(conf))
             gt._ds_.append(expdesign)
             return gt
@@ -627,7 +645,7 @@ class ExpTensorV2(BaseObject):
                 name, o, _type = o
 
             if isinstance(o, ExpGroup):
-                size_expe += len(o) -1
+                size_expe += len(o) - 1
                 _spec = _spec[:consume_expe] + o + _spec[consume_expe+1:]
             elif isinstance(o, list): # ExpVector
                 exp.append(o)
@@ -635,7 +653,7 @@ class ExpTensorV2(BaseObject):
                 consume_expe += 1
             else:
                 o['_expe_name'] = name
-                o['_expe_hash'] = hash_objects(dict((k,v) for k,v in o.items() if k not in private_keywords))
+                o['_expe_hash'] = hash_objects(dict((k, v) for k, v in o.items() if k not in private_keywords))
                 if hasattr(_type, '_alias'):
                     o['_alias'] = getattr(_type, '_alias')
 
@@ -730,7 +748,6 @@ class ExpTensorV2(BaseObject):
 
         return nounique_keys
 
-
     def get_conf(self):
         _conf = {}
         for tensor in self._tensors:
@@ -767,7 +784,7 @@ class ExpTensorV2(BaseObject):
                 _bind = tensor.pop('_bind')
                 if not isinstance(_bind, list):
                     _bind = [_bind]
-                elif len(_bind) ==1 and isinstance(_bind[0], list):
+                elif len(_bind) == 1 and isinstance(_bind[0], list):
                     _bind = _bind[0]
             else:
                 #_bind = getattr(self, '_bind', [])
@@ -793,7 +810,6 @@ class ExpTensorV2(BaseObject):
             models = tensor.get('model', [])
             for i, m in enumerate(models):
                 models[i] = resolve_model_name(m)
-
 
     def check_null(self):
         ''' Filter _null '''
@@ -827,7 +843,7 @@ class ExpTensorV2(BaseObject):
             new_tensor['model'] = [_m]
             _model = [_m] if isinstance(_m, str) else _m
             # @debug model resolve name !
-            _model = list(map(lambda x:x.split('.')[-1], _model))
+            _model = list(map(lambda x: x.split('.')[-1], _model))
             for key in tensor:
                 if key.find('__') >= 0:
                     kmodel, param = key.split('__')
@@ -842,7 +858,7 @@ class ExpTensorV2(BaseObject):
             2. filter _bind rule
             3. add special parameter (expe_id)
         '''
-        lod =  []
+        lod = []
         if len(tensor) > 0:
 
             if 'model' in tensor:
@@ -866,7 +882,6 @@ class ExpTensorV2(BaseObject):
                 for j, e in enumerate(values):
                     if type(e) is str:
                         values[j] = e.split('.')[-1]
-
 
                 if len(_bind) == 2:
                     # remove all occurence if this bind don't occur
@@ -901,8 +916,7 @@ class ExpTensorV2(BaseObject):
                         if a in values and _type(c) != d[b]:
                             idtoremove.append(expe_id)
 
-
-        lod = [d for i,d in enumerate(lod) if i not in idtoremove]
+        lod = [d for i, d in enumerate(lod) if i not in idtoremove]
         # Save true size of tensor (_bind remove)
         self._tensors[_id]._size = len(lod)
 
@@ -919,7 +933,7 @@ class ExpTensorV2(BaseObject):
         n_duplicate = 0
         for _id, _d in enumerate(self._lod):
             d = _d.copy()
-            [ d.pop(k) for k in self._private_keywords if k in d and k != '_repeat']
+            [d.pop(k) for k in self._private_keywords if k in d and k != '_repeat']
             o = hash_objects(d)
             if o in _hash:
                 n_duplicate += 1
@@ -956,12 +970,12 @@ class ExpTensorV2(BaseObject):
         gt = {}
         for tensor in self._tensors:
             for k, v in tensor.items():
-                _v = gt.get(k,[])
+                _v = gt.get(k, [])
                 gt[k] = _v + v
         return gt
 
     def get_keys(self):
-       return list(self.get_gt())
+        return list(self.get_gt())
 
     def table(self):
         tables = []
@@ -974,14 +988,13 @@ class ExpTensorV2(BaseObject):
                 extra = [('_bind', self._bind[id])]
 
             if id == 0:
-                headers = ['Params','Values']
+                headers = ['Params', 'Values']
             else:
                 headers = ''
 
-            tables.append(tabulate(extra+sorted(group.items(), key=lambda x:x[0]), headers=headers))
+            tables.append(tabulate(extra+sorted(group.items(), key=lambda x: x[0]), headers=headers))
 
         return '\n'.join(tables)
-
 
 
 class ExpDesign(dict, BaseObject):
@@ -995,7 +1008,7 @@ class ExpDesign(dict, BaseObject):
                 use when self._name is called to translate keywords
     '''
 
-    def __init__(self,  *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
 
         # Not a Ultimate solution to keep a flexibility when defining Exp Design
@@ -1007,30 +1020,28 @@ class ExpDesign(dict, BaseObject):
                 if not callable(v): #  python >3.2
                     self[k] = v
         # @debug: add callable in reserved keyword
-        self._reserved_keywords = list(set([w for w in dir(self) if w.startswith('_')] + ['_reserved_keywords']+dir(dict)+dir(BaseObject)))
+        self._reserved_keywords = list(set([w for w in dir(self) if w.startswith('_')] +
+                                           ['_reserved_keywords']+dir(dict)+dir(BaseObject)))
 
         BaseObject.__init__(self)
 
     def _specs(self):
-        return [ k for k  in self.keys() if k not in self._reserved_keywords ]
-
+        return [k for k in self.keys() if k not in self._reserved_keywords]
 
     @classmethod
     def _name(cls, l):
         if getattr(cls, '_alias', None):
-            _alias =  cls._alias
+            _alias = cls._alias
         else:
             return l
 
-
         if isinstance(l, (set, list, tuple)):
-            return [ _alias.get(i, i) for i in l ]
+            return [_alias.get(i, i) for i in l]
         elif isinstance(l, (dict, ExpSpace)):
             d = dict(l)
             for k, v in d.items():
                 if isinstance(v, basestring) and v in _alias:
                     d[k] = _alias[v]
             return d
-        else :
+        else:
             return _alias.get(l, l)
-

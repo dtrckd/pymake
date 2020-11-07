@@ -10,7 +10,6 @@ import shlex
 import inspect, traceback, importlib
 from collections import defaultdict, OrderedDict
 from functools import reduce, wraps
-from copy import deepcopy
 import shelve
 
 from math import ceil
@@ -236,7 +235,7 @@ class GramExp(object):
             # update the lookup script
             if 'script' in conf:
                 script = conf.pop('script')
-                _script, script_args = Script.get(script[0], script[1:])
+                _, _script, script_args = Script.get(script[0], script[1:])
                 if script_args:
                     conf['_do'] = script_args
                     #self._tensors.update_all(_do=script_args)
@@ -621,6 +620,35 @@ class GramExp(object):
 
         return fmt_expe
 
+    def _get_script(self):
+        if 'script' in self._conf:
+            script = self._conf.pop('script')
+            self._tensors.remove_all('script')
+            self._tensors.remove_all('_do')
+        else:
+            self.log.error('==> Error : You need to specify a script. (--script)')
+            exit(10)
+
+        try:
+            module, _script, script_args = Script.get(script[0], script[1:])
+        except (ValueError, TypeError) as e:
+            self.log.warning('Script not found, re-building Scripts indexes...')
+            self.update_index('script')
+            try:
+                res = Script.get(script[0], script[1:])
+                if not res:
+                    self.log.error('Unknown script: %s' % (script[0]))
+                    exit(404)
+                else:
+                    module, _script, script_args = res
+            except:
+                raise
+        except IndexError as e:
+            self.log.error('Script arguments error : %s -- %s' % (e, script))
+            exit(2)
+
+        return module, _script, script_args
+
     @classmethod
     def get_parser(cls, description=None, usage=None):
         import pymake.core.gram as _gram
@@ -745,13 +773,14 @@ class GramExp(object):
         diff SPEC1 SPEC2                                                 show diff between two spec.
         cmd SPEC                                                         try to generate the command-line for each expe.
         path SPEC Filetype(pk|json|inf) [status]                         show output_path of each expe.
+        pmk doc -x SCRIPT                                                show the doc of the given script
         '''
 
         s, parser, expdesign_lkp = GramExp.parseargsexpe(usage)
         request.update(s)
 
         ontology = dict(
-            _do=['cmd', 'show', 'path', 'run', 'update', 'init', 'runpara', 'hist', 'diff'],
+            _do=['cmd', 'show', 'path', 'run', 'update', 'init', 'runpara', 'hist', 'diff', 'doc'],
             _spec=list(cls._spec),
             _ext=['json', 'pk', 'inf']
         )
@@ -946,7 +975,7 @@ class GramExp(object):
         specs = self._spec
         scripts = Script.get_all()
         models = Model.get_all()
-        table = [models, specs, scripts]
+        table = [models, specs, scripts[1:]]
         headers = ['Models', 'Specs', 'Actions']
         return _table_(table, headers)
 
@@ -965,9 +994,11 @@ class GramExp(object):
 
     def simulate(self, halt=True, file=sys.stdout):
 
-        print('PYMAKE Exp: %d' % (len(self)), file=file)
-        print('-'*30, file=file)
-        print(self.exptable(), file=file)
+        if not self._conf.get("_expe_silent"):
+            print('PYMAKE Exp: %d' % (len(self)), file=file)
+            print('-'*30, file=file)
+            print(self.exptable(), file=file)
+
         if halt:
             exit()
         else:
@@ -1094,33 +1125,7 @@ class GramExp(object):
 
     def execute(self):
         ''' Execute Exp Sequentially. '''
-
-        if 'script' in self._conf:
-            script = self._conf.pop('script')
-            self._tensors.remove_all('script')
-            self._tensors.remove_all('_do')
-        else:
-            self.log.error('==> Error : You need to specify a script. (--script)')
-            exit(10)
-
-        try:
-            _script, script_args = Script.get(script[0], script[1:])
-        except (ValueError, TypeError) as e:
-            self.log.warning('Script not found, re-building Scripts indexes...')
-            self.update_index('script')
-            try:
-                res = Script.get(script[0], script[1:])
-                if not res:
-                    self.log.error('Unknown script: %s' % (script[0]))
-                    exit(404)
-                else:
-                    _script, script_args = res
-            except:
-                raise
-        except IndexError as e:
-            self.log.error('Script arguments error : %s -- %s' % (e, script))
-            exit(2)
-
+        _, _script, script_args = self._get_script(self)
         if script_args:
             self._tensors.update_all(_do=script_args)
         self.pymake(sandbox=_script)
@@ -1456,6 +1461,20 @@ class GramExp(object):
             print(tabulate(diff_expe.items()))
 
         exit()
+
+    def show_doc(self):
+        self._conf["_expe_silent"] = True
+        module, script, _ = self._get_script()
+        docs = []
+        if module.__doc__:
+            docs.append(module.__doc__)
+        if script.__doc__:
+            docs.append(script.__doc__)
+
+        if docs:
+            return docs
+
+        return "No doc here. Condider adding a __doc__  in your file..."
 
     @classmethod
     def update_index(cls, *index_name):
