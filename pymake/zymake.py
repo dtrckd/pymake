@@ -99,7 +99,7 @@ def main():
             print(gexp.modeltable())
         elif 'script' == expe.get('do_list'):
             print(gexp.scripttable())
-        elif 'model_topos' == expe.get('do_list'):
+        elif 'model_topo' == expe.get('do_list'):
             print(gexp.modeltable(_type='topos'))
         elif 'spec_topo' == expe.get('do_list'):
             print(gexp.spectable_topo())

@@ -6,6 +6,7 @@ from itertools import product
 from numpy import char
 from numpy import prod
 
+from tabulate import tabulate
 from pymake import get_pymake_settings
 from pymake.util.utils import get_dest_opt_filled, hash_objects, ask_sure_exit, basestring, colored
 from pymake.index.indexmanager import IndexManager as IX
@@ -51,11 +52,7 @@ def resolve_model_name(m):
         return model_names
 
 
-from tabulate import tabulate
-
 # Ugly, integrate.
-
-
 def _table_(tables, headers=[], max_line=10, max_row=30, name=''):
 
     if isinstance(headers, str):
@@ -74,9 +71,8 @@ def _table_(tables, headers=[], max_line=10, max_row=30, name=''):
             t[k] = v
             cpt += 1
 
-        sep = '# %s' % (colored(name, 'bold') + '\n'+'='*20)
-        print(sep)
-        tables = '\n\n'.join([str(tabulate(t, headers=headers)) for t in _tables])
+        sep = '# %s\n' % (colored(name, 'bold') + '\n'+'='*20)
+        tables = sep + '\n\n'.join([str(tabulate(t, headers=headers)) for t in _tables])
         return tables
     else:
         # tables is list
@@ -96,7 +92,8 @@ def _table_(tables, headers=[], max_line=10, max_row=30, name=''):
                                 headers=[colored(headers[sec], 'bold')]+['']*(col),
                                 tablefmt=fmt))
         sep = '\n'+'='*20+'\n'
-        return sep[1:] + sep.join(raw)
+        #return sep[1:] + sep.join(raw)
+        return sep.join(raw)
 
 
 class BaseObject(object):

@@ -766,7 +766,7 @@ class GramExp(object):
         init                                                             init a pmk pymake repo.
         update                                                           update the pymake index.
         hist [-n n_lines]                                                show command history.
-        -l [spec(default)|model|script|topo]                             list available component.
+        -l [spec|model|script|topo]                             list available component.
         show SPEC                                 pmk SPEC               show one spec details (default if no arguments).
         run SPEC [--script [fun] [*args]]         pmk -x FUNC            execute tasks (default if -x is given).
         runpara SPEC [--script [fun] [*args]]     pmk -x FUNC --cores N  parallelize tasks (implicit if --cores is given).
@@ -955,8 +955,8 @@ class GramExp(object):
     #            break
     #    return
 
-    def exptable(self):
-        return self._tensors.table()
+    def modeltable(self, _type='short'):
+        return Model.table(_type)
 
     def spectable(self):
         return Spec.table()
@@ -964,20 +964,22 @@ class GramExp(object):
     def scripttable(self):
         return Script.table()
 
-    def modeltable(self, _type='short'):
-        return Model.table(_type)
-
     def spectable_topo(self):
         return Spec.table_topos(self._spec)
 
     def alltable_topo(self):
-        from pymake.core.types import _table_
-        specs = self._spec
-        scripts = Script.get_all()
-        models = Model.get_all()
-        table = [models, specs, scripts[1:]]
-        headers = ['Models', 'Specs', 'Actions']
-        return _table_(table, headers)
+        sep = '\n'+'='*20+'\n'
+        #from pymake.core.types import _table_
+        #specs = self._spec
+        #scripts = Script.get_all()
+        #models = Model.get_all()
+        #table = [models, specs, scripts[1:]]
+        #headers = ['Models', 'Specs', 'Actions']
+        #return _table_(table, headers)
+        return sep.join(map(lambda x: str(x.table()), [Model, Spec, Script]))
+
+    def exptable(self):
+        return self._tensors.table()
 
     def help_short(self):
         shelp = self.argparser.format_usage() + self.argparser.epilog
@@ -1125,7 +1127,7 @@ class GramExp(object):
 
     def execute(self):
         ''' Execute Exp Sequentially. '''
-        _, _script, script_args = self._get_script(self)
+        _, _script, script_args = self._get_script()
         if script_args:
             self._tensors.update_all(_do=script_args)
         self.pymake(sandbox=_script)
