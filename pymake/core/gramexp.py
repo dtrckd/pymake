@@ -1546,6 +1546,7 @@ class GramExp(object):
         # get Corpus
         corpus = None
 
+        spec_cmds = "|".join(["pmk", "run", "runpara", "show", "path", "diff", "doc"])
         all_scripts = ' '.join(all_scripts)
         sur_scripts = ' '.join(sur_scripts)
         dict_scripts = '(' + ' '.join(dict_scripts) + ')'
@@ -1582,6 +1583,7 @@ class GramExp(object):
         with open(completion_fn, 'w') as _f:
             template = PmkTemplate(template)
             template = template.substitute(projectname=prjt, version=__version__,
+                                           spec_cmds=spec_cmds,
                                            specs=specs,
                                            all_scripts=all_scripts,
                                            sur_scripts=sur_scripts,
