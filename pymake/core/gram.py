@@ -25,20 +25,20 @@ class ExpArgumentParser(argparse.ArgumentParser):
         #self.print_help()
         sys.exit(2)
 
+
 class VerboseAction(argparse.Action):
     def __call__(self, parser, args, values, option_string=None):
         if option_string in ('-nv', '--silent'):
             setattr(args, self.dest, -1)
         else:
             # print 'values: {v!r}'.format(v=values)
-            if values==None:
-                values='1'
+            if values == None:
+                values = '1'
             try:
-                values=int(values)
+                values = int(values)
             except ValueError:
-                values=values.count('v')+1
+                values = values.count('v')+1
             setattr(args, self.dest, values)
-
 
 
 # <begin arg-semantics>
@@ -47,6 +47,7 @@ class exp_append(argparse.Action):
     ''' Append arguments in e expTensor by repetition after a flag (ie -n 10 20 30...).
         If several flags are present the last one will overwrite other.
     '''
+
     def __init__(self, *args, **kwargs):
         self._type = kwargs.pop('_t', str)
         super(exp_append, self).__init__(*args, **kwargs)
@@ -63,10 +64,12 @@ class exp_append(argparse.Action):
         except Exception as e:
             parser.error(e)
 
+
 class exp_append_uniq(argparse.Action):
     ''' Append arguments in e expTensor by flag repetition (ie -q 10 -q 20...).
         It is useful to hanlde arguments that are tuple or list in a flag.
     '''
+
     def __init__(self, *args, **kwargs):
         self._type = kwargs.pop('_t', str)
         super(exp_append_uniq, self).__init__(*args, **kwargs)
@@ -88,9 +91,11 @@ class exp_append_uniq(argparse.Action):
 
 class unaggregate_append(argparse.Action):
     ''' Option that would not be aggregated in making command line'''
+
     def __call__(self, parser, namespace, values, option_string=None):
         uniq_values = values
         setattr(namespace, self.dest, uniq_values)
+
 
 def check_positive_integer(value):
     try:
@@ -130,9 +135,14 @@ _Gram = [
                           action='store_true',
                           help='Write Fitted Model On disk.'),
 
+    '-n', '--N', dict(
+        nargs='*', action=exp_append, # str because keywords "all"
+        help='Size of frontend data [int | all].'),
+
+
     '--seed', dict(dest='_seed',
-        nargs='?', const=True,
-        help='set seed value. If no seed specified but flag given, it will save/load the current state.'),
+                   nargs='?', const=True,
+                   help='set seed value. If no seed specified but flag given, it will save/load the current state.'),
 
     '--profile', dict(dest='_profile', action='store_true',
                       help='profile a given script and output a .prof file.'),
@@ -171,11 +181,11 @@ _Gram = [
 
     # @Debug allocate unique filname for expe base on a hash of its spec.
     '--ifu', '--ignore-format-unique', dict(dest='_ignore_format_unique',
-                                        action='store_true',
+                                            action='store_true',
                                             help='dont check that if there is some outputpath overlaping due to lacking parameters in  _format.'),
 
     '--shell', dict(dest='_shell', action='store_true',
-                   help="Launch a ipython shell at the end of the expe or if it failed."),
+                    help="Launch a ipython shell at the end of the expe or if it failed."),
 
 
     #  Context-sensitive
@@ -196,21 +206,21 @@ _Gram = [
         help='force a an expe settings ex: --pmk myvar=2'),
 
     '--bind', dict(dest='_bind',
-        type=str, action='append',
-        help='Rules to filter the Exp Request.'),
+                   type=str, action='append',
+                   help='Rules to filter the Exp Request.'),
 
     '--repeat', dict(dest='_repeat',
-        nargs='*', action=exp_append, #type=check_positive_integer,
-        help='Index of tn nth repetitions/randomization of an design of experiments. Impact the outpout path as data/<bdir>/<refdir>/<repeat>/...'),
+                     nargs='*', action=exp_append, #type=check_positive_integer,
+                     help='Index of tn nth repetitions/randomization of an design of experiments. Impact the outpout path as data/<bdir>/<refdir>/<repeat>/...'),
 
     '--refdir', dict(dest='_refdir',
-        nargs='*', action=exp_append,
-        help='Name to append in data/<data-typer>/<refdir>/ for the output path.'),
+                     nargs='*', action=exp_append,
+                     help='Name to append in data/<data-typer>/<refdir>/ for the output path.'),
 
     '--format', dict(dest='_format',
-         help='File format for saving results and models.'),
+                     help='File format for saving results and models.'),
 
     '--type', '--data-format', dict(dest='_data_format',
-         help='The type/format of data to use [b|w].'),
+                                    help='The type/format of data to use [b|w].'),
 
-    ]
+]

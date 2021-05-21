@@ -703,9 +703,11 @@ class ExpTensorV2(BaseObject):
             for tensor in self._tensors:
                 if not k in tensor:
                     tensor[k] = [v]
+
             for expe in self._lod:
                 if not k in expe:
                     expe[k] = v
+
             if k in self._conf:
                 # @debug: dont test if all the group have this unique value.
                 self._conf[k] = v

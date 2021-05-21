@@ -201,7 +201,6 @@ class GramExp(object):
         self.lod = self._tensors._lod
 
     def update_default_expe(self, expformat):
-
         if not hasattr(expformat, '_default_expe'):
             return
         else:
@@ -553,7 +552,7 @@ class GramExp(object):
             # Assume pickle driver for models.
             filen = filen + '.' + 'pk'
 
-        if status is 'f' and is_empty_file(filen):
+        if status == 'f' and is_empty_file(filen):
             return None
         else:
             return filen
@@ -673,7 +672,7 @@ class GramExp(object):
                 #@improve priority should be on : local project !
                 cls.log.warning("Project name `%s' seems to already exists in your PYTHONPATH.\n"
                                 "Project's name should not conflict with existing ones.\n"
-                                "Please change the name of your project's repo." % prjt)
+                                "Please verify or change the names of your project's repo and the gramarg.py file." % prjt)
                 exit(38)
 
         grammar = []
