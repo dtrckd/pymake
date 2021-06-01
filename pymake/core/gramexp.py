@@ -213,7 +213,7 @@ class GramExp(object):
         # Use default _spec if no spec given
         _names = self.get_list('_expe_name')
         if '_spec' in default_expe and '_default_expe' in _names and len(_names) == 1:
-            specs = default_expe['_spec']
+            specs = default_expe.pop('_spec')
             specs = [specs] if not isinstance(specs, list) else specs
             group = []
 
@@ -224,6 +224,7 @@ class GramExp(object):
             for spec in specs:
                 if isinstance(spec, str):
                     d, expdesign = Spec.load(spec, self._spec[spec])
+                    default_expe["_expe_name"] = spec
                     group.append((spec, d, expdesign))
                 else:
                     # Assume dict/expspace
@@ -772,14 +773,14 @@ class GramExp(object):
         diff SPEC1 SPEC2                                                 show diff between two spec.
         cmd SPEC                                                         try to generate the command-line for each expe.
         path SPEC Filetype(pk|json|inf) [status]                         show output_path of each expe.
-        pmk doc -x SCRIPT                                                show the doc of the given script
+        pmk doc|help -x SCRIPT                                           show the doc of the given script
         '''
 
         s, parser, expdesign_lkp = GramExp.parseargsexpe(usage)
         request.update(s)
 
         ontology = dict(
-            _do=['cmd', 'show', 'path', 'run', 'update', 'init', 'runpara', 'hist', 'diff', 'doc'],
+            _do=['cmd', 'show', 'path', 'run', 'update', 'init', 'runpara', 'hist', 'diff', 'doc', 'help'],
             _spec=list(cls._spec),
             _ext=['json', 'pk', 'inf']
         )

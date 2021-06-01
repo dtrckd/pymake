@@ -701,11 +701,11 @@ class ExpTensorV2(BaseObject):
         for k, v in defconf.items():
 
             for tensor in self._tensors:
-                if not k in tensor:
+                if not k in tensor or k in ["_expe_name"]:
                     tensor[k] = [v]
 
             for expe in self._lod:
-                if not k in expe:
+                if not k in expe or k in ["_expe_name"]:
                     expe[k] = v
 
             if k in self._conf:

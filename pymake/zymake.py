@@ -63,7 +63,7 @@ def main():
         gexp.update_index()
     elif expe['_do'] == 'show':
         gexp.simulate()
-    elif expe['_do'] == 'doc':
+    elif expe['_do'] in ['doc', 'help']:
         lines = gexp.show_doc()
     elif expe['_do'] == 'run':
         lines = gexp.execute()

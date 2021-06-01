@@ -117,6 +117,12 @@ class ExpeFormat(object):
 
         self._set_measures()
 
+    def init_expeformat(self, ep):
+        # sanbox _preprocess undone.
+        o = ep(self.pt, self.expe, self._expdesign, self.gramexp)
+        o._expe_preprocess()
+        return o
+
     def _set_measures(self):
         measures = self.expe.get('_measures')
         if measures is None:
