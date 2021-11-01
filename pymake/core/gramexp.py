@@ -293,7 +293,7 @@ class GramExp(object):
 
     def io_format_check(self):
         if len(self) > 1 and '_write' in self._conf:
-            self.check_format()
+            self.validate_format()
 
         # Clean pymake extra args:
         extra_args = ['_ignore_format_unique', ('_net', False)]
@@ -308,7 +308,7 @@ class GramExp(object):
         for key in keys_to_remove:
             self._tensors.remove_all(key)
 
-    def check_format(self):
+    def validate_format(self):
         ''' Check if all expVector are distinguishable in _format.
 
             @debug: not valid check accros tensors !!!
@@ -335,7 +335,7 @@ class GramExp(object):
                 print(' ' + '  '.join(hidden_key))
                 print('Possible conflicts in experience results outputs.')
                 print('Please correct {_format} key to fit the experience settings.')
-                print('To force the runs, use:  --ignore-format-unique')
+                print('To force the runs, use: --ignore-format-unique')
                 print('Exiting...')
                 exit(2)
 

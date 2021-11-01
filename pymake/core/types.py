@@ -802,8 +802,9 @@ class ExpTensorV2(BaseObject):
 
             if '_measures' in tensor:
                 measures = tensor['_measures']
-                if isinstance(measures, str):
-                    tensor['_measures'] = measures.split()
+                for i, m in enumerate(measures):
+                    if isinstance(m, str):
+                        measures[i] = m.split()
 
             # Check models name
             models = tensor.get('model', [])

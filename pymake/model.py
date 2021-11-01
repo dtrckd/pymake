@@ -206,7 +206,7 @@ class ModelBase(object):
                 if self._measure_cpt % kws['measure_freq'] != 0:
                     continue
 
-            # lstrip('_') is a usefull hack for identical measure with diferent parameter...
+            # lstrip('_') is a usefull hack for identical measure with different parameters...
             if hasattr(self, 'compute_'+meas.lstrip('_')):
                 _meas = getattr(self, 'compute_'+meas.lstrip('_'))(*params, **kws)
                 ##with np.errstate(all='raise'):
@@ -342,7 +342,7 @@ class ModelBase(object):
         return y_test, probas
 
     #@dense mmsb
-    def compute_roc(self):
+    def compute_roc(self, *args, **kwargs):
         from sklearn.metrics import roc_curve, auc, precision_recall_curve
 
         data = self.frontend.data

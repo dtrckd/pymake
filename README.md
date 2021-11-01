@@ -388,11 +388,11 @@ To give an unique identifier of an expe belonging to a group of experiments (`Ex
 The path of the filename identifying an expe is automatically inferred by pymake. Thus, if you want to better partition your results, there is two parameters to control the output_path. By default it is something like `.pmk/results/training/<refdir>/<repeat>/output_path`. Thus you can control in your spec parameter the two level of sub-directory customizable with the keys `_refdir` and `_repeat` (in spec). If not given, the default parameters are "default" and '' (void) for respectively `_refdir` and `_repeat`. Note that you can format it with the same syntax explained for `_format`.
 
 
-###### Specifying what measure to save -- _csv_typo.
+###### Specifying what measure to save -- _measures.
 
 
 <!--
-Suppose you a script `fit` that execute a fit method of a given model. You may want to observe the convergence some quantities of your model trough iterations. The way to achieve this with pmk is to use the special settings `_csv_typo` that contains the attribute of your model you want to track.
+Suppose you a script `fit` that execute a fit method of a given model. You may want to observe the convergence some quantities of your model trough iterations. The way to achieve this with pmk is to use the special settings `_measures` that contains the attribute of your model you want to track.
 
 Once you provide this settings, you need to inject a function in the fit method of your model to track the results.
 
