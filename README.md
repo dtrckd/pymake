@@ -56,8 +56,8 @@ It can be represented as follows:
 
 Perspectives:
 
-* Web server UI and notebook automatic builder,
-* Better documentation (or just a documentation, needs feedback!).
+* Web server UI and notebook automatic builder.
+* Better documentation (see also [wiki/](./wiki/)).
 
 
 ## Install [](#2)
