@@ -30,8 +30,9 @@ install_short:
 	python3 setup.py install --user
 
 push_pip:
-	#python3 setup.py register -r pypi
-	python3 setup.py sdist upload -r pypi
+	rm -rf dist/
+	python setup.py sdist
+	twine upload dist/*
 
 push_doc: doc
 	cd doc/pymake

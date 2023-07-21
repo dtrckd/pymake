@@ -56,7 +56,6 @@ It can be represented as follows:
 
 Perspectives:
 
-* IPFS integration to push/fetch/search  design of experimentation, models, scripts and corpus in the decentralized web,
 * Web server UI and notebook automatic builder,
 * Better documentation (or just a documentation, needs feedback!).
 
@@ -65,7 +64,7 @@ Perspectives:
 
 #### Short
 
-    pip3 install pmk
+    pip install pmk
 
 #### From source
 
@@ -89,7 +88,7 @@ cd pymake && make
 Public projects that uses Pymake : 
 
 * [ml](https://github.com/dtrckd/ml) : Machine Learning models and experiments.
-* [Docsearch](https://github.com/dtrckd/docsearch) : self hosted search engine for your pdf documents.
+* [docsearch](https://github.com/dtrckd/docsearch) : self hosted search engine for your pdf documents.
 
 ## Glossary and Types
 
